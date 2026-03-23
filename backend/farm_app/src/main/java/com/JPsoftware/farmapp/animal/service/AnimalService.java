@@ -2,6 +2,7 @@ package com.juan.farmapp.animal.service;
 
 import com.juan.farmapp.animal.dto.AnimalResponse;
 import com.juan.farmapp.animal.dto.CreateAnimalRequest;
+import com.juan.farmapp.animal.dto.UpdateAnimalRequest;
 import com.juan.farmapp.animal.entity.AnimalEntity;
 import com.juan.farmapp.animal.mapper.AnimalMapper;
 import com.juan.farmapp.animal.repository.AnimalRepository;
@@ -50,6 +51,25 @@ public class AnimalService {
                 .toList();
     }
 
+    @Transactional
+    public AnimalResponse update(String id, UpdateAnimalRequest request) {
+        AnimalEntity animalEntity = animalRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Animal not found"));
+
+        applyUpdates(animalEntity, request);
+
+        AnimalEntity updatedAnimal = animalRepository.save(animalEntity);
+        return animalMapper.toResponse(updatedAnimal);
+    }
+
+    @Transactional
+    public void delete(String id) {
+        animalRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Animal not found"));
+
+        animalRepository.deleteById(id);
+    }
+
     private void validateInput(CreateAnimalRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Create animal request must not be null");
@@ -62,6 +82,24 @@ public class AnimalService {
         }
         if (!StringUtils.hasText(request.getFarmId())) {
             throw new IllegalArgumentException("Animal farmId must not be blank");
+        }
+    }
+
+    private void applyUpdates(AnimalEntity animalEntity, UpdateAnimalRequest request) {
+        if (request.getTag() != null) {
+            animalEntity.setTag(request.getTag());
+        }
+        if (request.getBreed() != null) {
+            animalEntity.setBreed(request.getBreed());
+        }
+        if (request.getBirthDate() != null) {
+            animalEntity.setBirthDate(request.getBirthDate());
+        }
+        if (request.getStatus() != null) {
+            animalEntity.setStatus(request.getStatus());
+        }
+        if (request.getFarmId() != null) {
+            animalEntity.setFarmId(request.getFarmId());
         }
     }
 }
