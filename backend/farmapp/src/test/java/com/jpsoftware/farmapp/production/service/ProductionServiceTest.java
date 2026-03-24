@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
+import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
@@ -114,5 +115,45 @@ class ProductionServiceTest {
                 () -> productionService.create(invalidRequest));
 
         assertEquals("quantity must be greater than zero", exception.getMessage());
+    }
+
+    @Test
+    void shouldUpdateProduction() {
+        UpdateProductionRequest request = new UpdateProductionRequest(LocalDate.of(2026, 3, 21), 15.0);
+        when(productionRepository.findById("production-1")).thenReturn(java.util.Optional.of(productionEntity));
+        when(productionRepository.save(any(ProductionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProductionResponse response = productionService.update("production-1", request);
+
+        assertNotNull(response);
+        assertEquals("production-1", response.getId());
+        assertEquals(LocalDate.of(2026, 3, 21), response.getDate());
+        assertEquals(15.0, response.getQuantity());
+        verify(productionRepository).findById("production-1");
+        verify(productionRepository).save(productionEntity);
+    }
+
+    @Test
+    void shouldFailWhenQuantityInvalid() {
+        UpdateProductionRequest request = new UpdateProductionRequest(null, 0.0);
+        when(productionRepository.findById("production-1")).thenReturn(java.util.Optional.of(productionEntity));
+
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> productionService.update("production-1", request));
+
+        assertEquals("quantity must be greater than zero", exception.getMessage());
+    }
+
+    @Test
+    void shouldFailWhenProductionNotFound() {
+        UpdateProductionRequest request = new UpdateProductionRequest(LocalDate.of(2026, 3, 21), 15.0);
+        when(productionRepository.findById("missing-id")).thenReturn(java.util.Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> productionService.update("missing-id", request));
+
+        assertEquals("Production not found", exception.getMessage());
     }
 }
