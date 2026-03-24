@@ -8,6 +8,7 @@ import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.exception.BusinessException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -51,7 +52,7 @@ public class ProductionService {
     @Transactional(readOnly = true)
     public ProductionResponse findById(String id) {
         if (!StringUtils.hasText(id)) {
-            throw new IllegalArgumentException("Production id must not be blank");
+            throw new ValidationException("id must not be blank");
         }
 
         ProductionEntity productionEntity = productionRepository.findById(id)
@@ -62,19 +63,19 @@ public class ProductionService {
 
     private void validateInput(CreateProductionRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException("Create production request must not be null");
+            throw new ValidationException("request must not be null");
         }
         if (!StringUtils.hasText(request.getAnimalId())) {
-            throw new IllegalArgumentException("Production animalId must not be blank");
+            throw new ValidationException("animalId must not be blank");
         }
         if (request.getDate() == null) {
-            throw new IllegalArgumentException("Production date must not be null");
+            throw new ValidationException("date must not be null");
         }
         if (request.getDate().isAfter(LocalDate.now())) {
             throw new BusinessException("Date cannot be in the future");
         }
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
-            throw new IllegalArgumentException("Production quantity must be greater than zero");
+            throw new ValidationException("quantity must be greater than zero");
         }
         if (!animalRepository.existsById(request.getAnimalId())) {
             throw new ResourceNotFoundException("Animal not found");
