@@ -43,9 +43,8 @@ public class ProductionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductionResponse> findAll() {
-        return productionRepository.findAll()
-                .stream()
+    public List<ProductionResponse> findAll(String animalId, LocalDate date) {
+        return findProductions(animalId, date).stream()
                 .map(productionMapper::toResponse)
                 .toList();
     }
@@ -108,6 +107,19 @@ public class ProductionService {
 
     private ProductionEntity toEntity(CreateProductionRequest request) {
         return productionMapper.toEntity(request);
+    }
+
+    private List<ProductionEntity> findProductions(String animalId, LocalDate date) {
+        if (StringUtils.hasText(animalId) && date != null) {
+            return productionRepository.findByAnimalIdAndDate(animalId, date);
+        }
+        if (StringUtils.hasText(animalId)) {
+            return productionRepository.findByAnimalId(animalId);
+        }
+        if (date != null) {
+            return productionRepository.findByDate(date);
+        }
+        return productionRepository.findAll();
     }
 
     private String validateId(String id) {
