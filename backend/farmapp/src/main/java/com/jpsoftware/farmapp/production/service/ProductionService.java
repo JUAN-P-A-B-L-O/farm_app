@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.production.service;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
+import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
 import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
@@ -55,6 +56,18 @@ public class ProductionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
 
         return productionMapper.toResponse(productionEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionSummaryResponse getSummaryByAnimal(String animalId) {
+        String validatedAnimalId = validateAnimalId(animalId);
+
+        if (!animalRepository.existsById(validatedAnimalId)) {
+            throw new ResourceNotFoundException("Animal not found");
+        }
+
+        Double totalQuantity = productionRepository.sumQuantityByAnimalId(validatedAnimalId);
+        return new ProductionSummaryResponse(validatedAnimalId, totalQuantity != null ? totalQuantity : 0.0);
     }
 
     @Transactional
@@ -127,5 +140,12 @@ public class ProductionService {
             throw new ValidationException("id must not be blank");
         }
         return id;
+    }
+
+    private String validateAnimalId(String animalId) {
+        if (!StringUtils.hasText(animalId)) {
+            throw new ValidationException("animalId must not be blank");
+        }
+        return animalId;
     }
 }

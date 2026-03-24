@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
+import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
 import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
@@ -87,6 +88,54 @@ class ProductionServiceTest {
                 () -> productionService.create(createProductionRequest));
 
         assertEquals("Animal not found", exception.getMessage());
+    }
+
+    @Test
+    void shouldReturnTotalProduction() {
+        when(animalRepository.existsById("animal-1")).thenReturn(true);
+        when(productionRepository.sumQuantityByAnimalId("animal-1")).thenReturn(35.5);
+
+        ProductionSummaryResponse response = productionService.getSummaryByAnimal("animal-1");
+
+        assertNotNull(response);
+        assertEquals("animal-1", response.getAnimalId());
+        assertEquals(35.5, response.getTotalQuantity());
+        verify(animalRepository).existsById("animal-1");
+        verify(productionRepository).sumQuantityByAnimalId("animal-1");
+    }
+
+    @Test
+    void shouldReturnZeroWhenNoProduction() {
+        when(animalRepository.existsById("animal-1")).thenReturn(true);
+        when(productionRepository.sumQuantityByAnimalId("animal-1")).thenReturn(null);
+
+        ProductionSummaryResponse response = productionService.getSummaryByAnimal("animal-1");
+
+        assertNotNull(response);
+        assertEquals("animal-1", response.getAnimalId());
+        assertEquals(0.0, response.getTotalQuantity());
+        verify(animalRepository).existsById("animal-1");
+        verify(productionRepository).sumQuantityByAnimalId("animal-1");
+    }
+
+    @Test
+    void shouldFailWhenAnimalNotFound() {
+        when(animalRepository.existsById("animal-1")).thenReturn(false);
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> productionService.getSummaryByAnimal("animal-1"));
+
+        assertEquals("Animal not found", exception.getMessage());
+    }
+
+    @Test
+    void shouldFailWhenAnimalIdIsBlank() {
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> productionService.getSummaryByAnimal(""));
+
+        assertEquals("animalId must not be blank", exception.getMessage());
     }
 
     @Test
