@@ -14,6 +14,7 @@ import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,7 +61,11 @@ class ProductionServiceTest {
     void shouldCreateProduction() {
         when(animalRepository.existsById(any())).thenReturn(true);
         when(productionRepository.save(any(ProductionEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> {
+                    ProductionEntity savedEntity = invocation.getArgument(0);
+                    savedEntity.setId("production-1");
+                    return savedEntity;
+                });
 
         ProductionResponse response = productionService.create(createProductionRequest);
 
@@ -104,10 +109,10 @@ class ProductionServiceTest {
                 LocalDate.of(2026, 3, 20),
                 0.0);
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        ValidationException exception = assertThrows(
+                ValidationException.class,
                 () -> productionService.create(invalidRequest));
 
-        assertEquals("Production quantity must be greater than zero", exception.getMessage());
+        assertEquals("quantity must be greater than zero", exception.getMessage());
     }
 }
