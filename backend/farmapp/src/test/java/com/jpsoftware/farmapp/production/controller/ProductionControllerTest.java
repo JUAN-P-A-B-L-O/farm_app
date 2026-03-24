@@ -35,7 +35,7 @@ class ProductionControllerTest {
 
     @Test
     void shouldReturnAllProductions() throws Exception {
-        when(productionService.findAll()).thenReturn(List.of(buildResponse()));
+        when(productionService.findAll(null, null)).thenReturn(List.of(buildResponse()));
 
         mockMvc.perform(get("/productions"))
                 .andExpect(status().isOk())
@@ -43,7 +43,31 @@ class ProductionControllerTest {
                 .andExpect(jsonPath("$[0].animalId").value("animal-1"))
                 .andExpect(jsonPath("$[0].quantity").value(12.5));
 
-        verify(productionService).findAll();
+        verify(productionService).findAll(null, null);
+    }
+
+    @Test
+    void shouldReturnFilteredByAnimalId() throws Exception {
+        when(productionService.findAll("animal-1", null)).thenReturn(List.of(buildResponse()));
+
+        mockMvc.perform(get("/productions").param("animalId", "animal-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("production-1"))
+                .andExpect(jsonPath("$[0].animalId").value("animal-1"));
+
+        verify(productionService).findAll("animal-1", null);
+    }
+
+    @Test
+    void shouldReturnFilteredByDate() throws Exception {
+        when(productionService.findAll(null, LocalDate.of(2026, 3, 20))).thenReturn(List.of(buildResponse()));
+
+        mockMvc.perform(get("/productions").param("date", "2026-03-20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("production-1"))
+                .andExpect(jsonPath("$[0].date").value("2026-03-20"));
+
+        verify(productionService).findAll(null, LocalDate.of(2026, 3, 20));
     }
 
     @Test

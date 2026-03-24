@@ -99,15 +99,35 @@ curl -s -X PUT $BASE_URL/productions/non-existent-id \
 ((PRODUCTION_TESTS++))
 
 echo "========================================"
+echo "FILTER FLOW"
+echo "========================================"
+
+echo "11. FILTER BY ANIMAL ID"
+curl -s "$BASE_URL/productions?animalId=$ANIMAL_ID" | jq
+((PRODUCTION_TESTS++))
+
+echo "12. FILTER BY DATE"
+curl -s "$BASE_URL/productions?date=2024-03-20" | jq
+((PRODUCTION_TESTS++))
+
+echo "13. FILTER BY ANIMAL AND DATE"
+curl -s "$BASE_URL/productions?animalId=$ANIMAL_ID&date=2024-03-20" | jq
+((PRODUCTION_TESTS++))
+
+echo "14. FILTER WITH NO RESULTS (SHOULD RETURN EMPTY)"
+curl -s "$BASE_URL/productions?animalId=invalid&date=2020-01-01" | jq
+((PRODUCTION_TESTS++))
+
+echo "========================================"
 echo "CLEANUP"
 echo "========================================"
 
-echo "11. DELETE ANIMAL"
+echo "15. DELETE ANIMAL"
 DELETE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE $BASE_URL/animals/$ANIMAL_ID)
 echo "Delete HTTP Status: $DELETE_STATUS"
 ((ANIMAL_TESTS++))
 
-echo "12. GET DELETED ANIMAL (SHOULD FAIL)"
+echo "16. GET DELETED ANIMAL (SHOULD FAIL)"
 curl -s $BASE_URL/animals/$ANIMAL_ID | jq
 ((ANIMAL_TESTS++))
 

@@ -90,10 +90,49 @@ class ProductionServiceTest {
     }
 
     @Test
-    void shouldReturnAllProductions() {
+    void shouldFilterByAnimalId() {
+        when(productionRepository.findByAnimalId("animal-1")).thenReturn(List.of(productionEntity));
+
+        List<ProductionResponse> responses = productionService.findAll("animal-1", null);
+
+        assertEquals(1, responses.size());
+        assertEquals("production-1", responses.get(0).getId());
+        assertEquals("animal-1", responses.get(0).getAnimalId());
+        verify(productionRepository).findByAnimalId("animal-1");
+    }
+
+    @Test
+    void shouldFilterByDate() {
+        LocalDate date = LocalDate.of(2026, 3, 20);
+        when(productionRepository.findByDate(date)).thenReturn(List.of(productionEntity));
+
+        List<ProductionResponse> responses = productionService.findAll(null, date);
+
+        assertEquals(1, responses.size());
+        assertEquals("production-1", responses.get(0).getId());
+        assertEquals(date, responses.get(0).getDate());
+        verify(productionRepository).findByDate(date);
+    }
+
+    @Test
+    void shouldFilterByAnimalIdAndDate() {
+        LocalDate date = LocalDate.of(2026, 3, 20);
+        when(productionRepository.findByAnimalIdAndDate("animal-1", date)).thenReturn(List.of(productionEntity));
+
+        List<ProductionResponse> responses = productionService.findAll("animal-1", date);
+
+        assertEquals(1, responses.size());
+        assertEquals("production-1", responses.get(0).getId());
+        assertEquals("animal-1", responses.get(0).getAnimalId());
+        assertEquals(date, responses.get(0).getDate());
+        verify(productionRepository).findByAnimalIdAndDate("animal-1", date);
+    }
+
+    @Test
+    void shouldReturnAllWhenNoFilters() {
         when(productionRepository.findAll()).thenReturn(List.of(productionEntity));
 
-        List<ProductionResponse> responses = productionService.findAll();
+        List<ProductionResponse> responses = productionService.findAll(null, null);
 
         assertEquals(1, responses.size());
         assertEquals("production-1", responses.get(0).getId());
