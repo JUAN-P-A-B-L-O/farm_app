@@ -1,10 +1,15 @@
 package com.jpsoftware.farmapp.production.service;
 
+import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
+import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
-import java.util.UUID;
+import com.jpsoftware.farmapp.shared.exception.BusinessException;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import java.time.LocalDate;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -13,9 +18,16 @@ import org.springframework.util.StringUtils;
 public class ProductionService {
 
     private final ProductionRepository productionRepository;
+    private final AnimalRepository animalRepository;
+    private final ProductionMapper productionMapper;
 
-    public ProductionService(ProductionRepository productionRepository) {
+    public ProductionService(
+            ProductionRepository productionRepository,
+            AnimalRepository animalRepository,
+            ProductionMapper productionMapper) {
         this.productionRepository = productionRepository;
+        this.animalRepository = animalRepository;
+        this.productionMapper = productionMapper;
     }
 
     @Transactional
@@ -25,7 +37,27 @@ public class ProductionService {
         ProductionEntity productionEntity = toEntity(request);
         ProductionEntity savedProduction = productionRepository.save(productionEntity);
 
-        return toResponse(savedProduction);
+        return productionMapper.toResponse(savedProduction);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductionResponse> findAll() {
+        return productionRepository.findAll()
+                .stream()
+                .map(productionMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionResponse findById(String id) {
+        if (!StringUtils.hasText(id)) {
+            throw new IllegalArgumentException("Production id must not be blank");
+        }
+
+        ProductionEntity productionEntity = productionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
+
+        return productionMapper.toResponse(productionEntity);
     }
 
     private void validateInput(CreateProductionRequest request) {
@@ -38,25 +70,18 @@ public class ProductionService {
         if (request.getDate() == null) {
             throw new IllegalArgumentException("Production date must not be null");
         }
+        if (request.getDate().isAfter(LocalDate.now())) {
+            throw new BusinessException("Date cannot be in the future");
+        }
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new IllegalArgumentException("Production quantity must be greater than zero");
+        }
+        if (!animalRepository.existsById(request.getAnimalId())) {
+            throw new ResourceNotFoundException("Animal not found");
         }
     }
 
     private ProductionEntity toEntity(CreateProductionRequest request) {
-        ProductionEntity productionEntity = new ProductionEntity();
-        productionEntity.setId(UUID.randomUUID().toString());
-        productionEntity.setAnimalId(request.getAnimalId());
-        productionEntity.setDate(request.getDate());
-        productionEntity.setQuantity(request.getQuantity());
-        return productionEntity;
-    }
-
-    private ProductionResponse toResponse(ProductionEntity entity) {
-        return new ProductionResponse(
-                entity.getId(),
-                entity.getAnimalId(),
-                entity.getDate(),
-                entity.getQuantity());
+        return productionMapper.toEntity(request);
     }
 }

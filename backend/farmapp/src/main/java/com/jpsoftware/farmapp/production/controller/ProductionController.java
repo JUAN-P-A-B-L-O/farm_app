@@ -4,8 +4,11 @@ import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
 import com.jpsoftware.farmapp.production.service.ProductionService;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +22,18 @@ public class ProductionController {
 
     public ProductionController(ProductionService productionService) {
         this.productionService = productionService;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ProductionResponse>> findAll() {
+        List<ProductionResponse> response = productionService.findAll();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductionResponse> findById(@PathVariable String id) {
+        ProductionResponse response = productionService.findById(id);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
