@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.production.service;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
+import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
@@ -51,14 +52,37 @@ public class ProductionService {
 
     @Transactional(readOnly = true)
     public ProductionResponse findById(String id) {
-        if (!StringUtils.hasText(id)) {
-            throw new ValidationException("id must not be blank");
-        }
-
-        ProductionEntity productionEntity = productionRepository.findById(id)
+        ProductionEntity productionEntity = productionRepository.findById(validateId(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
 
         return productionMapper.toResponse(productionEntity);
+    }
+
+    @Transactional
+    public ProductionResponse update(String id, UpdateProductionRequest request) {
+        if (request == null) {
+            throw new ValidationException("request must not be null");
+        }
+
+        ProductionEntity productionEntity = productionRepository.findById(validateId(id))
+                .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
+
+        if (request.getDate() != null) {
+            if (request.getDate().isAfter(LocalDate.now())) {
+                throw new BusinessException("Date cannot be in the future");
+            }
+            productionEntity.setDate(request.getDate());
+        }
+
+        if (request.getQuantity() != null) {
+            if (request.getQuantity() <= 0) {
+                throw new ValidationException("quantity must be greater than zero");
+            }
+            productionEntity.setQuantity(request.getQuantity());
+        }
+
+        ProductionEntity savedProduction = productionRepository.save(productionEntity);
+        return productionMapper.toResponse(savedProduction);
     }
 
     private void validateInput(CreateProductionRequest request) {
@@ -84,5 +108,12 @@ public class ProductionService {
 
     private ProductionEntity toEntity(CreateProductionRequest request) {
         return productionMapper.toEntity(request);
+    }
+
+    private String validateId(String id) {
+        if (!StringUtils.hasText(id)) {
+            throw new ValidationException("id must not be blank");
+        }
+        return id;
     }
 }
