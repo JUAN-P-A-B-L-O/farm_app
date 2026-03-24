@@ -2,13 +2,16 @@ package com.jpsoftware.farmapp.production.controller;
 
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
+import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
 import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
 import com.jpsoftware.farmapp.production.service.ProductionService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Validated
 @RequestMapping("/productions")
 public class ProductionController {
 
@@ -39,6 +43,13 @@ public class ProductionController {
     @GetMapping("/{id}")
     public ResponseEntity<ProductionResponse> findById(@PathVariable String id) {
         ProductionResponse response = productionService.findById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/summary/by-animal")
+    public ResponseEntity<ProductionSummaryResponse> getSummaryByAnimal(
+            @RequestParam @NotBlank(message = "animalId must not be blank") String animalId) {
+        ProductionSummaryResponse response = productionService.getSummaryByAnimal(animalId);
         return ResponseEntity.ok(response);
     }
 

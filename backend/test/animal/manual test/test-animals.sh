@@ -119,15 +119,27 @@ curl -s "$BASE_URL/productions?animalId=invalid&date=2020-01-01" | jq
 ((PRODUCTION_TESTS++))
 
 echo "========================================"
+echo "AGGREGATION FLOW"
+echo "========================================"
+
+echo "15. GET TOTAL PRODUCTION BY ANIMAL"
+curl -s "$BASE_URL/productions/summary/by-animal?animalId=$ANIMAL_ID" | jq
+((PRODUCTION_TESTS++))
+
+echo "16. GET TOTAL PRODUCTION FOR ANIMAL WITH NO DATA (SHOULD BE 0)"
+curl -s "$BASE_URL/productions/summary/by-animal?animalId=non-existent-id" | jq
+((PRODUCTION_TESTS++))
+
+echo "========================================"
 echo "CLEANUP"
 echo "========================================"
 
-echo "15. DELETE ANIMAL"
+echo "17. DELETE ANIMAL"
 DELETE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE $BASE_URL/animals/$ANIMAL_ID)
 echo "Delete HTTP Status: $DELETE_STATUS"
 ((ANIMAL_TESTS++))
 
-echo "16. GET DELETED ANIMAL (SHOULD FAIL)"
+echo "18. GET DELETED ANIMAL (SHOULD FAIL)"
 curl -s $BASE_URL/animals/$ANIMAL_ID | jq
 ((ANIMAL_TESTS++))
 

@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
+import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
 import com.jpsoftware.farmapp.production.service.ProductionService;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
@@ -68,6 +69,19 @@ class ProductionControllerTest {
                 .andExpect(jsonPath("$[0].date").value("2026-03-20"));
 
         verify(productionService).findAll(null, LocalDate.of(2026, 3, 20));
+    }
+
+    @Test
+    void shouldReturnSummary() throws Exception {
+        when(productionService.getSummaryByAnimal("123"))
+                .thenReturn(new ProductionSummaryResponse("123", 35.5));
+
+        mockMvc.perform(get("/productions/summary/by-animal").param("animalId", "123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.animalId").value("123"))
+                .andExpect(jsonPath("$.totalQuantity").value(35.5));
+
+        verify(productionService).getSummaryByAnimal("123");
     }
 
     @Test
@@ -153,6 +167,24 @@ class ProductionControllerTest {
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("Production not found"))
                 .andExpect(jsonPath("$.path").value("/productions/missing-id"));
+    }
+
+    @Test
+    void shouldReturn404WhenAnimalNotFound() throws Exception {
+        when(productionService.getSummaryByAnimal("missing-animal"))
+                .thenThrow(new ResourceNotFoundException("Animal not found"));
+
+        mockMvc.perform(get("/productions/summary/by-animal").param("animalId", "missing-animal"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Animal not found"))
+                .andExpect(jsonPath("$.path").value("/productions/summary/by-animal"));
+    }
+
+    @Test
+    void shouldReturn400WhenInvalidInput() throws Exception {
+        mockMvc.perform(get("/productions/summary/by-animal"))
+                .andExpect(status().isBadRequest());
     }
 
     private ProductionResponse buildResponse() {
