@@ -1,0 +1,89 @@
+@startuml
+title Farm App Backend - Component Diagram
+
+top to bottom direction
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+
+actor Client as "API Client"
+
+package "API Layer" {
+  [AnimalController]
+  [ProductionController]
+  [FeedingController]
+  [FeedTypeController]
+  [UserController]
+  [DashboardController]
+}
+
+package "Service Layer" {
+  [AnimalService]
+  [ProductionService]
+  [FeedingService]
+  [FeedTypeService]
+  [UserService]
+  [DashboardService]
+  [Validation Rules]
+  [Mapper Components]
+}
+
+package "Repository Layer" {
+  [AnimalRepository]
+  [ProductionRepository]
+  [FeedingRepository]
+  [FeedTypeRepository]
+  [UserRepository]
+}
+
+database "Database" as Database
+
+Client --> [AnimalController]
+Client --> [ProductionController]
+Client --> [FeedingController]
+Client --> [FeedTypeController]
+Client --> [UserController]
+Client --> [DashboardController]
+
+[AnimalController] --> [AnimalService]
+[ProductionController] --> [ProductionService]
+[FeedingController] --> [FeedingService]
+[FeedTypeController] --> [FeedTypeService]
+[UserController] --> [UserService]
+[DashboardController] --> [DashboardService]
+
+[AnimalService] --> [Validation Rules]
+[ProductionService] --> [Validation Rules]
+[FeedingService] --> [Validation Rules]
+[FeedTypeService] --> [Validation Rules]
+[UserService] --> [Validation Rules]
+
+[AnimalService] --> [Mapper Components]
+[ProductionService] --> [Mapper Components]
+[FeedingService] --> [Mapper Components]
+[FeedTypeService] --> [Mapper Components]
+[UserService] --> [Mapper Components]
+
+[AnimalService] --> [AnimalRepository]
+[ProductionService] --> [ProductionRepository]
+[ProductionService] --> [AnimalRepository]
+[ProductionService] --> [FeedingRepository]
+[ProductionService] --> [UserRepository]
+[FeedingService] --> [FeedingRepository]
+[FeedingService] --> [AnimalRepository]
+[FeedingService] --> [FeedTypeRepository]
+[FeedingService] --> [UserRepository]
+[FeedTypeService] --> [FeedTypeRepository]
+[UserService] --> [UserRepository]
+[DashboardService] --> [ProductionRepository]
+[DashboardService] --> [FeedingRepository]
+[DashboardService] --> [AnimalRepository]
+
+[AnimalRepository] --> Database
+[ProductionRepository] --> Database
+[FeedingRepository] --> Database
+[FeedTypeRepository] --> Database
+[UserRepository] --> Database
+
+@enduml

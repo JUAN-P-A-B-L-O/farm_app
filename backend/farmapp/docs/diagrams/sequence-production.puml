@@ -1,0 +1,85 @@
+@startuml
+title Production Creation Flow
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam ParticipantPadding 25
+skinparam BoxPadding 10
+
+actor User
+participant "ProductionController" as Controller
+participant "ProductionService" as Service
+participant "ValidationService" as Validation
+participant "ProductionRepository" as Repository
+database "PostgreSQL / Database" as DB
+participant "GlobalExceptionHandler" as ErrorHandler
+
+User -> Controller: POST /productions\nCreateProductionRequest
+activate Controller
+
+Controller -> Service: create(request)
+activate Service
+
+Service -> Validation: validateInput(request)
+activate Validation
+
+alt Invalid payload or blank fields
+  Validation --> Service: ValidationException
+  deactivate Validation
+  Service --> ErrorHandler: propagate exception
+  deactivate Service
+  ErrorHandler --> Controller: 400 Bad Request\nErrorResponse
+  Controller --> User: 400 Bad Request
+else Animal not found
+  Validation -> Repository: existsByAnimalId()
+  Validation --> Service: ResourceNotFoundException
+  deactivate Validation
+  Service --> ErrorHandler: propagate exception
+  deactivate Service
+  ErrorHandler --> Controller: 404 Not Found\nErrorResponse
+  Controller --> User: 404 Not Found
+else User not found or invalid UUID
+  Validation --> Service: ValidationException / ResourceNotFoundException
+  deactivate Validation
+  Service --> ErrorHandler: propagate exception
+  deactivate Service
+  ErrorHandler --> Controller: 400 or 404\nErrorResponse
+  Controller --> User: error response
+else Valid request
+  Validation --> Service: validated
+  deactivate Validation
+  Service -> Service: toEntity(request)
+  Service -> Repository: save(productionEntity)
+  activate Repository
+  Repository -> DB: INSERT productions
+  activate DB
+  DB --> Repository: persisted row
+  deactivate DB
+  Repository --> Service: saved ProductionEntity
+  deactivate Repository
+  Service -> Service: toResponse(savedProduction)
+  Service --> Controller: ProductionResponse
+  deactivate Service
+  Controller --> User: 201 Created\nProductionResponse
+end
+
+note right of Validation
+  Validation covers:
+  - null request
+  - blank animalId
+  - null or future date
+  - quantity <= 0
+  - blank userId
+  - animal existence
+  - user existence / UUID format
+end note
+
+'note bottom of Repository
+'  Animal existence is checked through
+'  AnimalRepository in the real service.
+'  The sequence abstracts repository validation
+'  into a single validation stage for readability.
+'end note
+
+@enduml

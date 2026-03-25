@@ -1,0 +1,46 @@
+erDiagram
+    ANIMALS {
+        string id PK
+        string tag UK
+        string breed
+        date birth_date
+        string status
+        string farm_id
+    }
+
+    PRODUCTIONS {
+        string id PK
+        string animal_id
+        date date
+        double quantity
+        string created_by
+    }
+
+    FEED_TYPES {
+        string id PK
+        string name
+        double cost_per_kg
+        boolean active
+    }
+
+    FEEDINGS {
+        string id PK
+        string animal_id
+        string feed_type_id
+        date date
+        double quantity
+        string created_by
+    }
+
+    USERS {
+        uuid id PK
+        string name
+        string email
+        string role
+    }
+
+    ANIMALS ||--o{ PRODUCTIONS : "logical animal_id"
+    ANIMALS ||--o{ FEEDINGS : "logical animal_id"
+    FEED_TYPES ||--o{ FEEDINGS : "logical feed_type_id"
+    USERS ||--o{ PRODUCTIONS : "logical created_by"
+    USERS ||--o{ FEEDINGS : "logical created_by"

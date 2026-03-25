@@ -1,0 +1,46 @@
+classDiagram
+    class User {
+        id
+        name
+        email
+        role
+    }
+
+    class Animal {
+        id
+        tag
+        breed
+        birthDate
+        status
+        farmId
+    }
+
+    class FeedType {
+        id
+        name
+        costPerKg
+        active
+    }
+
+    class Feeding {
+        id
+        animalId
+        feedTypeId
+        date
+        quantity
+        createdBy
+    }
+
+    class Production {
+        id
+        animalId
+        date
+        quantity
+        createdBy
+    }
+
+    Animal "1" --> "0..*" Production : produces
+    Animal "1" --> "0..*" Feeding : receives
+    FeedType "1" --> "0..*" Feeding : priced by
+    User "1" --> "0..*" Feeding : records
+    User "1" --> "0..*" Production : records

@@ -1,0 +1,61 @@
+@startuml
+title Farm App Backend - Domain Model
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+class Animal {
+  id: String
+  tag: String
+  breed: String
+  birthDate: LocalDate
+  status: String
+  farmId: String
+}
+
+class Production {
+  id: String
+  date: LocalDate
+  quantity: Double
+}
+
+class Feeding {
+  id: String
+  date: LocalDate
+  quantity: Double
+}
+
+class FeedType {
+  id: String
+  name: String
+  costPerKg: Double
+  active: Boolean
+}
+
+class User {
+  id: UUID
+  name: String
+  email: String
+  role: String
+}
+
+Animal "1" --> "0..*" Production : produces
+Animal "1" --> "0..*" Feeding : receives
+FeedType "1" --> "0..*" Feeding : used in
+User "1" --> "0..*" Production : recorded by
+User "1" --> "0..*" Feeding : recorded by
+
+note right of Animal
+  Central livestock aggregate used by
+  production and feeding operations.
+end note
+
+note bottom of FeedType
+  Represents the catalog of feed options
+  and their operational cost.
+end note
+
+@enduml
