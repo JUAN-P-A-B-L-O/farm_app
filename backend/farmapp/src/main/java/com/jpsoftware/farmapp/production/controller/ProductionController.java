@@ -6,6 +6,13 @@ import com.jpsoftware.farmapp.production.dto.ProductionResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
 import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
 import com.jpsoftware.farmapp.production.service.ProductionService;
+import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
@@ -25,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Validated
 @RequestMapping("/productions")
+@Tag(name = "Productions", description = "Operations for managing milk production records and summaries.")
 public class ProductionController {
 
     private final ProductionService productionService;
@@ -34,6 +42,10 @@ public class ProductionController {
     }
 
     @GetMapping
+    @Operation(summary = "List productions", description = "Returns production records, optionally filtered by animal or date.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Production records retrieved successfully")
+    })
     public ResponseEntity<List<ProductionResponse>> findAll(
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) LocalDate date) {
@@ -42,12 +54,28 @@ public class ProductionController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get production by id", description = "Returns a production record by its identifier.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Production record retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid production identifier",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Production not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public ResponseEntity<ProductionResponse> findById(@PathVariable String id) {
         ProductionResponse response = productionService.findById(id);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/summary/by-animal")
+    @Operation(summary = "Get production summary by animal", description = "Returns the total produced quantity for a specific animal.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Production summary retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid animal identifier",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Animal not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public ResponseEntity<ProductionSummaryResponse> getSummaryByAnimal(
             @RequestParam @NotBlank(message = "animalId must not be blank") String animalId) {
         ProductionSummaryResponse response = productionService.getSummaryByAnimal(animalId);
@@ -55,6 +83,14 @@ public class ProductionController {
     }
 
     @GetMapping("/summary/profit/by-animal")
+    @Operation(summary = "Get production profit by animal", description = "Returns production, cost, revenue, and profit metrics for a specific animal.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Production profit summary retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid animal identifier",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Animal not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public ResponseEntity<ProductionProfitResponse> getProfit(
             @RequestParam @NotBlank(message = "animalId must not be blank") String animalId) {
         ProductionProfitResponse response = productionService.getProfitByAnimal(animalId);
@@ -62,12 +98,28 @@ public class ProductionController {
     }
 
     @PostMapping
+    @Operation(summary = "Create production", description = "Creates a new production record.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Production record created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Related resource not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public ResponseEntity<ProductionResponse> create(@Valid @RequestBody CreateProductionRequest request) {
         ProductionResponse response = productionService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update production", description = "Updates mutable fields of an existing production record.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Production record updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Production not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public ResponseEntity<ProductionResponse> update(
             @PathVariable String id,
             @RequestBody UpdateProductionRequest request) {

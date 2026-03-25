@@ -3,6 +3,13 @@ package com.jpsoftware.farmapp.feeding.controller;
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
+import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -16,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/feedings")
+@Tag(name = "Feedings", description = "Operations for recording animal feeding events.")
 public class FeedingController {
 
     private final FeedingService feedingService;
@@ -25,18 +33,38 @@ public class FeedingController {
     }
 
     @PostMapping
+    @Operation(summary = "Create feeding", description = "Registers a new feeding event.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Feeding created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Related resource not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public ResponseEntity<FeedingResponse> create(@Valid @RequestBody CreateFeedingRequest request) {
         FeedingResponse response = feedingService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
+    @Operation(summary = "List feedings", description = "Returns all feeding records.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Feedings retrieved successfully")
+    })
     public ResponseEntity<List<FeedingResponse>> findAll() {
         List<FeedingResponse> response = feedingService.findAll();
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get feeding by id", description = "Returns a feeding record by its identifier.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Feeding retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid feeding identifier",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Feeding not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public ResponseEntity<FeedingResponse> findById(@PathVariable String id) {
         FeedingResponse response = feedingService.findById(id);
         return ResponseEntity.ok(response);

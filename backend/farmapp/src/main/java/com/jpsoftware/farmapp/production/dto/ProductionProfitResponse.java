@@ -1,12 +1,26 @@
 package com.jpsoftware.farmapp.production.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Profit summary for production by animal.")
 public class ProductionProfitResponse {
 
+    @Schema(description = "Animal identifier.", example = "animal-001")
     private String animalId;
+
+    @Schema(description = "Total produced quantity.", example = "320.0")
     private Double totalProduction;
+
+    @Schema(description = "Total feeding cost for the animal.", example = "185.5")
     private Double totalFeedingCost;
+
+    @Schema(description = "Milk price used in the profit calculation.", example = "2.0")
     private Double milkPrice;
+
+    @Schema(description = "Calculated revenue.", example = "640.0")
     private Double revenue;
+
+    @Schema(description = "Calculated profit.", example = "454.5")
     private Double profit;
 
     public ProductionProfitResponse() {

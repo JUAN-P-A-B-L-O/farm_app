@@ -1,8 +1,15 @@
 package com.jpsoftware.farmapp.user.controller;
 
+import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UserResponse;
 import com.jpsoftware.farmapp.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -16,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/users")
+@Tag(name = "Users", description = "Operations for managing application users.")
 public class UserController {
 
     private final UserService userService;
@@ -25,18 +33,36 @@ public class UserController {
     }
 
     @PostMapping
+    @Operation(summary = "Create user", description = "Creates a new application user.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "User created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest request) {
         UserResponse response = userService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
+    @Operation(summary = "List users", description = "Returns all registered users.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Users retrieved successfully")
+    })
     public ResponseEntity<List<UserResponse>> findAll() {
         List<UserResponse> response = userService.findAll();
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get user by id", description = "Returns a user by its identifier.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid user identifier",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public ResponseEntity<UserResponse> findById(@PathVariable String id) {
         UserResponse response = userService.findById(id);
         return ResponseEntity.ok(response);

@@ -1,13 +1,24 @@
 package com.jpsoftware.farmapp.feeding.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
+@Schema(description = "Feeding data returned by the API.")
 public class FeedingResponse {
 
+    @Schema(description = "Feeding identifier.", example = "feeding-001")
     private String id;
+
+    @Schema(description = "Animal identifier.", example = "animal-001")
     private String animalId;
+
+    @Schema(description = "Feed type identifier.", example = "feed-type-001")
     private String feedTypeId;
+
+    @Schema(description = "Feeding date.", example = "2026-03-20")
     private LocalDate date;
+
+    @Schema(description = "Feed quantity in kilograms.", example = "14.5")
     private Double quantity;
 
     public FeedingResponse() {

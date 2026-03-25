@@ -1,11 +1,23 @@
 package com.jpsoftware.farmapp.dashboard.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Aggregated dashboard metrics.")
 public class DashboardResponse {
 
+    @Schema(description = "Total milk production across the farm.", example = "1250.5")
     private Double totalProduction;
+
+    @Schema(description = "Total feeding cost across the farm.", example = "780.25")
     private Double totalFeedingCost;
+
+    @Schema(description = "Total revenue based on production.", example = "2501.0")
     private Double totalRevenue;
+
+    @Schema(description = "Total profit after feeding costs.", example = "1720.75")
     private Double totalProfit;
+
+    @Schema(description = "Total number of registered animals.", example = "48")
     private Long animalCount;
 
     public DashboardResponse() {

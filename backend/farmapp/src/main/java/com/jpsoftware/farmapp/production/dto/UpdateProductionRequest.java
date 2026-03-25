@@ -1,13 +1,17 @@
 package com.jpsoftware.farmapp.production.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Positive;
 import java.time.LocalDate;
 
+@Schema(description = "Request payload for updating a production record.")
 public class UpdateProductionRequest {
 
+    @Schema(description = "Production date.", example = "2026-03-21")
     private LocalDate date;
 
     @Positive
+    @Schema(description = "Produced quantity in liters.", example = "34.2")
     private Double quantity;
 
     public UpdateProductionRequest() {

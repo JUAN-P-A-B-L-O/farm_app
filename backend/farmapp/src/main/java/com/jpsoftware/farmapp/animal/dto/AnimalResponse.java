@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.animal.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,12 +9,24 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
+@Schema(description = "Animal data returned by the API.")
 public class AnimalResponse {
 
+    @Schema(description = "Animal identifier.", example = "animal-001")
     private final String id;
+
+    @Schema(description = "Animal management tag.", example = "COW-101")
     private final String tag;
+
+    @Schema(description = "Animal breed.", example = "Holstein")
     private final String breed;
+
+    @Schema(description = "Animal birth date.", example = "2022-01-15")
     private final LocalDate birthDate;
+
+    @Schema(description = "Current animal status.", example = "ACTIVE")
     private final String status;
+
+    @Schema(description = "Farm identifier where the animal belongs.", example = "farm-001")
     private final String farmId;
 }
