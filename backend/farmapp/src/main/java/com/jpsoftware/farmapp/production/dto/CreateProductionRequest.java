@@ -18,13 +18,17 @@ public class CreateProductionRequest {
     @Positive
     private Double quantity;
 
+    @NotBlank
+    private String userId;
+
     public CreateProductionRequest() {
     }
 
-    public CreateProductionRequest(String animalId, LocalDate date, Double quantity) {
+    public CreateProductionRequest(String animalId, LocalDate date, Double quantity, String userId) {
         this.animalId = animalId;
         this.date = date;
         this.quantity = quantity;
+        this.userId = userId;
     }
 
     public String getAnimalId() {
@@ -49,5 +53,13 @@ public class CreateProductionRequest {
 
     public void setQuantity(Double quantity) {
         this.quantity = quantity;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 }

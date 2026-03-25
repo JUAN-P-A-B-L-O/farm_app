@@ -14,6 +14,7 @@ import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.lang.reflect.Proxy;
 import java.time.LocalDate;
 import java.util.List;
@@ -43,7 +44,8 @@ class FeedingControllerTest {
                   "animalId": "animal-1",
                   "feedTypeId": "feed-type-1",
                   "date": "2026-03-24",
-                  "quantity": 8.5
+                  "quantity": 8.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
                 }
                 """;
 
@@ -103,7 +105,8 @@ class FeedingControllerTest {
                   "animalId": " ",
                   "feedTypeId": "feed-type-1",
                   "date": "2026-03-24",
-                  "quantity": 0
+                  "quantity": 0,
+                  "userId": "11111111-1111-1111-1111-111111111111"
                 }
                 """;
 
@@ -130,7 +133,12 @@ class FeedingControllerTest {
         private RuntimeException findByIdException;
 
         TestFeedingService() {
-            super(dummyFeedingRepository(), dummyAnimalRepository(), dummyFeedTypeRepository(), new FeedingMapper());
+            super(
+                    dummyFeedingRepository(),
+                    dummyAnimalRepository(),
+                    dummyFeedTypeRepository(),
+                    dummyUserRepository(),
+                    new FeedingMapper());
         }
 
         @Override
@@ -173,6 +181,15 @@ class FeedingControllerTest {
             return (FeedTypeRepository) Proxy.newProxyInstance(
                     FeedTypeRepository.class.getClassLoader(),
                     new Class<?>[]{FeedTypeRepository.class},
+                    (proxy, method, args) -> {
+                        throw new UnsupportedOperationException("Repository should not be used in controller test");
+                    });
+        }
+
+        private static UserRepository dummyUserRepository() {
+            return (UserRepository) Proxy.newProxyInstance(
+                    UserRepository.class.getClassLoader(),
+                    new Class<?>[]{UserRepository.class},
                     (proxy, method, args) -> {
                         throw new UnsupportedOperationException("Repository should not be used in controller test");
                     });

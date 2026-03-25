@@ -20,14 +20,18 @@ public class CreateFeedingRequest {
     @Positive(message = "quantity must be greater than zero")
     private Double quantity;
 
+    @NotBlank(message = "userId must not be blank")
+    private String userId;
+
     public CreateFeedingRequest() {
     }
 
-    public CreateFeedingRequest(String animalId, String feedTypeId, LocalDate date, Double quantity) {
+    public CreateFeedingRequest(String animalId, String feedTypeId, LocalDate date, Double quantity, String userId) {
         this.animalId = animalId;
         this.feedTypeId = feedTypeId;
         this.date = date;
         this.quantity = quantity;
+        this.userId = userId;
     }
 
     public String getAnimalId() {
@@ -60,5 +64,13 @@ public class CreateFeedingRequest {
 
     public void setQuantity(Double quantity) {
         this.quantity = quantity;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 }

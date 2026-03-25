@@ -13,6 +13,7 @@ import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.exception.BusinessException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -27,16 +28,19 @@ public class ProductionService {
     private final ProductionRepository productionRepository;
     private final FeedingRepository feedingRepository;
     private final AnimalRepository animalRepository;
+    private final UserRepository userRepository;
     private final ProductionMapper productionMapper;
 
     public ProductionService(
             ProductionRepository productionRepository,
             FeedingRepository feedingRepository,
             AnimalRepository animalRepository,
+            UserRepository userRepository,
             ProductionMapper productionMapper) {
         this.productionRepository = productionRepository;
         this.feedingRepository = feedingRepository;
         this.animalRepository = animalRepository;
+        this.userRepository = userRepository;
         this.productionMapper = productionMapper;
     }
 
@@ -137,8 +141,14 @@ public class ProductionService {
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new ValidationException("quantity must be greater than zero");
         }
+        if (!StringUtils.hasText(request.getUserId())) {
+            throw new ValidationException("userId must not be blank");
+        }
         if (!animalRepository.existsById(request.getAnimalId())) {
             throw new ResourceNotFoundException("Animal not found");
+        }
+        if (!userRepository.existsById(parseUserId(request.getUserId()))) {
+            throw new ResourceNotFoundException("User not found");
         }
     }
 
@@ -176,6 +186,14 @@ public class ProductionService {
     private void validateAnimalExists(String animalId) {
         if (!animalRepository.existsById(animalId)) {
             throw new ResourceNotFoundException("Animal not found");
+        }
+    }
+
+    private java.util.UUID parseUserId(String userId) {
+        try {
+            return java.util.UUID.fromString(userId);
+        } catch (IllegalArgumentException exception) {
+            throw new ValidationException("userId must be a valid UUID");
         }
     }
 

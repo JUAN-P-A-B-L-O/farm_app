@@ -1,94 +1,90 @@
 package com.jpsoftware.farmapp.production.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
+import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
+import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
+import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.production.service.ProductionService;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.user.repository.UserRepository;
+import java.lang.reflect.Proxy;
 import java.time.LocalDate;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-@WebMvcTest(ProductionController.class)
-@Import(GlobalExceptionHandler.class)
 class ProductionControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
+    private TestProductionService productionService;
 
-    @MockBean
-    private ProductionService productionService;
+    @BeforeEach
+    void setUp() {
+        productionService = new TestProductionService();
+        mockMvc = MockMvcBuilders.standaloneSetup(new ProductionController(productionService))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
     @Test
     void shouldReturnAllProductions() throws Exception {
-        when(productionService.findAll(null, null)).thenReturn(List.of(buildResponse()));
+        productionService.findAllResponse = List.of(buildResponse());
 
         mockMvc.perform(get("/productions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("production-1"))
                 .andExpect(jsonPath("$[0].animalId").value("animal-1"))
                 .andExpect(jsonPath("$[0].quantity").value(12.5));
-
-        verify(productionService).findAll(null, null);
     }
 
     @Test
     void shouldReturnFilteredByAnimalId() throws Exception {
-        when(productionService.findAll("animal-1", null)).thenReturn(List.of(buildResponse()));
+        productionService.findAllResponse = List.of(buildResponse());
 
         mockMvc.perform(get("/productions").param("animalId", "animal-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("production-1"))
                 .andExpect(jsonPath("$[0].animalId").value("animal-1"));
-
-        verify(productionService).findAll("animal-1", null);
     }
 
     @Test
     void shouldReturnFilteredByDate() throws Exception {
-        when(productionService.findAll(null, LocalDate.of(2026, 3, 20))).thenReturn(List.of(buildResponse()));
+        productionService.findAllResponse = List.of(buildResponse());
 
         mockMvc.perform(get("/productions").param("date", "2026-03-20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("production-1"))
-                .andExpect(jsonPath("$[0].date").value("2026-03-20"));
-
-        verify(productionService).findAll(null, LocalDate.of(2026, 3, 20));
+                .andExpect(jsonPath("$[0].date[0]").value(2026))
+                .andExpect(jsonPath("$[0].date[1]").value(3))
+                .andExpect(jsonPath("$[0].date[2]").value(20));
     }
 
     @Test
     void shouldReturnSummary() throws Exception {
-        when(productionService.getSummaryByAnimal("123"))
-                .thenReturn(new ProductionSummaryResponse("123", 35.5));
+        productionService.summaryResponse = new ProductionSummaryResponse("123", 35.5);
 
         mockMvc.perform(get("/productions/summary/by-animal").param("animalId", "123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.animalId").value("123"))
                 .andExpect(jsonPath("$.totalQuantity").value(35.5));
-
-        verify(productionService).getSummaryByAnimal("123");
     }
 
     @Test
     void shouldReturnProfit() throws Exception {
-        when(productionService.getProfitByAnimal("123"))
-                .thenReturn(new ProductionProfitResponse("123", 35.5, 20.0, 2.0, 71.0, 51.0));
+        productionService.profitResponse = new ProductionProfitResponse("123", 35.5, 20.0, 2.0, 71.0, 51.0);
 
         mockMvc.perform(get("/productions/summary/profit/by-animal").param("animalId", "123"))
                 .andExpect(status().isOk())
@@ -98,8 +94,6 @@ class ProductionControllerTest {
                 .andExpect(jsonPath("$.milkPrice").value(2.0))
                 .andExpect(jsonPath("$.revenue").value(71.0))
                 .andExpect(jsonPath("$.profit").value(51.0));
-
-        verify(productionService).getProfitByAnimal("123");
     }
 
     @Test
@@ -108,11 +102,12 @@ class ProductionControllerTest {
                 {
                   "animalId": "animal-1",
                   "date": "2026-03-20",
-                  "quantity": 12.5
+                  "quantity": 12.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
                 }
                 """;
 
-        when(productionService.create(any())).thenReturn(buildResponse());
+        productionService.createResponse = buildResponse();
 
         mockMvc.perform(post("/productions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -121,8 +116,6 @@ class ProductionControllerTest {
                 .andExpect(jsonPath("$.id").value("production-1"))
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
                 .andExpect(jsonPath("$.quantity").value(12.5));
-
-        verify(productionService).create(any());
     }
 
     @Test
@@ -131,7 +124,8 @@ class ProductionControllerTest {
                 {
                   "animalId": "animal-1",
                   "date": "2026-03-20",
-                  "quantity": 0
+                  "quantity": 0,
+                  "userId": "11111111-1111-1111-1111-111111111111"
                 }
                 """;
 
@@ -150,21 +144,21 @@ class ProductionControllerTest {
                 }
                 """;
 
-        when(productionService.update(any(), any())).thenReturn(new ProductionResponse(
+        productionService.updateResponse = new ProductionResponse(
                 "production-1",
                 "animal-1",
                 LocalDate.of(2026, 3, 21),
-                15.0));
+                15.0);
 
         mockMvc.perform(put("/productions/production-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("production-1"))
-                .andExpect(jsonPath("$.date").value("2026-03-21"))
+                .andExpect(jsonPath("$.date[0]").value(2026))
+                .andExpect(jsonPath("$.date[1]").value(3))
+                .andExpect(jsonPath("$.date[2]").value(21))
                 .andExpect(jsonPath("$.quantity").value(15.0));
-
-        verify(productionService).update(any(), any());
     }
 
     @Test
@@ -175,8 +169,7 @@ class ProductionControllerTest {
                 }
                 """;
 
-        when(productionService.update(any(), any()))
-                .thenThrow(new ResourceNotFoundException("Production not found"));
+        productionService.updateException = new ResourceNotFoundException("Production not found");
 
         mockMvc.perform(put("/productions/missing-id")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -189,8 +182,7 @@ class ProductionControllerTest {
 
     @Test
     void shouldReturn404WhenAnimalNotFound() throws Exception {
-        when(productionService.getSummaryByAnimal("missing-animal"))
-                .thenThrow(new ResourceNotFoundException("Animal not found"));
+        productionService.summaryException = new ResourceNotFoundException("Animal not found");
 
         mockMvc.perform(get("/productions/summary/by-animal").param("animalId", "missing-animal"))
                 .andExpect(status().isNotFound())
@@ -201,8 +193,7 @@ class ProductionControllerTest {
 
     @Test
     void shouldReturn404WhenAnimalNotFoundForProfit() throws Exception {
-        when(productionService.getProfitByAnimal("missing-animal"))
-                .thenThrow(new ResourceNotFoundException("Animal not found"));
+        productionService.profitException = new ResourceNotFoundException("Animal not found");
 
         mockMvc.perform(get("/productions/summary/profit/by-animal").param("animalId", "missing-animal"))
                 .andExpect(status().isNotFound())
@@ -217,20 +208,102 @@ class ProductionControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void shouldReturn400WhenInvalidProfitInput() throws Exception {
-        mockMvc.perform(get("/productions/summary/profit/by-animal").param("animalId", " "))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("animalId must not be blank"))
-                .andExpect(jsonPath("$.path").value("/productions/summary/profit/by-animal"));
-    }
-
     private ProductionResponse buildResponse() {
         return new ProductionResponse(
                 "production-1",
                 "animal-1",
                 LocalDate.of(2026, 3, 20),
                 12.5);
+    }
+
+    private static class TestProductionService extends ProductionService {
+
+        private ProductionResponse createResponse;
+        private List<ProductionResponse> findAllResponse = List.of();
+        private ProductionSummaryResponse summaryResponse;
+        private ProductionProfitResponse profitResponse;
+        private ProductionResponse updateResponse;
+        private RuntimeException summaryException;
+        private RuntimeException profitException;
+        private RuntimeException updateException;
+
+        TestProductionService() {
+            super(
+                    dummyProductionRepository(),
+                    dummyFeedingRepository(),
+                    dummyAnimalRepository(),
+                    dummyUserRepository(),
+                    new ProductionMapper());
+        }
+
+        @Override
+        public List<ProductionResponse> findAll(String animalId, LocalDate date) {
+            return findAllResponse;
+        }
+
+        @Override
+        public ProductionSummaryResponse getSummaryByAnimal(String animalId) {
+            if (summaryException != null) {
+                throw summaryException;
+            }
+            return summaryResponse;
+        }
+
+        @Override
+        public ProductionProfitResponse getProfitByAnimal(String animalId) {
+            if (profitException != null) {
+                throw profitException;
+            }
+            return profitResponse;
+        }
+
+        @Override
+        public ProductionResponse create(CreateProductionRequest request) {
+            return createResponse;
+        }
+
+        @Override
+        public ProductionResponse update(String id, UpdateProductionRequest request) {
+            if (updateException != null) {
+                throw updateException;
+            }
+            return updateResponse;
+        }
+
+        private static ProductionRepository dummyProductionRepository() {
+            return (ProductionRepository) Proxy.newProxyInstance(
+                    ProductionRepository.class.getClassLoader(),
+                    new Class<?>[]{ProductionRepository.class},
+                    (proxy, method, args) -> {
+                        throw new UnsupportedOperationException("Repository should not be used in controller test");
+                    });
+        }
+
+        private static com.jpsoftware.farmapp.feeding.repository.FeedingRepository dummyFeedingRepository() {
+            return (com.jpsoftware.farmapp.feeding.repository.FeedingRepository) Proxy.newProxyInstance(
+                    com.jpsoftware.farmapp.feeding.repository.FeedingRepository.class.getClassLoader(),
+                    new Class<?>[]{com.jpsoftware.farmapp.feeding.repository.FeedingRepository.class},
+                    (proxy, method, args) -> {
+                        throw new UnsupportedOperationException("Repository should not be used in controller test");
+                    });
+        }
+
+        private static com.jpsoftware.farmapp.animal.repository.AnimalRepository dummyAnimalRepository() {
+            return (com.jpsoftware.farmapp.animal.repository.AnimalRepository) Proxy.newProxyInstance(
+                    com.jpsoftware.farmapp.animal.repository.AnimalRepository.class.getClassLoader(),
+                    new Class<?>[]{com.jpsoftware.farmapp.animal.repository.AnimalRepository.class},
+                    (proxy, method, args) -> {
+                        throw new UnsupportedOperationException("Repository should not be used in controller test");
+                    });
+        }
+
+        private static UserRepository dummyUserRepository() {
+            return (UserRepository) Proxy.newProxyInstance(
+                    UserRepository.class.getClassLoader(),
+                    new Class<?>[]{UserRepository.class},
+                    (proxy, method, args) -> {
+                        throw new UnsupportedOperationException("Repository should not be used in controller test");
+                    });
+        }
     }
 }

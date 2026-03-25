@@ -13,6 +13,7 @@ import com.jpsoftware.farmapp.feeding.mapper.FeedingMapper;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.lang.reflect.Proxy;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +30,7 @@ class FeedingServiceTest {
     private InMemoryFeedingRepository feedingRepositoryHandler;
     private ExistsByIdRepository animalRepositoryHandler;
     private ExistsByIdRepository feedTypeRepositoryHandler;
+    private UserExistsByIdRepository userRepositoryHandler;
     private FeedingService feedingService;
 
     @BeforeEach
@@ -35,11 +38,13 @@ class FeedingServiceTest {
         feedingRepositoryHandler = new InMemoryFeedingRepository();
         animalRepositoryHandler = new ExistsByIdRepository();
         feedTypeRepositoryHandler = new ExistsByIdRepository();
+        userRepositoryHandler = new UserExistsByIdRepository();
 
         feedingService = new FeedingService(
                 feedingRepositoryHandler.createProxy(),
                 animalRepositoryHandler.createAnimalProxy(),
                 feedTypeRepositoryHandler.createFeedTypeProxy(),
+                userRepositoryHandler.createUserProxy(),
                 new FeedingMapper());
     }
 
@@ -47,9 +52,15 @@ class FeedingServiceTest {
     void shouldCreateFeeding() {
         animalRepositoryHandler.add("animal-1");
         feedTypeRepositoryHandler.add("feed-type-1");
+        userRepositoryHandler.add(UUID.fromString("11111111-1111-1111-1111-111111111111"));
 
         FeedingResponse response = feedingService.create(
-                new CreateFeedingRequest("animal-1", "feed-type-1", LocalDate.of(2026, 3, 24), 8.5));
+                new CreateFeedingRequest(
+                        "animal-1",
+                        "feed-type-1",
+                        LocalDate.of(2026, 3, 24),
+                        8.5,
+                        "11111111-1111-1111-1111-111111111111"));
 
         assertNotNull(response);
         assertNotNull(response.getId());
@@ -66,7 +77,12 @@ class FeedingServiceTest {
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
                 () -> feedingService.create(
-                        new CreateFeedingRequest("animal-1", "feed-type-1", LocalDate.of(2026, 3, 24), 8.5)));
+                        new CreateFeedingRequest(
+                                "animal-1",
+                                "feed-type-1",
+                                LocalDate.of(2026, 3, 24),
+                                8.5,
+                                "11111111-1111-1111-1111-111111111111")));
 
         assertEquals("Animal not found", exception.getMessage());
     }
@@ -74,13 +90,37 @@ class FeedingServiceTest {
     @Test
     void shouldFailWhenFeedTypeNotFound() {
         animalRepositoryHandler.add("animal-1");
+        userRepositoryHandler.add(UUID.fromString("11111111-1111-1111-1111-111111111111"));
 
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
                 () -> feedingService.create(
-                        new CreateFeedingRequest("animal-1", "feed-type-1", LocalDate.of(2026, 3, 24), 8.5)));
+                        new CreateFeedingRequest(
+                                "animal-1",
+                                "feed-type-1",
+                                LocalDate.of(2026, 3, 24),
+                                8.5,
+                                "11111111-1111-1111-1111-111111111111")));
 
         assertEquals("Feed type not found", exception.getMessage());
+    }
+
+    @Test
+    void shouldFailWhenUserNotFound() {
+        animalRepositoryHandler.add("animal-1");
+        feedTypeRepositoryHandler.add("feed-type-1");
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> feedingService.create(
+                        new CreateFeedingRequest(
+                                "animal-1",
+                                "feed-type-1",
+                                LocalDate.of(2026, 3, 24),
+                                8.5,
+                                "11111111-1111-1111-1111-111111111111")));
+
+        assertEquals("User not found", exception.getMessage());
     }
 
     @Test
@@ -88,7 +128,12 @@ class FeedingServiceTest {
         ValidationException exception = assertThrows(
                 ValidationException.class,
                 () -> feedingService.create(
-                        new CreateFeedingRequest("animal-1", "feed-type-1", LocalDate.of(2026, 3, 24), 0.0)));
+                        new CreateFeedingRequest(
+                                "animal-1",
+                                "feed-type-1",
+                                LocalDate.of(2026, 3, 24),
+                                0.0,
+                                "11111111-1111-1111-1111-111111111111")));
 
         assertEquals("quantity must be greater than zero", exception.getMessage());
     }
@@ -100,7 +145,8 @@ class FeedingServiceTest {
                 "animal-1",
                 "feed-type-1",
                 LocalDate.of(2026, 3, 24),
-                8.5));
+                8.5,
+                "11111111-1111-1111-1111-111111111111"));
 
         List<FeedingResponse> responses = feedingService.findAll();
 
@@ -119,7 +165,8 @@ class FeedingServiceTest {
                 "animal-1",
                 "feed-type-1",
                 LocalDate.of(2026, 3, 24),
-                8.5));
+                8.5,
+                "11111111-1111-1111-1111-111111111111"));
 
         FeedingResponse response = feedingService.findById("feeding-1");
 
@@ -219,6 +266,39 @@ class FeedingServiceTest {
                         }
                         if ("toString".equals(methodName)) {
                             return repositoryType.getSimpleName() + "Proxy";
+                        }
+
+                        throw new UnsupportedOperationException("Method not supported in test: " + methodName);
+                    });
+        }
+    }
+
+    private static class UserExistsByIdRepository {
+
+        private final List<UUID> ids = new ArrayList<>();
+
+        void add(UUID id) {
+            ids.add(id);
+        }
+
+        UserRepository createUserProxy() {
+            return (UserRepository) Proxy.newProxyInstance(
+                    UserRepository.class.getClassLoader(),
+                    new Class<?>[]{UserRepository.class},
+                    (proxy, method, args) -> {
+                        String methodName = method.getName();
+
+                        if ("existsById".equals(methodName)) {
+                            return ids.contains(args[0]);
+                        }
+                        if ("equals".equals(methodName)) {
+                            return proxy == args[0];
+                        }
+                        if ("hashCode".equals(methodName)) {
+                            return System.identityHashCode(proxy);
+                        }
+                        if ("toString".equals(methodName)) {
+                            return "UserRepositoryProxy";
                         }
 
                         throw new UnsupportedOperationException("Method not supported in test: " + methodName);
