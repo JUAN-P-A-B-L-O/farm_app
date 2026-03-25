@@ -8,7 +8,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
+import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
 import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
@@ -35,6 +37,9 @@ class ProductionServiceTest {
 
     @Mock
     private AnimalRepository animalRepository;
+
+    @Mock
+    private FeedingRepository feedingRepository;
 
     @Spy
     private ProductionMapper productionMapper;
@@ -134,6 +139,65 @@ class ProductionServiceTest {
         ValidationException exception = assertThrows(
                 ValidationException.class,
                 () -> productionService.getSummaryByAnimal(""));
+
+        assertEquals("animalId must not be blank", exception.getMessage());
+    }
+
+    @Test
+    void shouldCalculateProfitCorrectly() {
+        when(animalRepository.existsById("animal-1")).thenReturn(true);
+        when(productionRepository.sumProductionByAnimalId("animal-1")).thenReturn(35.5);
+        when(feedingRepository.sumFeedingCostByAnimalId("animal-1")).thenReturn(20.0);
+
+        ProductionProfitResponse response = productionService.getProfitByAnimal("animal-1");
+
+        assertNotNull(response);
+        assertEquals("animal-1", response.getAnimalId());
+        assertEquals(35.5, response.getTotalProduction());
+        assertEquals(20.0, response.getTotalFeedingCost());
+        assertEquals(2.0, response.getMilkPrice());
+        assertEquals(71.0, response.getRevenue());
+        assertEquals(51.0, response.getProfit());
+        verify(animalRepository).existsById("animal-1");
+        verify(productionRepository).sumProductionByAnimalId("animal-1");
+        verify(feedingRepository).sumFeedingCostByAnimalId("animal-1");
+    }
+
+    @Test
+    void shouldReturnZeroWhenNoData() {
+        when(animalRepository.existsById("animal-1")).thenReturn(true);
+        when(productionRepository.sumProductionByAnimalId("animal-1")).thenReturn(0.0);
+        when(feedingRepository.sumFeedingCostByAnimalId("animal-1")).thenReturn(0.0);
+
+        ProductionProfitResponse response = productionService.getProfitByAnimal("animal-1");
+
+        assertNotNull(response);
+        assertEquals("animal-1", response.getAnimalId());
+        assertEquals(0.0, response.getTotalProduction());
+        assertEquals(0.0, response.getTotalFeedingCost());
+        assertEquals(0.0, response.getRevenue());
+        assertEquals(0.0, response.getProfit());
+        verify(animalRepository).existsById("animal-1");
+        verify(productionRepository).sumProductionByAnimalId("animal-1");
+        verify(feedingRepository).sumFeedingCostByAnimalId("animal-1");
+    }
+
+    @Test
+    void shouldFailWhenAnimalNotFoundForProfit() {
+        when(animalRepository.existsById("animal-1")).thenReturn(false);
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> productionService.getProfitByAnimal("animal-1"));
+
+        assertEquals("Animal not found", exception.getMessage());
+    }
+
+    @Test
+    void shouldFailWhenInvalidAnimalIdForProfit() {
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> productionService.getProfitByAnimal(""));
 
         assertEquals("animalId must not be blank", exception.getMessage());
     }

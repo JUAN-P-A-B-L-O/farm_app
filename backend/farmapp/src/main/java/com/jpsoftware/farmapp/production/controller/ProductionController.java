@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.production.controller;
 
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
+import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
 import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
@@ -50,6 +51,13 @@ public class ProductionController {
     public ResponseEntity<ProductionSummaryResponse> getSummaryByAnimal(
             @RequestParam @NotBlank(message = "animalId must not be blank") String animalId) {
         ProductionSummaryResponse response = productionService.getSummaryByAnimal(animalId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/summary/profit/by-animal")
+    public ResponseEntity<ProductionProfitResponse> getProfit(
+            @RequestParam @NotBlank(message = "animalId must not be blank") String animalId) {
+        ProductionProfitResponse response = productionService.getProfitByAnimal(animalId);
         return ResponseEntity.ok(response);
     }
 

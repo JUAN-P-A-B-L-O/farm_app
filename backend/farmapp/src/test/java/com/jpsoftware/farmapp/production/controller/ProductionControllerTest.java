@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
 import com.jpsoftware.farmapp.production.service.ProductionService;
@@ -82,6 +83,23 @@ class ProductionControllerTest {
                 .andExpect(jsonPath("$.totalQuantity").value(35.5));
 
         verify(productionService).getSummaryByAnimal("123");
+    }
+
+    @Test
+    void shouldReturnProfit() throws Exception {
+        when(productionService.getProfitByAnimal("123"))
+                .thenReturn(new ProductionProfitResponse("123", 35.5, 20.0, 2.0, 71.0, 51.0));
+
+        mockMvc.perform(get("/productions/summary/profit/by-animal").param("animalId", "123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.animalId").value("123"))
+                .andExpect(jsonPath("$.totalProduction").value(35.5))
+                .andExpect(jsonPath("$.totalFeedingCost").value(20.0))
+                .andExpect(jsonPath("$.milkPrice").value(2.0))
+                .andExpect(jsonPath("$.revenue").value(71.0))
+                .andExpect(jsonPath("$.profit").value(51.0));
+
+        verify(productionService).getProfitByAnimal("123");
     }
 
     @Test
@@ -182,9 +200,30 @@ class ProductionControllerTest {
     }
 
     @Test
+    void shouldReturn404WhenAnimalNotFoundForProfit() throws Exception {
+        when(productionService.getProfitByAnimal("missing-animal"))
+                .thenThrow(new ResourceNotFoundException("Animal not found"));
+
+        mockMvc.perform(get("/productions/summary/profit/by-animal").param("animalId", "missing-animal"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Animal not found"))
+                .andExpect(jsonPath("$.path").value("/productions/summary/profit/by-animal"));
+    }
+
+    @Test
     void shouldReturn400WhenInvalidInput() throws Exception {
         mockMvc.perform(get("/productions/summary/by-animal"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturn400WhenInvalidProfitInput() throws Exception {
+        mockMvc.perform(get("/productions/summary/profit/by-animal").param("animalId", " "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("animalId must not be blank"))
+                .andExpect(jsonPath("$.path").value("/productions/summary/profit/by-animal"));
     }
 
     private ProductionResponse buildResponse() {

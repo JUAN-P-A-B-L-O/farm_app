@@ -1,7 +1,9 @@
 package com.jpsoftware.farmapp.production.service;
 
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
+import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
 import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
@@ -20,15 +22,20 @@ import org.springframework.util.StringUtils;
 @Service
 public class ProductionService {
 
+    private static final Double MILK_PRICE = 2.0;
+
     private final ProductionRepository productionRepository;
+    private final FeedingRepository feedingRepository;
     private final AnimalRepository animalRepository;
     private final ProductionMapper productionMapper;
 
     public ProductionService(
             ProductionRepository productionRepository,
+            FeedingRepository feedingRepository,
             AnimalRepository animalRepository,
             ProductionMapper productionMapper) {
         this.productionRepository = productionRepository;
+        this.feedingRepository = feedingRepository;
         this.animalRepository = animalRepository;
         this.productionMapper = productionMapper;
     }
@@ -62,12 +69,29 @@ public class ProductionService {
     public ProductionSummaryResponse getSummaryByAnimal(String animalId) {
         String validatedAnimalId = validateAnimalId(animalId);
 
-        if (!animalRepository.existsById(validatedAnimalId)) {
-            throw new ResourceNotFoundException("Animal not found");
-        }
+        validateAnimalExists(validatedAnimalId);
 
         Double totalQuantity = productionRepository.sumQuantityByAnimalId(validatedAnimalId);
         return new ProductionSummaryResponse(validatedAnimalId, totalQuantity != null ? totalQuantity : 0.0);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionProfitResponse getProfitByAnimal(String animalId) {
+        String validatedAnimalId = validateAnimalId(animalId);
+        validateAnimalExists(validatedAnimalId);
+
+        Double totalProduction = defaultToZero(productionRepository.sumProductionByAnimalId(validatedAnimalId));
+        Double totalFeedingCost = defaultToZero(feedingRepository.sumFeedingCostByAnimalId(validatedAnimalId));
+        Double revenue = totalProduction * MILK_PRICE;
+        Double profit = revenue - totalFeedingCost;
+
+        return new ProductionProfitResponse(
+                validatedAnimalId,
+                totalProduction,
+                totalFeedingCost,
+                MILK_PRICE,
+                revenue,
+                profit);
     }
 
     @Transactional
@@ -147,5 +171,15 @@ public class ProductionService {
             throw new ValidationException("animalId must not be blank");
         }
         return animalId;
+    }
+
+    private void validateAnimalExists(String animalId) {
+        if (!animalRepository.existsById(animalId)) {
+            throw new ResourceNotFoundException("Animal not found");
+        }
+    }
+
+    private Double defaultToZero(Double value) {
+        return value != null ? value : 0.0;
     }
 }
