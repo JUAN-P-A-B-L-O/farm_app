@@ -3,9 +3,6 @@ package com.jpsoftware.farmapp.production.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
@@ -19,60 +16,60 @@ import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.user.repository.UserRepository;
+import java.lang.reflect.Proxy;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 class ProductionServiceTest {
 
-    @Mock
-    private ProductionRepository productionRepository;
-
-    @Mock
-    private AnimalRepository animalRepository;
-
-    @Mock
-    private FeedingRepository feedingRepository;
-
-    @Spy
-    private ProductionMapper productionMapper;
-
-    @InjectMocks
+    private InMemoryProductionRepository productionRepositoryHandler;
+    private ExistsByIdRepository animalRepositoryHandler;
+    private InMemoryFeedingRepository feedingRepositoryHandler;
+    private UserExistsByIdRepository userRepositoryHandler;
     private ProductionService productionService;
-
     private CreateProductionRequest createProductionRequest;
     private ProductionEntity productionEntity;
 
     @BeforeEach
     void setUp() {
+        productionRepositoryHandler = new InMemoryProductionRepository();
+        animalRepositoryHandler = new ExistsByIdRepository();
+        feedingRepositoryHandler = new InMemoryFeedingRepository();
+        userRepositoryHandler = new UserExistsByIdRepository();
+
+        productionService = new ProductionService(
+                productionRepositoryHandler.createProxy(),
+                feedingRepositoryHandler.createProxy(),
+                animalRepositoryHandler.createProxy(),
+                userRepositoryHandler.createProxy(),
+                new ProductionMapper());
+
         createProductionRequest = new CreateProductionRequest(
                 "animal-1",
                 LocalDate.of(2026, 3, 20),
-                12.5);
+                12.5,
+                "11111111-1111-1111-1111-111111111111");
 
         productionEntity = new ProductionEntity();
         productionEntity.setId("production-1");
         productionEntity.setAnimalId("animal-1");
         productionEntity.setDate(LocalDate.of(2026, 3, 20));
         productionEntity.setQuantity(12.5);
+        productionEntity.setCreatedBy("11111111-1111-1111-1111-111111111111");
     }
 
     @Test
     void shouldCreateProduction() {
-        when(animalRepository.existsById(any())).thenReturn(true);
-        when(productionRepository.save(any(ProductionEntity.class)))
-                .thenAnswer(invocation -> {
-                    ProductionEntity savedEntity = invocation.getArgument(0);
-                    savedEntity.setId("production-1");
-                    return savedEntity;
-                });
+        animalRepositoryHandler.add("animal-1");
+        userRepositoryHandler.add(UUID.fromString("11111111-1111-1111-1111-111111111111"));
 
         ProductionResponse response = productionService.create(createProductionRequest);
 
@@ -81,13 +78,10 @@ class ProductionServiceTest {
         assertEquals("animal-1", response.getAnimalId());
         assertEquals(LocalDate.of(2026, 3, 20), response.getDate());
         assertEquals(12.5, response.getQuantity());
-        verify(productionRepository).save(any(ProductionEntity.class));
     }
 
     @Test
     void shouldFailWhenAnimalDoesNotExist() {
-        when(animalRepository.existsById(any())).thenReturn(false);
-
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
                 () -> productionService.create(createProductionRequest));
@@ -96,37 +90,41 @@ class ProductionServiceTest {
     }
 
     @Test
+    void shouldFailWhenUserDoesNotExist() {
+        animalRepositoryHandler.add("animal-1");
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> productionService.create(createProductionRequest));
+
+        assertEquals("User not found", exception.getMessage());
+    }
+
+    @Test
     void shouldReturnTotalProduction() {
-        when(animalRepository.existsById("animal-1")).thenReturn(true);
-        when(productionRepository.sumQuantityByAnimalId("animal-1")).thenReturn(35.5);
+        animalRepositoryHandler.add("animal-1");
+        productionRepositoryHandler.setTotalQuantity("animal-1", 35.5);
 
         ProductionSummaryResponse response = productionService.getSummaryByAnimal("animal-1");
 
         assertNotNull(response);
         assertEquals("animal-1", response.getAnimalId());
         assertEquals(35.5, response.getTotalQuantity());
-        verify(animalRepository).existsById("animal-1");
-        verify(productionRepository).sumQuantityByAnimalId("animal-1");
     }
 
     @Test
     void shouldReturnZeroWhenNoProduction() {
-        when(animalRepository.existsById("animal-1")).thenReturn(true);
-        when(productionRepository.sumQuantityByAnimalId("animal-1")).thenReturn(null);
+        animalRepositoryHandler.add("animal-1");
 
         ProductionSummaryResponse response = productionService.getSummaryByAnimal("animal-1");
 
         assertNotNull(response);
         assertEquals("animal-1", response.getAnimalId());
         assertEquals(0.0, response.getTotalQuantity());
-        verify(animalRepository).existsById("animal-1");
-        verify(productionRepository).sumQuantityByAnimalId("animal-1");
     }
 
     @Test
     void shouldFailWhenAnimalNotFound() {
-        when(animalRepository.existsById("animal-1")).thenReturn(false);
-
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
                 () -> productionService.getSummaryByAnimal("animal-1"));
@@ -145,9 +143,9 @@ class ProductionServiceTest {
 
     @Test
     void shouldCalculateProfitCorrectly() {
-        when(animalRepository.existsById("animal-1")).thenReturn(true);
-        when(productionRepository.sumProductionByAnimalId("animal-1")).thenReturn(35.5);
-        when(feedingRepository.sumFeedingCostByAnimalId("animal-1")).thenReturn(20.0);
+        animalRepositoryHandler.add("animal-1");
+        productionRepositoryHandler.setTotalProduction("animal-1", 35.5);
+        feedingRepositoryHandler.setTotalFeedingCost("animal-1", 20.0);
 
         ProductionProfitResponse response = productionService.getProfitByAnimal("animal-1");
 
@@ -158,16 +156,13 @@ class ProductionServiceTest {
         assertEquals(2.0, response.getMilkPrice());
         assertEquals(71.0, response.getRevenue());
         assertEquals(51.0, response.getProfit());
-        verify(animalRepository).existsById("animal-1");
-        verify(productionRepository).sumProductionByAnimalId("animal-1");
-        verify(feedingRepository).sumFeedingCostByAnimalId("animal-1");
     }
 
     @Test
     void shouldReturnZeroWhenNoData() {
-        when(animalRepository.existsById("animal-1")).thenReturn(true);
-        when(productionRepository.sumProductionByAnimalId("animal-1")).thenReturn(0.0);
-        when(feedingRepository.sumFeedingCostByAnimalId("animal-1")).thenReturn(0.0);
+        animalRepositoryHandler.add("animal-1");
+        productionRepositoryHandler.setTotalProduction("animal-1", 0.0);
+        feedingRepositoryHandler.setTotalFeedingCost("animal-1", 0.0);
 
         ProductionProfitResponse response = productionService.getProfitByAnimal("animal-1");
 
@@ -177,15 +172,10 @@ class ProductionServiceTest {
         assertEquals(0.0, response.getTotalFeedingCost());
         assertEquals(0.0, response.getRevenue());
         assertEquals(0.0, response.getProfit());
-        verify(animalRepository).existsById("animal-1");
-        verify(productionRepository).sumProductionByAnimalId("animal-1");
-        verify(feedingRepository).sumFeedingCostByAnimalId("animal-1");
     }
 
     @Test
     void shouldFailWhenAnimalNotFoundForProfit() {
-        when(animalRepository.existsById("animal-1")).thenReturn(false);
-
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
                 () -> productionService.getProfitByAnimal("animal-1"));
@@ -204,46 +194,41 @@ class ProductionServiceTest {
 
     @Test
     void shouldFilterByAnimalId() {
-        when(productionRepository.findByAnimalId("animal-1")).thenReturn(List.of(productionEntity));
+        productionRepositoryHandler.store(productionEntity);
 
         List<ProductionResponse> responses = productionService.findAll("animal-1", null);
 
         assertEquals(1, responses.size());
         assertEquals("production-1", responses.get(0).getId());
         assertEquals("animal-1", responses.get(0).getAnimalId());
-        verify(productionRepository).findByAnimalId("animal-1");
     }
 
     @Test
     void shouldFilterByDate() {
-        LocalDate date = LocalDate.of(2026, 3, 20);
-        when(productionRepository.findByDate(date)).thenReturn(List.of(productionEntity));
+        productionRepositoryHandler.store(productionEntity);
 
-        List<ProductionResponse> responses = productionService.findAll(null, date);
+        List<ProductionResponse> responses = productionService.findAll(null, LocalDate.of(2026, 3, 20));
 
         assertEquals(1, responses.size());
         assertEquals("production-1", responses.get(0).getId());
-        assertEquals(date, responses.get(0).getDate());
-        verify(productionRepository).findByDate(date);
+        assertEquals(LocalDate.of(2026, 3, 20), responses.get(0).getDate());
     }
 
     @Test
     void shouldFilterByAnimalIdAndDate() {
-        LocalDate date = LocalDate.of(2026, 3, 20);
-        when(productionRepository.findByAnimalIdAndDate("animal-1", date)).thenReturn(List.of(productionEntity));
+        productionRepositoryHandler.store(productionEntity);
 
-        List<ProductionResponse> responses = productionService.findAll("animal-1", date);
+        List<ProductionResponse> responses = productionService.findAll("animal-1", LocalDate.of(2026, 3, 20));
 
         assertEquals(1, responses.size());
         assertEquals("production-1", responses.get(0).getId());
         assertEquals("animal-1", responses.get(0).getAnimalId());
-        assertEquals(date, responses.get(0).getDate());
-        verify(productionRepository).findByAnimalIdAndDate("animal-1", date);
+        assertEquals(LocalDate.of(2026, 3, 20), responses.get(0).getDate());
     }
 
     @Test
     void shouldReturnAllWhenNoFilters() {
-        when(productionRepository.findAll()).thenReturn(List.of(productionEntity));
+        productionRepositoryHandler.store(productionEntity);
 
         List<ProductionResponse> responses = productionService.findAll(null, null);
 
@@ -252,7 +237,6 @@ class ProductionServiceTest {
         assertEquals("animal-1", responses.get(0).getAnimalId());
         assertEquals(LocalDate.of(2026, 3, 20), responses.get(0).getDate());
         assertEquals(12.5, responses.get(0).getQuantity());
-        verify(productionRepository).findAll();
     }
 
     @Test
@@ -260,7 +244,8 @@ class ProductionServiceTest {
         CreateProductionRequest invalidRequest = new CreateProductionRequest(
                 "animal-1",
                 LocalDate.of(2026, 3, 20),
-                0.0);
+                0.0,
+                "11111111-1111-1111-1111-111111111111");
 
         ValidationException exception = assertThrows(
                 ValidationException.class,
@@ -271,41 +256,213 @@ class ProductionServiceTest {
 
     @Test
     void shouldUpdateProduction() {
-        UpdateProductionRequest request = new UpdateProductionRequest(LocalDate.of(2026, 3, 21), 15.0);
-        when(productionRepository.findById("production-1")).thenReturn(java.util.Optional.of(productionEntity));
-        when(productionRepository.save(any(ProductionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        productionRepositoryHandler.store(productionEntity);
 
-        ProductionResponse response = productionService.update("production-1", request);
+        ProductionResponse response = productionService.update(
+                "production-1",
+                new UpdateProductionRequest(LocalDate.of(2026, 3, 21), 15.0));
 
         assertNotNull(response);
         assertEquals("production-1", response.getId());
         assertEquals(LocalDate.of(2026, 3, 21), response.getDate());
         assertEquals(15.0, response.getQuantity());
-        verify(productionRepository).findById("production-1");
-        verify(productionRepository).save(productionEntity);
     }
 
     @Test
     void shouldFailWhenQuantityInvalid() {
-        UpdateProductionRequest request = new UpdateProductionRequest(null, 0.0);
-        when(productionRepository.findById("production-1")).thenReturn(java.util.Optional.of(productionEntity));
+        productionRepositoryHandler.store(productionEntity);
 
         ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> productionService.update("production-1", request));
+                () -> productionService.update("production-1", new UpdateProductionRequest(null, 0.0)));
 
         assertEquals("quantity must be greater than zero", exception.getMessage());
     }
 
     @Test
     void shouldFailWhenProductionNotFound() {
-        UpdateProductionRequest request = new UpdateProductionRequest(LocalDate.of(2026, 3, 21), 15.0);
-        when(productionRepository.findById("missing-id")).thenReturn(java.util.Optional.empty());
-
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
-                () -> productionService.update("missing-id", request));
+                () -> productionService.update(
+                        "missing-id",
+                        new UpdateProductionRequest(LocalDate.of(2026, 3, 21), 15.0)));
 
         assertEquals("Production not found", exception.getMessage());
+    }
+
+    private static class InMemoryProductionRepository {
+
+        private final Map<String, ProductionEntity> data = new LinkedHashMap<>();
+        private final Map<String, Double> totalQuantityByAnimalId = new LinkedHashMap<>();
+        private final Map<String, Double> totalProductionByAnimalId = new LinkedHashMap<>();
+        private int sequence = 1;
+
+        ProductionRepository createProxy() {
+            return (ProductionRepository) Proxy.newProxyInstance(
+                    ProductionRepository.class.getClassLoader(),
+                    new Class<?>[]{ProductionRepository.class},
+                    (proxy, method, args) -> {
+                        String methodName = method.getName();
+
+                        if ("save".equals(methodName)) {
+                            ProductionEntity entity = (ProductionEntity) args[0];
+                            if (entity.getId() == null) {
+                                entity.setId("production-" + sequence++);
+                            }
+                            data.put(entity.getId(), entity);
+                            return entity;
+                        }
+                        if ("findAll".equals(methodName)) {
+                            return new ArrayList<>(data.values());
+                        }
+                        if ("findById".equals(methodName)) {
+                            return Optional.ofNullable(data.get(args[0]));
+                        }
+                        if ("findByAnimalId".equals(methodName)) {
+                            return data.values().stream()
+                                    .filter(entity -> entity.getAnimalId().equals(args[0]))
+                                    .toList();
+                        }
+                        if ("findByDate".equals(methodName)) {
+                            return data.values().stream()
+                                    .filter(entity -> entity.getDate().equals(args[0]))
+                                    .toList();
+                        }
+                        if ("findByAnimalIdAndDate".equals(methodName)) {
+                            return data.values().stream()
+                                    .filter(entity -> entity.getAnimalId().equals(args[0]))
+                                    .filter(entity -> entity.getDate().equals(args[1]))
+                                    .toList();
+                        }
+                        if ("sumQuantityByAnimalId".equals(methodName)) {
+                            return totalQuantityByAnimalId.get(args[0]);
+                        }
+                        if ("sumProductionByAnimalId".equals(methodName)) {
+                            return totalProductionByAnimalId.get(args[0]);
+                        }
+                        if ("equals".equals(methodName)) {
+                            return proxy == args[0];
+                        }
+                        if ("hashCode".equals(methodName)) {
+                            return System.identityHashCode(proxy);
+                        }
+                        if ("toString".equals(methodName)) {
+                            return "InMemoryProductionRepositoryProxy";
+                        }
+
+                        throw new UnsupportedOperationException("Method not supported in test: " + methodName);
+                    });
+        }
+
+        void store(ProductionEntity entity) {
+            data.put(entity.getId(), entity);
+        }
+
+        void setTotalQuantity(String animalId, Double totalQuantity) {
+            totalQuantityByAnimalId.put(animalId, totalQuantity);
+        }
+
+        void setTotalProduction(String animalId, Double totalProduction) {
+            totalProductionByAnimalId.put(animalId, totalProduction);
+        }
+    }
+
+    private static class InMemoryFeedingRepository {
+
+        private final Map<String, Double> totalFeedingCostByAnimalId = new LinkedHashMap<>();
+
+        FeedingRepository createProxy() {
+            return (FeedingRepository) Proxy.newProxyInstance(
+                    FeedingRepository.class.getClassLoader(),
+                    new Class<?>[]{FeedingRepository.class},
+                    (proxy, method, args) -> {
+                        String methodName = method.getName();
+
+                        if ("sumFeedingCostByAnimalId".equals(methodName)) {
+                            return totalFeedingCostByAnimalId.get(args[0]);
+                        }
+                        if ("equals".equals(methodName)) {
+                            return proxy == args[0];
+                        }
+                        if ("hashCode".equals(methodName)) {
+                            return System.identityHashCode(proxy);
+                        }
+                        if ("toString".equals(methodName)) {
+                            return "InMemoryFeedingRepositoryProxy";
+                        }
+
+                        throw new UnsupportedOperationException("Method not supported in test: " + methodName);
+                    });
+        }
+
+        void setTotalFeedingCost(String animalId, Double totalFeedingCost) {
+            totalFeedingCostByAnimalId.put(animalId, totalFeedingCost);
+        }
+    }
+
+    private static class ExistsByIdRepository {
+
+        private final List<String> ids = new ArrayList<>();
+
+        void add(String id) {
+            ids.add(id);
+        }
+
+        AnimalRepository createProxy() {
+            return (AnimalRepository) Proxy.newProxyInstance(
+                    AnimalRepository.class.getClassLoader(),
+                    new Class<?>[]{AnimalRepository.class},
+                    (proxy, method, args) -> {
+                        String methodName = method.getName();
+
+                        if ("existsById".equals(methodName)) {
+                            return ids.contains(args[0]);
+                        }
+                        if ("equals".equals(methodName)) {
+                            return proxy == args[0];
+                        }
+                        if ("hashCode".equals(methodName)) {
+                            return System.identityHashCode(proxy);
+                        }
+                        if ("toString".equals(methodName)) {
+                            return "AnimalRepositoryProxy";
+                        }
+
+                        throw new UnsupportedOperationException("Method not supported in test: " + methodName);
+                    });
+        }
+    }
+
+    private static class UserExistsByIdRepository {
+
+        private final List<UUID> ids = new ArrayList<>();
+
+        void add(UUID id) {
+            ids.add(id);
+        }
+
+        UserRepository createProxy() {
+            return (UserRepository) Proxy.newProxyInstance(
+                    UserRepository.class.getClassLoader(),
+                    new Class<?>[]{UserRepository.class},
+                    (proxy, method, args) -> {
+                        String methodName = method.getName();
+
+                        if ("existsById".equals(methodName)) {
+                            return ids.contains(args[0]);
+                        }
+                        if ("equals".equals(methodName)) {
+                            return proxy == args[0];
+                        }
+                        if ("hashCode".equals(methodName)) {
+                            return System.identityHashCode(proxy);
+                        }
+                        if ("toString".equals(methodName)) {
+                            return "UserRepositoryProxy";
+                        }
+
+                        throw new UnsupportedOperationException("Method not supported in test: " + methodName);
+                    });
+        }
     }
 }

@@ -9,6 +9,7 @@ import com.jpsoftware.farmapp.feeding.mapper.FeedingMapper;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +21,19 @@ public class FeedingService {
     private final FeedingRepository feedingRepository;
     private final AnimalRepository animalRepository;
     private final FeedTypeRepository feedTypeRepository;
+    private final UserRepository userRepository;
     private final FeedingMapper feedingMapper;
 
     public FeedingService(
             FeedingRepository feedingRepository,
             AnimalRepository animalRepository,
             FeedTypeRepository feedTypeRepository,
+            UserRepository userRepository,
             FeedingMapper feedingMapper) {
         this.feedingRepository = feedingRepository;
         this.animalRepository = animalRepository;
         this.feedTypeRepository = feedTypeRepository;
+        this.userRepository = userRepository;
         this.feedingMapper = feedingMapper;
     }
 
@@ -75,6 +79,9 @@ public class FeedingService {
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new ValidationException("quantity must be greater than zero");
         }
+        if (!StringUtils.hasText(request.getUserId())) {
+            throw new ValidationException("userId must not be blank");
+        }
     }
 
     private void validateRelations(CreateFeedingRequest request) {
@@ -84,6 +91,9 @@ public class FeedingService {
         if (!feedTypeRepository.existsById(request.getFeedTypeId())) {
             throw new ResourceNotFoundException("Feed type not found");
         }
+        if (!userRepository.existsById(parseUserId(request.getUserId()))) {
+            throw new ResourceNotFoundException("User not found");
+        }
     }
 
     private String validateId(String id) {
@@ -91,5 +101,13 @@ public class FeedingService {
             throw new ValidationException("id must not be blank");
         }
         return id;
+    }
+
+    private java.util.UUID parseUserId(String userId) {
+        try {
+            return java.util.UUID.fromString(userId);
+        } catch (IllegalArgumentException exception) {
+            throw new ValidationException("userId must be a valid UUID");
+        }
     }
 }

@@ -13,6 +13,7 @@ public class ProductionMapper {
         productionEntity.setAnimalId(request.getAnimalId());
         productionEntity.setDate(request.getDate());
         productionEntity.setQuantity(request.getQuantity());
+        productionEntity.setCreatedBy(request.getUserId());
         return productionEntity;
     }
 
