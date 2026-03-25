@@ -4,6 +4,7 @@ BASE_URL="http://localhost:8080"
 
 ANIMAL_TESTS=0
 PRODUCTION_TESTS=0
+FEED_TESTS=0
 
 echo "========================================"
 echo "ANIMAL FLOW"
@@ -131,15 +132,78 @@ curl -s "$BASE_URL/productions/summary/by-animal?animalId=non-existent-id" | jq
 ((PRODUCTION_TESTS++))
 
 echo "========================================"
+echo "FEED FLOW"
+echo "========================================"
+
+echo "17. CREATE FEED TYPE"
+CREATE_FEED_RESPONSE=$(curl -s -X POST $BASE_URL/feed-types \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Silagem",
+    "costPerKg": 1.5
+  }')
+
+echo $CREATE_FEED_RESPONSE | jq
+FEED_TYPE_ID=$(echo $CREATE_FEED_RESPONSE | jq -r '.id')
+echo "Generated FEED_TYPE_ID: $FEED_TYPE_ID"
+((FEED_TESTS++))
+
+echo "18. GET ALL FEED TYPES"
+curl -s $BASE_URL/feed-types | jq
+((FEED_TESTS++))
+
+echo "19. GET FEED TYPE BY ID"
+curl -s $BASE_URL/feed-types/$FEED_TYPE_ID | jq
+((FEED_TESTS++))
+
+echo "20. CREATE FEEDING"
+CREATE_FEEDING_RESPONSE=$(curl -s -X POST $BASE_URL/feedings \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"animalId\": \"$ANIMAL_ID\",
+    \"feedTypeId\": \"$FEED_TYPE_ID\",
+    \"date\": \"2024-03-20\",
+    \"quantity\": 10
+  }")
+
+echo $CREATE_FEEDING_RESPONSE | jq
+FEEDING_ID=$(echo $CREATE_FEEDING_RESPONSE | jq -r '.id')
+echo "Generated FEEDING_ID: $FEEDING_ID"
+((FEED_TESTS++))
+
+echo "21. CREATE INVALID FEEDING (SHOULD FAIL)"
+curl -s -X POST $BASE_URL/feedings \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"animalId\": \"$ANIMAL_ID\",
+    \"feedTypeId\": \"$FEED_TYPE_ID\",
+    \"date\": \"2024-03-20\",
+    \"quantity\": -5
+  }" | jq
+((FEED_TESTS++))
+
+echo "22. GET ALL FEEDINGS"
+curl -s $BASE_URL/feedings | jq
+((FEED_TESTS++))
+
+echo "23. GET FEEDING BY ID"
+curl -s $BASE_URL/feedings/$FEEDING_ID | jq
+((FEED_TESTS++))
+
+echo "24. GET FEEDING INVALID (SHOULD FAIL)"
+curl -s $BASE_URL/feedings/invalid-id | jq
+((FEED_TESTS++))
+
+echo "========================================"
 echo "CLEANUP"
 echo "========================================"
 
-echo "17. DELETE ANIMAL"
+echo "25. DELETE ANIMAL"
 DELETE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE $BASE_URL/animals/$ANIMAL_ID)
 echo "Delete HTTP Status: $DELETE_STATUS"
 ((ANIMAL_TESTS++))
 
-echo "18. GET DELETED ANIMAL (SHOULD FAIL)"
+echo "26. GET DELETED ANIMAL (SHOULD FAIL)"
 curl -s $BASE_URL/animals/$ANIMAL_ID | jq
 ((ANIMAL_TESTS++))
 
@@ -147,8 +211,9 @@ echo "========================================"
 echo "TEST SUMMARY"
 echo "========================================"
 
-TOTAL_TESTS=$((ANIMAL_TESTS + PRODUCTION_TESTS))
+TOTAL_TESTS=$((ANIMAL_TESTS + PRODUCTION_TESTS + FEED_TESTS))
 
 echo "Animal tests: $ANIMAL_TESTS"
 echo "Production tests: $PRODUCTION_TESTS"
+echo "Feed tests: $FEED_TESTS"
 echo "Total tests: $TOTAL_TESTS"
