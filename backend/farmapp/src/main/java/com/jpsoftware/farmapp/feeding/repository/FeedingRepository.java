@@ -14,4 +14,11 @@ public interface FeedingRepository extends JpaRepository<FeedingEntity, String> 
             WHERE f.animalId = :animalId
             """)
     Double sumFeedingCostByAnimalId(@Param("animalId") String animalId);
+
+    @Query("""
+            SELECT COALESCE(SUM(f.quantity * ft.costPerKg), 0)
+            FROM FeedingEntity f
+            JOIN FeedTypeEntity ft ON f.feedTypeId = ft.id
+            """)
+    Double sumTotalFeedingCost();
 }
