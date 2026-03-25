@@ -1,0 +1,20 @@
+flowchart LR
+    U[Farm Operator / User]
+    API[FarmApp Backend API\nSpring Boot REST Application]
+    DB[(Relational Database)]
+
+    U -->|Register production| API
+    U -->|Register feeding| API
+    U -->|Request dashboard and profit| API
+
+    API -->|Persist production records| DB
+    API -->|Persist feeding records| DB
+    API -->|Persist animals, feed types, users| DB
+
+    DB -->|Load production aggregates| API
+    DB -->|Load feeding cost aggregates| API
+    DB -->|Load animal count| API
+
+    API -->|Production response| U
+    API -->|Feeding response| U
+    API -->|Profit and dashboard response| U
