@@ -1,12 +1,21 @@
 package com.jpsoftware.farmapp.user.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
 
+@Schema(description = "User data returned by the API.")
 public class UserResponse {
 
+    @Schema(description = "User identifier.", example = "550e8400-e29b-41d4-a716-446655440000")
     private UUID id;
+
+    @Schema(description = "User full name.", example = "Maria Silva")
     private String name;
+
+    @Schema(description = "User email address.", example = "maria.silva@farmapp.com")
     private String email;
+
+    @Schema(description = "User role in the system.", example = "MANAGER")
     private String role;
 
     public UserResponse() {

@@ -1,8 +1,14 @@
 package com.jpsoftware.farmapp.production.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Production summary grouped by animal.")
 public class ProductionSummaryResponse {
 
+    @Schema(description = "Animal identifier.", example = "animal-001")
     private String animalId;
+
+    @Schema(description = "Total produced quantity.", example = "320.0")
     private Double totalQuantity;
 
     public ProductionSummaryResponse() {

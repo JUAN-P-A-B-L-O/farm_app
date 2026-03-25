@@ -1,12 +1,21 @@
 package com.jpsoftware.farmapp.production.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
+@Schema(description = "Production data returned by the API.")
 public class ProductionResponse {
 
+    @Schema(description = "Production identifier.", example = "production-001")
     private String id;
+
+    @Schema(description = "Animal identifier.", example = "animal-001")
     private String animalId;
+
+    @Schema(description = "Production date.", example = "2026-03-20")
     private LocalDate date;
+
+    @Schema(description = "Produced quantity in liters.", example = "32.8")
     private Double quantity;
 
     public ProductionResponse() {

@@ -1,10 +1,20 @@
 package com.jpsoftware.farmapp.feed.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Feed type data returned by the API.")
 public class FeedTypeResponse {
 
+    @Schema(description = "Feed type identifier.", example = "feed-type-001")
     private String id;
+
+    @Schema(description = "Feed type name.", example = "Corn Silage")
     private String name;
+
+    @Schema(description = "Feed cost per kilogram.", example = "1.85")
     private Double costPerKg;
+
+    @Schema(description = "Indicates whether the feed type is active.", example = "true")
     private Boolean active;
 
     public FeedTypeResponse() {
