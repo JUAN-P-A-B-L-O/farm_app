@@ -21,4 +21,11 @@ public interface ProductionRepository extends JpaRepository<ProductionEntity, St
             WHERE p.animalId = :animalId
             """)
     Double sumQuantityByAnimalId(@Param("animalId") String animalId);
+
+    @Query("""
+            SELECT COALESCE(SUM(p.quantity), 0)
+            FROM ProductionEntity p
+            WHERE p.animalId = :animalId
+            """)
+    Double sumProductionByAnimalId(@Param("animalId") String animalId);
 }
