@@ -80,6 +80,68 @@ class FeedingControllerContractTest {
     }
 
     @Test
+    void shouldReturnAllFeedingsWhenNoFilter() throws Exception {
+        feedingService.findAllResponse = List.of(buildResponse());
+
+        mockMvc.perform(get("/feedings"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("feeding-1"))
+                .andExpect(jsonPath("$[0].animalId").value("animal-1"))
+                .andExpect(jsonPath("$[0].feedTypeId").value("feed-type-1"))
+                .andExpect(jsonPath("$[0].quantity").value(8.5));
+    }
+
+    @Test
+    void shouldFilterByAnimalId() throws Exception {
+        feedingService.findAllResponse = List.of(buildResponse());
+
+        mockMvc.perform(get("/feedings").param("animalId", "animal-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("feeding-1"))
+                .andExpect(jsonPath("$[0].animalId").value("animal-1"))
+                .andExpect(jsonPath("$[0].feedTypeId").value("feed-type-1"))
+                .andExpect(jsonPath("$[0].quantity").value(8.5));
+    }
+
+    @Test
+    void shouldFilterByDate() throws Exception {
+        feedingService.findAllResponse = List.of(buildResponse());
+
+        mockMvc.perform(get("/feedings").param("date", "2026-03-24"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("feeding-1"))
+                .andExpect(jsonPath("$[0].date[0]").value(2026))
+                .andExpect(jsonPath("$[0].date[1]").value(3))
+                .andExpect(jsonPath("$[0].date[2]").value(24));
+    }
+
+    @Test
+    void shouldFilterByAnimalIdAndDate() throws Exception {
+        feedingService.findAllResponse = List.of(buildResponse());
+
+        mockMvc.perform(get("/feedings")
+                        .param("animalId", "animal-1")
+                        .param("date", "2026-03-24"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("feeding-1"))
+                .andExpect(jsonPath("$[0].animalId").value("animal-1"))
+                .andExpect(jsonPath("$[0].date[0]").value(2026))
+                .andExpect(jsonPath("$[0].date[1]").value(3))
+                .andExpect(jsonPath("$[0].date[2]").value(24));
+    }
+
+    @Test
+    void shouldReturnEmptyWhenNoMatch() throws Exception {
+        feedingService.findAllResponse = List.of();
+
+        mockMvc.perform(get("/feedings")
+                        .param("animalId", "missing-animal")
+                        .param("date", "2026-03-30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
     void shouldReturnFeedingById() throws Exception {
         feedingService.findByIdResponse = buildResponse();
 
@@ -153,7 +215,7 @@ class FeedingControllerContractTest {
         }
 
         @Override
-        public List<FeedingResponse> findAll() {
+        public List<FeedingResponse> findAll(String animalId, LocalDate date) {
             return findAllResponse;
         }
 

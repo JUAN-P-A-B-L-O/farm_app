@@ -149,7 +149,7 @@ class FeedingServiceTest {
                 8.5,
                 "11111111-1111-1111-1111-111111111111"));
 
-        List<FeedingResponse> responses = feedingService.findAll();
+        List<FeedingResponse> responses = feedingService.findAll(null, null);
 
         assertEquals(1, responses.size());
         assertEquals("feeding-1", responses.get(0).getId());
@@ -157,6 +157,82 @@ class FeedingServiceTest {
         assertEquals("feed-type-1", responses.get(0).getFeedTypeId());
         assertEquals(LocalDate.of(2026, 3, 24), responses.get(0).getDate());
         assertEquals(8.5, responses.get(0).getQuantity());
+    }
+
+    @Test
+    void shouldFilterFeedingsByAnimalId() {
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111"));
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-2",
+                "animal-2",
+                "feed-type-2",
+                LocalDate.of(2026, 3, 24),
+                9.0,
+                "11111111-1111-1111-1111-111111111111"));
+
+        List<FeedingResponse> responses = feedingService.findAll("animal-1", null);
+
+        assertEquals(1, responses.size());
+        assertEquals("feeding-1", responses.get(0).getId());
+    }
+
+    @Test
+    void shouldFilterFeedingsByDate() {
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111"));
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-2",
+                "animal-2",
+                "feed-type-2",
+                LocalDate.of(2026, 3, 25),
+                9.0,
+                "11111111-1111-1111-1111-111111111111"));
+
+        List<FeedingResponse> responses = feedingService.findAll(null, LocalDate.of(2026, 3, 24));
+
+        assertEquals(1, responses.size());
+        assertEquals("feeding-1", responses.get(0).getId());
+    }
+
+    @Test
+    void shouldFilterFeedingsByAnimalIdAndDate() {
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111"));
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-2",
+                "animal-1",
+                "feed-type-2",
+                LocalDate.of(2026, 3, 25),
+                9.0,
+                "11111111-1111-1111-1111-111111111111"));
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-3",
+                "animal-2",
+                "feed-type-3",
+                LocalDate.of(2026, 3, 24),
+                7.0,
+                "11111111-1111-1111-1111-111111111111"));
+
+        List<FeedingResponse> responses = feedingService.findAll("animal-1", LocalDate.of(2026, 3, 24));
+
+        assertEquals(1, responses.size());
+        assertEquals("feeding-1", responses.get(0).getId());
     }
 
     @Test
@@ -210,6 +286,22 @@ class FeedingServiceTest {
                         }
                         if ("findAll".equals(methodName)) {
                             return new ArrayList<>(data.values());
+                        }
+                        if ("findByAnimalId".equals(methodName)) {
+                            return data.values().stream()
+                                    .filter(entity -> entity.getAnimalId().equals(args[0]))
+                                    .toList();
+                        }
+                        if ("findByDate".equals(methodName)) {
+                            return data.values().stream()
+                                    .filter(entity -> entity.getDate().equals(args[0]))
+                                    .toList();
+                        }
+                        if ("findByAnimalIdAndDate".equals(methodName)) {
+                            return data.values().stream()
+                                    .filter(entity -> entity.getAnimalId().equals(args[0]))
+                                    .filter(entity -> entity.getDate().equals(args[1]))
+                                    .toList();
                         }
                         if ("findById".equals(methodName)) {
                             return Optional.ofNullable(data.get(args[0]));
