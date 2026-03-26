@@ -19,6 +19,34 @@ import org.springframework.test.web.servlet.MvcResult;
 class ProductionIntegrationTest extends BaseIntegrationTest {
 
     @Test
+    void shouldReturnProductionWithAnimalSummary() throws Exception {
+        UserEntity savedUser = userRepository.save(new UserEntity(
+                null,
+                "Jane Doe",
+                "jane@farm.com",
+                "ADMIN"));
+        animalRepository.save(AnimalFixture.animalEntity());
+
+        MvcResult createdResult = mockMvc.perform(post("/productions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(ProductionFixture.createRequestJson("animal-1", savedUser.getId().toString())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.animalId").value("animal-1"))
+                .andExpect(jsonPath("$.animal.id").value("animal-1"))
+                .andExpect(jsonPath("$.animal.tag").value("TAG-001"))
+                .andReturn();
+
+        String productionId = objectMapper.readTree(createdResult.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(get("/productions/{id}", productionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(productionId))
+                .andExpect(jsonPath("$.animalId").value("animal-1"))
+                .andExpect(jsonPath("$.animal.id").value("animal-1"))
+                .andExpect(jsonPath("$.animal.tag").value("TAG-001"));
+    }
+
+    @Test
     void shouldCreateFetchUpdateAndSummarizeProductionThroughRealSpringContext() throws Exception {
         UserEntity savedUser = userRepository.save(new UserEntity(
                 null,
@@ -48,7 +76,9 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/productions/{id}", productionId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(productionId))
-                .andExpect(jsonPath("$.animalId").value("animal-1"));
+                .andExpect(jsonPath("$.animalId").value("animal-1"))
+                .andExpect(jsonPath("$.animal.id").value("animal-1"))
+                .andExpect(jsonPath("$.animal.tag").value("TAG-001"));
 
         mockMvc.perform(put("/productions/{id}", productionId)
                         .contentType(MediaType.APPLICATION_JSON)

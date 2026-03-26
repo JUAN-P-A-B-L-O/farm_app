@@ -15,6 +15,7 @@ import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
 import com.jpsoftware.farmapp.feeding.mapper.FeedingMapper;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -197,6 +198,7 @@ class FeedingControllerContractTest {
 
         private FeedingResponse createResponse;
         private List<FeedingResponse> findAllResponse = List.of();
+        private PaginatedResponse<FeedingResponse> paginatedResponse;
         private FeedingResponse findByIdResponse;
         private RuntimeException findByIdException;
 
@@ -217,6 +219,11 @@ class FeedingControllerContractTest {
         @Override
         public List<FeedingResponse> findAll(String animalId, LocalDate date) {
             return findAllResponse;
+        }
+
+        @Override
+        public PaginatedResponse<FeedingResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
+            return paginatedResponse;
         }
 
         @Override
@@ -262,5 +269,63 @@ class FeedingControllerContractTest {
                         throw new UnsupportedOperationException("Repository should not be used in controller test");
                     });
         }
+    }
+
+    @Test
+    void shouldReturnPaginatedFeedings() throws Exception {
+        feedingService.paginatedResponse = new PaginatedResponse<>(
+                List.of(buildResponse()),
+                0,
+                10,
+                1,
+                1);
+
+        mockMvc.perform(get("/feedings").param("page", "0").param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value("feeding-1"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void shouldRespectPageAndSize() throws Exception {
+        feedingService.paginatedResponse = new PaginatedResponse<>(
+                List.of(
+                        new FeedingResponse("feeding-2", "animal-1", "feed-type-1", LocalDate.of(2026, 3, 25), 9.0),
+                        new FeedingResponse("feeding-3", "animal-1", "feed-type-1", LocalDate.of(2026, 3, 26), 10.0)),
+                1,
+                2,
+                5,
+                3);
+
+        mockMvc.perform(get("/feedings").param("page", "1").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].id").value("feeding-2"))
+                .andExpect(jsonPath("$.content[1].id").value("feeding-3"))
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(2))
+                .andExpect(jsonPath("$.totalElements").value(5))
+                .andExpect(jsonPath("$.totalPages").value(3));
+    }
+
+    @Test
+    void shouldReturnEmptyPageWhenOutOfBounds() throws Exception {
+        feedingService.paginatedResponse = new PaginatedResponse<>(
+                List.of(),
+                5,
+                10,
+                2,
+                1);
+
+        mockMvc.perform(get("/feedings").param("page", "5").param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.page").value(5))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1));
     }
 }

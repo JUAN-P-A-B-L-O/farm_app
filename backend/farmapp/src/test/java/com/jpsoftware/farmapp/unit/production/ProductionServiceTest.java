@@ -15,12 +15,14 @@ import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.production.service.ProductionService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.lang.reflect.Proxy;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 class ProductionServiceTest {
 
@@ -69,7 +73,7 @@ class ProductionServiceTest {
 
     @Test
     void shouldCreateProduction() {
-        animalRepositoryHandler.add("animal-1");
+        animalRepositoryHandler.add("animal-1", "TAG-001");
         userRepositoryHandler.add(UUID.fromString("11111111-1111-1111-1111-111111111111"));
 
         ProductionResponse response = productionService.create(createProductionRequest);
@@ -79,6 +83,9 @@ class ProductionServiceTest {
         assertEquals("animal-1", response.getAnimalId());
         assertEquals(LocalDate.of(2026, 3, 20), response.getDate());
         assertEquals(12.5, response.getQuantity());
+        assertNotNull(response.getAnimal());
+        assertEquals("animal-1", response.getAnimal().getId());
+        assertEquals("TAG-001", response.getAnimal().getTag());
     }
 
     @Test
@@ -229,6 +236,7 @@ class ProductionServiceTest {
 
     @Test
     void shouldReturnAllWhenNoFilters() {
+        animalRepositoryHandler.add("animal-1", "TAG-001");
         productionRepositoryHandler.store(productionEntity);
 
         List<ProductionResponse> responses = productionService.findAll(null, null);
@@ -238,6 +246,50 @@ class ProductionServiceTest {
         assertEquals("animal-1", responses.get(0).getAnimalId());
         assertEquals(LocalDate.of(2026, 3, 20), responses.get(0).getDate());
         assertEquals(12.5, responses.get(0).getQuantity());
+        assertNotNull(responses.get(0).getAnimal());
+        assertEquals("TAG-001", responses.get(0).getAnimal().getTag());
+    }
+
+    @Test
+    void shouldReturnProductionWithAnimalSummary() {
+        animalRepositoryHandler.add("animal-1", "TAG-001");
+        productionRepositoryHandler.store(productionEntity);
+
+        ProductionResponse response = productionService.findById("production-1");
+
+        assertNotNull(response);
+        assertEquals("production-1", response.getId());
+        assertEquals("animal-1", response.getAnimalId());
+        assertNotNull(response.getAnimal());
+        assertEquals("animal-1", response.getAnimal().getId());
+        assertEquals("TAG-001", response.getAnimal().getTag());
+    }
+
+    @Test
+    void shouldReturnPaginatedProductions() {
+        productionRepositoryHandler.store(productionEntity);
+
+        PaginatedResponse<ProductionResponse> response = productionService.findAllPaginated(null, null, 0, 10);
+
+        assertEquals(1, response.getContent().size());
+        assertEquals("production-1", response.getContent().get(0).getId());
+        assertEquals(0, response.getPage());
+        assertEquals(10, response.getSize());
+        assertEquals(1, response.getTotalElements());
+        assertEquals(1, response.getTotalPages());
+    }
+
+    @Test
+    void shouldReturnEmptyProductionPageWhenOutOfBounds() {
+        productionRepositoryHandler.store(productionEntity);
+
+        PaginatedResponse<ProductionResponse> response = productionService.findAllPaginated(null, null, 2, 10);
+
+        assertEquals(0, response.getContent().size());
+        assertEquals(2, response.getPage());
+        assertEquals(10, response.getSize());
+        assertEquals(1, response.getTotalElements());
+        assertEquals(1, response.getTotalPages());
     }
 
     @Test
@@ -314,26 +366,42 @@ class ProductionServiceTest {
                             return entity;
                         }
                         if ("findAll".equals(methodName)) {
+                            if (args != null && args.length == 1 && args[0] instanceof org.springframework.data.domain.Pageable pageable) {
+                                List<ProductionEntity> all = new ArrayList<>(data.values());
+                                return paginate(all, pageable);
+                            }
                             return new ArrayList<>(data.values());
                         }
                         if ("findById".equals(methodName)) {
                             return Optional.ofNullable(data.get(args[0]));
                         }
                         if ("findByAnimalId".equals(methodName)) {
-                            return data.values().stream()
+                            List<ProductionEntity> filtered = data.values().stream()
                                     .filter(entity -> entity.getAnimalId().equals(args[0]))
                                     .toList();
+                            if (args.length == 2) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[1]);
+                            }
+                            return filtered;
                         }
                         if ("findByDate".equals(methodName)) {
-                            return data.values().stream()
+                            List<ProductionEntity> filtered = data.values().stream()
                                     .filter(entity -> entity.getDate().equals(args[0]))
                                     .toList();
+                            if (args.length == 2) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[1]);
+                            }
+                            return filtered;
                         }
                         if ("findByAnimalIdAndDate".equals(methodName)) {
-                            return data.values().stream()
+                            List<ProductionEntity> filtered = data.values().stream()
                                     .filter(entity -> entity.getAnimalId().equals(args[0]))
                                     .filter(entity -> entity.getDate().equals(args[1]))
                                     .toList();
+                            if (args.length == 3) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[2]);
+                            }
+                            return filtered;
                         }
                         if ("sumQuantityByAnimalId".equals(methodName)) {
                             return totalQuantityByAnimalId.get(args[0]);
@@ -365,6 +433,13 @@ class ProductionServiceTest {
 
         void setTotalProduction(String animalId, Double totalProduction) {
             totalProductionByAnimalId.put(animalId, totalProduction);
+        }
+
+        private PageImpl<ProductionEntity> paginate(List<ProductionEntity> source, org.springframework.data.domain.Pageable pageable) {
+            int start = (int) pageable.getOffset();
+            int end = Math.min(start + pageable.getPageSize(), source.size());
+            List<ProductionEntity> content = start >= source.size() ? List.of() : source.subList(start, end);
+            return new PageImpl<>(content, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()), source.size());
         }
     }
 
@@ -403,10 +478,21 @@ class ProductionServiceTest {
 
     private static class ExistsByIdRepository {
 
-        private final List<String> ids = new ArrayList<>();
+        private final Map<String, com.jpsoftware.farmapp.animal.entity.AnimalEntity> animalsById = new LinkedHashMap<>();
+
+        void add(String id, String tag) {
+            animalsById.put(id, com.jpsoftware.farmapp.animal.entity.AnimalEntity.builder()
+                    .id(id)
+                    .tag(tag)
+                    .breed("Holstein")
+                    .birthDate(LocalDate.of(2024, 1, 1))
+                    .status("ACTIVE")
+                    .farmId("farm-1")
+                    .build());
+        }
 
         void add(String id) {
-            ids.add(id);
+            add(id, "TAG-" + id);
         }
 
         AnimalRepository createProxy() {
@@ -417,7 +503,17 @@ class ProductionServiceTest {
                         String methodName = method.getName();
 
                         if ("existsById".equals(methodName)) {
-                            return ids.contains(args[0]);
+                            return animalsById.containsKey(args[0]);
+                        }
+                        if ("findById".equals(methodName)) {
+                            return Optional.ofNullable(animalsById.get(args[0]));
+                        }
+                        if ("findAllById".equals(methodName)) {
+                            Collection<?> requestedIds = (Collection<?>) args[0];
+                            return requestedIds.stream()
+                                    .map(id -> animalsById.get(id))
+                                    .filter(java.util.Objects::nonNull)
+                                    .toList();
                         }
                         if ("equals".equals(methodName)) {
                             return proxy == args[0];

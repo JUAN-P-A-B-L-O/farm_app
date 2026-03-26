@@ -6,6 +6,7 @@ import com.jpsoftware.farmapp.production.dto.ProductionResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
 import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
 import com.jpsoftware.farmapp.production.service.ProductionService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -46,9 +47,16 @@ public class ProductionController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Production records retrieved successfully")
     })
-    public ResponseEntity<List<ProductionResponse>> findAll(
+    public ResponseEntity<?> findAll(
             @RequestParam(required = false) String animalId,
-            @RequestParam(required = false) LocalDate date) {
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            PaginatedResponse<ProductionResponse> response = productionService.findAllPaginated(animalId, date, page, size);
+            return ResponseEntity.ok(response);
+        }
+
         List<ProductionResponse> response = productionService.findAll(animalId, date);
         return ResponseEntity.ok(response);
     }

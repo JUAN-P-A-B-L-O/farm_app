@@ -8,6 +8,7 @@ import com.jpsoftware.farmapp.animal.mapper.AnimalMapper;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import java.util.List;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -26,6 +27,7 @@ public class AnimalService {
     @Transactional
     public AnimalResponse create(CreateAnimalRequest request) {
         validateInput(request);
+        ensureTagIsUnique(request.getTag());
 
         AnimalEntity animalEntity = animalMapper.toEntity(request);
         AnimalEntity savedAnimal = animalRepository.save(animalEntity);
@@ -61,6 +63,7 @@ public class AnimalService {
         AnimalEntity animalEntity = animalRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Animal not found"));
 
+        validateTagUpdate(animalEntity, request);
         applyUpdates(animalEntity, request);
 
         AnimalEntity updatedAnimal = animalRepository.save(animalEntity);
@@ -105,6 +108,22 @@ public class AnimalService {
         }
         if (request.getFarmId() != null) {
             animalEntity.setFarmId(request.getFarmId());
+        }
+    }
+
+    private void ensureTagIsUnique(String tag) {
+        if (animalRepository.existsByTag(tag)) {
+            throw new DataIntegrityViolationException("Animal with this tag already exists");
+        }
+    }
+
+    private void validateTagUpdate(AnimalEntity animalEntity, UpdateAnimalRequest request) {
+        if (request.getTag() == null) {
+            return;
+        }
+
+        if (!request.getTag().equals(animalEntity.getTag())) {
+            ensureTagIsUnique(request.getTag());
         }
     }
 }

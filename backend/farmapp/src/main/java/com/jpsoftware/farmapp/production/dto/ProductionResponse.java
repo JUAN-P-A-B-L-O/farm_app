@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.production.dto;
 
+import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
@@ -18,6 +19,9 @@ public class ProductionResponse {
     @Schema(description = "Produced quantity in liters.", example = "32.8")
     private Double quantity;
 
+    @Schema(description = "Embedded animal summary.")
+    private AnimalSummaryResponse animal;
+
     public ProductionResponse() {
     }
 
@@ -26,6 +30,11 @@ public class ProductionResponse {
         this.animalId = animalId;
         this.date = date;
         this.quantity = quantity;
+    }
+
+    public ProductionResponse(String id, String animalId, LocalDate date, Double quantity, AnimalSummaryResponse animal) {
+        this(id, animalId, date, quantity);
+        this.animal = animal;
     }
 
     public String getId() {
@@ -58,5 +67,13 @@ public class ProductionResponse {
 
     public void setQuantity(Double quantity) {
         this.quantity = quantity;
+    }
+
+    public AnimalSummaryResponse getAnimal() {
+        return animal;
+    }
+
+    public void setAnimal(AnimalSummaryResponse animal) {
+        this.animal = animal;
     }
 }

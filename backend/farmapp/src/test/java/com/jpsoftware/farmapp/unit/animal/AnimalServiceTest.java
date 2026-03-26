@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 
 class AnimalServiceTest {
 
@@ -60,6 +61,18 @@ class AnimalServiceTest {
         assertEquals("ACTIVE", response.getStatus());
         assertEquals("FARM-001", response.getFarmId());
         assertEquals(1, repositoryHandler.saveCalls);
+    }
+
+    @Test
+    void shouldFailWhenTagAlreadyExists() {
+        repositoryHandler.store(animalEntity);
+
+        DataIntegrityViolationException exception = assertThrows(
+                DataIntegrityViolationException.class,
+                () -> animalService.create(createAnimalRequest));
+
+        assertEquals("Animal with this tag already exists", exception.getMessage());
+        assertEquals(0, repositoryHandler.saveCalls);
     }
 
     @Test
@@ -169,6 +182,10 @@ class AnimalServiceTest {
                             return data.values().stream()
                                     .filter(entity -> entity.getFarmId().equals(args[0]))
                                     .toList();
+                        }
+                        if ("existsByTag".equals(methodName)) {
+                            return data.values().stream()
+                                    .anyMatch(entity -> entity.getTag().equals(args[0]));
                         }
                         if ("equals".equals(methodName)) {
                             return proxy == args[0];

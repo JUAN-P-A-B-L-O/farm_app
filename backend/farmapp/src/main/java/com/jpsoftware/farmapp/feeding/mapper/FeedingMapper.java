@@ -1,5 +1,7 @@
 package com.jpsoftware.farmapp.feeding.mapper;
 
+import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
+import com.jpsoftware.farmapp.feed.dto.FeedTypeSummaryResponse;
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
 import com.jpsoftware.farmapp.feeding.entity.FeedingEntity;
@@ -25,5 +27,19 @@ public class FeedingMapper {
                 entity.getFeedTypeId(),
                 entity.getDate(),
                 entity.getQuantity());
+    }
+
+    public FeedingResponse toResponse(
+            FeedingEntity entity,
+            AnimalSummaryResponse animal,
+            FeedTypeSummaryResponse feedType) {
+        return new FeedingResponse(
+                entity.getId(),
+                entity.getAnimalId(),
+                entity.getFeedTypeId(),
+                entity.getDate(),
+                entity.getQuantity(),
+                animal,
+                feedType);
     }
 }
