@@ -45,4 +45,18 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
 
         assertFalse(animalRepository.existsById(animalId));
     }
+
+    @Test
+    void shouldFailWhenTagAlreadyExists() throws Exception {
+        mockMvc.perform(post("/animals")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(AnimalFixture.createRequestJson()))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/animals")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(AnimalFixture.createRequestJson()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Animal with this tag already exists"));
+    }
 }

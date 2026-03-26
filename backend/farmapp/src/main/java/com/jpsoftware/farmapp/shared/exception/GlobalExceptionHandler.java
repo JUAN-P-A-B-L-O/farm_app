@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.shared.exception;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -69,6 +70,16 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                resolveDataIntegrityMessage(exception),
+                request.getRequestURI());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
             IllegalArgumentException exception,
@@ -95,5 +106,17 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(status).body(response);
+    }
+
+    private String resolveDataIntegrityMessage(DataIntegrityViolationException exception) {
+        String message = exception.getMostSpecificCause() != null
+                ? exception.getMostSpecificCause().getMessage()
+                : exception.getMessage();
+
+        if (message != null && message.toLowerCase().contains("tag")) {
+            return "Animal with this tag already exists";
+        }
+
+        return "Data integrity violation";
     }
 }
