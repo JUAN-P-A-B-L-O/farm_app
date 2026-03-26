@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.production.mapper;
 
+import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
@@ -23,6 +24,16 @@ public class ProductionMapper {
                 entity.getAnimalId(),
                 entity.getDate(),
                 entity.getQuantity()
+        );
+    }
+
+    public ProductionResponse toResponse(ProductionEntity entity, AnimalSummaryResponse animal) {
+        return new ProductionResponse(
+                entity.getId(),
+                entity.getAnimalId(),
+                entity.getDate(),
+                entity.getQuantity(),
+                animal
         );
     }
 }

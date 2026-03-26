@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
@@ -19,6 +20,7 @@ import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.lang.reflect.Proxy;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,8 +56,8 @@ class FeedingServiceTest {
 
     @Test
     void shouldCreateFeeding() {
-        animalRepositoryHandler.add("animal-1");
-        feedTypeRepositoryHandler.add("feed-type-1");
+        animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
+        feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");
         userRepositoryHandler.add(UUID.fromString("11111111-1111-1111-1111-111111111111"));
 
         FeedingResponse response = feedingService.create(
@@ -72,11 +74,15 @@ class FeedingServiceTest {
         assertEquals("feed-type-1", response.getFeedTypeId());
         assertEquals(LocalDate.of(2026, 3, 24), response.getDate());
         assertEquals(8.5, response.getQuantity());
+        assertNotNull(response.getAnimal());
+        assertEquals("TAG-001", response.getAnimal().getTag());
+        assertNotNull(response.getFeedType());
+        assertEquals("Corn Silage", response.getFeedType().getName());
     }
 
     @Test
     void shouldFailWhenAnimalNotFound() {
-        feedTypeRepositoryHandler.add("feed-type-1");
+        feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");
 
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
@@ -93,7 +99,7 @@ class FeedingServiceTest {
 
     @Test
     void shouldFailWhenFeedTypeNotFound() {
-        animalRepositoryHandler.add("animal-1");
+        animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
         userRepositoryHandler.add(UUID.fromString("11111111-1111-1111-1111-111111111111"));
 
         ResourceNotFoundException exception = assertThrows(
@@ -111,8 +117,8 @@ class FeedingServiceTest {
 
     @Test
     void shouldFailWhenUserNotFound() {
-        animalRepositoryHandler.add("animal-1");
-        feedTypeRepositoryHandler.add("feed-type-1");
+        animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
+        feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");
 
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
@@ -144,6 +150,8 @@ class FeedingServiceTest {
 
     @Test
     void shouldReturnAllFeedings() {
+        animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
+        feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");
         feedingRepositoryHandler.store(new FeedingEntity(
                 "feeding-1",
                 "animal-1",
@@ -160,6 +168,10 @@ class FeedingServiceTest {
         assertEquals("feed-type-1", responses.get(0).getFeedTypeId());
         assertEquals(LocalDate.of(2026, 3, 24), responses.get(0).getDate());
         assertEquals(8.5, responses.get(0).getQuantity());
+        assertNotNull(responses.get(0).getAnimal());
+        assertEquals("TAG-001", responses.get(0).getAnimal().getTag());
+        assertNotNull(responses.get(0).getFeedType());
+        assertEquals("Corn Silage", responses.get(0).getFeedType().getName());
     }
 
     @Test
@@ -279,6 +291,8 @@ class FeedingServiceTest {
 
     @Test
     void shouldReturnFeedingById() {
+        animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
+        feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");
         feedingRepositoryHandler.store(new FeedingEntity(
                 "feeding-1",
                 "animal-1",
@@ -295,6 +309,36 @@ class FeedingServiceTest {
         assertEquals("feed-type-1", response.getFeedTypeId());
         assertEquals(LocalDate.of(2026, 3, 24), response.getDate());
         assertEquals(8.5, response.getQuantity());
+        assertNotNull(response.getAnimal());
+        assertEquals("TAG-001", response.getAnimal().getTag());
+        assertNotNull(response.getFeedType());
+        assertEquals("Corn Silage", response.getFeedType().getName());
+    }
+
+    @Test
+    void shouldReturnFeedingWithAnimalAndFeedTypeSummary() {
+        animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
+        feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111"));
+
+        FeedingResponse response = feedingService.findById("feeding-1");
+
+        assertNotNull(response);
+        assertEquals("feeding-1", response.getId());
+        assertEquals("animal-1", response.getAnimalId());
+        assertEquals("feed-type-1", response.getFeedTypeId());
+        assertNotNull(response.getAnimal());
+        assertEquals("animal-1", response.getAnimal().getId());
+        assertEquals("TAG-001", response.getAnimal().getTag());
+        assertNotNull(response.getFeedType());
+        assertEquals("feed-type-1", response.getFeedType().getId());
+        assertEquals("Corn Silage", response.getFeedType().getName());
     }
 
     @Test
@@ -392,10 +436,22 @@ class FeedingServiceTest {
 
     private static class ExistsByIdRepository {
 
-        private final List<String> ids = new ArrayList<>();
+        private final Map<String, com.jpsoftware.farmapp.animal.entity.AnimalEntity> animalsById = new LinkedHashMap<>();
+        private final Map<String, FeedTypeEntity> feedTypesById = new LinkedHashMap<>();
 
-        void add(String id) {
-            ids.add(id);
+        void addAnimal(String id, String tag) {
+            animalsById.put(id, com.jpsoftware.farmapp.animal.entity.AnimalEntity.builder()
+                    .id(id)
+                    .tag(tag)
+                    .breed("Holstein")
+                    .birthDate(LocalDate.of(2024, 1, 1))
+                    .status("ACTIVE")
+                    .farmId("farm-1")
+                    .build());
+        }
+
+        void addFeedType(String id, String name) {
+            feedTypesById.put(id, new FeedTypeEntity(id, name, 1.75, true));
         }
 
         AnimalRepository createAnimalProxy() {
@@ -414,7 +470,20 @@ class FeedingServiceTest {
                         String methodName = method.getName();
 
                         if ("existsById".equals(methodName)) {
-                            return ids.contains(args[0]);
+                            Map<?, ?> data = AnimalRepository.class.equals(repositoryType) ? animalsById : feedTypesById;
+                            return data.containsKey(args[0]);
+                        }
+                        if ("findById".equals(methodName)) {
+                            Map<?, ?> data = AnimalRepository.class.equals(repositoryType) ? animalsById : feedTypesById;
+                            return Optional.ofNullable(data.get(args[0]));
+                        }
+                        if ("findAllById".equals(methodName)) {
+                            Collection<?> requestedIds = (Collection<?>) args[0];
+                            Map<?, ?> data = AnimalRepository.class.equals(repositoryType) ? animalsById : feedTypesById;
+                            return requestedIds.stream()
+                                    .map(data::get)
+                                    .filter(java.util.Objects::nonNull)
+                                    .toList();
                         }
                         if ("equals".equals(methodName)) {
                             return proxy == args[0];

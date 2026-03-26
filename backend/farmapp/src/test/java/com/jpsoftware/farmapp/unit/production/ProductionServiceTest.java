@@ -22,6 +22,7 @@ import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.lang.reflect.Proxy;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +73,7 @@ class ProductionServiceTest {
 
     @Test
     void shouldCreateProduction() {
-        animalRepositoryHandler.add("animal-1");
+        animalRepositoryHandler.add("animal-1", "TAG-001");
         userRepositoryHandler.add(UUID.fromString("11111111-1111-1111-1111-111111111111"));
 
         ProductionResponse response = productionService.create(createProductionRequest);
@@ -82,6 +83,9 @@ class ProductionServiceTest {
         assertEquals("animal-1", response.getAnimalId());
         assertEquals(LocalDate.of(2026, 3, 20), response.getDate());
         assertEquals(12.5, response.getQuantity());
+        assertNotNull(response.getAnimal());
+        assertEquals("animal-1", response.getAnimal().getId());
+        assertEquals("TAG-001", response.getAnimal().getTag());
     }
 
     @Test
@@ -232,6 +236,7 @@ class ProductionServiceTest {
 
     @Test
     void shouldReturnAllWhenNoFilters() {
+        animalRepositoryHandler.add("animal-1", "TAG-001");
         productionRepositoryHandler.store(productionEntity);
 
         List<ProductionResponse> responses = productionService.findAll(null, null);
@@ -241,6 +246,23 @@ class ProductionServiceTest {
         assertEquals("animal-1", responses.get(0).getAnimalId());
         assertEquals(LocalDate.of(2026, 3, 20), responses.get(0).getDate());
         assertEquals(12.5, responses.get(0).getQuantity());
+        assertNotNull(responses.get(0).getAnimal());
+        assertEquals("TAG-001", responses.get(0).getAnimal().getTag());
+    }
+
+    @Test
+    void shouldReturnProductionWithAnimalSummary() {
+        animalRepositoryHandler.add("animal-1", "TAG-001");
+        productionRepositoryHandler.store(productionEntity);
+
+        ProductionResponse response = productionService.findById("production-1");
+
+        assertNotNull(response);
+        assertEquals("production-1", response.getId());
+        assertEquals("animal-1", response.getAnimalId());
+        assertNotNull(response.getAnimal());
+        assertEquals("animal-1", response.getAnimal().getId());
+        assertEquals("TAG-001", response.getAnimal().getTag());
     }
 
     @Test
@@ -456,10 +478,21 @@ class ProductionServiceTest {
 
     private static class ExistsByIdRepository {
 
-        private final List<String> ids = new ArrayList<>();
+        private final Map<String, com.jpsoftware.farmapp.animal.entity.AnimalEntity> animalsById = new LinkedHashMap<>();
+
+        void add(String id, String tag) {
+            animalsById.put(id, com.jpsoftware.farmapp.animal.entity.AnimalEntity.builder()
+                    .id(id)
+                    .tag(tag)
+                    .breed("Holstein")
+                    .birthDate(LocalDate.of(2024, 1, 1))
+                    .status("ACTIVE")
+                    .farmId("farm-1")
+                    .build());
+        }
 
         void add(String id) {
-            ids.add(id);
+            add(id, "TAG-" + id);
         }
 
         AnimalRepository createProxy() {
@@ -470,7 +503,17 @@ class ProductionServiceTest {
                         String methodName = method.getName();
 
                         if ("existsById".equals(methodName)) {
-                            return ids.contains(args[0]);
+                            return animalsById.containsKey(args[0]);
+                        }
+                        if ("findById".equals(methodName)) {
+                            return Optional.ofNullable(animalsById.get(args[0]));
+                        }
+                        if ("findAllById".equals(methodName)) {
+                            Collection<?> requestedIds = (Collection<?>) args[0];
+                            return requestedIds.stream()
+                                    .map(id -> animalsById.get(id))
+                                    .filter(java.util.Objects::nonNull)
+                                    .toList();
                         }
                         if ("equals".equals(methodName)) {
                             return proxy == args[0];

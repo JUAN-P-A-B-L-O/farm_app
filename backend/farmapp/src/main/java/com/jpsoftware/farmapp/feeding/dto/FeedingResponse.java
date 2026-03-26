@@ -1,5 +1,7 @@
 package com.jpsoftware.farmapp.feeding.dto;
 
+import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
+import com.jpsoftware.farmapp.feed.dto.FeedTypeSummaryResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
@@ -21,6 +23,12 @@ public class FeedingResponse {
     @Schema(description = "Feed quantity in kilograms.", example = "14.5")
     private Double quantity;
 
+    @Schema(description = "Embedded animal summary.")
+    private AnimalSummaryResponse animal;
+
+    @Schema(description = "Embedded feed type summary.")
+    private FeedTypeSummaryResponse feedType;
+
     public FeedingResponse() {
     }
 
@@ -30,6 +38,19 @@ public class FeedingResponse {
         this.feedTypeId = feedTypeId;
         this.date = date;
         this.quantity = quantity;
+    }
+
+    public FeedingResponse(
+            String id,
+            String animalId,
+            String feedTypeId,
+            LocalDate date,
+            Double quantity,
+            AnimalSummaryResponse animal,
+            FeedTypeSummaryResponse feedType) {
+        this(id, animalId, feedTypeId, date, quantity);
+        this.animal = animal;
+        this.feedType = feedType;
     }
 
     public String getId() {
@@ -70,5 +91,21 @@ public class FeedingResponse {
 
     public void setQuantity(Double quantity) {
         this.quantity = quantity;
+    }
+
+    public AnimalSummaryResponse getAnimal() {
+        return animal;
+    }
+
+    public void setAnimal(AnimalSummaryResponse animal) {
+        this.animal = animal;
+    }
+
+    public FeedTypeSummaryResponse getFeedType() {
+        return feedType;
+    }
+
+    public void setFeedType(FeedTypeSummaryResponse feedType) {
+        this.feedType = feedType;
     }
 }

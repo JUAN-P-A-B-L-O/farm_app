@@ -1,5 +1,7 @@
 package com.jpsoftware.farmapp.production.service;
 
+import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
+import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
@@ -16,7 +18,11 @@ import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -54,20 +60,24 @@ public class ProductionService {
         ProductionEntity productionEntity = toEntity(request);
         ProductionEntity savedProduction = productionRepository.save(productionEntity);
 
-        return productionMapper.toResponse(savedProduction);
+        return toEnrichedResponse(savedProduction);
     }
 
     @Transactional(readOnly = true)
     public List<ProductionResponse> findAll(String animalId, LocalDate date) {
-        return findProductions(animalId, date).stream()
-                .map(productionMapper::toResponse)
+        List<ProductionEntity> productions = findProductions(animalId, date);
+        Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(productions);
+        return productions.stream()
+                .map(production -> productionMapper.toResponse(production, animalsById.get(production.getAnimalId())))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
-        Page<ProductionResponse> responses = findProductions(animalId, date, PageRequest.of(page, size))
-                .map(productionMapper::toResponse);
+        Page<ProductionEntity> productions = findProductions(animalId, date, PageRequest.of(page, size));
+        Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(productions.getContent());
+        Page<ProductionResponse> responses = productions.map(production ->
+                productionMapper.toResponse(production, animalsById.get(production.getAnimalId())));
         return toPaginatedResponse(responses);
     }
 
@@ -76,7 +86,7 @@ public class ProductionService {
         ProductionEntity productionEntity = productionRepository.findById(validateId(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
 
-        return productionMapper.toResponse(productionEntity);
+        return toEnrichedResponse(productionEntity);
     }
 
     @Transactional(readOnly = true)
@@ -132,7 +142,28 @@ public class ProductionService {
         }
 
         ProductionEntity savedProduction = productionRepository.save(productionEntity);
-        return productionMapper.toResponse(savedProduction);
+        return toEnrichedResponse(savedProduction);
+    }
+
+    private ProductionResponse toEnrichedResponse(ProductionEntity productionEntity) {
+        AnimalSummaryResponse animal = animalRepository.findById(productionEntity.getAnimalId())
+                .map(this::toAnimalSummary)
+                .orElse(null);
+        return productionMapper.toResponse(productionEntity, animal);
+    }
+
+    private Map<String, AnimalSummaryResponse> loadAnimalSummariesById(Collection<ProductionEntity> productions) {
+        Set<String> animalIds = productions.stream()
+                .map(ProductionEntity::getAnimalId)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.toSet());
+
+        return animalRepository.findAllById(animalIds).stream()
+                .collect(Collectors.toMap(AnimalEntity::getId, this::toAnimalSummary));
+    }
+
+    private AnimalSummaryResponse toAnimalSummary(AnimalEntity animalEntity) {
+        return new AnimalSummaryResponse(animalEntity.getId(), animalEntity.getTag());
     }
 
     private void validateInput(CreateProductionRequest request) {

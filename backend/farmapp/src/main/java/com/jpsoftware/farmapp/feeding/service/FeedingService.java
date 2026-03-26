@@ -1,6 +1,10 @@
 package com.jpsoftware.farmapp.feeding.service;
 
+import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
+import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.feed.dto.FeedTypeSummaryResponse;
+import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
@@ -12,7 +16,11 @@ import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -49,20 +57,31 @@ public class FeedingService {
         FeedingEntity feedingEntity = feedingMapper.toEntity(request);
         FeedingEntity savedFeeding = feedingRepository.save(feedingEntity);
 
-        return feedingMapper.toResponse(savedFeeding);
+        return toEnrichedResponse(savedFeeding);
     }
 
     @Transactional(readOnly = true)
     public List<FeedingResponse> findAll(String animalId, LocalDate date) {
-        return findFeedings(animalId, date).stream()
-                .map(feedingMapper::toResponse)
+        List<FeedingEntity> feedings = findFeedings(animalId, date);
+        Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(feedings);
+        Map<String, FeedTypeSummaryResponse> feedTypesById = loadFeedTypeSummariesById(feedings);
+        return feedings.stream()
+                .map(feeding -> feedingMapper.toResponse(
+                        feeding,
+                        animalsById.get(feeding.getAnimalId()),
+                        feedTypesById.get(feeding.getFeedTypeId())))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public PaginatedResponse<FeedingResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
-        Page<FeedingResponse> responses = findFeedings(animalId, date, PageRequest.of(page, size))
-                .map(feedingMapper::toResponse);
+        Page<FeedingEntity> feedings = findFeedings(animalId, date, PageRequest.of(page, size));
+        Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(feedings.getContent());
+        Map<String, FeedTypeSummaryResponse> feedTypesById = loadFeedTypeSummariesById(feedings.getContent());
+        Page<FeedingResponse> responses = feedings.map(feeding -> feedingMapper.toResponse(
+                feeding,
+                animalsById.get(feeding.getAnimalId()),
+                feedTypesById.get(feeding.getFeedTypeId())));
         return toPaginatedResponse(responses);
     }
 
@@ -71,7 +90,45 @@ public class FeedingService {
         FeedingEntity feedingEntity = feedingRepository.findById(validateId(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Feeding not found"));
 
-        return feedingMapper.toResponse(feedingEntity);
+        return toEnrichedResponse(feedingEntity);
+    }
+
+    private FeedingResponse toEnrichedResponse(FeedingEntity feedingEntity) {
+        AnimalSummaryResponse animal = animalRepository.findById(feedingEntity.getAnimalId())
+                .map(this::toAnimalSummary)
+                .orElse(null);
+        FeedTypeSummaryResponse feedType = feedTypeRepository.findById(feedingEntity.getFeedTypeId())
+                .map(this::toFeedTypeSummary)
+                .orElse(null);
+        return feedingMapper.toResponse(feedingEntity, animal, feedType);
+    }
+
+    private Map<String, AnimalSummaryResponse> loadAnimalSummariesById(Collection<FeedingEntity> feedings) {
+        Set<String> animalIds = feedings.stream()
+                .map(FeedingEntity::getAnimalId)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.toSet());
+
+        return animalRepository.findAllById(animalIds).stream()
+                .collect(Collectors.toMap(AnimalEntity::getId, this::toAnimalSummary));
+    }
+
+    private Map<String, FeedTypeSummaryResponse> loadFeedTypeSummariesById(Collection<FeedingEntity> feedings) {
+        Set<String> feedTypeIds = feedings.stream()
+                .map(FeedingEntity::getFeedTypeId)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.toSet());
+
+        return feedTypeRepository.findAllById(feedTypeIds).stream()
+                .collect(Collectors.toMap(FeedTypeEntity::getId, this::toFeedTypeSummary));
+    }
+
+    private AnimalSummaryResponse toAnimalSummary(AnimalEntity animalEntity) {
+        return new AnimalSummaryResponse(animalEntity.getId(), animalEntity.getTag());
+    }
+
+    private FeedTypeSummaryResponse toFeedTypeSummary(FeedTypeEntity feedTypeEntity) {
+        return new FeedTypeSummaryResponse(feedTypeEntity.getId(), feedTypeEntity.getName());
     }
 
     private void validateInput(CreateFeedingRequest request) {
