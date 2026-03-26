@@ -61,7 +61,7 @@ run_test "3. CREATE ANIMAL" 201 \
 "curl -s -X POST $BASE_URL/animals \
 -H 'Content-Type: application/json' \
 -d '{
-  \"tag\": \"BR-001\",
+  \"tag\": \"BR-002\",
   \"breed\": \"Holstein\",
   \"birthDate\": \"2022-05-10\",
   \"farmId\": \"farm-123\"
