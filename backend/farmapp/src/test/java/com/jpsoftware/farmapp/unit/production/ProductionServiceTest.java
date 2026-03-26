@@ -15,6 +15,7 @@ import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.production.service.ProductionService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -28,6 +29,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 class ProductionServiceTest {
 
@@ -241,6 +244,33 @@ class ProductionServiceTest {
     }
 
     @Test
+    void shouldReturnPaginatedProductions() {
+        productionRepositoryHandler.store(productionEntity);
+
+        PaginatedResponse<ProductionResponse> response = productionService.findAllPaginated(null, null, 0, 10);
+
+        assertEquals(1, response.getContent().size());
+        assertEquals("production-1", response.getContent().get(0).getId());
+        assertEquals(0, response.getPage());
+        assertEquals(10, response.getSize());
+        assertEquals(1, response.getTotalElements());
+        assertEquals(1, response.getTotalPages());
+    }
+
+    @Test
+    void shouldReturnEmptyProductionPageWhenOutOfBounds() {
+        productionRepositoryHandler.store(productionEntity);
+
+        PaginatedResponse<ProductionResponse> response = productionService.findAllPaginated(null, null, 2, 10);
+
+        assertEquals(0, response.getContent().size());
+        assertEquals(2, response.getPage());
+        assertEquals(10, response.getSize());
+        assertEquals(1, response.getTotalElements());
+        assertEquals(1, response.getTotalPages());
+    }
+
+    @Test
     void shouldFailWhenQuantityIsInvalid() {
         CreateProductionRequest invalidRequest = new CreateProductionRequest(
                 "animal-1",
@@ -314,26 +344,42 @@ class ProductionServiceTest {
                             return entity;
                         }
                         if ("findAll".equals(methodName)) {
+                            if (args != null && args.length == 1 && args[0] instanceof org.springframework.data.domain.Pageable pageable) {
+                                List<ProductionEntity> all = new ArrayList<>(data.values());
+                                return paginate(all, pageable);
+                            }
                             return new ArrayList<>(data.values());
                         }
                         if ("findById".equals(methodName)) {
                             return Optional.ofNullable(data.get(args[0]));
                         }
                         if ("findByAnimalId".equals(methodName)) {
-                            return data.values().stream()
+                            List<ProductionEntity> filtered = data.values().stream()
                                     .filter(entity -> entity.getAnimalId().equals(args[0]))
                                     .toList();
+                            if (args.length == 2) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[1]);
+                            }
+                            return filtered;
                         }
                         if ("findByDate".equals(methodName)) {
-                            return data.values().stream()
+                            List<ProductionEntity> filtered = data.values().stream()
                                     .filter(entity -> entity.getDate().equals(args[0]))
                                     .toList();
+                            if (args.length == 2) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[1]);
+                            }
+                            return filtered;
                         }
                         if ("findByAnimalIdAndDate".equals(methodName)) {
-                            return data.values().stream()
+                            List<ProductionEntity> filtered = data.values().stream()
                                     .filter(entity -> entity.getAnimalId().equals(args[0]))
                                     .filter(entity -> entity.getDate().equals(args[1]))
                                     .toList();
+                            if (args.length == 3) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[2]);
+                            }
+                            return filtered;
                         }
                         if ("sumQuantityByAnimalId".equals(methodName)) {
                             return totalQuantityByAnimalId.get(args[0]);
@@ -365,6 +411,13 @@ class ProductionServiceTest {
 
         void setTotalProduction(String animalId, Double totalProduction) {
             totalProductionByAnimalId.put(animalId, totalProduction);
+        }
+
+        private PageImpl<ProductionEntity> paginate(List<ProductionEntity> source, org.springframework.data.domain.Pageable pageable) {
+            int start = (int) pageable.getOffset();
+            int end = Math.min(start + pageable.getPageSize(), source.size());
+            List<ProductionEntity> content = start >= source.size() ? List.of() : source.subList(start, end);
+            return new PageImpl<>(content, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()), source.size());
         }
     }
 

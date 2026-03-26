@@ -17,6 +17,7 @@ import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
 import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.production.service.ProductionService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -252,6 +253,7 @@ class ProductionControllerContractTest {
         private ProductionResponse createResponse;
         private RuntimeException createException;
         private List<ProductionResponse> findAllResponse = List.of();
+        private PaginatedResponse<ProductionResponse> paginatedResponse;
         private ProductionSummaryResponse summaryResponse;
         private ProductionProfitResponse profitResponse;
         private ProductionResponse updateResponse;
@@ -271,6 +273,11 @@ class ProductionControllerContractTest {
         @Override
         public List<ProductionResponse> findAll(String animalId, LocalDate date) {
             return findAllResponse;
+        }
+
+        @Override
+        public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
+            return paginatedResponse;
         }
 
         @Override
@@ -340,5 +347,63 @@ class ProductionControllerContractTest {
                         throw new UnsupportedOperationException("Repository should not be used in controller test");
                     });
         }
+    }
+
+    @Test
+    void shouldReturnPaginatedProductions() throws Exception {
+        productionService.paginatedResponse = new PaginatedResponse<>(
+                List.of(buildResponse()),
+                0,
+                10,
+                1,
+                1);
+
+        mockMvc.perform(get("/productions").param("page", "0").param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value("production-1"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void shouldRespectPageAndSize() throws Exception {
+        productionService.paginatedResponse = new PaginatedResponse<>(
+                List.of(
+                        new ProductionResponse("production-2", "animal-1", LocalDate.of(2026, 3, 21), 15.0),
+                        new ProductionResponse("production-3", "animal-1", LocalDate.of(2026, 3, 22), 16.0)),
+                1,
+                2,
+                5,
+                3);
+
+        mockMvc.perform(get("/productions").param("page", "1").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].id").value("production-2"))
+                .andExpect(jsonPath("$.content[1].id").value("production-3"))
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(2))
+                .andExpect(jsonPath("$.totalElements").value(5))
+                .andExpect(jsonPath("$.totalPages").value(3));
+    }
+
+    @Test
+    void shouldReturnEmptyPageWhenOutOfBounds() throws Exception {
+        productionService.paginatedResponse = new PaginatedResponse<>(
+                List.of(),
+                5,
+                10,
+                2,
+                1);
+
+        mockMvc.perform(get("/productions").param("page", "5").param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.page").value(5))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1));
     }
 }

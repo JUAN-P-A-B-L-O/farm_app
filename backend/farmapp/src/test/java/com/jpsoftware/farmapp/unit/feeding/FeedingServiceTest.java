@@ -12,6 +12,7 @@ import com.jpsoftware.farmapp.feeding.entity.FeedingEntity;
 import com.jpsoftware.farmapp.feeding.mapper.FeedingMapper;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -25,6 +26,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 class FeedingServiceTest {
 
@@ -160,6 +163,45 @@ class FeedingServiceTest {
     }
 
     @Test
+    void shouldReturnPaginatedFeedings() {
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111"));
+
+        PaginatedResponse<FeedingResponse> response = feedingService.findAllPaginated(null, null, 0, 10);
+
+        assertEquals(1, response.getContent().size());
+        assertEquals("feeding-1", response.getContent().get(0).getId());
+        assertEquals(0, response.getPage());
+        assertEquals(10, response.getSize());
+        assertEquals(1, response.getTotalElements());
+        assertEquals(1, response.getTotalPages());
+    }
+
+    @Test
+    void shouldReturnEmptyFeedingPageWhenOutOfBounds() {
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111"));
+
+        PaginatedResponse<FeedingResponse> response = feedingService.findAllPaginated(null, null, 2, 10);
+
+        assertEquals(0, response.getContent().size());
+        assertEquals(2, response.getPage());
+        assertEquals(10, response.getSize());
+        assertEquals(1, response.getTotalElements());
+        assertEquals(1, response.getTotalPages());
+    }
+
+    @Test
     void shouldFilterFeedingsByAnimalId() {
         feedingRepositoryHandler.store(new FeedingEntity(
                 "feeding-1",
@@ -285,23 +327,39 @@ class FeedingServiceTest {
                             return entity;
                         }
                         if ("findAll".equals(methodName)) {
+                            if (args != null && args.length == 1 && args[0] instanceof org.springframework.data.domain.Pageable pageable) {
+                                List<FeedingEntity> all = new ArrayList<>(data.values());
+                                return paginate(all, pageable);
+                            }
                             return new ArrayList<>(data.values());
                         }
                         if ("findByAnimalId".equals(methodName)) {
-                            return data.values().stream()
+                            List<FeedingEntity> filtered = data.values().stream()
                                     .filter(entity -> entity.getAnimalId().equals(args[0]))
                                     .toList();
+                            if (args.length == 2) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[1]);
+                            }
+                            return filtered;
                         }
                         if ("findByDate".equals(methodName)) {
-                            return data.values().stream()
+                            List<FeedingEntity> filtered = data.values().stream()
                                     .filter(entity -> entity.getDate().equals(args[0]))
                                     .toList();
+                            if (args.length == 2) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[1]);
+                            }
+                            return filtered;
                         }
                         if ("findByAnimalIdAndDate".equals(methodName)) {
-                            return data.values().stream()
+                            List<FeedingEntity> filtered = data.values().stream()
                                     .filter(entity -> entity.getAnimalId().equals(args[0]))
                                     .filter(entity -> entity.getDate().equals(args[1]))
                                     .toList();
+                            if (args.length == 3) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[2]);
+                            }
+                            return filtered;
                         }
                         if ("findById".equals(methodName)) {
                             return Optional.ofNullable(data.get(args[0]));
@@ -322,6 +380,13 @@ class FeedingServiceTest {
 
         void store(FeedingEntity entity) {
             data.put(entity.getId(), entity);
+        }
+
+        private PageImpl<FeedingEntity> paginate(List<FeedingEntity> source, org.springframework.data.domain.Pageable pageable) {
+            int start = (int) pageable.getOffset();
+            int end = Math.min(start + pageable.getPageSize(), source.size());
+            List<FeedingEntity> content = start >= source.size() ? List.of() : source.subList(start, end);
+            return new PageImpl<>(content, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()), source.size());
         }
     }
 

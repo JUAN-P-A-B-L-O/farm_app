@@ -7,11 +7,14 @@ import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
 import com.jpsoftware.farmapp.feeding.entity.FeedingEntity;
 import com.jpsoftware.farmapp.feeding.mapper.FeedingMapper;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -54,6 +57,13 @@ public class FeedingService {
         return findFeedings(animalId, date).stream()
                 .map(feedingMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<FeedingResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
+        Page<FeedingResponse> responses = findFeedings(animalId, date, PageRequest.of(page, size))
+                .map(feedingMapper::toResponse);
+        return toPaginatedResponse(responses);
     }
 
     @Transactional(readOnly = true)
@@ -115,6 +125,28 @@ public class FeedingService {
             return feedingRepository.findByDate(date);
         }
         return feedingRepository.findAll();
+    }
+
+    private Page<FeedingEntity> findFeedings(String animalId, LocalDate date, org.springframework.data.domain.Pageable pageable) {
+        if (StringUtils.hasText(animalId) && date != null) {
+            return feedingRepository.findByAnimalIdAndDate(animalId, date, pageable);
+        }
+        if (StringUtils.hasText(animalId)) {
+            return feedingRepository.findByAnimalId(animalId, pageable);
+        }
+        if (date != null) {
+            return feedingRepository.findByDate(date, pageable);
+        }
+        return feedingRepository.findAll(pageable);
+    }
+
+    private PaginatedResponse<FeedingResponse> toPaginatedResponse(Page<FeedingResponse> page) {
+        return new PaginatedResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages());
     }
 
     private java.util.UUID parseUserId(String userId) {

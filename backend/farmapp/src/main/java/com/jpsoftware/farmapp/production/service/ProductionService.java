@@ -10,12 +10,15 @@ import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.BusinessException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -59,6 +62,13 @@ public class ProductionService {
         return findProductions(animalId, date).stream()
                 .map(productionMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
+        Page<ProductionResponse> responses = findProductions(animalId, date, PageRequest.of(page, size))
+                .map(productionMapper::toResponse);
+        return toPaginatedResponse(responses);
     }
 
     @Transactional(readOnly = true)
@@ -167,6 +177,28 @@ public class ProductionService {
             return productionRepository.findByDate(date);
         }
         return productionRepository.findAll();
+    }
+
+    private Page<ProductionEntity> findProductions(String animalId, LocalDate date, org.springframework.data.domain.Pageable pageable) {
+        if (StringUtils.hasText(animalId) && date != null) {
+            return productionRepository.findByAnimalIdAndDate(animalId, date, pageable);
+        }
+        if (StringUtils.hasText(animalId)) {
+            return productionRepository.findByAnimalId(animalId, pageable);
+        }
+        if (date != null) {
+            return productionRepository.findByDate(date, pageable);
+        }
+        return productionRepository.findAll(pageable);
+    }
+
+    private PaginatedResponse<ProductionResponse> toPaginatedResponse(Page<ProductionResponse> page) {
+        return new PaginatedResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages());
     }
 
     private String validateId(String id) {

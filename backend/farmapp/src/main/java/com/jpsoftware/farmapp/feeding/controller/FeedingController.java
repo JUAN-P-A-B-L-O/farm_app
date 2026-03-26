@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.feeding.controller;
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -53,9 +54,16 @@ public class FeedingController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Feedings retrieved successfully")
     })
-    public ResponseEntity<List<FeedingResponse>> findAll(
+    public ResponseEntity<?> findAll(
             @RequestParam(required = false) String animalId,
-            @RequestParam(required = false) LocalDate date) {
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            PaginatedResponse<FeedingResponse> response = feedingService.findAllPaginated(animalId, date, page, size);
+            return ResponseEntity.ok(response);
+        }
+
         List<FeedingResponse> response = feedingService.findAll(animalId, date);
         return ResponseEntity.ok(response);
     }
