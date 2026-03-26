@@ -10,6 +10,7 @@ import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,8 +50,8 @@ public class FeedingService {
     }
 
     @Transactional(readOnly = true)
-    public List<FeedingResponse> findAll() {
-        return feedingRepository.findAll().stream()
+    public List<FeedingResponse> findAll(String animalId, LocalDate date) {
+        return findFeedings(animalId, date).stream()
                 .map(feedingMapper::toResponse)
                 .toList();
     }
@@ -101,6 +102,19 @@ public class FeedingService {
             throw new ValidationException("id must not be blank");
         }
         return id;
+    }
+
+    private List<FeedingEntity> findFeedings(String animalId, LocalDate date) {
+        if (StringUtils.hasText(animalId) && date != null) {
+            return feedingRepository.findByAnimalIdAndDate(animalId, date);
+        }
+        if (StringUtils.hasText(animalId)) {
+            return feedingRepository.findByAnimalId(animalId);
+        }
+        if (date != null) {
+            return feedingRepository.findByDate(date);
+        }
+        return feedingRepository.findAll();
     }
 
     private java.util.UUID parseUserId(String userId) {

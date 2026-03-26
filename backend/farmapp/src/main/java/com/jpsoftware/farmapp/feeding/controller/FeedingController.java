@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -47,12 +49,14 @@ public class FeedingController {
     }
 
     @GetMapping
-    @Operation(summary = "List feedings", description = "Returns all feeding records.")
+    @Operation(summary = "List feedings", description = "Returns feeding records, optionally filtered by animal or date.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Feedings retrieved successfully")
     })
-    public ResponseEntity<List<FeedingResponse>> findAll() {
-        List<FeedingResponse> response = feedingService.findAll();
+    public ResponseEntity<List<FeedingResponse>> findAll(
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) LocalDate date) {
+        List<FeedingResponse> response = feedingService.findAll(animalId, date);
         return ResponseEntity.ok(response);
     }
 
