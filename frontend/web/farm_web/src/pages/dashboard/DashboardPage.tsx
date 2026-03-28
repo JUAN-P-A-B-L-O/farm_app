@@ -10,8 +10,9 @@ const dashboardStats: Array<{
 }> = [
   { key: 'totalProduction', title: 'Total Production' },
   { key: 'totalFeedingCost', title: 'Feeding Cost' },
-  { key: 'profit', title: 'Profit' },
-  { key: 'animalsCount', title: 'Number of Animals' },
+  { key: 'totalRevenue', title: 'Total Revenue' },
+  { key: 'totalProfit', title: 'Profit' },
+  { key: 'animalCount', title: 'Number of Animals' },
 ]
 
 function DashboardPage() {
@@ -33,7 +34,6 @@ function DashboardPage() {
 
     void loadDashboard()
   }, [])
-
   return (
     <main className="dashboard-page">
       <section className="dashboard-page__header">
@@ -54,11 +54,12 @@ function DashboardPage() {
 
       {summary && !isLoading && !errorMessage && (
         <section className="dashboard-grid" aria-label="Farm summary metrics">
+
           {dashboardStats.map((stat) => (
             <StatCard
               key={stat.key}
               title={stat.title}
-              value={summary[stat.key]}
+              value={summary[stat.key] ?? 0}
             />
           ))}
         </section>

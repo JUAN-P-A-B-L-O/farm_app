@@ -1,6 +1,7 @@
 export interface DashboardSummary {
   totalProduction: number
   totalFeedingCost: number
-  profit: number
-  animalsCount: number
+  totalRevenue: number
+  totalProfit: number
+  animalCount: number
 }
