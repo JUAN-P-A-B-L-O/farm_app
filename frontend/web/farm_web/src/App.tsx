@@ -1,8 +1,8 @@
 import AnimalsPage from './pages/animals/AnimalsPage'
-import DashboardPage from './pages/dashboard/DashboardPage'
+import ProductionPage from './pages/production/ProductionPage'
 
 function App() {
-  return <DashboardPage />
+  return <AnimalsPage />
 }
 
 export default App

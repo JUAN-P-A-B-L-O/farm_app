@@ -77,7 +77,8 @@
   color: #243646;
 }
 
-.animal-form__field input {
+.animal-form__field input,
+.animal-form__field select {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid #c8d4c8;
@@ -87,7 +88,8 @@
   background: #fff;
 }
 
-.animal-form__field input:focus {
+.animal-form__field input:focus,
+.animal-form__field select:focus {
   outline: 2px solid #9fc5a1;
   outline-offset: 1px;
   border-color: #79a67f;
