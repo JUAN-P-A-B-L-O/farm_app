@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import UserForm from '../../components/user/UserForm'
+import { useTranslation } from '../../hooks/useTranslation'
 import { createUser, deleteUser, getAllUsers, updateUser } from '../../services/userService'
 import type { User, UserApiErrorResponse, UserFormData } from '../../types/user'
 import '../../App.css'
@@ -11,21 +12,21 @@ const emptyUserForm: UserFormData = {
   role: '',
 }
 
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
+function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<UserApiErrorResponse>(error)) {
     const status = error.response?.status
     const apiMessage = error.response?.data?.error
 
     if (status === 400) {
-      return apiMessage ?? 'Validation error while saving user.'
+      return apiMessage ?? t('accessControl.errors.validationSave')
     }
 
     if (status === 404) {
-      return apiMessage ?? 'User not found.'
+      return apiMessage ?? t('accessControl.errors.notFound')
     }
 
     if (status === 409) {
-      return apiMessage ?? 'User with this name already exists.'
+      return apiMessage ?? t('accessControl.errors.duplicateName')
     }
 
     if (apiMessage) {
@@ -37,6 +38,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 function UsersPage() {
+  const { t } = useTranslation()
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -54,7 +56,7 @@ function UsersPage() {
       const data = await getAllUsers()
       setUsers(data)
     } catch (error) {
-      setListErrorMessage(getErrorMessage(error, 'Unable to load users.'))
+      setListErrorMessage(getErrorMessage(error, t('accessControl.errors.loadList'), t))
     } finally {
       setIsLoading(false)
     }
@@ -80,7 +82,11 @@ function UsersPage() {
       await loadUsers()
     } catch (error) {
       setFormErrorMessage(
-        getErrorMessage(error, editingUserId ? 'Unable to update user.' : 'Unable to create user.'),
+        getErrorMessage(
+          error,
+          editingUserId ? t('accessControl.errors.update') : t('accessControl.errors.create'),
+          t,
+        ),
       )
     } finally {
       setIsSubmitting(false)
@@ -104,7 +110,7 @@ function UsersPage() {
   }
 
   async function handleDelete(id: string) {
-    const shouldDelete = window.confirm('Are you sure you want to delete this user?')
+    const shouldDelete = window.confirm(t('accessControl.confirmDelete'))
 
     if (!shouldDelete) {
       return
@@ -122,7 +128,7 @@ function UsersPage() {
 
       await loadUsers()
     } catch (error) {
-      setListErrorMessage(getErrorMessage(error, 'Unable to delete user.'))
+      setListErrorMessage(getErrorMessage(error, t('accessControl.errors.delete'), t))
     } finally {
       setIsDeletingId(null)
     }
@@ -131,10 +137,10 @@ function UsersPage() {
   return (
     <main className="animals-page">
       <section className="animals-page__header">
-        <p className="animals-page__eyebrow">Access Control</p>
-        <h1>User Management</h1>
+        <p className="animals-page__eyebrow">{t('accessControl.eyebrow')}</p>
+        <h1>{t('accessControl.title')}</h1>
         <p className="animals-page__description">
-          Create, update, and remove system users used across production and feeding records.
+          {t('accessControl.description')}
         </p>
       </section>
 
@@ -142,11 +148,11 @@ function UsersPage() {
         <article className="animals-panel">
           <div className="animals-panel__header">
             <div>
-              <h2>{editingUserId ? 'Update User' : 'Create User'}</h2>
+              <h2>{editingUserId ? t('accessControl.updateTitle') : t('accessControl.createTitle')}</h2>
               <p>
                 {editingUserId
-                  ? 'Edit the selected user using the existing data.'
-                  : 'Fill in the user information to create a new record.'}
+                  ? t('accessControl.updateDescription')
+                  : t('accessControl.createDescription')}
               </p>
             </div>
           </div>
@@ -156,7 +162,7 @@ function UsersPage() {
             onSubmit={handleCreateOrUpdate}
             onCancel={editingUserId ? handleCancelEdit : undefined}
             isSubmitting={isSubmitting}
-            submitLabel={editingUserId ? 'Update user' : 'Create user'}
+            submitLabel={editingUserId ? t('accessControl.submitUpdate') : t('accessControl.submitCreate')}
             errorMessage={formErrorMessage}
           />
         </article>
@@ -164,12 +170,12 @@ function UsersPage() {
         <article className="animals-panel animals-panel--table">
           <div className="animals-panel__header">
             <div>
-              <h2>User List</h2>
-              <p>Review current users and manage updates or deletions.</p>
+              <h2>{t('accessControl.listTitle')}</h2>
+              <p>{t('accessControl.listDescription')}</p>
             </div>
           </div>
 
-          {isLoading && <p className="animals-page__status">Loading users...</p>}
+          {isLoading && <p className="animals-page__status">{t('accessControl.loading')}</p>}
 
           {listErrorMessage && (
             <p className="animals-page__status animals-page__status--error">
@@ -178,7 +184,7 @@ function UsersPage() {
           )}
 
           {!isLoading && !listErrorMessage && users.length === 0 && (
-            <p className="animals-page__status">No users found.</p>
+            <p className="animals-page__status">{t('accessControl.empty')}</p>
           )}
 
           {!isLoading && !listErrorMessage && users.length > 0 && (
@@ -186,8 +192,8 @@ function UsersPage() {
               <table className="animals-table">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Actions</th>
+                    <th>{t('accessControl.table.name')}</th>
+                    <th>{t('accessControl.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -201,7 +207,7 @@ function UsersPage() {
                           onClick={() => handleEdit(user)}
                           disabled={isSubmitting || isDeletingId === user.id}
                         >
-                          Edit
+                          {t('accessControl.edit')}
                         </button>
                         <button
                           type="button"
@@ -209,7 +215,7 @@ function UsersPage() {
                           onClick={() => void handleDelete(user.id)}
                           disabled={isSubmitting || isDeletingId === user.id}
                         >
-                          {isDeletingId === user.id ? 'Deleting...' : 'Delete'}
+                          {isDeletingId === user.id ? t('accessControl.deleting') : t('accessControl.delete')}
                         </button>
                       </td>
                     </tr>

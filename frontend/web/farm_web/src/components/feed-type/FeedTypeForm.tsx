@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useTranslation } from '../../hooks/useTranslation'
 import type { FeedTypeFormData } from '../../types/feedType'
 
 interface FeedTypeFormProps {
@@ -18,6 +19,7 @@ function FeedTypeForm({
   submitLabel,
   errorMessage,
 }: FeedTypeFormProps) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState<FeedTypeFormData>(initialValues)
 
   useEffect(() => {
@@ -42,7 +44,7 @@ function FeedTypeForm({
     <form className="animal-form" onSubmit={handleSubmit}>
       <div className="animal-form__grid">
         <label className="animal-form__field">
-          <span>Name</span>
+          <span>{t('feedType.form.name')}</span>
           <input
             name="name"
             type="text"
@@ -54,7 +56,7 @@ function FeedTypeForm({
         </label>
 
         <label className="animal-form__field">
-          <span>Cost per kg</span>
+          <span>{t('feedType.form.costPerKg')}</span>
           <input
             name="costPerKg"
             type="number"
@@ -76,7 +78,7 @@ function FeedTypeForm({
 
       <div className="animal-form__actions">
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : submitLabel}
+          {isSubmitting ? t('common.saving') : submitLabel}
         </button>
 
         {onCancel && (
@@ -86,7 +88,7 @@ function FeedTypeForm({
             onClick={onCancel}
             disabled={isSubmitting}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
         )}
       </div>
