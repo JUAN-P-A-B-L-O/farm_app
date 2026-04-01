@@ -7,6 +7,8 @@ import '../../App.css'
 
 const emptyUserForm: UserFormData = {
   name: '',
+  email: '',
+  role: '',
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -90,6 +92,8 @@ function UsersPage() {
     setEditingUserId(user.id)
     setFormInitialValues({
       name: user.name,
+      email: user.email,
+      role: user.role,
     })
   }
 
