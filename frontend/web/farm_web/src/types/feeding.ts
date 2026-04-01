@@ -19,6 +19,11 @@ export interface Feeding {
   feedType: Pick<FeedingFeedTypeOption, 'id' | 'name'>
 }
 
+export interface FeedingTrendPoint {
+  date: string
+  quantity: number
+}
+
 export interface FeedingFormData {
   animalId: string
   feedTypeId: string

@@ -4,6 +4,7 @@ import type {
   Feeding,
   FeedingFeedTypeOption,
   FeedingFormData,
+  FeedingTrendPoint,
 } from '../types/feeding'
 
 export async function getAllFeedings(): Promise<Feeding[]> {
@@ -12,8 +13,8 @@ export async function getAllFeedings(): Promise<Feeding[]> {
   return response.data
 }
 
-export async function getFeedingsByAnimalId(animalId: string): Promise<Feeding[]> {
-  const response = await api.get<Feeding[]>('/feedings', {
+export async function getFeedingsByAnimalId(animalId: string): Promise<FeedingTrendPoint[]> {
+  const response = await api.get<FeedingTrendPoint[]>('/feedings', {
     params: {
       animalId,
     },
