@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import AnimalsPage from './pages/animals/AnimalsPage'
 import AnimalDetailsPage from './pages/animals/AnimalDetailsPage'
+import AnalyticsPage from './pages/analytics/AnalyticsPage'
 import FeedingPage from './pages/feeding/FeedingPage'
 import ProductionPage from './pages/production/ProductionPage'
 
 interface RouteMatch {
   params: Record<string, string>
-  routeKey: 'animals' | 'animal-details' | 'production' | 'feeding'
+  routeKey: 'animals' | 'animal-details' | 'production' | 'feeding' | 'analytics'
 }
 
 function normalizePath(pathname: string): string {
@@ -42,6 +43,13 @@ function matchRoute(pathname: string): RouteMatch {
   if (normalizedPath === '/productions') {
     return {
       routeKey: 'production',
+      params: {},
+    }
+  }
+
+  if (normalizedPath === '/analytics') {
+    return {
+      routeKey: 'analytics',
       params: {},
     }
   }
@@ -104,6 +112,13 @@ function App() {
         >
           Feeding
         </button>
+        <button
+          type="button"
+          className={`app-nav__link${route.routeKey === 'analytics' ? ' app-nav__link--active' : ''}`}
+          onClick={() => navigate('/analytics')}
+        >
+          Analytics
+        </button>
       </nav>
 
       {route.routeKey === 'animals' && <AnimalsPage onOpenDetails={(animalId) => navigate(`/animals/${animalId}`)} />}
@@ -115,6 +130,7 @@ function App() {
       )}
       {route.routeKey === 'production' && <ProductionPage />}
       {route.routeKey === 'feeding' && <FeedingPage />}
+      {route.routeKey === 'analytics' && <AnalyticsPage />}
     </>
   )
 }

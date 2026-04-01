@@ -4,8 +4,8 @@ import { getAnimalById } from '../../services/animalService'
 import { getFeedingsByAnimalId } from '../../services/feedingService'
 import { getProductionsByAnimalId } from '../../services/productionService'
 import type { Animal, ApiErrorResponse } from '../../types/animal'
-import type { Feeding } from '../../types/feeding'
-import type { Production } from '../../types/production'
+import type { FeedingTrendPoint } from '../../types/feeding'
+import type { ProductionTrendPoint } from '../../types/production'
 import '../../App.css'
 
 interface AnimalDetailsPageProps {
@@ -36,8 +36,8 @@ function sortByDateDescending<T extends { date: string }>(records: T[]): T[] {
 
 function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps) {
   const [animal, setAnimal] = useState<Animal | null>(null)
-  const [productions, setProductions] = useState<Production[]>([])
-  const [feedings, setFeedings] = useState<Feeding[]>([])
+  const [productions, setProductions] = useState<ProductionTrendPoint[]>([])
+  const [feedings, setFeedings] = useState<FeedingTrendPoint[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -150,7 +150,7 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                   </thead>
                   <tbody>
                     {productions.map((production) => (
-                      <tr key={production.id}>
+                      <tr key={`${production.date}-${production.quantity}`}>
                         <td>{production.date}</td>
                         <td>{production.quantity}</td>
                       </tr>
@@ -180,15 +180,13 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                     <tr>
                       <th>Date</th>
                       <th>Quantity</th>
-                      <th>Feed type</th>
                     </tr>
                   </thead>
                   <tbody>
                     {feedings.map((feeding) => (
-                      <tr key={feeding.id}>
+                      <tr key={`${feeding.date}-${feeding.quantity}`}>
                         <td>{feeding.date}</td>
                         <td>{feeding.quantity}</td>
-                        <td>{feeding.feedType.name}</td>
                       </tr>
                     ))}
                   </tbody>
