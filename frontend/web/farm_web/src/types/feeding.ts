@@ -1,13 +1,11 @@
+import type { FeedType } from './feedType'
+
 export interface FeedingAnimalOption {
   id: string
   tag: string
 }
 
-export interface FeedingFeedTypeOption {
-  id: string
-  name: string
-  costPerKg: number
-}
+export type FeedingFeedTypeOption = FeedType
 
 export interface Feeding {
   id: string
