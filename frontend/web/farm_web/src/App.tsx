@@ -1,8 +1,7 @@
-import AnimalsPage from './pages/animals/AnimalsPage'
-import ProductionPage from './pages/production/ProductionPage'
+import FeedingPage from './pages/feeding/FeedingPage'
 
 function App() {
-  return <AnimalsPage />
+  return <FeedingPage />
 }
 
 export default App
