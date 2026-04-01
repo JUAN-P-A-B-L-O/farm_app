@@ -24,6 +24,7 @@ export interface FeedingFormData {
   feedTypeId: string
   date: string
   quantity: number
+  userId: string
 }
 
 export interface CreateFeedingPayload extends FeedingFormData {

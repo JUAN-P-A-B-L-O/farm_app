@@ -18,9 +18,8 @@ const emptyFeedingForm: FeedingFormData = {
   feedTypeId: '',
   date: '',
   quantity: 0,
+  userId: '',
 }
-
-const FEEDING_USER_ID = import.meta.env.VITE_USER_ID ?? 'string'
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
   if (axios.isAxiosError<FeedingApiErrorResponse>(error)) {
@@ -100,10 +99,7 @@ function FeedingPage() {
     setFormErrorMessage('')
 
     try {
-      await createFeeding({
-        ...data,
-        userId: FEEDING_USER_ID,
-      })
+      await createFeeding(data)
       setFormInitialValues({ ...emptyFeedingForm })
       await loadFeedings()
     } catch (error) {

@@ -1,9 +1,11 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { getAllUsers } from '../../services/userService'
 import type {
   FeedingAnimalOption,
   FeedingFeedTypeOption,
   FeedingFormData,
 } from '../../types/feeding'
+import type { User } from '../../types/user'
 
 interface FeedingFormProps {
   initialValues: FeedingFormData
@@ -25,13 +27,40 @@ function FeedingForm({
   errorMessage,
 }: FeedingFormProps) {
   const [formData, setFormData] = useState<FeedingFormData>(initialValues)
+  const [users, setUsers] = useState<User[]>([])
+  const [isUsersLoading, setIsUsersLoading] = useState(true)
+  const [usersErrorMessage, setUsersErrorMessage] = useState('')
+  const [validationMessage, setValidationMessage] = useState('')
 
   useEffect(() => {
     setFormData(initialValues)
+    setValidationMessage('')
   }, [initialValues])
+
+  useEffect(() => {
+    async function loadUsers() {
+      setIsUsersLoading(true)
+      setUsersErrorMessage('')
+
+      try {
+        const usersData = await getAllUsers()
+        setUsers(usersData)
+      } catch {
+        setUsersErrorMessage('Unable to load users.')
+      } finally {
+        setIsUsersLoading(false)
+      }
+    }
+
+    void loadUsers()
+  }, [])
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target
+
+    if (name === 'userId') {
+      setValidationMessage('')
+    }
 
     setFormData((currentData) => ({
       ...currentData,
@@ -41,10 +70,24 @@ function FeedingForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!formData.userId) {
+      setValidationMessage('User is required.')
+      return
+    }
+
     await onSubmit(formData)
   }
 
-  const isFormDisabled = isSubmitting || animals.length === 0 || feedTypes.length === 0
+  const isFormDisabled =
+    isSubmitting ||
+    isUsersLoading ||
+    animals.length === 0 ||
+    feedTypes.length === 0 ||
+    users.length === 0 ||
+    usersErrorMessage.length > 0
+
+  const feedbackMessage = validationMessage || usersErrorMessage || errorMessage
 
   return (
     <form className="animal-form" onSubmit={handleSubmit}>
@@ -86,6 +129,26 @@ function FeedingForm({
         </label>
 
         <label className="animal-form__field">
+          <span>User</span>
+          <select
+            name="userId"
+            value={formData.userId}
+            onChange={handleChange}
+            required
+            disabled={isFormDisabled}
+          >
+            <option value="">
+              {isUsersLoading ? 'Loading users...' : 'Select a user'}
+            </option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="animal-form__field">
           <span>Date</span>
           <input
             name="date"
@@ -111,9 +174,9 @@ function FeedingForm({
         </label>
       </div>
 
-      {errorMessage && (
+      {feedbackMessage && (
         <p className="animal-form__feedback animal-form__feedback--error">
-          {errorMessage}
+          {feedbackMessage}
         </p>
       )}
 

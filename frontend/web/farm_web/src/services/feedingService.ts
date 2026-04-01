@@ -3,6 +3,7 @@ import type {
   CreateFeedingPayload,
   Feeding,
   FeedingFeedTypeOption,
+  FeedingFormData,
 } from '../types/feeding'
 
 export async function getAllFeedings(): Promise<Feeding[]> {
@@ -11,8 +12,10 @@ export async function getAllFeedings(): Promise<Feeding[]> {
   return response.data
 }
 
-export async function createFeeding(data: CreateFeedingPayload): Promise<Feeding> {
-  const response = await api.post<Feeding>('/feedings', data)
+export async function createFeeding(data: FeedingFormData): Promise<Feeding> {
+  const payload: CreateFeedingPayload = data
+
+  const response = await api.post<Feeding>('/feedings', payload)
 
   return response.data
 }
