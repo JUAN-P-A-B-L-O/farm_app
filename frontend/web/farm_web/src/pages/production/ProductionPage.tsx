@@ -16,6 +16,7 @@ const emptyProductionForm: ProductionFormData = {
   animalId: '',
   date: '',
   quantity: 0,
+  userId: '',
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -89,11 +90,30 @@ function ProductionPage() {
   }, [])
 
   async function handleCreateProduction(data: ProductionFormData) {
+    const payload: ProductionFormData = {
+      animalId: data.animalId.trim(),
+      date: data.date,
+      quantity: Number(data.quantity),
+      userId: data.userId.trim(),
+    }
+
+    if (
+      !payload.animalId ||
+      !payload.date ||
+      !payload.userId ||
+      !Number.isFinite(payload.quantity) ||
+      payload.quantity <= 0
+    ) {
+      setFormErrorMessage('Fill in animal, user, date, and a quantity greater than zero.')
+      return
+    }
+
     setIsSubmitting(true)
     setFormErrorMessage('')
 
     try {
-      await createProduction(data)
+      console.log('Production payload:', payload)
+      await createProduction(payload)
       setFormInitialValues({ ...emptyProductionForm })
       await loadProductions()
     } catch (error) {

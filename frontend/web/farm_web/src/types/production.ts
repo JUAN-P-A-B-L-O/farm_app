@@ -15,6 +15,7 @@ export interface ProductionFormData {
   animalId: string
   date: string
   quantity: number
+  userId: string
 }
 
 export interface ProductionApiErrorResponse {
