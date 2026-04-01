@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useTranslation } from '../../hooks/useTranslation'
 import { getAllUsers } from '../../services/userService'
 import type {
   FeedingAnimalOption,
@@ -26,6 +27,7 @@ function FeedingForm({
   submitLabel,
   errorMessage,
 }: FeedingFormProps) {
+  const { t, language } = useTranslation()
   const [formData, setFormData] = useState<FeedingFormData>(initialValues)
   const [users, setUsers] = useState<User[]>([])
   const [isUsersLoading, setIsUsersLoading] = useState(true)
@@ -46,14 +48,14 @@ function FeedingForm({
         const usersData = await getAllUsers()
         setUsers(usersData)
       } catch {
-        setUsersErrorMessage('Unable to load users.')
+        setUsersErrorMessage(t('feeding.errors.loadUsers'))
       } finally {
         setIsUsersLoading(false)
       }
     }
 
     void loadUsers()
-  }, [])
+  }, [language])
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target
@@ -72,7 +74,7 @@ function FeedingForm({
     event.preventDefault()
 
     if (!formData.userId) {
-      setValidationMessage('User is required.')
+      setValidationMessage(t('feeding.errors.userRequired'))
       return
     }
 
@@ -93,7 +95,7 @@ function FeedingForm({
     <form className="animal-form" onSubmit={handleSubmit}>
       <div className="animal-form__grid">
         <label className="animal-form__field">
-          <span>Animal</span>
+          <span>{t('feeding.form.animal')}</span>
           <select
             name="animalId"
             value={formData.animalId}
@@ -101,7 +103,7 @@ function FeedingForm({
             required
             disabled={isFormDisabled}
           >
-            <option value="">Select an animal</option>
+            <option value="">{t('feeding.form.selectAnimal')}</option>
             {animals.map((animal) => (
               <option key={animal.id} value={animal.id}>
                 {animal.tag}
@@ -111,7 +113,7 @@ function FeedingForm({
         </label>
 
         <label className="animal-form__field">
-          <span>Feed type</span>
+          <span>{t('feeding.form.feedType')}</span>
           <select
             name="feedTypeId"
             value={formData.feedTypeId}
@@ -119,7 +121,7 @@ function FeedingForm({
             required
             disabled={isFormDisabled}
           >
-            <option value="">Select a feed type</option>
+            <option value="">{t('feeding.form.selectFeedType')}</option>
             {feedTypes.map((feedType) => (
               <option key={feedType.id} value={feedType.id}>
                 {feedType.name}
@@ -129,7 +131,7 @@ function FeedingForm({
         </label>
 
         <label className="animal-form__field">
-          <span>User</span>
+          <span>{t('feeding.form.user')}</span>
           <select
             name="userId"
             value={formData.userId}
@@ -138,7 +140,7 @@ function FeedingForm({
             disabled={isFormDisabled}
           >
             <option value="">
-              {isUsersLoading ? 'Loading users...' : 'Select a user'}
+              {isUsersLoading ? t('feeding.form.loadingUsers') : t('feeding.form.selectUser')}
             </option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
@@ -149,7 +151,7 @@ function FeedingForm({
         </label>
 
         <label className="animal-form__field">
-          <span>Date</span>
+          <span>{t('feeding.form.date')}</span>
           <input
             name="date"
             type="date"
@@ -160,7 +162,7 @@ function FeedingForm({
         </label>
 
         <label className="animal-form__field">
-          <span>Quantity</span>
+          <span>{t('feeding.form.quantity')}</span>
           <input
             name="quantity"
             type="number"
@@ -182,7 +184,7 @@ function FeedingForm({
 
       <div className="animal-form__actions">
         <button type="submit" disabled={isFormDisabled}>
-          {isSubmitting ? 'Saving...' : submitLabel}
+          {isSubmitting ? t('common.saving') : submitLabel}
         </button>
       </div>
     </form>

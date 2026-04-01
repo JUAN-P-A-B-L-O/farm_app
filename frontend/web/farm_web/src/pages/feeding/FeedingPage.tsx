@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import FeedingForm from '../../components/feeding/FeedingForm'
+import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
 import { createFeeding, getAllFeedings, getAllFeedTypes } from '../../services/feedingService'
 import type { Animal } from '../../types/animal'
@@ -21,17 +22,17 @@ const emptyFeedingForm: FeedingFormData = {
   userId: '',
 }
 
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
+function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<FeedingApiErrorResponse>(error)) {
     const status = error.response?.status
     const apiMessage = error.response?.data?.error
 
     if (status === 400) {
-      return apiMessage ?? 'Validation error while saving feeding.'
+      return apiMessage ?? t('feeding.errors.validationSave')
     }
 
     if (status === 404) {
-      return apiMessage ?? 'Animal or feed type not found.'
+      return apiMessage ?? t('feeding.errors.notFound')
     }
 
     if (apiMessage) {
@@ -50,6 +51,7 @@ function mapAnimalsToOptions(animals: Animal[]): FeedingAnimalOption[] {
 }
 
 function FeedingPage() {
+  const { t, language } = useTranslation()
   const [feedings, setFeedings] = useState<Feeding[]>([])
   const [animals, setAnimals] = useState<FeedingAnimalOption[]>([])
   const [feedTypes, setFeedTypes] = useState<FeedingFeedTypeOption[]>([])
@@ -68,7 +70,7 @@ function FeedingPage() {
       const data = await getAllFeedings()
       setFeedings(data)
     } catch (error) {
-      setListErrorMessage(getErrorMessage(error, 'Unable to load feeding records.'))
+      setListErrorMessage(getErrorMessage(error, t('feeding.errors.loadRecords'), t))
     } finally {
       setIsLoading(false)
     }
@@ -84,7 +86,7 @@ function FeedingPage() {
       setAnimals(mapAnimalsToOptions(animalsData))
       setFeedTypes(feedTypesData)
     } catch (error) {
-      setFormErrorMessage(getErrorMessage(error, 'Unable to load form options.'))
+      setFormErrorMessage(getErrorMessage(error, t('feeding.errors.loadOptions'), t))
     } finally {
       setIsFormOptionsLoading(false)
     }
@@ -92,7 +94,7 @@ function FeedingPage() {
 
   useEffect(() => {
     void Promise.all([loadFeedings(), loadFormOptions()])
-  }, [])
+  }, [language])
 
   async function handleCreateFeeding(data: FeedingFormData) {
     setIsSubmitting(true)
@@ -103,7 +105,7 @@ function FeedingPage() {
       setFormInitialValues({ ...emptyFeedingForm })
       await loadFeedings()
     } catch (error) {
-      setFormErrorMessage(getErrorMessage(error, 'Unable to create feeding record.'))
+      setFormErrorMessage(getErrorMessage(error, t('feeding.errors.create'), t))
     } finally {
       setIsSubmitting(false)
     }
@@ -112,10 +114,10 @@ function FeedingPage() {
   return (
     <main className="animals-page">
       <section className="animals-page__header">
-        <p className="animals-page__eyebrow">Feeding Control</p>
-        <h1>Feeding Management</h1>
+        <p className="animals-page__eyebrow">{t('feeding.eyebrow')}</p>
+        <h1>{t('feeding.title')}</h1>
         <p className="animals-page__description">
-          Register feeding entries and review animal feed consumption records.
+          {t('feeding.description')}
         </p>
       </section>
 
@@ -123,19 +125,19 @@ function FeedingPage() {
         <article className="animals-panel">
           <div className="animals-panel__header">
             <div>
-              <h2>Create Feeding</h2>
-              <p>Select the animal, feed type, date, and quantity for the new feeding entry.</p>
+              <h2>{t('feeding.createTitle')}</h2>
+              <p>{t('feeding.createDescription')}</p>
             </div>
           </div>
 
-          {isFormOptionsLoading && <p className="animals-page__status">Loading form options...</p>}
+          {isFormOptionsLoading && <p className="animals-page__status">{t('feeding.loadingOptions')}</p>}
 
           {!isFormOptionsLoading && animals.length === 0 && !formErrorMessage && (
-            <p className="animals-page__status">No animals available for feeding records.</p>
+            <p className="animals-page__status">{t('feeding.emptyAnimals')}</p>
           )}
 
           {!isFormOptionsLoading && feedTypes.length === 0 && !formErrorMessage && (
-            <p className="animals-page__status">No feed types available for feeding records.</p>
+            <p className="animals-page__status">{t('feeding.emptyFeedTypes')}</p>
           )}
 
           {!isFormOptionsLoading && (
@@ -145,7 +147,7 @@ function FeedingPage() {
               feedTypes={feedTypes}
               onSubmit={handleCreateFeeding}
               isSubmitting={isSubmitting}
-              submitLabel="Create feeding"
+              submitLabel={t('feeding.submit')}
               errorMessage={formErrorMessage}
             />
           )}
@@ -154,12 +156,12 @@ function FeedingPage() {
         <article className="animals-panel animals-panel--table">
           <div className="animals-panel__header">
             <div>
-              <h2>Feeding List</h2>
-              <p>Review animal tag, feed type, date, and quantity for each feeding record.</p>
+              <h2>{t('feeding.listTitle')}</h2>
+              <p>{t('feeding.listDescription')}</p>
             </div>
           </div>
 
-          {isLoading && <p className="animals-page__status">Loading feeding records...</p>}
+          {isLoading && <p className="animals-page__status">{t('feeding.loadingRecords')}</p>}
 
           {listErrorMessage && (
             <p className="animals-page__status animals-page__status--error">
@@ -168,7 +170,7 @@ function FeedingPage() {
           )}
 
           {!isLoading && !listErrorMessage && feedings.length === 0 && (
-            <p className="animals-page__status">No feeding records found.</p>
+            <p className="animals-page__status">{t('feeding.emptyRecords')}</p>
           )}
 
           {!isLoading && !listErrorMessage && feedings.length > 0 && (
@@ -176,10 +178,10 @@ function FeedingPage() {
               <table className="animals-table">
                 <thead>
                   <tr>
-                    <th>Animal tag</th>
-                    <th>Feed type</th>
-                    <th>Date</th>
-                    <th>Quantity</th>
+                    <th>{t('feeding.table.animalTag')}</th>
+                    <th>{t('feeding.table.feedType')}</th>
+                    <th>{t('feeding.table.date')}</th>
+                    <th>{t('feeding.table.quantity')}</th>
                   </tr>
                 </thead>
                 <tbody>
