@@ -5,6 +5,7 @@ const navigationItems = [
   { to: '/animals', label: 'Animals' },
   { to: '/production', label: 'Production' },
   { to: '/feeding', label: 'Feeding' },
+  { to: '/feed-types', label: 'Feed Types' },
   { to: '/analytics', label: 'Analytics' },
 ]
 
