@@ -11,6 +11,10 @@ import {
 import type { Animal, AnimalFormData, ApiErrorResponse } from '../../types/animal'
 import '../../App.css'
 
+interface AnimalsPageProps {
+  onOpenDetails: (animalId: string) => void
+}
+
 const emptyAnimalForm: AnimalFormData = {
   tag: '',
   breed: '',
@@ -39,7 +43,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
   return fallbackMessage
 }
 
-function AnimalsPage() {
+function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const [animals, setAnimals] = useState<Animal[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -224,6 +228,14 @@ function AnimalsPage() {
                         </span>
                       </td>
                       <td className="animals-table__actions">
+                        <button
+                          type="button"
+                          className="animals-table__action-button"
+                          onClick={() => onOpenDetails(animal.id)}
+                          disabled={isSubmitting || isDeletingId === animal.id}
+                        >
+                          Details
+                        </button>
                         <button
                           type="button"
                           className="animals-table__action-button animals-table__action-button--secondary"

@@ -12,6 +12,16 @@ export async function getAllFeedings(): Promise<Feeding[]> {
   return response.data
 }
 
+export async function getFeedingsByAnimalId(animalId: string): Promise<Feeding[]> {
+  const response = await api.get<Feeding[]>('/feedings', {
+    params: {
+      animalId,
+    },
+  })
+
+  return response.data
+}
+
 export async function createFeeding(data: FeedingFormData): Promise<Feeding> {
   const payload: CreateFeedingPayload = data
 
