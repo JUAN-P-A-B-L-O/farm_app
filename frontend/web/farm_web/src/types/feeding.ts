@@ -1,13 +1,11 @@
+import type { FeedType } from './feedType'
+
 export interface FeedingAnimalOption {
   id: string
   tag: string
 }
 
-export interface FeedingFeedTypeOption {
-  id: string
-  name: string
-  costPerKg: number
-}
+export type FeedingFeedTypeOption = FeedType
 
 export interface Feeding {
   id: string
@@ -17,6 +15,11 @@ export interface Feeding {
   quantity: number
   animal: FeedingAnimalOption
   feedType: Pick<FeedingFeedTypeOption, 'id' | 'name'>
+}
+
+export interface FeedingTrendPoint {
+  date: string
+  quantity: number
 }
 
 export interface FeedingFormData {

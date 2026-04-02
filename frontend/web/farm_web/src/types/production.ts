@@ -11,6 +11,11 @@ export interface Production {
   animal: ProductionAnimalOption
 }
 
+export interface ProductionTrendPoint {
+  date: string
+  quantity: number
+}
+
 export interface ProductionFormData {
   animalId: string
   date: string
