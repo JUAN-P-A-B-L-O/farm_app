@@ -6,6 +6,7 @@ const navigationItems = [
   { to: '/production', label: 'Production' },
   { to: '/feeding', label: 'Feeding' },
   { to: '/feed-types', label: 'Feed Types' },
+  { to: '/users', label: 'Users' },
   { to: '/analytics', label: 'Analytics' },
 ]
 

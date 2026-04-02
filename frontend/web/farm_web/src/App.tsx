@@ -7,6 +7,7 @@ import AnalyticsPage from './pages/analytics/AnalyticsPage'
 import FeedingPage from './pages/feeding/FeedingPage'
 import FeedTypePage from './pages/feed-type/FeedTypePage'
 import ProductionPage from './pages/production/ProductionPage'
+import UsersPage from './pages/users/UsersPage'
 import AppLayout from './layout/AppLayout'
 
 function AnimalsRoute() {
@@ -33,6 +34,7 @@ function App() {
         <Route path="/production" element={<ProductionPage />} />
         <Route path="/feeding" element={<FeedingPage />} />
         <Route path="/feed-types" element={<FeedTypePage />} />
+        <Route path="/users" element={<UsersPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/productions" element={<Navigate to="/production" replace />} />
         <Route path="/feedings" element={<Navigate to="/feeding" replace />} />
