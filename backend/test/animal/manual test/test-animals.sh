@@ -6,6 +6,7 @@ ANIMAL_TESTS=0
 PRODUCTION_TESTS=0
 FEED_TESTS=0
 USER_TESTS=0
+AUTH_TESTS=0
 
 FAILED_TESTS=()
 
@@ -42,16 +43,37 @@ run_test "1. CREATE USER" 201 \
 -d '{
   \"name\": \"Joao\",
   \"email\": \"joao@test.com\",
-  \"role\": \"ADMIN\"
+  \"role\": \"MANAGER\",
+  \"password\": \"123456\"
 }'"
 ((USER_TESTS++))
 
 USER_ID=$(curl -s $BASE_URL/users | jq -r '.[0].id')
 echo "Generated USER_ID: $USER_ID"
 
-run_test "2. GET ALL USERS" 200 \
-"curl -s $BASE_URL/users"
-((USER_TESTS++))
+echo "========================================"
+echo "AUTH FLOW"
+echo "========================================"
+
+run_test "2. LOGIN" 200 \
+"curl -s -X POST $BASE_URL/auth/login \
+-H 'Content-Type: application/json' \
+-d '{
+  \"email\": \"joao@test.com\",
+  \"password\": \"123456\"
+}'"
+((AUTH_TESTS++))
+
+TOKEN=$(curl -s -X POST $BASE_URL/auth/login \
+-H 'Content-Type: application/json' \
+-d '{
+  \"email\": \"joao@test.com\",
+  \"password\": \"123456\"
+}' | jq -r '.accessToken')
+
+echo "Generated TOKEN: $TOKEN"
+
+AUTH_HEADER="-H \"Authorization: Bearer $TOKEN\""
 
 echo "========================================"
 echo "ANIMAL FLOW"
@@ -59,6 +81,7 @@ echo "========================================"
 
 run_test "3. CREATE ANIMAL" 201 \
 "curl -s -X POST $BASE_URL/animals \
+$AUTH_HEADER \
 -H 'Content-Type: application/json' \
 -d '{
   \"tag\": \"BR-002\",
@@ -68,11 +91,11 @@ run_test "3. CREATE ANIMAL" 201 \
 }'"
 ((ANIMAL_TESTS++))
 
-ANIMAL_ID=$(curl -s $BASE_URL/animals | jq -r '.[0].id')
+ANIMAL_ID=$(curl -s $AUTH_HEADER $BASE_URL/animals | jq -r '.[0].id')
 echo "Generated ANIMAL_ID: $ANIMAL_ID"
 
 run_test "4. GET ALL ANIMALS" 200 \
-"curl -s $BASE_URL/animals"
+"curl -s $AUTH_HEADER $BASE_URL/animals"
 ((ANIMAL_TESTS++))
 
 echo "========================================"
@@ -81,39 +104,39 @@ echo "========================================"
 
 run_test "5. CREATE PRODUCTION" 201 \
 "curl -s -X POST $BASE_URL/productions \
+$AUTH_HEADER \
 -H 'Content-Type: application/json' \
 -d '{
   \"animalId\": \"$ANIMAL_ID\",
   \"date\": \"2024-03-20\",
-  \"quantity\": 15.5,
-  \"userId\": \"$USER_ID\"
+  \"quantity\": 15.5
 }'"
 ((PRODUCTION_TESTS++))
 
-PRODUCTION_ID=$(curl -s $BASE_URL/productions | jq -r '.[0].id')
+PRODUCTION_ID=$(curl -s $AUTH_HEADER $BASE_URL/productions | jq -r '.[0].id')
 echo "Generated PRODUCTION_ID: $PRODUCTION_ID"
 
 run_test "6. CREATE INVALID PRODUCTION" 400 \
 "curl -s -X POST $BASE_URL/productions \
+$AUTH_HEADER \
 -H 'Content-Type: application/json' \
 -d '{
   \"animalId\": \"$ANIMAL_ID\",
   \"date\": \"2024-03-20\",
-  \"quantity\": -5,
-  \"userId\": \"$USER_ID\"
+  \"quantity\": -5
 }'"
 ((PRODUCTION_TESTS++))
 
 run_test "7. GET ALL PRODUCTIONS" 200 \
-"curl -s $BASE_URL/productions"
+"curl -s $AUTH_HEADER $BASE_URL/productions"
 ((PRODUCTION_TESTS++))
 
 run_test "8. GET PRODUCTION BY ID" 200 \
-"curl -s $BASE_URL/productions/$PRODUCTION_ID"
+"curl -s $AUTH_HEADER $BASE_URL/productions/$PRODUCTION_ID"
 ((PRODUCTION_TESTS++))
 
 run_test "9. GET INVALID PRODUCTION" 404 \
-"curl -s $BASE_URL/productions/invalid-id"
+"curl -s $AUTH_HEADER $BASE_URL/productions/invalid-id"
 ((PRODUCTION_TESTS++))
 
 echo "========================================"
@@ -122,28 +145,28 @@ echo "========================================"
 
 run_test "10. UPDATE PRODUCTION" 200 \
 "curl -s -X PUT $BASE_URL/productions/$PRODUCTION_ID \
+$AUTH_HEADER \
 -H 'Content-Type: application/json' \
 -d '{
-  \"quantity\": 20,
-  \"userId\": \"$USER_ID\"
+  \"quantity\": 20
 }'"
 ((PRODUCTION_TESTS++))
 
 run_test "11. UPDATE INVALID PRODUCTION" 400 \
 "curl -s -X PUT $BASE_URL/productions/$PRODUCTION_ID \
+$AUTH_HEADER \
 -H 'Content-Type: application/json' \
 -d '{
-  \"quantity\": -10,
-  \"userId\": \"$USER_ID\"
+  \"quantity\": -10
 }'"
 ((PRODUCTION_TESTS++))
 
 run_test "12. UPDATE NON EXISTENT" 404 \
 "curl -s -X PUT $BASE_URL/productions/non-existent-id \
+$AUTH_HEADER \
 -H 'Content-Type: application/json' \
 -d '{
-  \"quantity\": 10,
-  \"userId\": \"$USER_ID\"
+  \"quantity\": 10
 }'"
 ((PRODUCTION_TESTS++))
 
@@ -152,19 +175,19 @@ echo "FILTER FLOW"
 echo "========================================"
 
 run_test "13. FILTER BY ANIMAL" 200 \
-"curl -s \"$BASE_URL/productions?animalId=$ANIMAL_ID\""
+"curl -s $AUTH_HEADER \"$BASE_URL/productions?animalId=$ANIMAL_ID\""
 ((PRODUCTION_TESTS++))
 
 run_test "14. FILTER BY DATE" 200 \
-"curl -s \"$BASE_URL/productions?date=2024-03-20\""
+"curl -s $AUTH_HEADER \"$BASE_URL/productions?date=2024-03-20\""
 ((PRODUCTION_TESTS++))
 
 run_test "15. FILTER COMBINED" 200 \
-"curl -s \"$BASE_URL/productions?animalId=$ANIMAL_ID&date=2024-03-20\""
+"curl -s $AUTH_HEADER \"$BASE_URL/productions?animalId=$ANIMAL_ID&date=2024-03-20\""
 ((PRODUCTION_TESTS++))
 
 run_test "16. FILTER EMPTY" 200 \
-"curl -s \"$BASE_URL/productions?animalId=invalid&date=2020-01-01\""
+"curl -s $AUTH_HEADER \"$BASE_URL/productions?animalId=invalid&date=2020-01-01\""
 ((PRODUCTION_TESTS++))
 
 echo "========================================"
@@ -172,7 +195,7 @@ echo "AGGREGATION FLOW"
 echo "========================================"
 
 run_test "17. TOTAL PRODUCTION" 200 \
-"curl -s \"$BASE_URL/productions/summary/by-animal?animalId=$ANIMAL_ID\""
+"curl -s $AUTH_HEADER \"$BASE_URL/productions/summary/by-animal?animalId=$ANIMAL_ID\""
 ((PRODUCTION_TESTS++))
 
 echo "========================================"
@@ -181,34 +204,35 @@ echo "========================================"
 
 run_test "18. CREATE FEED TYPE" 201 \
 "curl -s -X POST $BASE_URL/feed-types \
+$AUTH_HEADER \
 -H 'Content-Type: application/json' \
 -d '{\"name\": \"Silagem\", \"costPerKg\": 1.5}'"
 ((FEED_TESTS++))
 
-FEED_TYPE_ID=$(curl -s $BASE_URL/feed-types | jq -r '.[0].id')
+FEED_TYPE_ID=$(curl -s $AUTH_HEADER $BASE_URL/feed-types | jq -r '.[0].id')
 echo "Generated FEED_TYPE_ID: $FEED_TYPE_ID"
 
 run_test "19. CREATE FEEDING" 201 \
 "curl -s -X POST $BASE_URL/feedings \
+$AUTH_HEADER \
 -H 'Content-Type: application/json' \
 -d '{
   \"animalId\": \"$ANIMAL_ID\",
   \"feedTypeId\": \"$FEED_TYPE_ID\",
   \"date\": \"2024-03-20\",
-  \"quantity\": 10,
-  \"userId\": \"$USER_ID\"
+  \"quantity\": 10
 }'"
 ((FEED_TESTS++))
 
 run_test "20. CREATE INVALID FEEDING" 400 \
 "curl -s -X POST $BASE_URL/feedings \
+$AUTH_HEADER \
 -H 'Content-Type: application/json' \
 -d '{
   \"animalId\": \"$ANIMAL_ID\",
   \"feedTypeId\": \"$FEED_TYPE_ID\",
   \"date\": \"2024-03-20\",
-  \"quantity\": -5,
-  \"userId\": \"$USER_ID\"
+  \"quantity\": -5
 }'"
 ((FEED_TESTS++))
 
@@ -217,20 +241,21 @@ echo "PROFIT FLOW"
 echo "========================================"
 
 run_test "21. GET PROFIT" 200 \
-"curl -s \"$BASE_URL/productions/summary/profit/by-animal?animalId=$ANIMAL_ID\""
+"curl -s $AUTH_HEADER \"$BASE_URL/productions/summary/profit/by-animal?animalId=$ANIMAL_ID\""
 ((PRODUCTION_TESTS++))
 
 run_test "22. PROFIT INVALID ANIMAL" 404 \
-"curl -s \"$BASE_URL/productions/summary/profit/by-animal?animalId=invalid-id\""
+"curl -s $AUTH_HEADER \"$BASE_URL/productions/summary/profit/by-animal?animalId=invalid-id\""
 ((PRODUCTION_TESTS++))
 
 echo "========================================"
 echo "SUMMARY"
 echo "========================================"
 
-TOTAL_TESTS=$((ANIMAL_TESTS + PRODUCTION_TESTS + FEED_TESTS + USER_TESTS))
+TOTAL_TESTS=$((ANIMAL_TESTS + PRODUCTION_TESTS + FEED_TESTS + USER_TESTS + AUTH_TESTS))
 
 echo "User tests: $USER_TESTS"
+echo "Auth tests: $AUTH_TESTS"
 echo "Animal tests: $ANIMAL_TESTS"
 echo "Production tests: $PRODUCTION_TESTS"
 echo "Feed tests: $FEED_TESTS"

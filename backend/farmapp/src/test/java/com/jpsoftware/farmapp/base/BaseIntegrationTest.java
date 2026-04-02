@@ -8,7 +8,6 @@ import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -57,12 +56,12 @@ public abstract class BaseIntegrationTest {
     }
 
     protected UserEntity createAuthenticatedUser() {
-        return userRepository.save(new UserEntity(
-                UUID.randomUUID(),
-                "Jane Doe",
-                "jane@farm.com",
-                "ADMIN",
-                passwordEncoder.encode("farmapp@123")));
+        UserEntity user = new UserEntity();
+        user.setName("Jane Doe");
+        user.setEmail("jane@farm.com");
+        user.setRole("ADMIN");
+        user.setPassword(passwordEncoder.encode("farmapp@123"));
+        return userRepository.save(user);
     }
 
     protected String bearerToken(UserEntity user) {
