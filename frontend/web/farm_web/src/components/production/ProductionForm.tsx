@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useTranslation } from '../../hooks/useTranslation'
 import { getAllUsers } from '../../services/userService'
 import type { ProductionAnimalOption, ProductionFormData } from '../../types/production'
 import type { User } from '../../types/user'
@@ -20,6 +21,7 @@ function ProductionForm({
   submitLabel,
   errorMessage,
 }: ProductionFormProps) {
+  const { t, language } = useTranslation()
   const [formData, setFormData] = useState<ProductionFormData>(initialValues)
   const [users, setUsers] = useState<User[]>([])
   const [isUsersLoading, setIsUsersLoading] = useState(true)
@@ -40,14 +42,14 @@ function ProductionForm({
         const usersData = await getAllUsers()
         setUsers(usersData)
       } catch {
-        setUsersErrorMessage('Unable to load users.')
+        setUsersErrorMessage(t('production.errors.loadUsers'))
       } finally {
         setIsUsersLoading(false)
       }
     }
 
     void loadUsers()
-  }, [])
+  }, [language])
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target
@@ -63,22 +65,22 @@ function ProductionForm({
     event.preventDefault()
 
     if (!formData.animalId) {
-      setValidationMessage('Select an animal before creating the production record.')
+      setValidationMessage(t('production.errors.selectAnimal'))
       return
     }
 
     if (!formData.date) {
-      setValidationMessage('Select a production date before submitting.')
+      setValidationMessage(t('production.errors.selectDate'))
       return
     }
 
     if (!Number.isFinite(formData.quantity) || formData.quantity <= 0) {
-      setValidationMessage('Quantity must be greater than zero.')
+      setValidationMessage(t('production.errors.quantity'))
       return
     }
 
     if (!formData.userId) {
-      setValidationMessage('Select a user before creating the production record.')
+      setValidationMessage(t('production.errors.selectUser'))
       return
     }
 
@@ -94,7 +96,7 @@ function ProductionForm({
     <form className="animal-form" onSubmit={handleSubmit}>
       <div className="animal-form__grid">
         <label className="animal-form__field">
-          <span>Animal</span>
+          <span>{t('production.form.animal')}</span>
           <select
             name="animalId"
             value={formData.animalId}
@@ -102,7 +104,7 @@ function ProductionForm({
             required
             disabled={isFormDisabled}
           >
-            <option value="">Select an animal</option>
+            <option value="">{t('production.form.selectAnimal')}</option>
             {animals.map((animal) => (
               <option key={animal.id} value={animal.id}>
                 {animal.tag}
@@ -112,7 +114,7 @@ function ProductionForm({
         </label>
 
         <label className="animal-form__field">
-          <span>User</span>
+          <span>{t('production.form.user')}</span>
           <select
             name="userId"
             value={formData.userId}
@@ -121,7 +123,7 @@ function ProductionForm({
             disabled={isFormDisabled}
           >
             <option value="">
-              {isUsersLoading ? 'Loading users...' : 'Select a user'}
+              {isUsersLoading ? t('production.form.loadingUsers') : t('production.form.selectUser')}
             </option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
@@ -132,7 +134,7 @@ function ProductionForm({
         </label>
 
         <label className="animal-form__field">
-          <span>Date</span>
+          <span>{t('production.form.date')}</span>
           <input
             name="date"
             type="date"
@@ -143,7 +145,7 @@ function ProductionForm({
         </label>
 
         <label className="animal-form__field">
-          <span>Quantity</span>
+          <span>{t('production.form.quantity')}</span>
           <input
             name="quantity"
             type="number"
@@ -165,7 +167,7 @@ function ProductionForm({
 
       <div className="animal-form__actions">
         <button type="submit" disabled={isFormDisabled}>
-          {isSubmitting ? 'Saving...' : submitLabel}
+          {isSubmitting ? t('common.saving') : submitLabel}
         </button>
       </div>
     </form>

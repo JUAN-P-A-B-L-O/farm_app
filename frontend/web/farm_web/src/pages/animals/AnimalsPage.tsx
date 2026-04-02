@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AnimalForm from '../../components/animal/AnimalForm'
+import { useTranslation } from '../../hooks/useTranslation'
 import {
   createAnimal,
   deleteAnimal,
@@ -22,17 +23,17 @@ const emptyAnimalForm: AnimalFormData = {
   farmId: '',
 }
 
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
+function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<ApiErrorResponse>(error)) {
     const status = error.response?.status
     const apiMessage = error.response?.data?.error
 
     if (status === 404) {
-      return apiMessage ?? 'Animal not found.'
+      return apiMessage ?? t('animals.errors.notFound')
     }
 
     if (status === 409) {
-      return apiMessage ?? 'Animal with this tag already exists.'
+      return apiMessage ?? t('animals.errors.duplicateTag')
     }
 
     if (apiMessage) {
@@ -44,6 +45,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
+  const { t } = useTranslation()
   const [animals, setAnimals] = useState<Animal[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -61,7 +63,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
       const data = await getAllAnimals()
       setAnimals(data)
     } catch (error) {
-      setListErrorMessage(getErrorMessage(error, 'Unable to load animals.'))
+      setListErrorMessage(getErrorMessage(error, t('animals.errors.loadList'), t))
     } finally {
       setIsLoading(false)
     }
@@ -89,7 +91,8 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
       setFormErrorMessage(
         getErrorMessage(
           error,
-          editingAnimalId ? 'Unable to update animal.' : 'Unable to create animal.',
+          editingAnimalId ? t('animals.errors.update') : t('animals.errors.create'),
+          t,
         ),
       )
     } finally {
@@ -112,7 +115,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
         farmId: animal.farmId,
       })
     } catch (error) {
-      setFormErrorMessage(getErrorMessage(error, 'Unable to load animal details.'))
+      setFormErrorMessage(getErrorMessage(error, t('animals.errors.loadDetails'), t))
     } finally {
       setIsSubmitting(false)
     }
@@ -125,7 +128,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   }
 
   async function handleDelete(id: string) {
-    const shouldDelete = window.confirm('Are you sure you want to delete this animal?')
+    const shouldDelete = window.confirm(t('animals.confirmDelete'))
 
     if (!shouldDelete) {
       return
@@ -143,7 +146,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
 
       await loadAnimals()
     } catch (error) {
-      setListErrorMessage(getErrorMessage(error, 'Unable to delete animal.'))
+      setListErrorMessage(getErrorMessage(error, t('animals.errors.delete'), t))
     } finally {
       setIsDeletingId(null)
     }
@@ -152,10 +155,10 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   return (
     <main className="animals-page">
       <section className="animals-page__header">
-        <p className="animals-page__eyebrow">Livestock Control</p>
-        <h1>Animals Management</h1>
+        <p className="animals-page__eyebrow">{t('animals.eyebrow')}</p>
+        <h1>{t('animals.title')}</h1>
         <p className="animals-page__description">
-          Register animals, update records, and keep the herd inventory organized.
+          {t('animals.description')}
         </p>
       </section>
 
@@ -163,11 +166,11 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
         <article className="animals-panel">
           <div className="animals-panel__header">
             <div>
-              <h2>{editingAnimalId ? 'Update Animal' : 'Create Animal'}</h2>
+              <h2>{editingAnimalId ? t('animals.updateTitle') : t('animals.createTitle')}</h2>
               <p>
                 {editingAnimalId
-                  ? 'Edit the selected animal using the existing data.'
-                  : 'Fill in the animal information to create a new record.'}
+                  ? t('animals.updateDescription')
+                  : t('animals.createDescription')}
               </p>
             </div>
           </div>
@@ -177,7 +180,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
             onSubmit={handleCreateOrUpdate}
             onCancel={editingAnimalId ? handleCancelEdit : undefined}
             isSubmitting={isSubmitting}
-            submitLabel={editingAnimalId ? 'Update animal' : 'Create animal'}
+            submitLabel={editingAnimalId ? t('animals.submitUpdate') : t('animals.submitCreate')}
             errorMessage={formErrorMessage}
           />
         </article>
@@ -185,12 +188,12 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
         <article className="animals-panel animals-panel--table">
           <div className="animals-panel__header">
             <div>
-              <h2>Animals List</h2>
-              <p>Review current records and manage updates or deletions.</p>
+              <h2>{t('animals.listTitle')}</h2>
+              <p>{t('animals.listDescription')}</p>
             </div>
           </div>
 
-          {isLoading && <p className="animals-page__status">Loading animals...</p>}
+          {isLoading && <p className="animals-page__status">{t('animals.loading')}</p>}
 
           {listErrorMessage && (
             <p className="animals-page__status animals-page__status--error">
@@ -199,7 +202,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
           )}
 
           {!isLoading && !listErrorMessage && animals.length === 0 && (
-            <p className="animals-page__status">No animals found.</p>
+            <p className="animals-page__status">{t('animals.empty')}</p>
           )}
 
           {!isLoading && !listErrorMessage && animals.length > 0 && (
@@ -207,11 +210,11 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
               <table className="animals-table">
                 <thead>
                   <tr>
-                    <th>Tag</th>
-                    <th>Breed</th>
-                    <th>Birth date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>{t('animals.table.tag')}</th>
+                    <th>{t('animals.table.breed')}</th>
+                    <th>{t('animals.table.birthDate')}</th>
+                    <th>{t('animals.table.status')}</th>
+                    <th>{t('animals.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -234,7 +237,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                           onClick={() => onOpenDetails(animal.id)}
                           disabled={isSubmitting || isDeletingId === animal.id}
                         >
-                          Details
+                          {t('animals.details')}
                         </button>
                         <button
                           type="button"
@@ -242,7 +245,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                           onClick={() => void handleEdit(animal.id)}
                           disabled={isSubmitting || isDeletingId === animal.id}
                         >
-                          Edit
+                          {t('animals.edit')}
                         </button>
                         <button
                           type="button"
@@ -250,7 +253,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                           onClick={() => void handleDelete(animal.id)}
                           disabled={isDeletingId === animal.id}
                         >
-                          {isDeletingId === animal.id ? 'Deleting...' : 'Delete'}
+                          {isDeletingId === animal.id ? t('animals.deleting') : t('animals.delete')}
                         </button>
                       </td>
                     </tr>

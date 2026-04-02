@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import LineChart, { type LineChartPoint } from '../../components/analytics/LineChart'
+import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
 import { getFeedingsByAnimalId } from '../../services/feedingService'
 import { getProductionsByAnimalId } from '../../services/productionService'
@@ -38,6 +39,7 @@ function mapTrendData(data: ProductionTrendPoint[] | FeedingTrendPoint[]): LineC
 }
 
 function AnalyticsPage() {
+  const { t, language } = useTranslation()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
   const [selectedAnimalId, setSelectedAnimalId] = useState('')
   const [productionData, setProductionData] = useState<LineChartPoint[]>([])
@@ -55,14 +57,14 @@ function AnalyticsPage() {
         const data = await getAllAnimals()
         setAnimals(mapAnimalsToOptions(data))
       } catch (error) {
-        setErrorMessage(getErrorMessage(error, 'Unable to load animals.'))
+        setErrorMessage(getErrorMessage(error, t('analytics.loadAnimalsError')))
       } finally {
         setIsAnimalsLoading(false)
       }
     }
 
     void loadAnimals()
-  }, [])
+  }, [language])
 
   useEffect(() => {
     async function loadAnalytics(animalId: string) {
@@ -78,7 +80,7 @@ function AnalyticsPage() {
         setProductionData(mapTrendData(productions))
         setFeedingData(mapTrendData(feedings))
       } catch (error) {
-        setErrorMessage(getErrorMessage(error, 'Unable to load analytics data.'))
+        setErrorMessage(getErrorMessage(error, t('analytics.loadChartsError')))
         setProductionData([])
         setFeedingData([])
       } finally {
@@ -94,17 +96,17 @@ function AnalyticsPage() {
     }
 
     void loadAnalytics(selectedAnimalId)
-  }, [selectedAnimalId])
+  }, [selectedAnimalId, language])
 
   const showCharts = !isChartsLoading && !errorMessage && selectedAnimalId
 
   return (
     <main className="animals-page">
       <section className="animals-page__header">
-        <p className="animals-page__eyebrow">Analytics</p>
-        <h1>Animal Trends</h1>
+        <p className="animals-page__eyebrow">{t('analytics.eyebrow')}</p>
+        <h1>{t('analytics.title')}</h1>
         <p className="animals-page__description">
-          Select an animal to compare production and feeding quantities over time.
+          {t('analytics.description')}
         </p>
       </section>
 
@@ -112,21 +114,21 @@ function AnalyticsPage() {
         <article className="analytics-panel">
           <div className="animals-panel__header">
             <div>
-              <h2>Animal Selector</h2>
-              <p>Choose an animal by tag to load production and feeding trends.</p>
+              <h2>{t('analytics.selectorTitle')}</h2>
+              <p>{t('analytics.selectorDescription')}</p>
             </div>
           </div>
 
           <div className="analytics-controls">
             <label htmlFor="analytics-animal-select">
-              Animal
+              {t('analytics.animalLabel')}
               <select
                 id="analytics-animal-select"
                 value={selectedAnimalId}
                 onChange={(event) => setSelectedAnimalId(event.target.value)}
                 disabled={isAnimalsLoading}
               >
-                <option value="">Select an animal</option>
+                <option value="">{t('analytics.selectAnimal')}</option>
                 {animals.map((animal) => (
                   <option key={animal.id} value={animal.id}>
                     {animal.tag}
@@ -136,17 +138,17 @@ function AnalyticsPage() {
             </label>
           </div>
 
-          {isAnimalsLoading && <p className="animals-page__status">Loading animals...</p>}
+          {isAnimalsLoading && <p className="animals-page__status">{t('analytics.loadingAnimals')}</p>}
 
           {!isAnimalsLoading && !errorMessage && animals.length === 0 && (
-            <p className="animals-page__status">No animals available.</p>
+            <p className="animals-page__status">{t('analytics.emptyAnimals')}</p>
           )}
 
           {!selectedAnimalId && !isAnimalsLoading && animals.length > 0 && !errorMessage && (
-            <p className="animals-page__status">Select an animal to view analytics.</p>
+            <p className="animals-page__status">{t('analytics.promptSelect')}</p>
           )}
 
-          {isChartsLoading && <p className="animals-page__status">Loading analytics...</p>}
+          {isChartsLoading && <p className="animals-page__status">{t('analytics.loadingCharts')}</p>}
 
           {errorMessage && (
             <p className="animals-page__status animals-page__status--error">{errorMessage}</p>
@@ -156,8 +158,8 @@ function AnalyticsPage() {
         <section className="analytics-grid">
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
-              <h2>Production Over Time</h2>
-              <p>Daily production quantity for the selected animal.</p>
+              <h2>{t('analytics.productionTitle')}</h2>
+              <p>{t('analytics.productionDescription')}</p>
             </div>
 
             {showCharts && productionData.length > 0 && (
@@ -165,14 +167,14 @@ function AnalyticsPage() {
             )}
 
             {showCharts && productionData.length === 0 && (
-              <p className="analytics-chart__empty">No production data found for this animal.</p>
+              <p className="analytics-chart__empty">{t('analytics.productionEmpty')}</p>
             )}
           </article>
 
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
-              <h2>Feeding Over Time</h2>
-              <p>Daily feeding quantity for the selected animal.</p>
+              <h2>{t('analytics.feedingTitle')}</h2>
+              <p>{t('analytics.feedingDescription')}</p>
             </div>
 
             {showCharts && feedingData.length > 0 && (
@@ -180,7 +182,7 @@ function AnalyticsPage() {
             )}
 
             {showCharts && feedingData.length === 0 && (
-              <p className="analytics-chart__empty">No feeding data found for this animal.</p>
+              <p className="analytics-chart__empty">{t('analytics.feedingEmpty')}</p>
             )}
           </article>
         </section>

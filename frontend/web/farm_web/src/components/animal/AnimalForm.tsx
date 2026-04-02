@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useTranslation } from '../../hooks/useTranslation'
 import type { AnimalFormData } from '../../types/animal'
 
 interface AnimalFormProps {
@@ -18,6 +19,7 @@ function AnimalForm({
   submitLabel,
   errorMessage,
 }: AnimalFormProps) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState<AnimalFormData>(initialValues)
 
   useEffect(() => {
@@ -42,7 +44,7 @@ function AnimalForm({
     <form className="animal-form" onSubmit={handleSubmit}>
       <div className="animal-form__grid">
         <label className="animal-form__field">
-          <span>Tag</span>
+          <span>{t('animals.form.tag')}</span>
           <input
             name="tag"
             type="text"
@@ -54,7 +56,7 @@ function AnimalForm({
         </label>
 
         <label className="animal-form__field">
-          <span>Breed</span>
+          <span>{t('animals.form.breed')}</span>
           <input
             name="breed"
             type="text"
@@ -66,7 +68,7 @@ function AnimalForm({
         </label>
 
         <label className="animal-form__field">
-          <span>Birth date</span>
+          <span>{t('animals.form.birthDate')}</span>
           <input
             name="birthDate"
             type="date"
@@ -77,7 +79,7 @@ function AnimalForm({
         </label>
 
         <label className="animal-form__field">
-          <span>Farm ID</span>
+          <span>{t('animals.form.farmId')}</span>
           <input
             name="farmId"
             type="text"
@@ -97,7 +99,7 @@ function AnimalForm({
 
       <div className="animal-form__actions">
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : submitLabel}
+          {isSubmitting ? t('common.saving') : submitLabel}
         </button>
 
         {onCancel && (
@@ -107,7 +109,7 @@ function AnimalForm({
             onClick={onCancel}
             disabled={isSubmitting}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
         )}
       </div>

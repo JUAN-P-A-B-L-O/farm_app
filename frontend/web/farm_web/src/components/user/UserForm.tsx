@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useTranslation } from '../../hooks/useTranslation'
 import type { UserFormData } from '../../types/user'
 
 const roleOptions = ['MANAGER', 'WORKER']
@@ -20,6 +21,7 @@ function UserForm({
   submitLabel,
   errorMessage,
 }: UserFormProps) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState<UserFormData>(initialValues)
   const [validationMessage, setValidationMessage] = useState('')
 
@@ -51,17 +53,17 @@ function UserForm({
     }
 
     if (!payload.name) {
-      setValidationMessage('Name is required.')
+      setValidationMessage(t('accessControl.errors.nameRequired'))
       return
     }
 
     if (!payload.email) {
-      setValidationMessage('Email is required.')
+      setValidationMessage(t('accessControl.errors.emailRequired'))
       return
     }
 
     if (!payload.role) {
-      setValidationMessage('Role is required.')
+      setValidationMessage(t('accessControl.errors.roleRequired'))
       return
     }
 
@@ -73,7 +75,7 @@ function UserForm({
     <form className="animal-form" onSubmit={handleSubmit}>
       <div className="animal-form__grid">
         <label className="animal-form__field">
-          <span>Name</span>
+          <span>{t('accessControl.form.name')}</span>
           <input
             name="name"
             type="text"
@@ -85,7 +87,7 @@ function UserForm({
         </label>
 
         <label className="animal-form__field">
-          <span>Email</span>
+          <span>{t('accessControl.form.email')}</span>
           <input
             name="email"
             type="email"
@@ -97,9 +99,9 @@ function UserForm({
         </label>
 
         <label className="animal-form__field">
-          <span>Role</span>
+          <span>{t('accessControl.form.role')}</span>
           <select name="role" value={formData.role} onChange={handleChange} required>
-            <option value="">Select a role</option>
+            <option value="">{t('accessControl.form.selectRole')}</option>
             {roleOptions.map((role) => (
               <option key={role} value={role}>
                 {role}
@@ -123,7 +125,7 @@ function UserForm({
 
       <div className="animal-form__actions">
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : submitLabel}
+          {isSubmitting ? t('common.saving') : submitLabel}
         </button>
 
         {onCancel && (
@@ -133,7 +135,7 @@ function UserForm({
             onClick={onCancel}
             disabled={isSubmitting}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
         )}
       </div>

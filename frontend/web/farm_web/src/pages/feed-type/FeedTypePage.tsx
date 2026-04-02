@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import FeedTypeForm from '../../components/feed-type/FeedTypeForm'
+import { useTranslation } from '../../hooks/useTranslation'
 import {
   createFeedType,
   deleteFeedType,
@@ -15,21 +16,21 @@ const emptyFeedTypeForm: FeedTypeFormData = {
   costPerKg: 0,
 }
 
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
+function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<FeedTypeApiErrorResponse>(error)) {
     const status = error.response?.status
     const apiMessage = error.response?.data?.error
 
     if (status === 400) {
-      return apiMessage ?? 'Validation error while saving feed type.'
+      return apiMessage ?? t('feedType.errors.validationSave')
     }
 
     if (status === 404) {
-      return apiMessage ?? 'Feed type not found.'
+      return apiMessage ?? t('feedType.errors.notFound')
     }
 
     if (status === 409) {
-      return apiMessage ?? 'Feed type with this name already exists.'
+      return apiMessage ?? t('feedType.errors.duplicateName')
     }
 
     if (apiMessage) {
@@ -41,6 +42,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 function FeedTypePage() {
+  const { t } = useTranslation()
   const [feedTypes, setFeedTypes] = useState<FeedType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -58,7 +60,7 @@ function FeedTypePage() {
       const data = await getAllFeedTypes()
       setFeedTypes(data)
     } catch (error) {
-      setListErrorMessage(getErrorMessage(error, 'Unable to load feed types.'))
+      setListErrorMessage(getErrorMessage(error, t('feedType.errors.loadList'), t))
     } finally {
       setIsLoading(false)
     }
@@ -86,7 +88,8 @@ function FeedTypePage() {
       setFormErrorMessage(
         getErrorMessage(
           error,
-          editingFeedTypeId ? 'Unable to update feed type.' : 'Unable to create feed type.',
+          editingFeedTypeId ? t('feedType.errors.update') : t('feedType.errors.create'),
+          t,
         ),
       )
     } finally {
@@ -110,7 +113,7 @@ function FeedTypePage() {
   }
 
   async function handleDelete(id: string) {
-    const shouldDelete = window.confirm('Are you sure you want to delete this feed type?')
+    const shouldDelete = window.confirm(t('feedType.confirmDelete'))
 
     if (!shouldDelete) {
       return
@@ -128,7 +131,7 @@ function FeedTypePage() {
 
       await loadFeedTypes()
     } catch (error) {
-      setListErrorMessage(getErrorMessage(error, 'Unable to delete feed type.'))
+      setListErrorMessage(getErrorMessage(error, t('feedType.errors.delete'), t))
     } finally {
       setIsDeletingId(null)
     }
@@ -137,10 +140,10 @@ function FeedTypePage() {
   return (
     <main className="animals-page">
       <section className="animals-page__header">
-        <p className="animals-page__eyebrow">Feed Control</p>
-        <h1>Feed Type Management</h1>
+        <p className="animals-page__eyebrow">{t('feedType.eyebrow')}</p>
+        <h1>{t('feedType.title')}</h1>
         <p className="animals-page__description">
-          Manage available feed types and keep feeding records aligned with current options.
+          {t('feedType.description')}
         </p>
       </section>
 
@@ -148,11 +151,11 @@ function FeedTypePage() {
         <article className="animals-panel">
           <div className="animals-panel__header">
             <div>
-              <h2>{editingFeedTypeId ? 'Update Feed Type' : 'Create Feed Type'}</h2>
+              <h2>{editingFeedTypeId ? t('feedType.updateTitle') : t('feedType.createTitle')}</h2>
               <p>
                 {editingFeedTypeId
-                  ? 'Edit the selected feed type using the existing data.'
-                  : 'Fill in the feed type information to create a new record.'}
+                  ? t('feedType.updateDescription')
+                  : t('feedType.createDescription')}
               </p>
             </div>
           </div>
@@ -162,7 +165,7 @@ function FeedTypePage() {
             onSubmit={handleCreateOrUpdate}
             onCancel={editingFeedTypeId ? handleCancelEdit : undefined}
             isSubmitting={isSubmitting}
-            submitLabel={editingFeedTypeId ? 'Update feed type' : 'Create feed type'}
+            submitLabel={editingFeedTypeId ? t('feedType.submitUpdate') : t('feedType.submitCreate')}
             errorMessage={formErrorMessage}
           />
         </article>
@@ -170,12 +173,12 @@ function FeedTypePage() {
         <article className="animals-panel animals-panel--table">
           <div className="animals-panel__header">
             <div>
-              <h2>Feed Type List</h2>
-              <p>Review current feed types and manage updates or deletions.</p>
+              <h2>{t('feedType.listTitle')}</h2>
+              <p>{t('feedType.listDescription')}</p>
             </div>
           </div>
 
-          {isLoading && <p className="animals-page__status">Loading feed types...</p>}
+          {isLoading && <p className="animals-page__status">{t('feedType.loading')}</p>}
 
           {listErrorMessage && (
             <p className="animals-page__status animals-page__status--error">
@@ -184,7 +187,7 @@ function FeedTypePage() {
           )}
 
           {!isLoading && !listErrorMessage && feedTypes.length === 0 && (
-            <p className="animals-page__status">No feed types found.</p>
+            <p className="animals-page__status">{t('feedType.empty')}</p>
           )}
 
           {!isLoading && !listErrorMessage && feedTypes.length > 0 && (
@@ -192,9 +195,9 @@ function FeedTypePage() {
               <table className="animals-table">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Cost per kg</th>
-                    <th>Actions</th>
+                    <th>{t('feedType.table.name')}</th>
+                    <th>{t('feedType.table.costPerKg')}</th>
+                    <th>{t('feedType.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -209,7 +212,7 @@ function FeedTypePage() {
                           onClick={() => handleEdit(feedType)}
                           disabled={isSubmitting || isDeletingId === feedType.id}
                         >
-                          Edit
+                          {t('feedType.edit')}
                         </button>
                         <button
                           type="button"
@@ -217,7 +220,7 @@ function FeedTypePage() {
                           onClick={() => handleDelete(feedType.id)}
                           disabled={isSubmitting || isDeletingId === feedType.id}
                         >
-                          {isDeletingId === feedType.id ? 'Deleting...' : 'Delete'}
+                          {isDeletingId === feedType.id ? t('feedType.deleting') : t('feedType.delete')}
                         </button>
                       </td>
                     </tr>

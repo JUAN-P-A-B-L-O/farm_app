@@ -1,0 +1,88 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Farm Manager" as Manager
+actor "Farm Worker" as Worker
+
+rectangle "Farm Management System" {
+  package "Animals" {
+    usecase "Create Animal" as UC_CreateAnimal
+    usecase "View Animals" as UC_ViewAnimals
+    usecase "Update Animal" as UC_UpdateAnimal
+    usecase "Delete Animal" as UC_DeleteAnimal
+    usecase "View Animal Details" as UC_ViewAnimalDetails
+  }
+
+  package "Production" {
+    usecase "Record Production" as UC_RecordProduction
+    usecase "View Production History" as UC_ViewProductionHistory
+  }
+
+  package "Feeding" {
+    usecase "Record Feeding" as UC_RecordFeeding
+    usecase "View Feeding History" as UC_ViewFeedingHistory
+  }
+
+  package "Feed Types" {
+    usecase "Create Feed Type" as UC_CreateFeedType
+    usecase "Update Feed Type" as UC_UpdateFeedType
+    usecase "Delete Feed Type" as UC_DeleteFeedType
+    usecase "View Feed Types" as UC_ViewFeedTypes
+  }
+
+  package "Users" {
+    usecase "Create User" as UC_CreateUser
+    usecase "Update User" as UC_UpdateUser
+    usecase "Delete User" as UC_DeleteUser
+    usecase "View Users" as UC_ViewUsers
+    usecase "Manage User Roles" as UC_ManageUserRoles
+  }
+
+  package "Analytics" {
+    usecase "View Dashboard" as UC_ViewDashboard
+    usecase "View Animal Analytics" as UC_ViewAnimalAnalytics
+  }
+
+  package "System" {
+    usecase "Switch Language" as UC_SwitchLanguage
+  }
+}
+
+Manager --> UC_CreateAnimal
+Manager --> UC_ViewAnimals
+Manager --> UC_UpdateAnimal
+Manager --> UC_DeleteAnimal
+Manager --> UC_ViewAnimalDetails
+Manager --> UC_RecordProduction
+Manager --> UC_ViewProductionHistory
+Manager --> UC_RecordFeeding
+Manager --> UC_ViewFeedingHistory
+Manager --> UC_CreateFeedType
+Manager --> UC_UpdateFeedType
+Manager --> UC_DeleteFeedType
+Manager --> UC_ViewFeedTypes
+Manager --> UC_CreateUser
+Manager --> UC_UpdateUser
+Manager --> UC_DeleteUser
+Manager --> UC_ViewUsers
+Manager --> UC_ManageUserRoles
+Manager --> UC_ViewDashboard
+Manager --> UC_ViewAnimalAnalytics
+Manager --> UC_SwitchLanguage
+
+Worker --> UC_ViewAnimals
+Worker --> UC_ViewAnimalDetails
+Worker --> UC_RecordProduction
+Worker --> UC_ViewProductionHistory
+Worker --> UC_RecordFeeding
+Worker --> UC_ViewFeedingHistory
+Worker --> UC_ViewFeedTypes
+Worker --> UC_ViewDashboard
+Worker --> UC_ViewAnimalAnalytics
+Worker --> UC_SwitchLanguage
+
+UC_ViewAnimalDetails .> UC_ViewProductionHistory : <<include>>
+UC_ViewAnimalDetails .> UC_ViewFeedingHistory : <<include>>
+
+@enduml

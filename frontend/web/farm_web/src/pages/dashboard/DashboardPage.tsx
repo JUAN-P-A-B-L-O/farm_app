@@ -1,21 +1,24 @@
 import { useEffect, useState } from 'react'
 import StatCard from '../../components/dashboard/StatCard'
+import { useTranslation } from '../../hooks/useTranslation'
 import { fetchDashboard } from '../../services/dashboardService'
 import type { DashboardSummary } from '../../types/dashboard'
 import '../../App.css'
 
 const dashboardStats: Array<{
   key: keyof DashboardSummary
-  title: string
+  titleKey: string
+  format: 'number' | 'currency'
 }> = [
-  { key: 'totalProduction', title: 'Total Production' },
-  { key: 'totalFeedingCost', title: 'Feeding Cost' },
-  { key: 'totalRevenue', title: 'Total Revenue' },
-  { key: 'totalProfit', title: 'Profit' },
-  { key: 'animalCount', title: 'Number of Animals' },
+  { key: 'totalProduction', titleKey: 'dashboard.stats.totalProduction', format: 'number' },
+  { key: 'totalFeedingCost', titleKey: 'dashboard.stats.totalFeedingCost', format: 'currency' },
+  { key: 'totalRevenue', titleKey: 'dashboard.stats.totalRevenue', format: 'currency' },
+  { key: 'totalProfit', titleKey: 'dashboard.stats.totalProfit', format: 'currency' },
+  { key: 'animalCount', titleKey: 'dashboard.stats.animalCount', format: 'number' },
 ]
 
 function DashboardPage() {
+  const { t, language } = useTranslation()
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -26,25 +29,25 @@ function DashboardPage() {
         const data = await fetchDashboard()
         setSummary(data)
       } catch {
-        setErrorMessage('Unable to load dashboard data.')
+        setErrorMessage(t('dashboard.error'))
       } finally {
         setIsLoading(false)
       }
     }
 
     void loadDashboard()
-  }, [])
+  }, [language])
   return (
     <main className="dashboard-page">
       <section className="dashboard-page__header">
-        <p className="dashboard-page__eyebrow">Farm Overview</p>
-        <h1>Dashboard</h1>
+        <p className="dashboard-page__eyebrow">{t('dashboard.eyebrow')}</p>
+        <h1>{t('dashboard.title')}</h1>
         <p className="dashboard-page__description">
-          Monitor the most important farm metrics from a single summary view.
+          {t('dashboard.description')}
         </p>
       </section>
 
-      {isLoading && <p className="dashboard-page__status">Loading dashboard...</p>}
+      {isLoading && <p className="dashboard-page__status">{t('dashboard.loading')}</p>}
 
       {errorMessage && (
         <p className="dashboard-page__status dashboard-page__status--error">
@@ -53,13 +56,14 @@ function DashboardPage() {
       )}
 
       {summary && !isLoading && !errorMessage && (
-        <section className="dashboard-grid" aria-label="Farm summary metrics">
+        <section className="dashboard-grid" aria-label={t('dashboard.ariaSummary')}>
 
           {dashboardStats.map((stat) => (
             <StatCard
               key={stat.key}
-              title={stat.title}
+              title={t(stat.titleKey)}
               value={summary[stat.key] ?? 0}
+              format={stat.format}
             />
           ))}
         </section>
