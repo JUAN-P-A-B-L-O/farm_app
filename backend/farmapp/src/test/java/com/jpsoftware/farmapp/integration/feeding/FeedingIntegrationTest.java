@@ -18,15 +18,13 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldReturnFeedingWithAnimalAndFeedTypeSummary() throws Exception {
-        UserEntity savedUser = userRepository.save(new UserEntity(
-                null,
-                "Jane Doe",
-                "jane@farm.com",
-                "ADMIN"));
+        UserEntity savedUser = createAuthenticatedUser();
+        String authorization = bearerToken(savedUser);
         animalRepository.save(AnimalFixture.animalEntity());
         FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 1.75, true));
 
         MvcResult createdResult = mockMvc.perform(post("/feedings")
+                        .header("Authorization", authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(FeedingFixture.createRequestJson("animal-1", feedType.getId(), savedUser.getId().toString())))
                 .andExpect(status().isCreated())
@@ -40,7 +38,8 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
 
         String feedingId = objectMapper.readTree(createdResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(get("/feedings/{id}", feedingId))
+        mockMvc.perform(get("/feedings/{id}", feedingId)
+                        .header("Authorization", authorization))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(feedingId))
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
@@ -53,15 +52,13 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldCreateFetchAndListFeedingThroughRealSpringContext() throws Exception {
-        UserEntity savedUser = userRepository.save(new UserEntity(
-                null,
-                "Jane Doe",
-                "jane@farm.com",
-                "ADMIN"));
+        UserEntity savedUser = createAuthenticatedUser();
+        String authorization = bearerToken(savedUser);
         animalRepository.save(AnimalFixture.animalEntity());
         FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 1.75, true));
 
         MvcResult createdResult = mockMvc.perform(post("/feedings")
+                        .header("Authorization", authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(FeedingFixture.createRequestJson("animal-1", feedType.getId(), savedUser.getId().toString())))
                 .andExpect(status().isCreated())
@@ -71,7 +68,8 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
 
         String feedingId = objectMapper.readTree(createdResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(get("/feedings/{id}", feedingId))
+        mockMvc.perform(get("/feedings/{id}", feedingId)
+                        .header("Authorization", authorization))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(feedingId))
                 .andExpect(jsonPath("$.quantity").value(8.5))
@@ -80,7 +78,8 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.feedType.id").value(feedType.getId()))
                 .andExpect(jsonPath("$.feedType.name").value("Corn Silage"));
 
-        mockMvc.perform(get("/feedings"))
+        mockMvc.perform(get("/feedings")
+                        .header("Authorization", authorization))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(feedingId))
                 .andExpect(jsonPath("$[0].animalId").value("animal-1"))

@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.feeding.service;
 
+import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
 import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
@@ -35,26 +36,31 @@ public class FeedingService {
     private final FeedTypeRepository feedTypeRepository;
     private final UserRepository userRepository;
     private final FeedingMapper feedingMapper;
+    private final AuthenticationContextService authenticationContextService;
 
     public FeedingService(
             FeedingRepository feedingRepository,
             AnimalRepository animalRepository,
             FeedTypeRepository feedTypeRepository,
             UserRepository userRepository,
-            FeedingMapper feedingMapper) {
+            FeedingMapper feedingMapper,
+            AuthenticationContextService authenticationContextService) {
         this.feedingRepository = feedingRepository;
         this.animalRepository = animalRepository;
         this.feedTypeRepository = feedTypeRepository;
         this.userRepository = userRepository;
         this.feedingMapper = feedingMapper;
+        this.authenticationContextService = authenticationContextService;
     }
 
     @Transactional
     public FeedingResponse create(CreateFeedingRequest request) {
-        validateInput(request);
-        validateRelations(request);
+        String createdBy = authenticationContextService.resolveUserId(request != null ? request.getUserId() : null);
+        validateInput(request, createdBy);
+        validateRelations(request, createdBy);
 
         FeedingEntity feedingEntity = feedingMapper.toEntity(request);
+        feedingEntity.setCreatedBy(createdBy);
         FeedingEntity savedFeeding = feedingRepository.save(feedingEntity);
 
         return toEnrichedResponse(savedFeeding);
@@ -131,7 +137,7 @@ public class FeedingService {
         return new FeedTypeSummaryResponse(feedTypeEntity.getId(), feedTypeEntity.getName());
     }
 
-    private void validateInput(CreateFeedingRequest request) {
+    private void validateInput(CreateFeedingRequest request, String createdBy) {
         if (request == null) {
             throw new ValidationException("request must not be null");
         }
@@ -147,19 +153,19 @@ public class FeedingService {
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new ValidationException("quantity must be greater than zero");
         }
-        if (!StringUtils.hasText(request.getUserId())) {
+        if (!StringUtils.hasText(createdBy)) {
             throw new ValidationException("userId must not be blank");
         }
     }
 
-    private void validateRelations(CreateFeedingRequest request) {
+    private void validateRelations(CreateFeedingRequest request, String createdBy) {
         if (!animalRepository.existsById(request.getAnimalId())) {
             throw new ResourceNotFoundException("Animal not found");
         }
         if (!feedTypeRepository.existsById(request.getFeedTypeId())) {
             throw new ResourceNotFoundException("Feed type not found");
         }
-        if (!userRepository.existsById(parseUserId(request.getUserId()))) {
+        if (!userRepository.existsById(parseUserId(createdBy))) {
             throw new ResourceNotFoundException("User not found");
         }
     }

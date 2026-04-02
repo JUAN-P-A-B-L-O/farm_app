@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
@@ -55,7 +56,8 @@ class ProductionServiceTest {
                 feedingRepositoryHandler.createProxy(),
                 animalRepositoryHandler.createProxy(),
                 userRepositoryHandler.createProxy(),
-                new ProductionMapper());
+                new ProductionMapper(),
+                new AuthenticationContextService());
 
         createProductionRequest = new CreateProductionRequest(
                 "animal-1",

@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jpsoftware.farmapp.base.BaseIntegrationTest;
 import com.jpsoftware.farmapp.fixture.AnimalFixture;
+import com.jpsoftware.farmapp.user.entity.UserEntity;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
@@ -18,7 +19,11 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldCreateFetchUpdateAndDeleteAnimalThroughRealSpringContext() throws Exception {
+        UserEntity user = createAuthenticatedUser();
+        String authorization = bearerToken(user);
+
         MvcResult createdResult = mockMvc.perform(post("/animals")
+                        .header("Authorization", authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(AnimalFixture.createRequestJson()))
                 .andExpect(status().isCreated())
@@ -27,12 +32,14 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
 
         String animalId = objectMapper.readTree(createdResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(get("/animals/{id}", animalId))
+        mockMvc.perform(get("/animals/{id}", animalId)
+                        .header("Authorization", authorization))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(animalId))
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
 
         mockMvc.perform(put("/animals/{id}", animalId)
+                        .header("Authorization", authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(AnimalFixture.updateRequestJson()))
                 .andExpect(status().isOk())
@@ -40,7 +47,8 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.farmId").value("FARM-002"))
                 .andExpect(jsonPath("$.status").value("INACTIVE"));
 
-        mockMvc.perform(delete("/animals/{id}", animalId))
+        mockMvc.perform(delete("/animals/{id}", animalId)
+                        .header("Authorization", authorization))
                 .andExpect(status().isNoContent());
 
         assertFalse(animalRepository.existsById(animalId));
@@ -48,12 +56,17 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldFailWhenTagAlreadyExists() throws Exception {
+        UserEntity user = createAuthenticatedUser();
+        String authorization = bearerToken(user);
+
         mockMvc.perform(post("/animals")
+                        .header("Authorization", authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(AnimalFixture.createRequestJson()))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/animals")
+                        .header("Authorization", authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(AnimalFixture.createRequestJson()))
                 .andExpect(status().isConflict())

@@ -16,7 +16,6 @@ public class FeedingMapper {
         entity.setFeedTypeId(request.getFeedTypeId());
         entity.setDate(request.getDate());
         entity.setQuantity(request.getQuantity());
-        entity.setCreatedBy(request.getUserId());
         return entity;
     }
 

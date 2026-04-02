@@ -18,13 +18,21 @@ public class CreateUserRequest {
     @Schema(description = "User role in the system.", example = "MANAGER")
     private String role;
 
+    @Schema(description = "User password for authentication.", example = "farmapp@123")
+    private String password;
+
     public CreateUserRequest() {
     }
 
     public CreateUserRequest(String name, String email, String role) {
+        this(name, email, role, null);
+    }
+
+    public CreateUserRequest(String name, String email, String role, String password) {
         this.name = name;
         this.email = email;
         this.role = role;
+        this.password = password;
     }
 
     public String getName() {
@@ -49,5 +57,13 @@ public class CreateUserRequest {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

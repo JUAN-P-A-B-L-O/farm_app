@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 class UserServiceTest {
 
@@ -30,7 +31,7 @@ class UserServiceTest {
     @BeforeEach
     void setUp() {
         repositoryHandler = new InMemoryUserRepository();
-        userService = new UserService(repositoryHandler.createProxy(), new UserMapper());
+        userService = new UserService(repositoryHandler.createProxy(), new UserMapper(), new BCryptPasswordEncoder());
     }
 
     @Test
@@ -123,6 +124,11 @@ class UserServiceTest {
                         }
                         if ("findById".equals(methodName)) {
                             return Optional.ofNullable(data.get(args[0]));
+                        }
+                        if ("findByEmail".equals(methodName)) {
+                            return data.values().stream()
+                                    .filter(user -> user.getEmail().equals(args[0]))
+                                    .findFirst();
                         }
                         if ("equals".equals(methodName)) {
                             return proxy == args[0];

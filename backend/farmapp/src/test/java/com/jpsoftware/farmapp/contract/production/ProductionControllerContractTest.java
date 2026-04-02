@@ -17,6 +17,7 @@ import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
 import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.production.service.ProductionService;
+import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
@@ -267,7 +268,8 @@ class ProductionControllerContractTest {
                     dummyFeedingRepository(),
                     dummyAnimalRepository(),
                     dummyUserRepository(),
-                    new ProductionMapper());
+                    new ProductionMapper(),
+                    new AuthenticationContextService());
         }
 
         @Override

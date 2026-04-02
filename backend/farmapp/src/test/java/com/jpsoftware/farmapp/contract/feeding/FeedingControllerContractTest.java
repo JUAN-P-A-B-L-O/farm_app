@@ -15,6 +15,7 @@ import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
 import com.jpsoftware.farmapp.feeding.mapper.FeedingMapper;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
+import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
@@ -208,7 +209,8 @@ class FeedingControllerContractTest {
                     dummyAnimalRepository(),
                     dummyFeedTypeRepository(),
                     dummyUserRepository(),
-                    new FeedingMapper());
+                    new FeedingMapper(),
+                    new AuthenticationContextService());
         }
 
         @Override

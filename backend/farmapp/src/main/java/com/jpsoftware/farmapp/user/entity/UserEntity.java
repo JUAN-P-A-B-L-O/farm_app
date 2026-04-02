@@ -26,14 +26,22 @@ public class UserEntity {
     @Column(nullable = false)
     private String role;
 
+    @Column(nullable = false)
+    private String password;
+
     public UserEntity() {
     }
 
     public UserEntity(UUID id, String name, String email, String role) {
+        this(id, name, email, role, "");
+    }
+
+    public UserEntity(UUID id, String name, String email, String role, String password) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.role = role;
+        this.password = password;
     }
 
     public UUID getId() {
@@ -66,5 +74,13 @@ public class UserEntity {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

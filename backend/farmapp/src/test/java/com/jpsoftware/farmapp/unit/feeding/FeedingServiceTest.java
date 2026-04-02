@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
@@ -51,7 +52,8 @@ class FeedingServiceTest {
                 animalRepositoryHandler.createAnimalProxy(),
                 feedTypeRepositoryHandler.createFeedTypeProxy(),
                 userRepositoryHandler.createUserProxy(),
-                new FeedingMapper());
+                new FeedingMapper(),
+                new AuthenticationContextService());
     }
 
     @Test
