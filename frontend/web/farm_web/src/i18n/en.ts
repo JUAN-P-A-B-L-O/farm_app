@@ -4,6 +4,7 @@ const en = {
     brandEyebrow: 'Farm App',
     brandTitle: 'Management',
     languageLabel: 'Language',
+    logout: 'Logout',
     navigation: {
       dashboard: 'Dashboard',
       animals: 'Animals',
@@ -20,6 +21,21 @@ const en = {
     cancel: 'Cancel',
     selectAnimal: 'Select an animal',
     selectUser: 'Select a user',
+  },
+  auth: {
+    eyebrow: 'Authentication',
+    title: 'Login',
+    description: 'Enter your account credentials to access the application.',
+    submit: 'Login',
+    submitting: 'Signing in...',
+    form: {
+      email: 'Email',
+      password: 'Password',
+    },
+    errors: {
+      invalidCredentials: 'Invalid credentials',
+      generic: 'Unable to sign in. Please try again.',
+    },
   },
   dashboard: {
     eyebrow: 'Farm Overview',
