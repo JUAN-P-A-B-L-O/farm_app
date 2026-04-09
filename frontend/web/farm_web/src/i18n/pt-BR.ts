@@ -4,6 +4,7 @@ const ptBR = {
     brandEyebrow: 'Farm App',
     brandTitle: 'Gestão',
     languageLabel: 'Idioma',
+    logout: 'Sair',
     navigation: {
       dashboard: 'Dashboard',
       animals: 'Animais',
@@ -20,6 +21,21 @@ const ptBR = {
     cancel: 'Cancelar',
     selectAnimal: 'Selecione um animal',
     selectUser: 'Selecione um usuário',
+  },
+  auth: {
+    eyebrow: 'Autenticação',
+    title: 'Login',
+    description: 'Informe suas credenciais para acessar a aplicação.',
+    submit: 'Entrar',
+    submitting: 'Entrando...',
+    form: {
+      email: 'Email',
+      password: 'Senha',
+    },
+    errors: {
+      invalidCredentials: 'Invalid credentials',
+      generic: 'Não foi possível entrar. Tente novamente.',
+    },
   },
   dashboard: {
     eyebrow: 'Visão da fazenda',

@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { useLanguage, type Language } from '../context/LanguageContext'
 import { useTranslation } from '../hooks/useTranslation'
 
@@ -13,11 +14,18 @@ const navigationItems = [
 ]
 
 function AppLayout() {
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const { language, setLanguage } = useLanguage()
   const { t } = useTranslation()
 
   function handleLanguageChange(nextLanguage: Language) {
     setLanguage(nextLanguage)
+  }
+
+  function handleLogout() {
+    logout()
+    navigate('/login', { replace: true })
   }
 
   return (
@@ -62,6 +70,13 @@ function AppLayout() {
               EN
             </button>
           </div>
+        </div>
+
+        <div className="app-layout__session">
+          <p className="app-layout__session-user">{user?.name ?? user?.email}</p>
+          <button type="button" className="app-layout__logout-button" onClick={handleLogout}>
+            {t('layout.logout')}
+          </button>
         </div>
       </aside>
 

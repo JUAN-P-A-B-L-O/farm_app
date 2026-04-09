@@ -9,6 +9,8 @@ import FeedTypePage from './pages/feed-type/FeedTypePage'
 import ProductionPage from './pages/production/ProductionPage'
 import UsersPage from './pages/users/UsersPage'
 import AppLayout from './layout/AppLayout'
+import LoginPage from './pages/login/LoginPage'
+import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function AnimalsRoute() {
   const navigate = useNavigate()
@@ -26,20 +28,23 @@ function AnimalDetailsRoute() {
 function App() {
   return (
     <Routes>
-      <Route element={<AppLayout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/animals" element={<AnimalsRoute />} />
-        <Route path="/animals/:id" element={<AnimalDetailsRoute />} />
-        <Route path="/production" element={<ProductionPage />} />
-        <Route path="/feeding" element={<FeedingPage />} />
-        <Route path="/feed-types" element={<FeedTypePage />} />
-        <Route path="/users" element={<UsersPage />} />
-        <Route path="/analytics" element={<AnalyticsPage />} />
-        <Route path="/productions" element={<Navigate to="/production" replace />} />
-        <Route path="/feedings" element={<Navigate to="/feeding" replace />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/animals" element={<AnimalsRoute />} />
+          <Route path="/animals/:id" element={<AnimalDetailsRoute />} />
+          <Route path="/production" element={<ProductionPage />} />
+          <Route path="/feeding" element={<FeedingPage />} />
+          <Route path="/feed-types" element={<FeedTypePage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/productions" element={<Navigate to="/production" replace />} />
+          <Route path="/feedings" element={<Navigate to="/feeding" replace />} />
+        </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
