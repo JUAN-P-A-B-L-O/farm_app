@@ -20,14 +20,12 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldReturnProductionWithAnimalSummary() throws Exception {
-        UserEntity savedUser = userRepository.save(new UserEntity(
-                null,
-                "Jane Doe",
-                "jane@farm.com",
-                "ADMIN"));
+        UserEntity savedUser = createAuthenticatedUser();
+        String authorization = bearerToken(savedUser);
         animalRepository.save(AnimalFixture.animalEntity());
 
         MvcResult createdResult = mockMvc.perform(post("/productions")
+                        .header("Authorization", authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(ProductionFixture.createRequestJson("animal-1", savedUser.getId().toString())))
                 .andExpect(status().isCreated())
@@ -38,7 +36,8 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
 
         String productionId = objectMapper.readTree(createdResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(get("/productions/{id}", productionId))
+        mockMvc.perform(get("/productions/{id}", productionId)
+                        .header("Authorization", authorization))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(productionId))
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
@@ -48,11 +47,8 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldCreateFetchUpdateAndSummarizeProductionThroughRealSpringContext() throws Exception {
-        UserEntity savedUser = userRepository.save(new UserEntity(
-                null,
-                "Jane Doe",
-                "jane@farm.com",
-                "ADMIN"));
+        UserEntity savedUser = createAuthenticatedUser();
+        String authorization = bearerToken(savedUser);
         animalRepository.save(AnimalFixture.animalEntity());
         FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 2.0, true));
         feedingRepository.save(new FeedingEntity(
@@ -64,6 +60,7 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
                 savedUser.getId().toString()));
 
         MvcResult createdResult = mockMvc.perform(post("/productions")
+                        .header("Authorization", authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(ProductionFixture.createRequestJson("animal-1", savedUser.getId().toString())))
                 .andExpect(status().isCreated())
@@ -73,7 +70,8 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
 
         String productionId = objectMapper.readTree(createdResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(get("/productions/{id}", productionId))
+        mockMvc.perform(get("/productions/{id}", productionId)
+                        .header("Authorization", authorization))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(productionId))
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
@@ -81,18 +79,23 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.animal.tag").value("TAG-001"));
 
         mockMvc.perform(put("/productions/{id}", productionId)
+                        .header("Authorization", authorization)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(ProductionFixture.updateRequestJson()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.date").value("2026-03-21"))
                 .andExpect(jsonPath("$.quantity").value(15.0));
 
-        mockMvc.perform(get("/productions/summary/by-animal").param("animalId", "animal-1"))
+        mockMvc.perform(get("/productions/summary/by-animal")
+                        .header("Authorization", authorization)
+                        .param("animalId", "animal-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
                 .andExpect(jsonPath("$.totalQuantity").value(15.0));
 
-        mockMvc.perform(get("/productions/summary/profit/by-animal").param("animalId", "animal-1"))
+        mockMvc.perform(get("/productions/summary/profit/by-animal")
+                        .header("Authorization", authorization)
+                        .param("animalId", "animal-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
                 .andExpect(jsonPath("$.totalProduction").value(15.0))

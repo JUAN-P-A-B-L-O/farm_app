@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.production.service;
 
+import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
 import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
@@ -39,25 +40,30 @@ public class ProductionService {
     private final AnimalRepository animalRepository;
     private final UserRepository userRepository;
     private final ProductionMapper productionMapper;
+    private final AuthenticationContextService authenticationContextService;
 
     public ProductionService(
             ProductionRepository productionRepository,
             FeedingRepository feedingRepository,
             AnimalRepository animalRepository,
             UserRepository userRepository,
-            ProductionMapper productionMapper) {
+            ProductionMapper productionMapper,
+            AuthenticationContextService authenticationContextService) {
         this.productionRepository = productionRepository;
         this.feedingRepository = feedingRepository;
         this.animalRepository = animalRepository;
         this.userRepository = userRepository;
         this.productionMapper = productionMapper;
+        this.authenticationContextService = authenticationContextService;
     }
 
     @Transactional
     public ProductionResponse create(CreateProductionRequest request) {
-        validateInput(request);
+        String createdBy = authenticationContextService.resolveUserId(request != null ? request.getUserId() : null);
+        validateInput(request, createdBy);
 
         ProductionEntity productionEntity = toEntity(request);
+        productionEntity.setCreatedBy(createdBy);
         ProductionEntity savedProduction = productionRepository.save(productionEntity);
 
         return toEnrichedResponse(savedProduction);
@@ -166,7 +172,7 @@ public class ProductionService {
         return new AnimalSummaryResponse(animalEntity.getId(), animalEntity.getTag());
     }
 
-    private void validateInput(CreateProductionRequest request) {
+    private void validateInput(CreateProductionRequest request, String createdBy) {
         if (request == null) {
             throw new ValidationException("request must not be null");
         }
@@ -182,13 +188,13 @@ public class ProductionService {
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new ValidationException("quantity must be greater than zero");
         }
-        if (!StringUtils.hasText(request.getUserId())) {
+        if (!StringUtils.hasText(createdBy)) {
             throw new ValidationException("userId must not be blank");
         }
         if (!animalRepository.existsById(request.getAnimalId())) {
             throw new ResourceNotFoundException("Animal not found");
         }
-        if (!userRepository.existsById(parseUserId(request.getUserId()))) {
+        if (!userRepository.existsById(parseUserId(createdBy))) {
             throw new ResourceNotFoundException("User not found");
         }
     }

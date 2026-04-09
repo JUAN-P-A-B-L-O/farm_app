@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -126,7 +127,7 @@ class UserControllerContractTest {
         private RuntimeException findByIdException;
 
         TestUserService() {
-            super(dummyRepository(), new UserMapper());
+            super(dummyRepository(), new UserMapper(), new BCryptPasswordEncoder());
         }
 
         @Override
