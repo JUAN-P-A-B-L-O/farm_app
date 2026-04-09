@@ -48,8 +48,8 @@ run_test "1. CREATE USER" 201 \
 }'"
 ((USER_TESTS++))
 
-USER_ID=$(curl -s $BASE_URL/users | jq -r '.[0].id')
-echo "Generated USER_ID: $USER_ID"
+
+
 
 echo "========================================"
 echo "AUTH FLOW"
@@ -58,22 +58,24 @@ echo "========================================"
 run_test "2. LOGIN" 200 \
 "curl -s -X POST $BASE_URL/auth/login \
 -H 'Content-Type: application/json' \
--d '{
-  \"email\": \"joao@test.com\",
-  \"password\": \"123456\"
-}'"
+-d '{\"email\":\"joao@test.com\",\"password\":\"123456\"}'"
+
 ((AUTH_TESTS++))
 
 TOKEN=$(curl -s -X POST $BASE_URL/auth/login \
 -H 'Content-Type: application/json' \
 -d '{
-  \"email\": \"joao@test.com\",
-  \"password\": \"123456\"
+  "email": "admin@farmapp.com",
+  "password": "admin123"
 }' | jq -r '.accessToken')
 
 echo "Generated TOKEN: $TOKEN"
 
 AUTH_HEADER="-H \"Authorization: Bearer $TOKEN\""
+
+
+USER_ID=148ba370-0fdd-4364-a18b-58b59dedeae0
+echo "User id: $USER_ID"
 
 echo "========================================"
 echo "ANIMAL FLOW"
@@ -91,8 +93,17 @@ $AUTH_HEADER \
 }'"
 ((ANIMAL_TESTS++))
 
-ANIMAL_ID=$(curl -s $AUTH_HEADER $BASE_URL/animals | jq -r '.[0].id')
+#
+
+ANIMAL_ID=$(curl -s \
+  -H "Authorization: Bearer $TOKEN" \
+  "$BASE_URL/animals" | jq -r '.[0].id')
+
 echo "Generated ANIMAL_ID: $ANIMAL_ID"
+
+# | jq -r '.[0].id'
+# ANIMAL_ID=$(curl -s $AUTH_HEADER $BASE_URL/animals ) 
+# echo "Generated ANIMAL_ID: $ANIMAL_ID"
 
 run_test "4. GET ALL ANIMALS" 200 \
 "curl -s $AUTH_HEADER $BASE_URL/animals"
@@ -108,12 +119,19 @@ $AUTH_HEADER \
 -H 'Content-Type: application/json' \
 -d '{
   \"animalId\": \"$ANIMAL_ID\",
-  \"date\": \"2024-03-20\",
-  \"quantity\": 15.5
+  \"date\": \"2026-03-20\",
+  \"quantity\": 15.5,
+  \"userId\": \"$USER_ID\"
 }'"
 ((PRODUCTION_TESTS++))
 
-PRODUCTION_ID=$(curl -s $AUTH_HEADER $BASE_URL/productions | jq -r '.[0].id')
+# PRODUCTION_ID=$(curl -s $AUTH_HEADER $BASE_URL/productions | jq -r '.[0].id')
+
+
+PRODUCTION_ID=$(curl -s \
+  -H "Authorization: Bearer $TOKEN" \
+  "$BASE_URL/productions" | jq -r '.[0].id')
+
 echo "Generated PRODUCTION_ID: $PRODUCTION_ID"
 
 run_test "6. CREATE INVALID PRODUCTION" 400 \
@@ -209,8 +227,14 @@ $AUTH_HEADER \
 -d '{\"name\": \"Silagem\", \"costPerKg\": 1.5}'"
 ((FEED_TESTS++))
 
-FEED_TYPE_ID=$(curl -s $AUTH_HEADER $BASE_URL/feed-types | jq -r '.[0].id')
+# FEED_TYPE_ID=$(curl -s $AUTH_HEADER $BASE_URL/feed-types | jq -r '.[0].id')
+
+FEED_TYPE_ID=$(curl -s \
+  -H "Authorization: Bearer $TOKEN" \
+  "$BASE_URL/feed-types" | jq -r '.[0].id')
+
 echo "Generated FEED_TYPE_ID: $FEED_TYPE_ID"
+
 
 run_test "19. CREATE FEEDING" 201 \
 "curl -s -X POST $BASE_URL/feedings \
@@ -218,6 +242,7 @@ $AUTH_HEADER \
 -H 'Content-Type: application/json' \
 -d '{
   \"animalId\": \"$ANIMAL_ID\",
+  \"userId\": \"$USER_ID\",
   \"feedTypeId\": \"$FEED_TYPE_ID\",
   \"date\": \"2024-03-20\",
   \"quantity\": 10
