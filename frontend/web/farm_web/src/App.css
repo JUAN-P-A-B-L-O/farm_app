@@ -446,6 +446,7 @@
 
 .analytics-controls {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 }
 
@@ -457,9 +458,9 @@
   color: #243646;
 }
 
-.analytics-controls select {
+.analytics-controls select,
+.analytics-controls input {
   width: 100%;
-  max-width: 360px;
   padding: 12px 14px;
   border: 1px solid #c8d4c8;
   border-radius: 12px;
@@ -468,10 +469,15 @@
   background: #fff;
 }
 
-.analytics-controls select:focus {
+.analytics-controls select:focus,
+.analytics-controls input:focus {
   outline: 2px solid #9fc5a1;
   outline-offset: 1px;
   border-color: #79a67f;
+}
+
+.analytics-actions {
+  margin-top: 16px;
 }
 
 .analytics-grid {

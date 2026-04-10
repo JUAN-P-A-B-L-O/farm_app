@@ -1,44 +1,37 @@
 import {
+  Bar,
+  BarChart as RechartsBarChart,
   CartesianGrid,
-  Line,
-  LineChart as RechartsLineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
 
-export interface LineChartPoint {
+export interface BarChartPoint {
   label: string
   value: number
 }
 
-interface LineChartProps {
-  data: LineChartPoint[]
+interface BarChartProps {
+  data: BarChartPoint[]
   color?: string
 }
 
-function LineChart({ data, color = '#2e6a46' }: LineChartProps) {
+function BarChart({ data, color = '#2e6a46' }: BarChartProps) {
   return (
     <div className="analytics-chart__surface">
       <ResponsiveContainer width="100%" height="100%">
-        <RechartsLineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+        <RechartsBarChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
           <CartesianGrid stroke="#e4eaef" strokeDasharray="3 3" />
           <XAxis dataKey="label" stroke="#627285" tickLine={false} axisLine={false} />
           <YAxis stroke="#627285" tickLine={false} axisLine={false} allowDecimals={false} />
           <Tooltip />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke={color}
-            strokeWidth={3}
-            dot={{ r: 4 }}
-            activeDot={{ r: 6 }}
-          />
-        </RechartsLineChart>
+          <Bar dataKey="value" fill={color} radius={[8, 8, 0, 0]} />
+        </RechartsBarChart>
       </ResponsiveContainer>
     </div>
   )
 }
 
-export default LineChart
+export default BarChart

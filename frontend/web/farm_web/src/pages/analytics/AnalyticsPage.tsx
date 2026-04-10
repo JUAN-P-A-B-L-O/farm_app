@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import LineChart, { type LineChartPoint } from '../../components/analytics/LineChart'
+import BarChart from '../../components/analytics/BarChart'
+import LineChart from '../../components/analytics/LineChart'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
-import { getFeedingsByAnimalId } from '../../services/feedingService'
-import { getProductionsByAnimalId } from '../../services/productionService'
+import { getAnalyticsDataset } from '../../services/analyticsService'
 import type { Animal, ApiErrorResponse } from '../../types/animal'
-import type { FeedingTrendPoint } from '../../types/feeding'
-import type { ProductionTrendPoint } from '../../types/production'
+import type { AnalyticsDataset, AnalyticsFilters } from '../../types/analytics'
 import '../../App.css'
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -29,21 +28,26 @@ function mapAnimalsToOptions(animals: Animal[]) {
   }))
 }
 
-function mapTrendData(data: ProductionTrendPoint[] | FeedingTrendPoint[]): LineChartPoint[] {
-  return [...data]
-    .sort((firstItem, secondItem) => firstItem.date.localeCompare(secondItem.date))
-    .map(({ date, quantity }) => ({
-      date,
-      quantity,
-    }))
+const initialFilters: AnalyticsFilters = {
+  startDate: '',
+  endDate: '',
+  animalId: '',
+  groupBy: 'day',
+}
+
+const emptyDataset: AnalyticsDataset = {
+  productionSeries: [],
+  feedingCostSeries: [],
+  profitSeries: [],
+  productionByAnimal: [],
 }
 
 function AnalyticsPage() {
   const { t, language } = useTranslation()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
-  const [selectedAnimalId, setSelectedAnimalId] = useState('')
-  const [productionData, setProductionData] = useState<LineChartPoint[]>([])
-  const [feedingData, setFeedingData] = useState<LineChartPoint[]>([])
+  const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters)
+  const [appliedFilters, setAppliedFilters] = useState<AnalyticsFilters>(initialFilters)
+  const [analytics, setAnalytics] = useState<AnalyticsDataset>(emptyDataset)
   const [isAnimalsLoading, setIsAnimalsLoading] = useState(true)
   const [isChartsLoading, setIsChartsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -67,38 +71,36 @@ function AnalyticsPage() {
   }, [language])
 
   useEffect(() => {
-    async function loadAnalytics(animalId: string) {
+    async function loadAnalytics() {
       setIsChartsLoading(true)
       setErrorMessage('')
 
       try {
-        const [productions, feedings] = await Promise.all([
-          getProductionsByAnimalId(animalId),
-          getFeedingsByAnimalId(animalId),
-        ])
-
-        setProductionData(mapTrendData(productions))
-        setFeedingData(mapTrendData(feedings))
+        const dataset = await getAnalyticsDataset(appliedFilters)
+        setAnalytics(dataset)
       } catch (error) {
         setErrorMessage(getErrorMessage(error, t('analytics.loadChartsError')))
-        setProductionData([])
-        setFeedingData([])
+        setAnalytics(emptyDataset)
       } finally {
         setIsChartsLoading(false)
       }
     }
 
-    if (!selectedAnimalId) {
-      setProductionData([])
-      setFeedingData([])
-      setIsChartsLoading(false)
-      return
-    }
+    void loadAnalytics()
+  }, [appliedFilters, language, t])
 
-    void loadAnalytics(selectedAnimalId)
-  }, [selectedAnimalId, language])
+  const showCharts = !isChartsLoading && !errorMessage
 
-  const showCharts = !isChartsLoading && !errorMessage && selectedAnimalId
+  function updateFilter<Key extends keyof AnalyticsFilters>(key: Key, value: AnalyticsFilters[Key]) {
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      [key]: value,
+    }))
+  }
+
+  function applyFilters() {
+    setAppliedFilters(filters)
+  }
 
   return (
     <main className="animals-page">
@@ -114,21 +116,41 @@ function AnalyticsPage() {
         <article className="analytics-panel">
           <div className="animals-panel__header">
             <div>
-              <h2>{t('analytics.selectorTitle')}</h2>
-              <p>{t('analytics.selectorDescription')}</p>
+              <h2>{t('analytics.filtersTitle')}</h2>
+              <p>{t('analytics.filtersDescription')}</p>
             </div>
           </div>
 
           <div className="analytics-controls">
+            <label htmlFor="analytics-start-date">
+              {t('analytics.startDateLabel')}
+              <input
+                id="analytics-start-date"
+                type="date"
+                value={filters.startDate}
+                onChange={(event) => updateFilter('startDate', event.target.value)}
+              />
+            </label>
+
+            <label htmlFor="analytics-end-date">
+              {t('analytics.endDateLabel')}
+              <input
+                id="analytics-end-date"
+                type="date"
+                value={filters.endDate}
+                onChange={(event) => updateFilter('endDate', event.target.value)}
+              />
+            </label>
+
             <label htmlFor="analytics-animal-select">
               {t('analytics.animalLabel')}
               <select
                 id="analytics-animal-select"
-                value={selectedAnimalId}
-                onChange={(event) => setSelectedAnimalId(event.target.value)}
+                value={filters.animalId}
+                onChange={(event) => updateFilter('animalId', event.target.value)}
                 disabled={isAnimalsLoading}
               >
-                <option value="">{t('analytics.selectAnimal')}</option>
+                <option value="">{t('analytics.allAnimals')}</option>
                 {animals.map((animal) => (
                   <option key={animal.id} value={animal.id}>
                     {animal.tag}
@@ -136,16 +158,30 @@ function AnalyticsPage() {
                 ))}
               </select>
             </label>
+
+            <label htmlFor="analytics-group-by">
+              {t('analytics.groupByLabel')}
+              <select
+                id="analytics-group-by"
+                value={filters.groupBy}
+                onChange={(event) => updateFilter('groupBy', event.target.value as AnalyticsFilters['groupBy'])}
+              >
+                <option value="day">{t('analytics.groupByDay')}</option>
+                <option value="month">{t('analytics.groupByMonth')}</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="analytics-actions">
+            <button type="button" className="animals-panel__button" onClick={applyFilters}>
+              {t('analytics.applyFilters')}
+            </button>
           </div>
 
           {isAnimalsLoading && <p className="animals-page__status">{t('analytics.loadingAnimals')}</p>}
 
           {!isAnimalsLoading && !errorMessage && animals.length === 0 && (
             <p className="animals-page__status">{t('analytics.emptyAnimals')}</p>
-          )}
-
-          {!selectedAnimalId && !isAnimalsLoading && animals.length > 0 && !errorMessage && (
-            <p className="animals-page__status">{t('analytics.promptSelect')}</p>
           )}
 
           {isChartsLoading && <p className="animals-page__status">{t('analytics.loadingCharts')}</p>}
@@ -162,27 +198,57 @@ function AnalyticsPage() {
               <p>{t('analytics.productionDescription')}</p>
             </div>
 
-            {showCharts && productionData.length > 0 && (
-              <LineChart data={productionData} color="#2e6a46" />
+            {showCharts && analytics.productionSeries.length > 0 && (
+              <LineChart data={analytics.productionSeries} color="#2e6a46" />
             )}
 
-            {showCharts && productionData.length === 0 && (
-              <p className="analytics-chart__empty">{t('analytics.productionEmpty')}</p>
+            {showCharts && analytics.productionSeries.length === 0 && (
+              <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
             )}
           </article>
 
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
-              <h2>{t('analytics.feedingTitle')}</h2>
-              <p>{t('analytics.feedingDescription')}</p>
+              <h2>{t('analytics.feedingCostTitle')}</h2>
+              <p>{t('analytics.feedingCostDescription')}</p>
             </div>
 
-            {showCharts && feedingData.length > 0 && (
-              <LineChart data={feedingData} color="#c26b2c" />
+            {showCharts && analytics.feedingCostSeries.length > 0 && (
+              <LineChart data={analytics.feedingCostSeries} color="#c26b2c" />
             )}
 
-            {showCharts && feedingData.length === 0 && (
-              <p className="analytics-chart__empty">{t('analytics.feedingEmpty')}</p>
+            {showCharts && analytics.feedingCostSeries.length === 0 && (
+              <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
+            )}
+          </article>
+
+          <article className="analytics-panel analytics-chart">
+            <div className="analytics-chart__header">
+              <h2>{t('analytics.profitTitle')}</h2>
+              <p>{t('analytics.profitDescription')}</p>
+            </div>
+
+            {showCharts && analytics.profitSeries.length > 0 && (
+              <LineChart data={analytics.profitSeries} color="#2e5b9a" />
+            )}
+
+            {showCharts && analytics.profitSeries.length === 0 && (
+              <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
+            )}
+          </article>
+
+          <article className="analytics-panel analytics-chart">
+            <div className="analytics-chart__header">
+              <h2>{t('analytics.productionByAnimalTitle')}</h2>
+              <p>{t('analytics.productionByAnimalDescription')}</p>
+            </div>
+
+            {showCharts && analytics.productionByAnimal.length > 0 && (
+              <BarChart data={analytics.productionByAnimal} color="#7b8f2a" />
+            )}
+
+            {showCharts && analytics.productionByAnimal.length === 0 && (
+              <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
             )}
           </article>
         </section>
