@@ -92,6 +92,13 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflictException(
+            ConflictException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(
             InvalidCredentialsException exception,

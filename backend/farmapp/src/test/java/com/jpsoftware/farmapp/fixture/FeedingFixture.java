@@ -35,4 +35,15 @@ public final class FeedingFixture {
                 }
                 """.formatted(animalId, feedTypeId, userId);
     }
+
+    public static String updateRequestJson(String animalId, String feedTypeId) {
+        return """
+                {
+                  "animalId": "%s",
+                  "feedTypeId": "%s",
+                  "date": "2026-03-25",
+                  "quantity": 10.0
+                }
+                """.formatted(animalId, feedTypeId);
+    }
 }

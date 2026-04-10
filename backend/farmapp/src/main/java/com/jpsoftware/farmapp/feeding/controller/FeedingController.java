@@ -2,6 +2,7 @@ package com.jpsoftware.farmapp.feeding.controller;
 
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
+import com.jpsoftware.farmapp.feeding.dto.UpdateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
@@ -19,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -80,5 +83,35 @@ public class FeedingController {
     public ResponseEntity<FeedingResponse> findById(@PathVariable String id) {
         FeedingResponse response = feedingService.findById(id);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update feeding", description = "Updates mutable fields of an existing feeding record.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Feeding updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Feeding or related resource not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Feeding is inactive",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<FeedingResponse> update(
+            @PathVariable String id,
+            @RequestBody UpdateFeedingRequest request) {
+        FeedingResponse response = feedingService.updateFeeding(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete feeding", description = "Soft deletes a feeding record by marking it inactive.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Feeding deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Feeding not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        feedingService.deleteFeeding(id);
+        return ResponseEntity.noContent().build();
     }
 }

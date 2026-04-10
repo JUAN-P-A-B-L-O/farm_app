@@ -10,11 +10,13 @@ import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
+import com.jpsoftware.farmapp.feeding.dto.UpdateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.entity.FeedingEntity;
 import com.jpsoftware.farmapp.feeding.mapper.FeedingMapper;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -174,6 +176,31 @@ class FeedingServiceTest {
         assertEquals("TAG-001", responses.get(0).getAnimal().getTag());
         assertNotNull(responses.get(0).getFeedType());
         assertEquals("Corn Silage", responses.get(0).getFeedType().getName());
+    }
+
+    @Test
+    void shouldHideInactiveFeedingsFromDefaultQueries() {
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111",
+                FeedingEntity.STATUS_ACTIVE));
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-2",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 25),
+                9.5,
+                "11111111-1111-1111-1111-111111111111",
+                FeedingEntity.STATUS_INACTIVE));
+
+        List<FeedingResponse> responses = feedingService.findAll(null, null);
+
+        assertEquals(1, responses.size());
+        assertEquals("feeding-1", responses.get(0).getId());
     }
 
     @Test
@@ -352,6 +379,86 @@ class FeedingServiceTest {
         assertEquals("Feeding not found", exception.getMessage());
     }
 
+    @Test
+    void shouldUpdateActiveFeeding() {
+        animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
+        animalRepositoryHandler.addAnimal("animal-2", "TAG-002");
+        feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");
+        feedTypeRepositoryHandler.addFeedType("feed-type-2", "Hay");
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111"));
+
+        FeedingResponse response = feedingService.updateFeeding(
+                "feeding-1",
+                new UpdateFeedingRequest("animal-2", "feed-type-2", LocalDate.of(2026, 3, 25), 10.0));
+
+        assertEquals("animal-2", response.getAnimalId());
+        assertEquals("feed-type-2", response.getFeedTypeId());
+        assertEquals(LocalDate.of(2026, 3, 25), response.getDate());
+        assertEquals(10.0, response.getQuantity());
+    }
+
+    @Test
+    void shouldFailToUpdateInactiveFeeding() {
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111",
+                FeedingEntity.STATUS_INACTIVE));
+
+        ConflictException exception = assertThrows(
+                ConflictException.class,
+                () -> feedingService.updateFeeding(
+                        "feeding-1",
+                        new UpdateFeedingRequest(null, null, LocalDate.of(2026, 3, 25), 10.0)));
+
+        assertEquals("Inactive feeding cannot be updated", exception.getMessage());
+    }
+
+    @Test
+    void shouldSoftDeleteFeeding() {
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111"));
+
+        feedingService.deleteFeeding("feeding-1");
+
+        assertEquals(0, feedingService.findAll(null, null).size());
+        assertEquals(
+                FeedingEntity.STATUS_INACTIVE,
+                feedingRepositoryHandler.getRequired("feeding-1").getStatus());
+    }
+
+    @Test
+    void shouldIgnoreDeleteWhenFeedingAlreadyInactive() {
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111",
+                FeedingEntity.STATUS_INACTIVE));
+
+        feedingService.deleteFeeding("feeding-1");
+
+        assertEquals(
+                FeedingEntity.STATUS_INACTIVE,
+                feedingRepositoryHandler.getRequired("feeding-1").getStatus());
+    }
+
     private static class InMemoryFeedingRepository {
 
         private final Map<String, FeedingEntity> data = new LinkedHashMap<>();
@@ -374,40 +481,51 @@ class FeedingServiceTest {
                         }
                         if ("findAll".equals(methodName)) {
                             if (args != null && args.length == 1 && args[0] instanceof org.springframework.data.domain.Pageable pageable) {
-                                List<FeedingEntity> all = new ArrayList<>(data.values());
+                                List<FeedingEntity> all = data.values().stream()
+                                        .filter(entity -> FeedingEntity.STATUS_ACTIVE.equals(entity.getStatus()))
+                                        .toList();
                                 return paginate(all, pageable);
                             }
-                            return new ArrayList<>(data.values());
+                            return data.values().stream()
+                                    .filter(entity -> FeedingEntity.STATUS_ACTIVE.equals(entity.getStatus()))
+                                    .toList();
                         }
-                        if ("findByAnimalId".equals(methodName)) {
+                        if ("findByAnimalIdAndStatus".equals(methodName)) {
                             List<FeedingEntity> filtered = data.values().stream()
                                     .filter(entity -> entity.getAnimalId().equals(args[0]))
-                                    .toList();
-                            if (args.length == 2) {
-                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[1]);
-                            }
-                            return filtered;
-                        }
-                        if ("findByDate".equals(methodName)) {
-                            List<FeedingEntity> filtered = data.values().stream()
-                                    .filter(entity -> entity.getDate().equals(args[0]))
-                                    .toList();
-                            if (args.length == 2) {
-                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[1]);
-                            }
-                            return filtered;
-                        }
-                        if ("findByAnimalIdAndDate".equals(methodName)) {
-                            List<FeedingEntity> filtered = data.values().stream()
-                                    .filter(entity -> entity.getAnimalId().equals(args[0]))
-                                    .filter(entity -> entity.getDate().equals(args[1]))
+                                    .filter(entity -> entity.getStatus().equals(args[1]))
                                     .toList();
                             if (args.length == 3) {
                                 return paginate(filtered, (org.springframework.data.domain.Pageable) args[2]);
                             }
                             return filtered;
                         }
+                        if ("findByDateAndStatus".equals(methodName)) {
+                            List<FeedingEntity> filtered = data.values().stream()
+                                    .filter(entity -> entity.getDate().equals(args[0]))
+                                    .filter(entity -> entity.getStatus().equals(args[1]))
+                                    .toList();
+                            if (args.length == 3) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[2]);
+                            }
+                            return filtered;
+                        }
+                        if ("findByAnimalIdAndDateAndStatus".equals(methodName)) {
+                            List<FeedingEntity> filtered = data.values().stream()
+                                    .filter(entity -> entity.getAnimalId().equals(args[0]))
+                                    .filter(entity -> entity.getDate().equals(args[1]))
+                                    .filter(entity -> entity.getStatus().equals(args[2]))
+                                    .toList();
+                            if (args.length == 4) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[3]);
+                            }
+                            return filtered;
+                        }
                         if ("findById".equals(methodName)) {
+                            return Optional.ofNullable(data.get(args[0]))
+                                    .filter(entity -> FeedingEntity.STATUS_ACTIVE.equals(entity.getStatus()));
+                        }
+                        if ("findAnyById".equals(methodName)) {
                             return Optional.ofNullable(data.get(args[0]));
                         }
                         if ("equals".equals(methodName)) {
@@ -425,7 +543,14 @@ class FeedingServiceTest {
         }
 
         void store(FeedingEntity entity) {
+            if (entity.getStatus() == null) {
+                entity.setStatus(FeedingEntity.STATUS_ACTIVE);
+            }
             data.put(entity.getId(), entity);
+        }
+
+        FeedingEntity getRequired(String id) {
+            return data.get(id);
         }
 
         private PageImpl<FeedingEntity> paginate(List<FeedingEntity> source, org.springframework.data.domain.Pageable pageable) {
