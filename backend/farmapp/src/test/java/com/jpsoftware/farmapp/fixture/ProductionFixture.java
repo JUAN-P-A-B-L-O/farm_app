@@ -20,13 +20,17 @@ public final class ProductionFixture {
             LocalDate date,
             Double quantity,
             String createdBy) {
-        ProductionEntity entity = new ProductionEntity();
-        entity.setId(id);
-        entity.setAnimalId(animalId);
-        entity.setDate(date);
-        entity.setQuantity(quantity);
-        entity.setCreatedBy(createdBy);
-        return entity;
+        return new ProductionEntity(id, animalId, date, quantity, createdBy);
+    }
+
+    public static String updateRequestJson(String animalId) {
+        return """
+                {
+                  "animalId": "%s",
+                  "date": "2026-03-21",
+                  "quantity": 15.0
+                }
+                """.formatted(animalId);
     }
 
     public static String createRequestJson(String animalId, String userId) {

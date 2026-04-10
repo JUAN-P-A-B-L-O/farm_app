@@ -23,6 +23,12 @@ export interface ProductionFormData {
   userId: string
 }
 
+export interface UpdateProductionPayload {
+  animalId: string
+  date: string
+  quantity: number
+}
+
 export interface ProductionApiErrorResponse {
   timestamp: string
   status: number

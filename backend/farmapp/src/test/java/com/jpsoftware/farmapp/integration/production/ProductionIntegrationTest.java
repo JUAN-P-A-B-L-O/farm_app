@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.integration.production;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -101,5 +102,34 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.totalProduction").value(15.0))
                 .andExpect(jsonPath("$.totalFeedingCost").value(20.0))
                 .andExpect(jsonPath("$.profit").value(10.0));
+    }
+
+    @Test
+    void shouldSoftDeleteProductionThroughRealSpringContext() throws Exception {
+        UserEntity savedUser = createAuthenticatedUser();
+        String authorization = bearerToken(savedUser);
+        animalRepository.save(AnimalFixture.animalEntity());
+
+        MvcResult createdResult = mockMvc.perform(post("/productions")
+                        .header("Authorization", authorization)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(ProductionFixture.createRequestJson("animal-1", savedUser.getId().toString())))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String productionId = objectMapper.readTree(createdResult.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(delete("/productions/{id}", productionId)
+                        .header("Authorization", authorization))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/productions/{id}", productionId)
+                        .header("Authorization", authorization))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/productions")
+                        .header("Authorization", authorization))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
     }
 }

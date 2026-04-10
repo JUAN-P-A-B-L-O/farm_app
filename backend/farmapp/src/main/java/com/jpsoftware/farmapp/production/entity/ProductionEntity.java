@@ -12,6 +12,9 @@ import java.time.LocalDate;
 @Table(name = "productions")
 public class ProductionEntity {
 
+    public static final String STATUS_ACTIVE = "ACTIVE";
+    public static final String STATUS_INACTIVE = "INACTIVE";
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(nullable = false, updatable = false)
@@ -29,15 +32,24 @@ public class ProductionEntity {
     @Column(name = "created_by", nullable = false)
     private String createdBy;
 
+    @Column(nullable = false)
+    private String status;
+
     public ProductionEntity() {
+        this.status = STATUS_ACTIVE;
     }
 
     public ProductionEntity(String id, String animalId, LocalDate date, Double quantity, String createdBy) {
+        this(id, animalId, date, quantity, createdBy, STATUS_ACTIVE);
+    }
+
+    public ProductionEntity(String id, String animalId, LocalDate date, Double quantity, String createdBy, String status) {
         this.id = id;
         this.animalId = animalId;
         this.date = date;
         this.quantity = quantity;
         this.createdBy = createdBy;
+        this.status = status;
     }
 
     public String getId() {
@@ -78,5 +90,13 @@ public class ProductionEntity {
 
     public void setCreatedBy(String createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

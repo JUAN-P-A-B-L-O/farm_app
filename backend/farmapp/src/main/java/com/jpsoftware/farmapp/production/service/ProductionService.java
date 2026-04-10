@@ -15,6 +15,7 @@ import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.BusinessException;
+import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -64,6 +65,7 @@ public class ProductionService {
 
         ProductionEntity productionEntity = toEntity(request);
         productionEntity.setCreatedBy(createdBy);
+        productionEntity.setStatus(ProductionEntity.STATUS_ACTIVE);
         ProductionEntity savedProduction = productionRepository.save(productionEntity);
 
         return toEnrichedResponse(savedProduction);
@@ -71,6 +73,11 @@ public class ProductionService {
 
     @Transactional(readOnly = true)
     public List<ProductionResponse> findAll(String animalId, LocalDate date) {
+        return getAllProductions(animalId, date);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductionResponse> getAllProductions(String animalId, LocalDate date) {
         List<ProductionEntity> productions = findProductions(animalId, date);
         Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(productions);
         return productions.stream()
@@ -80,6 +87,11 @@ public class ProductionService {
 
     @Transactional(readOnly = true)
     public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
+        return getAllProductionsPaginated(animalId, date, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<ProductionResponse> getAllProductionsPaginated(String animalId, LocalDate date, int page, int size) {
         Page<ProductionEntity> productions = findProductions(animalId, date, PageRequest.of(page, size));
         Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(productions.getContent());
         Page<ProductionResponse> responses = productions.map(production ->
@@ -89,6 +101,11 @@ public class ProductionService {
 
     @Transactional(readOnly = true)
     public ProductionResponse findById(String id) {
+        return getProductionById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionResponse getProductionById(String id) {
         ProductionEntity productionEntity = productionRepository.findById(validateId(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
 
@@ -126,13 +143,22 @@ public class ProductionService {
 
     @Transactional
     public ProductionResponse update(String id, UpdateProductionRequest request) {
+        return updateProduction(id, request);
+    }
+
+    @Transactional
+    public ProductionResponse updateProduction(String id, UpdateProductionRequest request) {
         if (request == null) {
             throw new ValidationException("request must not be null");
         }
 
-        ProductionEntity productionEntity = productionRepository.findById(validateId(id))
-                .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
+        ProductionEntity productionEntity = getProductionIncludingInactive(id);
+        ensureProductionIsActive(productionEntity, "Inactive production cannot be updated");
 
+        if (StringUtils.hasText(request.getAnimalId())) {
+            validateAnimalExists(request.getAnimalId());
+            productionEntity.setAnimalId(request.getAnimalId());
+        }
         if (request.getDate() != null) {
             if (request.getDate().isAfter(LocalDate.now())) {
                 throw new BusinessException("Date cannot be in the future");
@@ -149,6 +175,17 @@ public class ProductionService {
 
         ProductionEntity savedProduction = productionRepository.save(productionEntity);
         return toEnrichedResponse(savedProduction);
+    }
+
+    @Transactional
+    public void deleteProduction(String id) {
+        ProductionEntity productionEntity = getProductionIncludingInactive(id);
+        if (ProductionEntity.STATUS_INACTIVE.equals(productionEntity.getStatus())) {
+            return;
+        }
+
+        productionEntity.setStatus(ProductionEntity.STATUS_INACTIVE);
+        productionRepository.save(productionEntity);
     }
 
     private ProductionResponse toEnrichedResponse(ProductionEntity productionEntity) {
@@ -205,28 +242,39 @@ public class ProductionService {
 
     private List<ProductionEntity> findProductions(String animalId, LocalDate date) {
         if (StringUtils.hasText(animalId) && date != null) {
-            return productionRepository.findByAnimalIdAndDate(animalId, date);
+            return productionRepository.findByAnimalIdAndDateAndStatus(animalId, date, ProductionEntity.STATUS_ACTIVE);
         }
         if (StringUtils.hasText(animalId)) {
-            return productionRepository.findByAnimalId(animalId);
+            return productionRepository.findByAnimalIdAndStatus(animalId, ProductionEntity.STATUS_ACTIVE);
         }
         if (date != null) {
-            return productionRepository.findByDate(date);
+            return productionRepository.findByDateAndStatus(date, ProductionEntity.STATUS_ACTIVE);
         }
         return productionRepository.findAll();
     }
 
     private Page<ProductionEntity> findProductions(String animalId, LocalDate date, org.springframework.data.domain.Pageable pageable) {
         if (StringUtils.hasText(animalId) && date != null) {
-            return productionRepository.findByAnimalIdAndDate(animalId, date, pageable);
+            return productionRepository.findByAnimalIdAndDateAndStatus(animalId, date, ProductionEntity.STATUS_ACTIVE, pageable);
         }
         if (StringUtils.hasText(animalId)) {
-            return productionRepository.findByAnimalId(animalId, pageable);
+            return productionRepository.findByAnimalIdAndStatus(animalId, ProductionEntity.STATUS_ACTIVE, pageable);
         }
         if (date != null) {
-            return productionRepository.findByDate(date, pageable);
+            return productionRepository.findByDateAndStatus(date, ProductionEntity.STATUS_ACTIVE, pageable);
         }
         return productionRepository.findAll(pageable);
+    }
+
+    private ProductionEntity getProductionIncludingInactive(String id) {
+        return productionRepository.findAnyById(validateId(id))
+                .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
+    }
+
+    private void ensureProductionIsActive(ProductionEntity productionEntity, String message) {
+        if (ProductionEntity.STATUS_INACTIVE.equals(productionEntity.getStatus())) {
+            throw new ConflictException(message);
+        }
     }
 
     private PaginatedResponse<ProductionResponse> toPaginatedResponse(Page<ProductionResponse> page) {

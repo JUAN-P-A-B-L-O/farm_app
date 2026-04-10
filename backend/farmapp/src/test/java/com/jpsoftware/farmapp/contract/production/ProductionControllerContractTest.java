@@ -5,6 +5,7 @@ package com.jpsoftware.farmapp.contract.production;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,6 +20,7 @@ import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.production.service.ProductionService;
 import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -261,6 +263,7 @@ class ProductionControllerContractTest {
         private RuntimeException summaryException;
         private RuntimeException profitException;
         private RuntimeException updateException;
+        private RuntimeException deleteException;
 
         TestProductionService() {
             super(
@@ -312,6 +315,13 @@ class ProductionControllerContractTest {
                 throw updateException;
             }
             return updateResponse;
+        }
+
+        @Override
+        public void deleteProduction(String id) {
+            if (deleteException != null) {
+                throw deleteException;
+            }
         }
 
         private static ProductionRepository dummyProductionRepository() {
@@ -407,5 +417,28 @@ class ProductionControllerContractTest {
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(2))
                 .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void shouldFailWhenUpdatingInactiveProduction() throws Exception {
+        productionService.updateException = new ConflictException("Inactive production cannot be updated");
+
+        mockMvc.perform(put("/productions/production-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "quantity": 15.0
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("Inactive production cannot be updated"))
+                .andExpect(jsonPath("$.path").value("/productions/production-1"));
+    }
+
+    @Test
+    void shouldDeleteProductionSuccessfully() throws Exception {
+        mockMvc.perform(delete("/productions/production-1"))
+                .andExpect(status().isNoContent());
     }
 }

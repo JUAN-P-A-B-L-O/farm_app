@@ -7,6 +7,9 @@ import java.time.LocalDate;
 @Schema(description = "Request payload for updating a production record.")
 public class UpdateProductionRequest {
 
+    @Schema(description = "Animal identifier.", example = "animal-001")
+    private String animalId;
+
     @Schema(description = "Production date.", example = "2026-03-21")
     private LocalDate date;
 
@@ -18,8 +21,21 @@ public class UpdateProductionRequest {
     }
 
     public UpdateProductionRequest(LocalDate date, Double quantity) {
+        this(null, date, quantity);
+    }
+
+    public UpdateProductionRequest(String animalId, LocalDate date, Double quantity) {
+        this.animalId = animalId;
         this.date = date;
         this.quantity = quantity;
+    }
+
+    public String getAnimalId() {
+        return animalId;
+    }
+
+    public void setAnimalId(String animalId) {
+        this.animalId = animalId;
     }
 
     public LocalDate getDate() {
