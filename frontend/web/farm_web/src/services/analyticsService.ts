@@ -9,6 +9,14 @@ import type {
   AnalyticsSeriesApiPoint,
 } from '../types/analytics'
 
+function isValidNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function isValidLabel(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
 function buildAnalyticsParams(filters: AnalyticsFilters) {
   return {
     ...(filters.startDate ? { startDate: filters.startDate } : {}),
@@ -19,24 +27,36 @@ function buildAnalyticsParams(filters: AnalyticsFilters) {
 }
 
 function mapSeriesToLineChart(points: AnalyticsSeriesApiPoint[]): AnalyticsLineChartPoint[] {
-  return points.map((point) => ({
-    label: point.period,
-    value: point.value,
-  }))
+  return Array.isArray(points)
+    ? points
+        .filter((point) => isValidLabel(point?.period) && isValidNumber(point?.value))
+        .map((point) => ({
+          label: point.period,
+          value: point.value,
+        }))
+    : []
 }
 
 function mapProfitToLineChart(points: AnalyticsProfitApiPoint[]): AnalyticsLineChartPoint[] {
-  return points.map((point) => ({
-    label: point.period,
-    value: point.profit,
-  }))
+  return Array.isArray(points)
+    ? points
+        .filter((point) => isValidLabel(point?.period) && isValidNumber(point?.profit))
+        .map((point) => ({
+          label: point.period,
+          value: point.profit,
+        }))
+    : []
 }
 
 function mapProductionByAnimal(points: AnalyticsProductionByAnimalApiPoint[]): AnalyticsBarChartPoint[] {
-  return points.map((point) => ({
-    label: point.animalTag,
-    value: point.quantity,
-  }))
+  return Array.isArray(points)
+    ? points
+        .filter((point) => isValidLabel(point?.animalTag) && isValidNumber(point?.quantity))
+        .map((point) => ({
+          label: point.animalTag,
+          value: point.quantity,
+        }))
+    : []
 }
 
 export async function getAnalyticsDataset(filters: AnalyticsFilters): Promise<AnalyticsDataset> {

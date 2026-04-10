@@ -271,6 +271,7 @@ const en = {
     loadingAnimals: 'Loading animals...',
     emptyAnimals: 'No animals available.',
     loadingCharts: 'Loading analytics...',
+    emptyState: 'No data available.',
     loadAnimalsError: 'Unable to load animals.',
     loadChartsError: 'Unable to load analytics data.',
     productionTitle: 'Production Over Time',
@@ -281,7 +282,6 @@ const en = {
     profitDescription: 'Revenue minus feeding cost for each period.',
     productionByAnimalTitle: 'Production by Animal',
     productionByAnimalDescription: 'Compare the total production of each animal in the current filter range.',
-    emptyState: 'No analytics data found for the selected filters.',
   },
 } as const
 

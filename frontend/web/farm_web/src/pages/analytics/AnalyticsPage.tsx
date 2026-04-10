@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import BarChart from '../../components/analytics/BarChart'
+import ChartErrorBoundary from '../../components/analytics/ChartErrorBoundary'
 import LineChart from '../../components/analytics/LineChart'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
@@ -50,46 +51,89 @@ function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsDataset>(emptyDataset)
   const [isAnimalsLoading, setIsAnimalsLoading] = useState(true)
   const [isChartsLoading, setIsChartsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [hasAppliedFilters, setHasAppliedFilters] = useState(false)
+  const [animalsErrorMessage, setAnimalsErrorMessage] = useState('')
+  const [chartsErrorMessage, setChartsErrorMessage] = useState('')
+
+  const errorMessage = animalsErrorMessage || chartsErrorMessage
 
   useEffect(() => {
+    let isActive = true
+
     async function loadAnimals() {
-      setIsAnimalsLoading(true)
-      setErrorMessage('')
+      if (isActive) {
+        setIsAnimalsLoading(true)
+        setAnimalsErrorMessage('')
+      }
 
       try {
         const data = await getAllAnimals()
-        setAnimals(mapAnimalsToOptions(data))
+
+        if (isActive) {
+          setAnimals(mapAnimalsToOptions(data))
+        }
       } catch (error) {
-        setErrorMessage(getErrorMessage(error, t('analytics.loadAnimalsError')))
+        if (isActive) {
+          setAnimalsErrorMessage(getErrorMessage(error, t('analytics.loadAnimalsError')))
+        }
       } finally {
-        setIsAnimalsLoading(false)
+        if (isActive) {
+          setIsAnimalsLoading(false)
+        }
       }
     }
 
     void loadAnimals()
+
+    return () => {
+      isActive = false
+    }
   }, [language])
 
   useEffect(() => {
+    if (!hasAppliedFilters) {
+      return
+    }
+
+    let isActive = true
+
     async function loadAnalytics() {
-      setIsChartsLoading(true)
-      setErrorMessage('')
+      if (isActive) {
+        setIsChartsLoading(true)
+        setChartsErrorMessage('')
+      }
 
       try {
         const dataset = await getAnalyticsDataset(appliedFilters)
-        setAnalytics(dataset)
+
+        if (isActive) {
+          setAnalytics(dataset)
+        }
       } catch (error) {
-        setErrorMessage(getErrorMessage(error, t('analytics.loadChartsError')))
-        setAnalytics(emptyDataset)
+        if (isActive) {
+          setChartsErrorMessage(getErrorMessage(error, t('analytics.loadChartsError')))
+          setAnalytics(emptyDataset)
+        }
       } finally {
-        setIsChartsLoading(false)
+        if (isActive) {
+          setIsChartsLoading(false)
+        }
       }
     }
 
     void loadAnalytics()
-  }, [appliedFilters, language, t])
 
-  const showCharts = !isChartsLoading && !errorMessage
+    return () => {
+      isActive = false
+    }
+  }, [appliedFilters, hasAppliedFilters, language])
+
+  const showCharts = hasAppliedFilters && !isChartsLoading && !errorMessage
+  const shouldShowInitialState = !hasAppliedFilters && !isChartsLoading && !errorMessage
+
+  function renderChartEmptyState() {
+    return <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
+  }
 
   function updateFilter<Key extends keyof AnalyticsFilters>(key: Key, value: AnalyticsFilters[Key]) {
     setFilters((currentFilters) => ({
@@ -100,6 +144,7 @@ function AnalyticsPage() {
 
   function applyFilters() {
     setAppliedFilters(filters)
+    setHasAppliedFilters(true)
   }
 
   return (
@@ -198,12 +243,16 @@ function AnalyticsPage() {
               <p>{t('analytics.productionDescription')}</p>
             </div>
 
+            {shouldShowInitialState && renderChartEmptyState()}
+
             {showCharts && analytics.productionSeries.length > 0 && (
-              <LineChart data={analytics.productionSeries} color="#2e6a46" />
+              <ChartErrorBoundary fallback={renderChartEmptyState()}>
+                <LineChart data={analytics.productionSeries} color="#2e6a46" />
+              </ChartErrorBoundary>
             )}
 
             {showCharts && analytics.productionSeries.length === 0 && (
-              <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
+              renderChartEmptyState()
             )}
           </article>
 
@@ -213,12 +262,16 @@ function AnalyticsPage() {
               <p>{t('analytics.feedingCostDescription')}</p>
             </div>
 
+            {shouldShowInitialState && renderChartEmptyState()}
+
             {showCharts && analytics.feedingCostSeries.length > 0 && (
-              <LineChart data={analytics.feedingCostSeries} color="#c26b2c" />
+              <ChartErrorBoundary fallback={renderChartEmptyState()}>
+                <LineChart data={analytics.feedingCostSeries} color="#c26b2c" />
+              </ChartErrorBoundary>
             )}
 
             {showCharts && analytics.feedingCostSeries.length === 0 && (
-              <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
+              renderChartEmptyState()
             )}
           </article>
 
@@ -228,12 +281,16 @@ function AnalyticsPage() {
               <p>{t('analytics.profitDescription')}</p>
             </div>
 
+            {shouldShowInitialState && renderChartEmptyState()}
+
             {showCharts && analytics.profitSeries.length > 0 && (
-              <LineChart data={analytics.profitSeries} color="#2e5b9a" />
+              <ChartErrorBoundary fallback={renderChartEmptyState()}>
+                <LineChart data={analytics.profitSeries} color="#2e5b9a" />
+              </ChartErrorBoundary>
             )}
 
             {showCharts && analytics.profitSeries.length === 0 && (
-              <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
+              renderChartEmptyState()
             )}
           </article>
 
@@ -243,12 +300,16 @@ function AnalyticsPage() {
               <p>{t('analytics.productionByAnimalDescription')}</p>
             </div>
 
+            {shouldShowInitialState && renderChartEmptyState()}
+
             {showCharts && analytics.productionByAnimal.length > 0 && (
-              <BarChart data={analytics.productionByAnimal} color="#7b8f2a" />
+              <ChartErrorBoundary fallback={renderChartEmptyState()}>
+                <BarChart data={analytics.productionByAnimal} color="#7b8f2a" />
+              </ChartErrorBoundary>
             )}
 
             {showCharts && analytics.productionByAnimal.length === 0 && (
-              <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
+              renderChartEmptyState()
             )}
           </article>
         </section>

@@ -484,11 +484,14 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
+  align-items: start;
 }
 
 .analytics-chart {
   display: grid;
   gap: 16px;
+  min-width: 0;
+  align-content: start;
 }
 
 .analytics-chart__header h2 {
@@ -511,7 +514,10 @@
 
 .analytics-chart__surface {
   width: 100%;
+  min-width: 0;
+  min-height: 320px;
   height: 320px;
+  display: block;
 }
 
 @media (max-width: 900px) {

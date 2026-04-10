@@ -187,8 +187,8 @@ function FeedingPage() {
                 <tbody>
                   {feedings.map((feeding) => (
                     <tr key={feeding.id}>
-                      <td>{feeding.animal.tag}</td>
-                      <td>{feeding.feedType.name}</td>
+                      <td>{feeding.animal?.tag}</td>
+                      <td>{feeding.feedType?.name}</td>
                       <td>{feeding.date}</td>
                       <td>{feeding.quantity}</td>
                     </tr>

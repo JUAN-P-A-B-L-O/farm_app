@@ -271,6 +271,7 @@ const ptBR = {
     loadingAnimals: 'Carregando animais...',
     emptyAnimals: 'Nenhum animal disponível.',
     loadingCharts: 'Carregando análises...',
+    emptyState: 'Nenhum dado disponível.',
     loadAnimalsError: 'Não foi possível carregar os animais.',
     loadChartsError: 'Não foi possível carregar os dados de análise.',
     productionTitle: 'Produção ao longo do tempo',
@@ -281,7 +282,6 @@ const ptBR = {
     profitDescription: 'Receita menos custo de alimentação em cada período.',
     productionByAnimalTitle: 'Produção por animal',
     productionByAnimalDescription: 'Compare a produção total de cada animal no intervalo filtrado.',
-    emptyState: 'Nenhum dado de análise encontrado para os filtros selecionados.',
   },
 } as const
 
