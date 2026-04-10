@@ -65,7 +65,7 @@ function FeedingForm({
     }
 
     void loadUsers()
-  }, [language, requireUserSelection, t])
+  }, [language, requireUserSelection])
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target
