@@ -195,7 +195,7 @@ function ProductionPage() {
                 <tbody>
                   {productions.map((production) => (
                     <tr key={production.id}>
-                      <td>{production.animal.tag}</td>
+                      <td>{production.animal?.tag}</td>
                       <td>{production.date}</td>
                       <td>{production.quantity}</td>
                     </tr>
