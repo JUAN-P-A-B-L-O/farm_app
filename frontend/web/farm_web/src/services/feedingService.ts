@@ -1,4 +1,5 @@
 import api from './api'
+import { normalizeToTwoDecimals } from '../utils/decimal'
 import type {
   CreateFeedingPayload,
   Feeding,
@@ -32,7 +33,10 @@ export async function getFeedingsByAnimalId(animalId: string, farmId?: string): 
 }
 
 export async function createFeeding(data: FeedingFormData, farmId?: string): Promise<Feeding> {
-  const payload: CreateFeedingPayload = data
+  const payload: CreateFeedingPayload = {
+    ...data,
+    quantity: normalizeToTwoDecimals(data.quantity),
+  }
 
   const response = await api.post<Feeding>('/feedings', payload, {
     params: buildFarmParams(farmId),
@@ -54,7 +58,7 @@ export async function updateFeeding(id: string, data: FeedingFormData, farmId?: 
     animalId: data.animalId,
     feedTypeId: data.feedTypeId,
     date: data.date,
-    quantity: data.quantity,
+    quantity: normalizeToTwoDecimals(data.quantity),
   }
 
   const response = await api.put<Feeding>(`/feedings/${id}`, payload, {

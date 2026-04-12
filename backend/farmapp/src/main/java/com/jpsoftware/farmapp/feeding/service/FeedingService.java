@@ -18,6 +18,7 @@ import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.util.Collection;
@@ -67,6 +68,7 @@ public class FeedingService {
         validateRelations(request, createdBy, resolvedFarmId);
 
         FeedingEntity feedingEntity = feedingMapper.toEntity(request);
+        feedingEntity.setQuantity(DecimalScaleUtils.normalize(feedingEntity.getQuantity()));
         feedingEntity.setCreatedBy(createdBy);
         feedingEntity.setFarmId(resolvedFarmId);
         feedingEntity.setStatus(FeedingEntity.STATUS_ACTIVE);
@@ -150,7 +152,8 @@ public class FeedingService {
             if (request.getQuantity() <= 0) {
                 throw new ValidationException("quantity must be greater than zero");
             }
-            feedingEntity.setQuantity(request.getQuantity());
+            DecimalScaleUtils.requireMaxScale(request.getQuantity(), "quantity");
+            feedingEntity.setQuantity(DecimalScaleUtils.normalize(request.getQuantity()));
         }
 
         FeedingEntity savedFeeding = feedingRepository.save(feedingEntity);
@@ -222,6 +225,7 @@ public class FeedingService {
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new ValidationException("quantity must be greater than zero");
         }
+        DecimalScaleUtils.requireMaxScale(request.getQuantity(), "quantity");
         if (!StringUtils.hasText(createdBy)) {
             throw new ValidationException("userId must not be blank");
         }

@@ -5,6 +5,7 @@ import com.jpsoftware.farmapp.dashboard.dto.DashboardResponse;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -34,14 +35,14 @@ public class DashboardService {
     public DashboardResponse getDashboard(String farmId) {
         farmAccessService.validateAccessibleFarmIfPresent(farmId);
 
-        Double totalProduction = defaultToZero(StringUtils.hasText(farmId)
+        Double totalProduction = DecimalScaleUtils.zeroIfNull(StringUtils.hasText(farmId)
                 ? productionRepository.sumTotalProductionByFarmId(farmId)
                 : productionRepository.sumTotalProduction());
-        Double totalFeedingCost = defaultToZero(StringUtils.hasText(farmId)
+        Double totalFeedingCost = DecimalScaleUtils.zeroIfNull(StringUtils.hasText(farmId)
                 ? feedingRepository.sumTotalFeedingCostByFarmId(farmId)
                 : feedingRepository.sumTotalFeedingCost());
-        Double totalRevenue = totalProduction * MILK_PRICE;
-        Double totalProfit = totalRevenue - totalFeedingCost;
+        Double totalRevenue = DecimalScaleUtils.multiply(totalProduction, MILK_PRICE);
+        Double totalProfit = DecimalScaleUtils.subtract(totalRevenue, totalFeedingCost);
         Long animalCount = StringUtils.hasText(farmId)
                 ? animalRepository.countByFarmId(farmId)
                 : animalRepository.count();
@@ -54,7 +55,4 @@ public class DashboardService {
                 animalCount);
     }
 
-    private Double defaultToZero(Double value) {
-        return value != null ? value : 0.0;
-    }
 }

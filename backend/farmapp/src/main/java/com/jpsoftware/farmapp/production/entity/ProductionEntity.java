@@ -26,7 +26,7 @@ public class ProductionEntity {
     @Column(nullable = false)
     private LocalDate date;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 10, scale = 2)
     private Double quantity;
 
     @Column(name = "created_by", nullable = false)

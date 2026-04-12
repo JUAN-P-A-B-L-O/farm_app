@@ -8,6 +8,7 @@ import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ public class FeedTypeService {
         String validatedFarmId = farmAccessService.validateAccessibleFarm(farmId);
 
         FeedTypeEntity feedTypeEntity = feedTypeMapper.toEntity(request);
+        feedTypeEntity.setCostPerKg(DecimalScaleUtils.normalize(feedTypeEntity.getCostPerKg()));
         feedTypeEntity.setFarmId(validatedFarmId);
         FeedTypeEntity savedFeedType = feedTypeRepository.save(feedTypeEntity);
 
@@ -69,7 +71,7 @@ public class FeedTypeService {
         validateInput(request);
         FeedTypeEntity feedTypeEntity = findActiveFeedType(validateId(id), farmId);
         feedTypeEntity.setName(request.getName());
-        feedTypeEntity.setCostPerKg(request.getCostPerKg());
+        feedTypeEntity.setCostPerKg(DecimalScaleUtils.normalize(request.getCostPerKg()));
 
         return feedTypeMapper.toResponse(feedTypeRepository.save(feedTypeEntity));
     }
@@ -96,6 +98,7 @@ public class FeedTypeService {
         if (request.getCostPerKg() == null || request.getCostPerKg() <= 0) {
             throw new ValidationException("costPerKg must be greater than zero");
         }
+        DecimalScaleUtils.requireMaxScale(request.getCostPerKg(), "costPerKg");
     }
 
     private String validateId(String id) {

@@ -103,7 +103,7 @@ public class FeedingController {
     })
     public ResponseEntity<FeedingResponse> update(
             @PathVariable String id,
-            @RequestBody UpdateFeedingRequest request,
+            @Valid @RequestBody UpdateFeedingRequest request,
             @RequestParam(required = false) String farmId) {
         FeedingResponse response = feedingService.updateFeeding(id, request, farmId);
         return ResponseEntity.ok(response);

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { FeedTypeFormData } from '../../types/feedType'
+import { hasAtMostTwoDecimals, parseTwoDecimalInput } from '../../utils/decimal'
 
 interface FeedTypeFormProps {
   initialValues: FeedTypeFormData
@@ -21,22 +22,36 @@ function FeedTypeForm({
 }: FeedTypeFormProps) {
   const { t } = useTranslation()
   const [formData, setFormData] = useState<FeedTypeFormData>(initialValues)
+  const [validationMessage, setValidationMessage] = useState('')
 
   useEffect(() => {
     setFormData(initialValues)
+    setValidationMessage('')
   }, [initialValues])
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const { name, value } = event.target
+    setValidationMessage('')
 
     setFormData((currentData) => ({
       ...currentData,
-      [name]: name === 'costPerKg' ? Number(value) : value,
+      [name]: name === 'costPerKg' ? parseTwoDecimalInput(value, currentData.costPerKg) : value,
     }))
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!Number.isFinite(formData.costPerKg) || formData.costPerKg <= 0) {
+      setValidationMessage(t('feedType.errors.costPerKg'))
+      return
+    }
+
+    if (!hasAtMostTwoDecimals(formData.costPerKg)) {
+      setValidationMessage(t('feedType.errors.costPrecision'))
+      return
+    }
+
     await onSubmit(formData)
   }
 
@@ -61,7 +76,7 @@ function FeedTypeForm({
             name="costPerKg"
             type="number"
             min="0"
-            step="any"
+            step="0.01"
             value={formData.costPerKg}
             onChange={handleChange}
             placeholder="0"
@@ -70,9 +85,9 @@ function FeedTypeForm({
         </label>
       </div>
 
-      {errorMessage && (
+      {(validationMessage || errorMessage) && (
         <p className="animal-form__feedback animal-form__feedback--error">
-          {errorMessage}
+          {validationMessage || errorMessage}
         </p>
       )}
 

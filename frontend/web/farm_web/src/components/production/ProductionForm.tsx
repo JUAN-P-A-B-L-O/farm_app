@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllUsers } from '../../services/userService'
+import { hasAtMostTwoDecimals, parseTwoDecimalInput } from '../../utils/decimal'
 import type { ProductionAnimalOption, ProductionFormData } from '../../types/production'
 import type { User } from '../../types/user'
 
@@ -67,7 +68,7 @@ function ProductionForm({
     setValidationMessage('')
     setFormData((currentData) => ({
       ...currentData,
-      [name]: name === 'quantity' ? Number(value) : value,
+      [name]: name === 'quantity' ? parseTwoDecimalInput(value, currentData.quantity) : value,
     }))
   }
 
@@ -86,6 +87,11 @@ function ProductionForm({
 
     if (!Number.isFinite(formData.quantity) || formData.quantity <= 0) {
       setValidationMessage(t('production.errors.quantity'))
+      return
+    }
+
+    if (!hasAtMostTwoDecimals(formData.quantity)) {
+      setValidationMessage(t('production.errors.quantityPrecision'))
       return
     }
 
@@ -166,7 +172,7 @@ function ProductionForm({
             name="quantity"
             type="number"
             min="0"
-            step="any"
+            step="0.01"
             value={formData.quantity}
             onChange={handleChange}
             placeholder="0"

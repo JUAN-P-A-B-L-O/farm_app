@@ -138,7 +138,7 @@ public class ProductionController {
     })
     public ResponseEntity<ProductionResponse> update(
             @PathVariable String id,
-            @RequestBody UpdateProductionRequest request,
+            @Valid @RequestBody UpdateProductionRequest request,
             @RequestParam(required = false) String farmId) {
         ProductionResponse response = productionService.update(id, request, farmId);
         return ResponseEntity.ok(response);

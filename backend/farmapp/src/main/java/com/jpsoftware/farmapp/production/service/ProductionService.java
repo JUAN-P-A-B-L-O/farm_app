@@ -19,6 +19,7 @@ import com.jpsoftware.farmapp.shared.exception.BusinessException;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.util.Collection;
@@ -70,6 +71,7 @@ public class ProductionService {
         validateRelations(request, createdBy, resolvedFarmId);
 
         ProductionEntity productionEntity = toEntity(request);
+        productionEntity.setQuantity(DecimalScaleUtils.normalize(productionEntity.getQuantity()));
         productionEntity.setCreatedBy(createdBy);
         productionEntity.setFarmId(resolvedFarmId);
         productionEntity.setStatus(ProductionEntity.STATUS_ACTIVE);
@@ -128,7 +130,7 @@ public class ProductionService {
         validateAnimalExists(validatedAnimalId, farmId);
 
         Double totalQuantity = productionRepository.sumQuantityByAnimalId(validatedAnimalId);
-        return new ProductionSummaryResponse(validatedAnimalId, totalQuantity != null ? totalQuantity : 0.0);
+        return new ProductionSummaryResponse(validatedAnimalId, DecimalScaleUtils.zeroIfNull(totalQuantity));
     }
 
     @Transactional(readOnly = true)
@@ -136,10 +138,10 @@ public class ProductionService {
         String validatedAnimalId = validateAnimalId(animalId);
         validateAnimalExists(validatedAnimalId, farmId);
 
-        Double totalProduction = defaultToZero(productionRepository.sumProductionByAnimalId(validatedAnimalId));
-        Double totalFeedingCost = defaultToZero(feedingRepository.sumFeedingCostByAnimalId(validatedAnimalId));
-        Double revenue = totalProduction * MILK_PRICE;
-        Double profit = revenue - totalFeedingCost;
+        Double totalProduction = DecimalScaleUtils.zeroIfNull(productionRepository.sumProductionByAnimalId(validatedAnimalId));
+        Double totalFeedingCost = DecimalScaleUtils.zeroIfNull(feedingRepository.sumFeedingCostByAnimalId(validatedAnimalId));
+        Double revenue = DecimalScaleUtils.multiply(totalProduction, MILK_PRICE);
+        Double profit = DecimalScaleUtils.subtract(revenue, totalFeedingCost);
 
         return new ProductionProfitResponse(
                 validatedAnimalId,
@@ -179,7 +181,8 @@ public class ProductionService {
             if (request.getQuantity() <= 0) {
                 throw new ValidationException("quantity must be greater than zero");
             }
-            productionEntity.setQuantity(request.getQuantity());
+            DecimalScaleUtils.requireMaxScale(request.getQuantity(), "quantity");
+            productionEntity.setQuantity(DecimalScaleUtils.normalize(request.getQuantity()));
         }
 
         ProductionEntity savedProduction = productionRepository.save(productionEntity);
@@ -234,6 +237,7 @@ public class ProductionService {
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new ValidationException("quantity must be greater than zero");
         }
+        DecimalScaleUtils.requireMaxScale(request.getQuantity(), "quantity");
         if (!StringUtils.hasText(createdBy)) {
             throw new ValidationException("userId must not be blank");
         }
@@ -363,7 +367,4 @@ public class ProductionService {
         }
     }
 
-    private Double defaultToZero(Double value) {
-        return value != null ? value : 0.0;
-    }
 }

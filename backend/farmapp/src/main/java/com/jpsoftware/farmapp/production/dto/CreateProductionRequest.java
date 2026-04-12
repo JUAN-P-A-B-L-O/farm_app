@@ -2,6 +2,7 @@ package com.jpsoftware.farmapp.production.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -21,6 +22,7 @@ public class CreateProductionRequest {
 
     @NotNull
     @Positive
+    @Digits(integer = 10, fraction = 2, message = "quantity must have at most 2 decimal places")
     @Schema(description = "Produced quantity in liters.", example = "32.8")
     private Double quantity;
 

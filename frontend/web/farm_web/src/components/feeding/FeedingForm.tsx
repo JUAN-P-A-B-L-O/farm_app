@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllUsers } from '../../services/userService'
+import { hasAtMostTwoDecimals, parseTwoDecimalInput } from '../../utils/decimal'
 import type {
   FeedingAnimalOption,
   FeedingFeedTypeOption,
@@ -70,13 +71,11 @@ function FeedingForm({
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target
 
-    if (name === 'userId') {
-      setValidationMessage('')
-    }
+    setValidationMessage('')
 
     setFormData((currentData) => ({
       ...currentData,
-      [name]: name === 'quantity' ? Number(value) : value,
+      [name]: name === 'quantity' ? parseTwoDecimalInput(value, currentData.quantity) : value,
     }))
   }
 
@@ -90,6 +89,11 @@ function FeedingForm({
 
     if (!formData.feedTypeId) {
       setValidationMessage(t('feeding.errors.selectFeedType'))
+      return
+    }
+
+    if (!hasAtMostTwoDecimals(formData.quantity)) {
+      setValidationMessage(t('feeding.errors.quantityPrecision'))
       return
     }
 
@@ -189,7 +193,7 @@ function FeedingForm({
             name="quantity"
             type="number"
             min="0"
-            step="any"
+            step="0.01"
             value={formData.quantity}
             onChange={handleChange}
             placeholder="0"
