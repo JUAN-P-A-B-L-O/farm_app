@@ -29,7 +29,7 @@ public class FeedingEntity {
     @Column(nullable = false)
     private LocalDate date;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false)
     private Double quantity;
 
     @Column(name = "created_by", nullable = false)
