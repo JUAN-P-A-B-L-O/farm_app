@@ -83,6 +83,16 @@ function FeedingForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    if (!formData.animalId) {
+      setValidationMessage(t('feeding.errors.selectAnimal'))
+      return
+    }
+
+    if (!formData.feedTypeId) {
+      setValidationMessage(t('feeding.errors.selectFeedType'))
+      return
+    }
+
     if (requireUserSelection && !formData.userId) {
       setValidationMessage(t('feeding.errors.userRequired'))
       return

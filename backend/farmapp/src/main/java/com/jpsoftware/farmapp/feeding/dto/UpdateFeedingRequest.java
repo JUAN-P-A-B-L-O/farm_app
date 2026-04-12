@@ -1,11 +1,13 @@
 package com.jpsoftware.farmapp.feeding.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
 @Schema(description = "Request payload for updating a feeding record.")
 public class UpdateFeedingRequest {
 
+    @JsonAlias("animal")
     @Schema(description = "Animal identifier.", example = "animal-001")
     private String animalId;
 

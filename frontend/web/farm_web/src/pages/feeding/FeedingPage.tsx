@@ -59,7 +59,7 @@ function mapAnimalsToOptions(animals: Animal[]): FeedingAnimalOption[] {
 }
 
 function FeedingPage() {
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const { selectedFarmId } = useFarm()
   const [feedings, setFeedings] = useState<Feeding[]>([])
   const [animals, setAnimals] = useState<FeedingAnimalOption[]>([])
@@ -123,7 +123,7 @@ function FeedingPage() {
 
   useEffect(() => {
     void Promise.all([loadFeedings(), loadFormOptions()])
-  }, [language, selectedFarmId])
+  }, [selectedFarmId])
 
   async function handleCreateOrUpdateFeeding(data: FeedingFormData) {
     setIsSubmitting(true)

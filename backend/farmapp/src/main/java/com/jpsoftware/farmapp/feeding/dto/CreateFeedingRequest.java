@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.feeding.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,6 +10,7 @@ import java.time.LocalDate;
 @Schema(description = "Request payload for creating a feeding record.")
 public class CreateFeedingRequest {
 
+    @JsonAlias("animal")
     @NotBlank(message = "animalId must not be blank")
     @Schema(description = "Animal identifier.", example = "animal-001")
     private String animalId;

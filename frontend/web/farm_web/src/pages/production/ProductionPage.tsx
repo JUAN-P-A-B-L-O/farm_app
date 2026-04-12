@@ -56,7 +56,7 @@ function mapAnimalsToOptions(animals: Animal[]): ProductionAnimalOption[] {
 }
 
 function ProductionPage() {
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const { selectedFarmId } = useFarm()
   const [productions, setProductions] = useState<Production[]>([])
   const [animals, setAnimals] = useState<ProductionAnimalOption[]>([])
@@ -113,7 +113,7 @@ function ProductionPage() {
 
   useEffect(() => {
     void Promise.all([loadProductions(), loadAnimals()])
-  }, [language, selectedFarmId])
+  }, [selectedFarmId])
 
   async function handleCreateOrUpdateProduction(data: ProductionFormData) {
     const payload: ProductionFormData = {

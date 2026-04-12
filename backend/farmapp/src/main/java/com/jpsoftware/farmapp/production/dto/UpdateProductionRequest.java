@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.production.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Positive;
 import java.time.LocalDate;
@@ -7,6 +8,7 @@ import java.time.LocalDate;
 @Schema(description = "Request payload for updating a production record.")
 public class UpdateProductionRequest {
 
+    @JsonAlias("animal")
     @Schema(description = "Animal identifier.", example = "animal-001")
     private String animalId;
 

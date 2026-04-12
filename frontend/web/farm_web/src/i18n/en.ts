@@ -204,6 +204,8 @@ const en = {
       update: 'Unable to update feeding record.',
       delete: 'Unable to delete feeding record.',
       loadDetails: 'Unable to load feeding details.',
+      selectAnimal: 'Select an animal before creating the feeding record.',
+      selectFeedType: 'Select a feed type before creating the feeding record.',
       userRequired: 'User is required.',
       loadUsers: 'Unable to load users.',
     },

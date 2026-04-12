@@ -67,6 +67,7 @@ public class ProductionService {
         String createdBy = authenticationContextService.resolveUserId(request != null ? request.getUserId() : null);
         validateInput(request, createdBy);
         String resolvedFarmId = resolveFarmId(request, farmId);
+        validateRelations(request, createdBy, resolvedFarmId);
 
         ProductionEntity productionEntity = toEntity(request);
         productionEntity.setCreatedBy(createdBy);
@@ -236,9 +237,10 @@ public class ProductionService {
         if (!StringUtils.hasText(createdBy)) {
             throw new ValidationException("userId must not be blank");
         }
-        if (!animalRepository.existsById(request.getAnimalId())) {
-            throw new ResourceNotFoundException("Animal not found");
-        }
+    }
+
+    private void validateRelations(CreateProductionRequest request, String createdBy, String farmId) {
+        validateAnimalExists(request.getAnimalId(), farmId);
         if (!userRepository.existsById(parseUserId(createdBy))) {
             throw new ResourceNotFoundException("User not found");
         }

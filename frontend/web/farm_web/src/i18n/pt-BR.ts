@@ -204,6 +204,8 @@ const ptBR = {
       update: 'Não foi possível atualizar o registro de alimentação.',
       delete: 'Não foi possível excluir o registro de alimentação.',
       loadDetails: 'Não foi possível carregar os detalhes da alimentação.',
+      selectAnimal: 'Selecione um animal antes de criar o registro de alimentação.',
+      selectFeedType: 'Selecione um tipo de ração antes de criar o registro de alimentação.',
       userRequired: 'Usuário é obrigatório.',
       loadUsers: 'Não foi possível carregar os usuários.',
     },
