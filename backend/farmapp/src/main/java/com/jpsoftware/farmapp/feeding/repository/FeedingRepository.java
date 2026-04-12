@@ -25,18 +25,39 @@ public interface FeedingRepository extends JpaRepository<FeedingEntity, String> 
 
     List<FeedingEntity> findByAnimalIdAndStatus(String animalId, String status);
 
+    List<FeedingEntity> findByFarmIdAndStatus(String farmId, String status);
+
     Page<FeedingEntity> findByAnimalIdAndStatus(String animalId, String status, Pageable pageable);
+
+    Page<FeedingEntity> findByFarmIdAndStatus(String farmId, String status, Pageable pageable);
 
     List<FeedingEntity> findByDateAndStatus(LocalDate date, String status);
 
+    List<FeedingEntity> findByFarmIdAndDateAndStatus(String farmId, LocalDate date, String status);
+
     Page<FeedingEntity> findByDateAndStatus(LocalDate date, String status, Pageable pageable);
+
+    Page<FeedingEntity> findByFarmIdAndDateAndStatus(String farmId, LocalDate date, String status, Pageable pageable);
 
     List<FeedingEntity> findByAnimalIdAndDateAndStatus(String animalId, LocalDate date, String status);
 
+    List<FeedingEntity> findByFarmIdAndAnimalIdAndDateAndStatus(String farmId, String animalId, LocalDate date, String status);
+
+    List<FeedingEntity> findByFarmIdAndAnimalIdAndStatus(String farmId, String animalId, String status);
+
     Page<FeedingEntity> findByAnimalIdAndDateAndStatus(String animalId, LocalDate date, String status, Pageable pageable);
+
+    Page<FeedingEntity> findByFarmIdAndAnimalIdAndDateAndStatus(String farmId, String animalId, LocalDate date, String status, Pageable pageable);
+
+    Page<FeedingEntity> findByFarmIdAndAnimalIdAndStatus(String farmId, String animalId, String status, Pageable pageable);
+
+    java.util.Optional<FeedingEntity> findByIdAndFarmIdAndStatus(String id, String farmId, String status);
 
     @Query("SELECT f FROM FeedingEntity f WHERE f.id = :id")
     java.util.Optional<FeedingEntity> findAnyById(@Param("id") String id);
+
+    @Query("SELECT f FROM FeedingEntity f WHERE f.id = :id AND f.farmId = :farmId")
+    java.util.Optional<FeedingEntity> findAnyByIdAndFarmId(@Param("id") String id, @Param("farmId") String farmId);
 
     @Query("""
             SELECT COALESCE(SUM(f.quantity * ft.costPerKg), 0)
@@ -46,6 +67,15 @@ public interface FeedingRepository extends JpaRepository<FeedingEntity, String> 
             AND f.status = 'ACTIVE'
             """)
     Double sumFeedingCostByAnimalId(@Param("animalId") String animalId);
+
+    @Query("""
+            SELECT COALESCE(SUM(f.quantity * ft.costPerKg), 0)
+            FROM FeedingEntity f
+            JOIN FeedTypeEntity ft ON f.feedTypeId = ft.id
+            WHERE f.farmId = :farmId
+            AND f.status = 'ACTIVE'
+            """)
+    Double sumTotalFeedingCostByFarmId(@Param("farmId") String farmId);
 
     @Query("""
             SELECT COALESCE(SUM(f.quantity * ft.costPerKg), 0)

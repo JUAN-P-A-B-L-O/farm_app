@@ -25,18 +25,39 @@ public interface ProductionRepository extends JpaRepository<ProductionEntity, St
 
     List<ProductionEntity> findByAnimalIdAndStatus(String animalId, String status);
 
+    List<ProductionEntity> findByFarmIdAndStatus(String farmId, String status);
+
     Page<ProductionEntity> findByAnimalIdAndStatus(String animalId, String status, Pageable pageable);
+
+    Page<ProductionEntity> findByFarmIdAndStatus(String farmId, String status, Pageable pageable);
 
     List<ProductionEntity> findByDateAndStatus(LocalDate date, String status);
 
+    List<ProductionEntity> findByFarmIdAndDateAndStatus(String farmId, LocalDate date, String status);
+
     Page<ProductionEntity> findByDateAndStatus(LocalDate date, String status, Pageable pageable);
+
+    Page<ProductionEntity> findByFarmIdAndDateAndStatus(String farmId, LocalDate date, String status, Pageable pageable);
 
     List<ProductionEntity> findByAnimalIdAndDateAndStatus(String animalId, LocalDate date, String status);
 
+    List<ProductionEntity> findByFarmIdAndAnimalIdAndDateAndStatus(String farmId, String animalId, LocalDate date, String status);
+
+    List<ProductionEntity> findByFarmIdAndAnimalIdAndStatus(String farmId, String animalId, String status);
+
     Page<ProductionEntity> findByAnimalIdAndDateAndStatus(String animalId, LocalDate date, String status, Pageable pageable);
+
+    Page<ProductionEntity> findByFarmIdAndAnimalIdAndDateAndStatus(String farmId, String animalId, LocalDate date, String status, Pageable pageable);
+
+    Page<ProductionEntity> findByFarmIdAndAnimalIdAndStatus(String farmId, String animalId, String status, Pageable pageable);
+
+    java.util.Optional<ProductionEntity> findByIdAndFarmIdAndStatus(String id, String farmId, String status);
 
     @Query("SELECT p FROM ProductionEntity p WHERE p.id = :id")
     java.util.Optional<ProductionEntity> findAnyById(@Param("id") String id);
+
+    @Query("SELECT p FROM ProductionEntity p WHERE p.id = :id AND p.farmId = :farmId")
+    java.util.Optional<ProductionEntity> findAnyByIdAndFarmId(@Param("id") String id, @Param("farmId") String farmId);
 
     @Query("""
             SELECT COALESCE(SUM(p.quantity), 0)
@@ -60,4 +81,12 @@ public interface ProductionRepository extends JpaRepository<ProductionEntity, St
             WHERE p.status = 'ACTIVE'
             """)
     Double sumTotalProduction();
+
+    @Query("""
+            SELECT COALESCE(SUM(p.quantity), 0)
+            FROM ProductionEntity p
+            WHERE p.farmId = :farmId
+            AND p.status = 'ACTIVE'
+            """)
+    Double sumTotalProductionByFarmId(@Param("farmId") String farmId);
 }

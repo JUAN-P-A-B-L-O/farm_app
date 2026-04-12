@@ -3,6 +3,7 @@ import axios from 'axios'
 import BarChart from '../../components/analytics/BarChart'
 import ChartErrorBoundary from '../../components/analytics/ChartErrorBoundary'
 import LineChart from '../../components/analytics/LineChart'
+import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
 import { getAnalyticsDataset } from '../../services/analyticsService'
@@ -45,6 +46,7 @@ const emptyDataset: AnalyticsDataset = {
 
 function AnalyticsPage() {
   const { t, language } = useTranslation()
+  const { selectedFarmId } = useFarm()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
   const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters)
   const [appliedFilters, setAppliedFilters] = useState<AnalyticsFilters>(initialFilters)
@@ -67,7 +69,7 @@ function AnalyticsPage() {
       }
 
       try {
-        const data = await getAllAnimals()
+        const data = selectedFarmId ? await getAllAnimals(selectedFarmId) : []
 
         if (isActive) {
           setAnimals(mapAnimalsToOptions(data))
@@ -88,7 +90,7 @@ function AnalyticsPage() {
     return () => {
       isActive = false
     }
-  }, [language])
+  }, [language, selectedFarmId])
 
   useEffect(() => {
     if (!hasAppliedFilters) {
@@ -104,7 +106,7 @@ function AnalyticsPage() {
       }
 
       try {
-        const dataset = await getAnalyticsDataset(appliedFilters)
+        const dataset = await getAnalyticsDataset(appliedFilters, selectedFarmId)
 
         if (isActive) {
           setAnalytics(dataset)
@@ -126,7 +128,7 @@ function AnalyticsPage() {
     return () => {
       isActive = false
     }
-  }, [appliedFilters, hasAppliedFilters, language])
+  }, [appliedFilters, hasAppliedFilters, language, selectedFarmId])
 
   const showCharts = hasAppliedFilters && !isChartsLoading && !errorMessage
   const shouldShowInitialState = !hasAppliedFilters && !isChartsLoading && !errorMessage

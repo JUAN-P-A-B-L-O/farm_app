@@ -65,8 +65,10 @@ public class AnimalController {
             @ApiResponse(responseCode = "404", description = "Animal not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<AnimalResponse> findById(@PathVariable String id) {
-        AnimalResponse response = animalService.findById(id);
+    public ResponseEntity<AnimalResponse> findById(
+            @PathVariable String id,
+            @RequestParam(required = false) String farmId) {
+        AnimalResponse response = animalService.findById(id, farmId);
         return ResponseEntity.ok(response);
     }
 
@@ -81,8 +83,9 @@ public class AnimalController {
     })
     public ResponseEntity<AnimalResponse> update(
             @PathVariable String id,
-            @Valid @RequestBody UpdateAnimalRequest request) {
-        AnimalResponse response = animalService.update(id, request);
+            @Valid @RequestBody UpdateAnimalRequest request,
+            @RequestParam(required = false) String farmId) {
+        AnimalResponse response = animalService.update(id, request, farmId);
         return ResponseEntity.ok(response);
     }
 
@@ -93,8 +96,10 @@ public class AnimalController {
             @ApiResponse(responseCode = "404", description = "Animal not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        animalService.delete(id);
+    public ResponseEntity<Void> delete(
+            @PathVariable String id,
+            @RequestParam(required = false) String farmId) {
+        animalService.delete(id, farmId);
         return ResponseEntity.noContent().build();
     }
 }

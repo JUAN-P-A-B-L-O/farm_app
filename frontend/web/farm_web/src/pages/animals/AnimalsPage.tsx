@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AnimalForm from '../../components/animal/AnimalForm'
+import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
   createAnimal,
@@ -46,6 +47,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
 
 function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const { t } = useTranslation()
+  const { selectedFarmId, selectedFarm } = useFarm()
   const [animals, setAnimals] = useState<Animal[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -56,11 +58,18 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const [formInitialValues, setFormInitialValues] = useState<AnimalFormData>(emptyAnimalForm)
 
   async function loadAnimals() {
+    if (!selectedFarmId) {
+      setAnimals([])
+      setListErrorMessage('')
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
     setListErrorMessage('')
 
     try {
-      const data = await getAllAnimals()
+      const data = await getAllAnimals(selectedFarmId)
       setAnimals(data)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('animals.errors.loadList'), t))
@@ -71,17 +80,22 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
 
   useEffect(() => {
     void loadAnimals()
-  }, [])
+  }, [selectedFarmId])
 
   async function handleCreateOrUpdate(data: AnimalFormData) {
+    const payload: AnimalFormData = {
+      ...data,
+      farmId: selectedFarmId,
+    }
+
     setIsSubmitting(true)
     setFormErrorMessage('')
 
     try {
       if (editingAnimalId) {
-        await updateAnimal(editingAnimalId, data)
+        await updateAnimal(editingAnimalId, payload, selectedFarmId)
       } else {
-        await createAnimal(data)
+        await createAnimal(payload)
       }
 
       setEditingAnimalId(null)
@@ -105,7 +119,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
     setFormErrorMessage('')
 
     try {
-      const animal = await getAnimalById(id)
+      const animal = await getAnimalById(id, selectedFarmId)
 
       setEditingAnimalId(animal.id)
       setFormInitialValues({
@@ -138,7 +152,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
     setListErrorMessage('')
 
     try {
-      await deleteAnimal(id)
+      await deleteAnimal(id, selectedFarmId)
 
       if (editingAnimalId === id) {
         handleCancelEdit()
@@ -182,6 +196,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
             isSubmitting={isSubmitting}
             submitLabel={editingAnimalId ? t('animals.submitUpdate') : t('animals.submitCreate')}
             errorMessage={formErrorMessage}
+            selectedFarmName={selectedFarm?.name}
           />
         </article>
 

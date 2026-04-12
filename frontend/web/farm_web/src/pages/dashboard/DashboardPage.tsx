@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import StatCard from '../../components/dashboard/StatCard'
+import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { fetchDashboard } from '../../services/dashboardService'
 import type { DashboardSummary } from '../../types/dashboard'
@@ -19,14 +20,24 @@ const dashboardStats: Array<{
 
 function DashboardPage() {
   const { t, language } = useTranslation()
+  const { selectedFarmId } = useFarm()
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     async function loadDashboard() {
+      setIsLoading(true)
+      setErrorMessage('')
+
+      if (!selectedFarmId) {
+        setSummary(null)
+        setIsLoading(false)
+        return
+      }
+
       try {
-        const data = await fetchDashboard()
+        const data = await fetchDashboard(selectedFarmId)
         setSummary(data)
       } catch {
         setErrorMessage(t('dashboard.error'))
@@ -36,7 +47,7 @@ function DashboardPage() {
     }
 
     void loadDashboard()
-  }, [language])
+  }, [language, selectedFarmId])
   return (
     <main className="dashboard-page">
       <section className="dashboard-page__header">

@@ -5,6 +5,7 @@ import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
 import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
@@ -42,6 +43,7 @@ public class ProductionService {
     private final UserRepository userRepository;
     private final ProductionMapper productionMapper;
     private final AuthenticationContextService authenticationContextService;
+    private final FarmAccessService farmAccessService;
 
     public ProductionService(
             ProductionRepository productionRepository,
@@ -49,22 +51,26 @@ public class ProductionService {
             AnimalRepository animalRepository,
             UserRepository userRepository,
             ProductionMapper productionMapper,
-            AuthenticationContextService authenticationContextService) {
+            AuthenticationContextService authenticationContextService,
+            FarmAccessService farmAccessService) {
         this.productionRepository = productionRepository;
         this.feedingRepository = feedingRepository;
         this.animalRepository = animalRepository;
         this.userRepository = userRepository;
         this.productionMapper = productionMapper;
         this.authenticationContextService = authenticationContextService;
+        this.farmAccessService = farmAccessService;
     }
 
     @Transactional
-    public ProductionResponse create(CreateProductionRequest request) {
+    public ProductionResponse create(CreateProductionRequest request, String farmId) {
         String createdBy = authenticationContextService.resolveUserId(request != null ? request.getUserId() : null);
         validateInput(request, createdBy);
+        String resolvedFarmId = resolveFarmId(request, farmId);
 
         ProductionEntity productionEntity = toEntity(request);
         productionEntity.setCreatedBy(createdBy);
+        productionEntity.setFarmId(resolvedFarmId);
         productionEntity.setStatus(ProductionEntity.STATUS_ACTIVE);
         ProductionEntity savedProduction = productionRepository.save(productionEntity);
 
@@ -72,13 +78,13 @@ public class ProductionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductionResponse> findAll(String animalId, LocalDate date) {
-        return getAllProductions(animalId, date);
+    public List<ProductionResponse> findAll(String animalId, LocalDate date, String farmId) {
+        return getAllProductions(animalId, date, farmId);
     }
 
     @Transactional(readOnly = true)
-    public List<ProductionResponse> getAllProductions(String animalId, LocalDate date) {
-        List<ProductionEntity> productions = findProductions(animalId, date);
+    public List<ProductionResponse> getAllProductions(String animalId, LocalDate date, String farmId) {
+        List<ProductionEntity> productions = findProductions(animalId, date, farmId);
         Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(productions);
         return productions.stream()
                 .map(production -> productionMapper.toResponse(production, animalsById.get(production.getAnimalId())))
@@ -86,13 +92,13 @@ public class ProductionService {
     }
 
     @Transactional(readOnly = true)
-    public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
-        return getAllProductionsPaginated(animalId, date, page, size);
+    public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
+        return getAllProductionsPaginated(animalId, date, farmId, page, size);
     }
 
     @Transactional(readOnly = true)
-    public PaginatedResponse<ProductionResponse> getAllProductionsPaginated(String animalId, LocalDate date, int page, int size) {
-        Page<ProductionEntity> productions = findProductions(animalId, date, PageRequest.of(page, size));
+    public PaginatedResponse<ProductionResponse> getAllProductionsPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
+        Page<ProductionEntity> productions = findProductions(animalId, date, farmId, PageRequest.of(page, size));
         Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(productions.getContent());
         Page<ProductionResponse> responses = productions.map(production ->
                 productionMapper.toResponse(production, animalsById.get(production.getAnimalId())));
@@ -100,32 +106,34 @@ public class ProductionService {
     }
 
     @Transactional(readOnly = true)
-    public ProductionResponse findById(String id) {
-        return getProductionById(id);
+    public ProductionResponse findById(String id, String farmId) {
+        return getProductionById(id, farmId);
     }
 
     @Transactional(readOnly = true)
-    public ProductionResponse getProductionById(String id) {
-        ProductionEntity productionEntity = productionRepository.findById(validateId(id))
+    public ProductionResponse getProductionById(String id, String farmId) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        ProductionEntity productionEntity = (StringUtils.hasText(farmId)
+                ? productionRepository.findByIdAndFarmIdAndStatus(validateId(id), farmId, ProductionEntity.STATUS_ACTIVE)
+                : productionRepository.findById(validateId(id)))
                 .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
 
         return toEnrichedResponse(productionEntity);
     }
 
     @Transactional(readOnly = true)
-    public ProductionSummaryResponse getSummaryByAnimal(String animalId) {
+    public ProductionSummaryResponse getSummaryByAnimal(String animalId, String farmId) {
         String validatedAnimalId = validateAnimalId(animalId);
-
-        validateAnimalExists(validatedAnimalId);
+        validateAnimalExists(validatedAnimalId, farmId);
 
         Double totalQuantity = productionRepository.sumQuantityByAnimalId(validatedAnimalId);
         return new ProductionSummaryResponse(validatedAnimalId, totalQuantity != null ? totalQuantity : 0.0);
     }
 
     @Transactional(readOnly = true)
-    public ProductionProfitResponse getProfitByAnimal(String animalId) {
+    public ProductionProfitResponse getProfitByAnimal(String animalId, String farmId) {
         String validatedAnimalId = validateAnimalId(animalId);
-        validateAnimalExists(validatedAnimalId);
+        validateAnimalExists(validatedAnimalId, farmId);
 
         Double totalProduction = defaultToZero(productionRepository.sumProductionByAnimalId(validatedAnimalId));
         Double totalFeedingCost = defaultToZero(feedingRepository.sumFeedingCostByAnimalId(validatedAnimalId));
@@ -142,21 +150,21 @@ public class ProductionService {
     }
 
     @Transactional
-    public ProductionResponse update(String id, UpdateProductionRequest request) {
-        return updateProduction(id, request);
+    public ProductionResponse update(String id, UpdateProductionRequest request, String farmId) {
+        return updateProduction(id, request, farmId);
     }
 
     @Transactional
-    public ProductionResponse updateProduction(String id, UpdateProductionRequest request) {
+    public ProductionResponse updateProduction(String id, UpdateProductionRequest request, String farmId) {
         if (request == null) {
             throw new ValidationException("request must not be null");
         }
 
-        ProductionEntity productionEntity = getProductionIncludingInactive(id);
+        ProductionEntity productionEntity = getProductionIncludingInactive(id, farmId);
         ensureProductionIsActive(productionEntity, "Inactive production cannot be updated");
 
         if (StringUtils.hasText(request.getAnimalId())) {
-            validateAnimalExists(request.getAnimalId());
+            validateAnimalExists(request.getAnimalId(), farmId);
             productionEntity.setAnimalId(request.getAnimalId());
         }
         if (request.getDate() != null) {
@@ -178,8 +186,8 @@ public class ProductionService {
     }
 
     @Transactional
-    public void deleteProduction(String id) {
-        ProductionEntity productionEntity = getProductionIncludingInactive(id);
+    public void deleteProduction(String id, String farmId) {
+        ProductionEntity productionEntity = getProductionIncludingInactive(id, farmId);
         if (ProductionEntity.STATUS_INACTIVE.equals(productionEntity.getStatus())) {
             return;
         }
@@ -240,7 +248,20 @@ public class ProductionService {
         return productionMapper.toEntity(request);
     }
 
-    private List<ProductionEntity> findProductions(String animalId, LocalDate date) {
+    private List<ProductionEntity> findProductions(String animalId, LocalDate date, String farmId) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId) && date != null) {
+            return productionRepository.findByFarmIdAndAnimalIdAndDateAndStatus(farmId, animalId, date, ProductionEntity.STATUS_ACTIVE);
+        }
+        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId)) {
+            return productionRepository.findByFarmIdAndAnimalIdAndStatus(farmId, animalId, ProductionEntity.STATUS_ACTIVE);
+        }
+        if (StringUtils.hasText(farmId) && date != null) {
+            return productionRepository.findByFarmIdAndDateAndStatus(farmId, date, ProductionEntity.STATUS_ACTIVE);
+        }
+        if (StringUtils.hasText(farmId)) {
+            return productionRepository.findByFarmIdAndStatus(farmId, ProductionEntity.STATUS_ACTIVE);
+        }
         if (StringUtils.hasText(animalId) && date != null) {
             return productionRepository.findByAnimalIdAndDateAndStatus(animalId, date, ProductionEntity.STATUS_ACTIVE);
         }
@@ -253,7 +274,20 @@ public class ProductionService {
         return productionRepository.findAll();
     }
 
-    private Page<ProductionEntity> findProductions(String animalId, LocalDate date, org.springframework.data.domain.Pageable pageable) {
+    private Page<ProductionEntity> findProductions(String animalId, LocalDate date, String farmId, org.springframework.data.domain.Pageable pageable) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId) && date != null) {
+            return productionRepository.findByFarmIdAndAnimalIdAndDateAndStatus(farmId, animalId, date, ProductionEntity.STATUS_ACTIVE, pageable);
+        }
+        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId)) {
+            return productionRepository.findByFarmIdAndAnimalIdAndStatus(farmId, animalId, ProductionEntity.STATUS_ACTIVE, pageable);
+        }
+        if (StringUtils.hasText(farmId) && date != null) {
+            return productionRepository.findByFarmIdAndDateAndStatus(farmId, date, ProductionEntity.STATUS_ACTIVE, pageable);
+        }
+        if (StringUtils.hasText(farmId)) {
+            return productionRepository.findByFarmIdAndStatus(farmId, ProductionEntity.STATUS_ACTIVE, pageable);
+        }
         if (StringUtils.hasText(animalId) && date != null) {
             return productionRepository.findByAnimalIdAndDateAndStatus(animalId, date, ProductionEntity.STATUS_ACTIVE, pageable);
         }
@@ -266,8 +300,11 @@ public class ProductionService {
         return productionRepository.findAll(pageable);
     }
 
-    private ProductionEntity getProductionIncludingInactive(String id) {
-        return productionRepository.findAnyById(validateId(id))
+    private ProductionEntity getProductionIncludingInactive(String id, String farmId) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        return (StringUtils.hasText(farmId)
+                ? productionRepository.findAnyByIdAndFarmId(validateId(id), farmId)
+                : productionRepository.findAnyById(validateId(id)))
                 .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
     }
 
@@ -300,10 +337,20 @@ public class ProductionService {
         return animalId;
     }
 
-    private void validateAnimalExists(String animalId) {
-        if (!animalRepository.existsById(animalId)) {
+    private void validateAnimalExists(String animalId, String farmId) {
+        if (!animalRepository.existsById(animalId) || (StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId))) {
             throw new ResourceNotFoundException("Animal not found");
         }
+    }
+
+    private String resolveFarmId(CreateProductionRequest request, String farmId) {
+        if (StringUtils.hasText(farmId)) {
+            return farmAccessService.validateAccessibleFarm(farmId);
+        }
+
+        AnimalEntity animalEntity = animalRepository.findById(request.getAnimalId())
+                .orElseThrow(() -> new ResourceNotFoundException("Animal not found"));
+        return farmAccessService.validateAccessibleFarm(animalEntity.getFarmId());
     }
 
     private java.util.UUID parseUserId(String userId) {

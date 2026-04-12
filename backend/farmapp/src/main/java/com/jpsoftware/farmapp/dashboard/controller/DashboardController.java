@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -25,8 +26,8 @@ public class DashboardController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Dashboard data retrieved successfully")
     })
-    public ResponseEntity<DashboardResponse> getDashboard() {
-        DashboardResponse response = dashboardService.getDashboard();
+    public ResponseEntity<DashboardResponse> getDashboard(@RequestParam(required = false) String farmId) {
+        DashboardResponse response = dashboardService.getDashboard(farmId);
         return ResponseEntity.ok(response);
     }
 }

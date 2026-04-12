@@ -47,8 +47,10 @@ public class FeedingController {
             @ApiResponse(responseCode = "404", description = "Related resource not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<FeedingResponse> create(@Valid @RequestBody CreateFeedingRequest request) {
-        FeedingResponse response = feedingService.create(request);
+    public ResponseEntity<FeedingResponse> create(
+            @Valid @RequestBody CreateFeedingRequest request,
+            @RequestParam(required = false) String farmId) {
+        FeedingResponse response = feedingService.create(request, farmId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -60,14 +62,15 @@ public class FeedingController {
     public ResponseEntity<?> findAll(
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) String farmId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         if (page != null && size != null) {
-            PaginatedResponse<FeedingResponse> response = feedingService.findAllPaginated(animalId, date, page, size);
+            PaginatedResponse<FeedingResponse> response = feedingService.findAllPaginated(animalId, date, farmId, page, size);
             return ResponseEntity.ok(response);
         }
 
-        List<FeedingResponse> response = feedingService.findAll(animalId, date);
+        List<FeedingResponse> response = feedingService.findAll(animalId, date, farmId);
         return ResponseEntity.ok(response);
     }
 
@@ -80,8 +83,10 @@ public class FeedingController {
             @ApiResponse(responseCode = "404", description = "Feeding not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<FeedingResponse> findById(@PathVariable String id) {
-        FeedingResponse response = feedingService.findById(id);
+    public ResponseEntity<FeedingResponse> findById(
+            @PathVariable String id,
+            @RequestParam(required = false) String farmId) {
+        FeedingResponse response = feedingService.findById(id, farmId);
         return ResponseEntity.ok(response);
     }
 
@@ -98,8 +103,9 @@ public class FeedingController {
     })
     public ResponseEntity<FeedingResponse> update(
             @PathVariable String id,
-            @RequestBody UpdateFeedingRequest request) {
-        FeedingResponse response = feedingService.updateFeeding(id, request);
+            @RequestBody UpdateFeedingRequest request,
+            @RequestParam(required = false) String farmId) {
+        FeedingResponse response = feedingService.updateFeeding(id, request, farmId);
         return ResponseEntity.ok(response);
     }
 
@@ -110,8 +116,10 @@ public class FeedingController {
             @ApiResponse(responseCode = "404", description = "Feeding not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        feedingService.deleteFeeding(id);
+    public ResponseEntity<Void> delete(
+            @PathVariable String id,
+            @RequestParam(required = false) String farmId) {
+        feedingService.deleteFeeding(id, farmId);
         return ResponseEntity.noContent().build();
     }
 }

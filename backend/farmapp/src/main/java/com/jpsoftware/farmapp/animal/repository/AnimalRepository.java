@@ -9,4 +9,10 @@ public interface AnimalRepository extends JpaRepository<AnimalEntity, String> {
     boolean existsByTag(String tag);
 
     List<AnimalEntity> findByFarmId(String farmId);
+
+    java.util.Optional<AnimalEntity> findByIdAndFarmId(String id, String farmId);
+
+    boolean existsByIdAndFarmId(String id, String farmId);
+
+    long countByFarmId(String farmId);
 }

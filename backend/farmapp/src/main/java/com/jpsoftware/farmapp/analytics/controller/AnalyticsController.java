@@ -36,8 +36,9 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String farmId,
             @RequestParam(required = false, defaultValue = "day") String groupBy) {
-        return ResponseEntity.ok(analyticsService.getProductionSeries(startDate, endDate, animalId, groupBy));
+        return ResponseEntity.ok(analyticsService.getProductionSeries(startDate, endDate, animalId, groupBy, farmId));
     }
 
     @GetMapping("/feeding")
@@ -49,8 +50,9 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String farmId,
             @RequestParam(required = false, defaultValue = "day") String groupBy) {
-        return ResponseEntity.ok(analyticsService.getFeedingCostSeries(startDate, endDate, animalId, groupBy));
+        return ResponseEntity.ok(analyticsService.getFeedingCostSeries(startDate, endDate, animalId, groupBy, farmId));
     }
 
     @GetMapping("/profit")
@@ -62,8 +64,9 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String farmId,
             @RequestParam(required = false, defaultValue = "day") String groupBy) {
-        return ResponseEntity.ok(analyticsService.getProfitSeries(startDate, endDate, animalId, groupBy));
+        return ResponseEntity.ok(analyticsService.getProfitSeries(startDate, endDate, animalId, groupBy, farmId));
     }
 
     @GetMapping("/production/by-animal")
@@ -74,7 +77,8 @@ public class AnalyticsController {
     public ResponseEntity<List<AnalyticsAnimalProductionPointResponse>> getProductionByAnimal(
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
-            @RequestParam(required = false) String animalId) {
-        return ResponseEntity.ok(analyticsService.getProductionByAnimal(startDate, endDate, animalId));
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String farmId) {
+        return ResponseEntity.ok(analyticsService.getProductionByAnimal(startDate, endDate, animalId, farmId));
     }
 }

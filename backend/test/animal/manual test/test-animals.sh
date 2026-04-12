@@ -2,6 +2,7 @@
 
 BASE_URL="http://localhost:8080"
 
+FARM_TESTS=0
 ANIMAL_TESTS=0
 PRODUCTION_TESTS=0
 FEED_TESTS=0
@@ -80,6 +81,23 @@ echo "User id: $USER_ID"
 echo "========================================"
 echo "ANIMAL FLOW"
 echo "========================================"
+
+run_test "3. CREATE FARM" 201 \
+"curl -s -X POST $BASE_URL/farm \
+$AUTH_HEADER \
+-H 'Content-Type: application/json' \
+-d '{
+  \"name\": \"Farm-001\",
+}'"
+((FARM_TESTS++))
+
+ANIMAL_ID=$(curl -s \
+  -H "Authorization: Bearer $TOKEN" \
+  "$BASE_URL/animals" | jq -r '.[0].id')
+
+echo "Generated ANIMAL_ID: $ANIMAL_ID"
+
+
 
 run_test "3. CREATE ANIMAL" 201 \
 "curl -s -X POST $BASE_URL/animals \

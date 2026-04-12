@@ -51,14 +51,15 @@ public class ProductionController {
     public ResponseEntity<?> findAll(
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) String farmId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         if (page != null && size != null) {
-            PaginatedResponse<ProductionResponse> response = productionService.findAllPaginated(animalId, date, page, size);
+            PaginatedResponse<ProductionResponse> response = productionService.findAllPaginated(animalId, date, farmId, page, size);
             return ResponseEntity.ok(response);
         }
 
-        List<ProductionResponse> response = productionService.findAll(animalId, date);
+        List<ProductionResponse> response = productionService.findAll(animalId, date, farmId);
         return ResponseEntity.ok(response);
     }
 
@@ -71,8 +72,10 @@ public class ProductionController {
             @ApiResponse(responseCode = "404", description = "Production not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<ProductionResponse> findById(@PathVariable String id) {
-        ProductionResponse response = productionService.findById(id);
+    public ResponseEntity<ProductionResponse> findById(
+            @PathVariable String id,
+            @RequestParam(required = false) String farmId) {
+        ProductionResponse response = productionService.findById(id, farmId);
         return ResponseEntity.ok(response);
     }
 
@@ -86,8 +89,9 @@ public class ProductionController {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<ProductionSummaryResponse> getSummaryByAnimal(
-            @RequestParam @NotBlank(message = "animalId must not be blank") String animalId) {
-        ProductionSummaryResponse response = productionService.getSummaryByAnimal(animalId);
+            @RequestParam @NotBlank(message = "animalId must not be blank") String animalId,
+            @RequestParam(required = false) String farmId) {
+        ProductionSummaryResponse response = productionService.getSummaryByAnimal(animalId, farmId);
         return ResponseEntity.ok(response);
     }
 
@@ -101,8 +105,9 @@ public class ProductionController {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<ProductionProfitResponse> getProfit(
-            @RequestParam @NotBlank(message = "animalId must not be blank") String animalId) {
-        ProductionProfitResponse response = productionService.getProfitByAnimal(animalId);
+            @RequestParam @NotBlank(message = "animalId must not be blank") String animalId,
+            @RequestParam(required = false) String farmId) {
+        ProductionProfitResponse response = productionService.getProfitByAnimal(animalId, farmId);
         return ResponseEntity.ok(response);
     }
 
@@ -115,8 +120,10 @@ public class ProductionController {
             @ApiResponse(responseCode = "404", description = "Related resource not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<ProductionResponse> create(@Valid @RequestBody CreateProductionRequest request) {
-        ProductionResponse response = productionService.create(request);
+    public ResponseEntity<ProductionResponse> create(
+            @Valid @RequestBody CreateProductionRequest request,
+            @RequestParam(required = false) String farmId) {
+        ProductionResponse response = productionService.create(request, farmId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -131,8 +138,9 @@ public class ProductionController {
     })
     public ResponseEntity<ProductionResponse> update(
             @PathVariable String id,
-            @RequestBody UpdateProductionRequest request) {
-        ProductionResponse response = productionService.update(id, request);
+            @RequestBody UpdateProductionRequest request,
+            @RequestParam(required = false) String farmId) {
+        ProductionResponse response = productionService.update(id, request, farmId);
         return ResponseEntity.ok(response);
     }
 
@@ -143,8 +151,10 @@ public class ProductionController {
             @ApiResponse(responseCode = "404", description = "Production not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        productionService.deleteProduction(id);
+    public ResponseEntity<Void> delete(
+            @PathVariable String id,
+            @RequestParam(required = false) String farmId) {
+        productionService.deleteProduction(id, farmId);
         return ResponseEntity.noContent().build();
     }
 }

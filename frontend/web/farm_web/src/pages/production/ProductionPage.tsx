@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ProductionForm from '../../components/production/ProductionForm'
+import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
 import {
@@ -56,6 +57,7 @@ function mapAnimalsToOptions(animals: Animal[]): ProductionAnimalOption[] {
 
 function ProductionPage() {
   const { t, language } = useTranslation()
+  const { selectedFarmId } = useFarm()
   const [productions, setProductions] = useState<Production[]>([])
   const [animals, setAnimals] = useState<ProductionAnimalOption[]>([])
   const [formInitialValues, setFormInitialValues] = useState<ProductionFormData>(emptyProductionForm)
@@ -68,11 +70,18 @@ function ProductionPage() {
   const [editingProductionId, setEditingProductionId] = useState<string | null>(null)
 
   async function loadProductions() {
+    if (!selectedFarmId) {
+      setProductions([])
+      setListErrorMessage('')
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
     setListErrorMessage('')
 
     try {
-      const data = await getAllProductions()
+      const data = await getAllProductions(selectedFarmId)
       setProductions(data)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('production.errors.loadRecords'), t))
@@ -82,11 +91,18 @@ function ProductionPage() {
   }
 
   async function loadAnimals() {
+    if (!selectedFarmId) {
+      setAnimals([])
+      setFormErrorMessage('')
+      setIsAnimalsLoading(false)
+      return
+    }
+
     setIsAnimalsLoading(true)
     setFormErrorMessage('')
 
     try {
-      const data = await getAllAnimals()
+      const data = await getAllAnimals(selectedFarmId)
       setAnimals(mapAnimalsToOptions(data))
     } catch (error) {
       setFormErrorMessage(getErrorMessage(error, t('production.errors.loadAnimals'), t))
@@ -97,7 +113,7 @@ function ProductionPage() {
 
   useEffect(() => {
     void Promise.all([loadProductions(), loadAnimals()])
-  }, [language])
+  }, [language, selectedFarmId])
 
   async function handleCreateOrUpdateProduction(data: ProductionFormData) {
     const payload: ProductionFormData = {
@@ -123,9 +139,9 @@ function ProductionPage() {
 
     try {
       if (editingProductionId) {
-        await updateProduction(editingProductionId, payload)
+        await updateProduction(editingProductionId, payload, selectedFarmId)
       } else {
-        await createProduction(payload)
+        await createProduction(payload, selectedFarmId)
       }
 
       setEditingProductionId(null)
@@ -149,7 +165,7 @@ function ProductionPage() {
     setFormErrorMessage('')
 
     try {
-      const production = await getProductionById(id)
+      const production = await getProductionById(id, selectedFarmId)
 
       setEditingProductionId(production.id)
       setFormInitialValues({
@@ -182,7 +198,7 @@ function ProductionPage() {
     setListErrorMessage('')
 
     try {
-      await deleteProduction(id)
+      await deleteProduction(id, selectedFarmId)
 
       if (editingProductionId === id) {
         handleCancelEdit()

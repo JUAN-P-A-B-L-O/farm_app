@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import FeedingForm from '../../components/feeding/FeedingForm'
+import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
 import {
@@ -59,6 +60,7 @@ function mapAnimalsToOptions(animals: Animal[]): FeedingAnimalOption[] {
 
 function FeedingPage() {
   const { t, language } = useTranslation()
+  const { selectedFarmId } = useFarm()
   const [feedings, setFeedings] = useState<Feeding[]>([])
   const [animals, setAnimals] = useState<FeedingAnimalOption[]>([])
   const [feedTypes, setFeedTypes] = useState<FeedingFeedTypeOption[]>([])
@@ -72,11 +74,18 @@ function FeedingPage() {
   const [editingFeedingId, setEditingFeedingId] = useState<string | null>(null)
 
   async function loadFeedings() {
+    if (!selectedFarmId) {
+      setFeedings([])
+      setListErrorMessage('')
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
     setListErrorMessage('')
 
     try {
-      const data = await getAllFeedings()
+      const data = await getAllFeedings(selectedFarmId)
       setFeedings(data)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('feeding.errors.loadRecords'), t))
@@ -86,11 +95,22 @@ function FeedingPage() {
   }
 
   async function loadFormOptions() {
+    if (!selectedFarmId) {
+      setAnimals([])
+      setFeedTypes([])
+      setFormErrorMessage('')
+      setIsFormOptionsLoading(false)
+      return
+    }
+
     setIsFormOptionsLoading(true)
     setFormErrorMessage('')
 
     try {
-      const [animalsData, feedTypesData] = await Promise.all([getAllAnimals(), getAllFeedTypes()])
+      const [animalsData, feedTypesData] = await Promise.all([
+        getAllAnimals(selectedFarmId),
+        getAllFeedTypes(selectedFarmId),
+      ])
 
       setAnimals(mapAnimalsToOptions(animalsData))
       setFeedTypes(feedTypesData)
@@ -103,7 +123,7 @@ function FeedingPage() {
 
   useEffect(() => {
     void Promise.all([loadFeedings(), loadFormOptions()])
-  }, [language])
+  }, [language, selectedFarmId])
 
   async function handleCreateOrUpdateFeeding(data: FeedingFormData) {
     setIsSubmitting(true)
@@ -111,9 +131,9 @@ function FeedingPage() {
 
     try {
       if (editingFeedingId) {
-        await updateFeeding(editingFeedingId, data)
+        await updateFeeding(editingFeedingId, data, selectedFarmId)
       } else {
-        await createFeeding(data)
+        await createFeeding(data, selectedFarmId)
       }
 
       setEditingFeedingId(null)
@@ -137,7 +157,7 @@ function FeedingPage() {
     setFormErrorMessage('')
 
     try {
-      const feeding = await getFeedingById(id)
+      const feeding = await getFeedingById(id, selectedFarmId)
 
       setEditingFeedingId(feeding.id)
       setFormInitialValues({
@@ -171,7 +191,7 @@ function FeedingPage() {
     setListErrorMessage('')
 
     try {
-      await deleteFeeding(id)
+      await deleteFeeding(id, selectedFarmId)
 
       if (editingFeedingId === id) {
         handleCancelEdit()

@@ -25,14 +25,22 @@ public class FeedTypeEntity {
     @Column(nullable = false)
     private Boolean active;
 
+    @Column(name = "farm_id")
+    private String farmId;
+
     public FeedTypeEntity() {
     }
 
     public FeedTypeEntity(String id, String name, Double costPerKg, Boolean active) {
+        this(id, name, costPerKg, active, null);
+    }
+
+    public FeedTypeEntity(String id, String name, Double costPerKg, Boolean active, String farmId) {
         this.id = id;
         this.name = name;
         this.costPerKg = costPerKg;
         this.active = active;
+        this.farmId = farmId;
     }
 
     public String getId() {
@@ -65,5 +73,13 @@ public class FeedTypeEntity {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public String getFarmId() {
+        return farmId;
+    }
+
+    public void setFarmId(String farmId) {
+        this.farmId = farmId;
     }
 }

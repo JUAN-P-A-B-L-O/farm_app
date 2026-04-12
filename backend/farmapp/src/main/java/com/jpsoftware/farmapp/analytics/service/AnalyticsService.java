@@ -10,6 +10,7 @@ import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.entity.FeedingEntity;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
@@ -39,16 +40,19 @@ public class AnalyticsService {
     private final FeedingRepository feedingRepository;
     private final AnimalRepository animalRepository;
     private final FeedTypeRepository feedTypeRepository;
+    private final FarmAccessService farmAccessService;
 
     public AnalyticsService(
             ProductionRepository productionRepository,
             FeedingRepository feedingRepository,
             AnimalRepository animalRepository,
-            FeedTypeRepository feedTypeRepository) {
+            FeedTypeRepository feedTypeRepository,
+            FarmAccessService farmAccessService) {
         this.productionRepository = productionRepository;
         this.feedingRepository = feedingRepository;
         this.animalRepository = animalRepository;
         this.feedTypeRepository = feedTypeRepository;
+        this.farmAccessService = farmAccessService;
     }
 
     @Transactional(readOnly = true)
@@ -56,9 +60,10 @@ public class AnalyticsService {
             LocalDate startDate,
             LocalDate endDate,
             String animalId,
-            String groupByParam) {
-        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam);
-        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId);
+            String groupByParam,
+            String farmId) {
+        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);
+        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId, farmId);
 
         return aggregateSeries(
                 productions,
@@ -72,9 +77,10 @@ public class AnalyticsService {
             LocalDate startDate,
             LocalDate endDate,
             String animalId,
-            String groupByParam) {
-        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam);
-        List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId);
+            String groupByParam,
+            String farmId) {
+        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);
+        List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId, farmId);
         Map<String, Double> feedCostsById = loadFeedCostsById(feedings);
 
         return aggregateSeries(
@@ -89,10 +95,11 @@ public class AnalyticsService {
             LocalDate startDate,
             LocalDate endDate,
             String animalId,
-            String groupByParam) {
-        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam);
-        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId);
-        List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId);
+            String groupByParam,
+            String farmId) {
+        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);
+        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId, farmId);
+        List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId, farmId);
         Map<String, Double> productionByPeriod = aggregateValues(
                 productions,
                 groupBy,
@@ -124,9 +131,10 @@ public class AnalyticsService {
     public List<AnalyticsAnimalProductionPointResponse> getProductionByAnimal(
             LocalDate startDate,
             LocalDate endDate,
-            String animalId) {
-        validateFilters(startDate, endDate, animalId, AnalyticsGroupBy.DAY.name());
-        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId);
+            String animalId,
+            String farmId) {
+        validateFilters(startDate, endDate, animalId, AnalyticsGroupBy.DAY.name(), farmId);
+        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId, farmId);
         Map<String, AnimalEntity> animalsById = loadAnimalsById(productions);
 
         return productions.stream()
@@ -143,12 +151,22 @@ public class AnalyticsService {
                 .toList();
     }
 
-    private AnalyticsGroupBy validateFilters(LocalDate startDate, LocalDate endDate, String animalId, String groupByParam) {
+    private AnalyticsGroupBy validateFilters(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId) {
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
             throw new ValidationException("startDate must be before or equal to endDate");
         }
 
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+
         if (StringUtils.hasText(animalId) && !animalRepository.existsById(animalId)) {
+            throw new ResourceNotFoundException("Animal not found");
+        }
+        if (StringUtils.hasText(animalId) && StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId)) {
             throw new ResourceNotFoundException("Animal not found");
         }
 
@@ -159,15 +177,23 @@ public class AnalyticsService {
         }
     }
 
-    private List<ProductionEntity> filterProductions(LocalDate startDate, LocalDate endDate, String animalId) {
-        return productionRepository.findAll().stream()
+    private List<ProductionEntity> filterProductions(LocalDate startDate, LocalDate endDate, String animalId, String farmId) {
+        List<ProductionEntity> productions = StringUtils.hasText(farmId)
+                ? productionRepository.findByFarmIdAndStatus(farmId, ProductionEntity.STATUS_ACTIVE)
+                : productionRepository.findAll();
+
+        return productions.stream()
                 .filter(production -> matchesAnimal(production.getAnimalId(), animalId))
                 .filter(production -> matchesDateRange(production.getDate(), startDate, endDate))
                 .toList();
     }
 
-    private List<FeedingEntity> filterFeedings(LocalDate startDate, LocalDate endDate, String animalId) {
-        return feedingRepository.findAll().stream()
+    private List<FeedingEntity> filterFeedings(LocalDate startDate, LocalDate endDate, String animalId, String farmId) {
+        List<FeedingEntity> feedings = StringUtils.hasText(farmId)
+                ? feedingRepository.findByFarmIdAndStatus(farmId, FeedingEntity.STATUS_ACTIVE)
+                : feedingRepository.findAll();
+
+        return feedings.stream()
                 .filter(feeding -> matchesAnimal(feeding.getAnimalId(), animalId))
                 .filter(feeding -> matchesDateRange(feeding.getDate(), startDate, endDate))
                 .toList();

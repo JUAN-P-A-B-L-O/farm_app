@@ -32,6 +32,9 @@ public class ProductionEntity {
     @Column(name = "created_by", nullable = false)
     private String createdBy;
 
+    @Column(name = "farm_id")
+    private String farmId;
+
     @Column(nullable = false)
     private String status;
 
@@ -44,11 +47,16 @@ public class ProductionEntity {
     }
 
     public ProductionEntity(String id, String animalId, LocalDate date, Double quantity, String createdBy, String status) {
+        this(id, animalId, date, quantity, createdBy, null, status);
+    }
+
+    public ProductionEntity(String id, String animalId, LocalDate date, Double quantity, String createdBy, String farmId, String status) {
         this.id = id;
         this.animalId = animalId;
         this.date = date;
         this.quantity = quantity;
         this.createdBy = createdBy;
+        this.farmId = farmId;
         this.status = status;
     }
 
@@ -90,6 +98,14 @@ public class ProductionEntity {
 
     public void setCreatedBy(String createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public String getFarmId() {
+        return farmId;
+    }
+
+    public void setFarmId(String farmId) {
+        this.farmId = farmId;
     }
 
     public String getStatus() {

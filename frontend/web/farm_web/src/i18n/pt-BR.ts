@@ -3,6 +3,9 @@ const ptBR = {
     ariaLabel: 'Principal',
     brandEyebrow: 'Farm App',
     brandTitle: 'Gestão',
+    farmLabel: 'Fazenda',
+    selectFarm: 'Selecione uma fazenda',
+    loadingFarms: 'Carregando fazendas...',
     languageLabel: 'Idioma',
     logout: 'Sair',
     navigation: {
@@ -52,6 +55,12 @@ const ptBR = {
       animalCount: 'Número de animais',
     },
   },
+  farm: {
+    eyebrow: 'Contexto da fazenda',
+    selectionRequiredTitle: 'Selecione uma fazenda para continuar',
+    selectionRequiredDescription: 'Escolha uma fazenda antes de acessar dados de animais, alimentação, produção e análises.',
+    loadError: 'Não foi possível carregar as fazendas.',
+  },
   animals: {
     eyebrow: 'Controle do Rebanho',
     title: 'Gestão de animais',
@@ -82,6 +91,7 @@ const ptBR = {
       tag: 'Tag',
       breed: 'Raça',
       birthDate: 'Data de nascimento',
+      farm: 'Fazenda',
       farmId: 'ID da fazenda',
     },
     errors: {

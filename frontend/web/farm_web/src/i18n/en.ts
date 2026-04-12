@@ -3,6 +3,9 @@ const en = {
     ariaLabel: 'Primary',
     brandEyebrow: 'Farm App',
     brandTitle: 'Management',
+    farmLabel: 'Farm',
+    selectFarm: 'Select a farm',
+    loadingFarms: 'Loading farms...',
     languageLabel: 'Language',
     logout: 'Logout',
     navigation: {
@@ -52,6 +55,12 @@ const en = {
       animalCount: 'Number of Animals',
     },
   },
+  farm: {
+    eyebrow: 'Farm Context',
+    selectionRequiredTitle: 'Select a farm to continue',
+    selectionRequiredDescription: 'Choose a farm before accessing animals, feeding, production, and analytics data.',
+    loadError: 'Unable to load farms.',
+  },
   animals: {
     eyebrow: 'Livestock Control',
     title: 'Animals Management',
@@ -82,6 +91,7 @@ const en = {
       tag: 'Tag',
       breed: 'Breed',
       birthDate: 'Birth date',
+      farm: 'Farm',
       farmId: 'Farm ID',
     },
     errors: {

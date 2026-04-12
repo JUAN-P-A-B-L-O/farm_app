@@ -35,6 +35,9 @@ public class FeedingEntity {
     @Column(name = "created_by", nullable = false)
     private String createdBy;
 
+    @Column(name = "farm_id")
+    private String farmId;
+
     @Column(nullable = false)
     private String status;
 
@@ -54,12 +57,25 @@ public class FeedingEntity {
             Double quantity,
             String createdBy,
             String status) {
+        this(id, animalId, feedTypeId, date, quantity, createdBy, null, status);
+    }
+
+    public FeedingEntity(
+            String id,
+            String animalId,
+            String feedTypeId,
+            LocalDate date,
+            Double quantity,
+            String createdBy,
+            String farmId,
+            String status) {
         this.id = id;
         this.animalId = animalId;
         this.feedTypeId = feedTypeId;
         this.date = date;
         this.quantity = quantity;
         this.createdBy = createdBy;
+        this.farmId = farmId;
         this.status = status;
     }
 
@@ -109,6 +125,14 @@ public class FeedingEntity {
 
     public void setCreatedBy(String createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public String getFarmId() {
+        return farmId;
+    }
+
+    public void setFarmId(String farmId) {
+        this.farmId = farmId;
     }
 
     public String getStatus() {
