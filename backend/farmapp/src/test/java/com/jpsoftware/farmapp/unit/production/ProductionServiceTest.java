@@ -17,6 +17,7 @@ import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.production.service.ProductionService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -71,6 +72,7 @@ class ProductionServiceTest {
         productionEntity.setDate(LocalDate.of(2026, 3, 20));
         productionEntity.setQuantity(12.5);
         productionEntity.setCreatedBy("11111111-1111-1111-1111-111111111111");
+        productionEntity.setStatus(ProductionEntity.STATUS_ACTIVE);
     }
 
     @Test
@@ -253,6 +255,29 @@ class ProductionServiceTest {
     }
 
     @Test
+    void shouldHideInactiveProductionsFromDefaultQueries() {
+        productionRepositoryHandler.store(new ProductionEntity(
+                "production-1",
+                "animal-1",
+                LocalDate.of(2026, 3, 20),
+                12.5,
+                "11111111-1111-1111-1111-111111111111",
+                ProductionEntity.STATUS_ACTIVE));
+        productionRepositoryHandler.store(new ProductionEntity(
+                "production-2",
+                "animal-1",
+                LocalDate.of(2026, 3, 21),
+                10.0,
+                "11111111-1111-1111-1111-111111111111",
+                ProductionEntity.STATUS_INACTIVE));
+
+        List<ProductionResponse> responses = productionService.findAll(null, null);
+
+        assertEquals(1, responses.size());
+        assertEquals("production-1", responses.get(0).getId());
+    }
+
+    @Test
     void shouldReturnProductionWithAnimalSummary() {
         animalRepositoryHandler.add("animal-1", "TAG-001");
         productionRepositoryHandler.store(productionEntity);
@@ -311,14 +336,17 @@ class ProductionServiceTest {
 
     @Test
     void shouldUpdateProduction() {
+        animalRepositoryHandler.add("animal-1");
+        animalRepositoryHandler.add("animal-2");
         productionRepositoryHandler.store(productionEntity);
 
         ProductionResponse response = productionService.update(
                 "production-1",
-                new UpdateProductionRequest(LocalDate.of(2026, 3, 21), 15.0));
+                new UpdateProductionRequest("animal-2", LocalDate.of(2026, 3, 21), 15.0));
 
         assertNotNull(response);
         assertEquals("production-1", response.getId());
+        assertEquals("animal-2", response.getAnimalId());
         assertEquals(LocalDate.of(2026, 3, 21), response.getDate());
         assertEquals(15.0, response.getQuantity());
     }
@@ -345,6 +373,54 @@ class ProductionServiceTest {
         assertEquals("Production not found", exception.getMessage());
     }
 
+    @Test
+    void shouldFailWhenUpdatingInactiveProduction() {
+        productionRepositoryHandler.store(new ProductionEntity(
+                "production-1",
+                "animal-1",
+                LocalDate.of(2026, 3, 20),
+                12.5,
+                "11111111-1111-1111-1111-111111111111",
+                ProductionEntity.STATUS_INACTIVE));
+
+        ConflictException exception = assertThrows(
+                ConflictException.class,
+                () -> productionService.update(
+                        "production-1",
+                        new UpdateProductionRequest(LocalDate.of(2026, 3, 21), 15.0)));
+
+        assertEquals("Inactive production cannot be updated", exception.getMessage());
+    }
+
+    @Test
+    void shouldSoftDeleteProduction() {
+        productionRepositoryHandler.store(productionEntity);
+
+        productionService.deleteProduction("production-1");
+
+        assertEquals(0, productionService.findAll(null, null).size());
+        assertEquals(
+                ProductionEntity.STATUS_INACTIVE,
+                productionRepositoryHandler.getRequired("production-1").getStatus());
+    }
+
+    @Test
+    void shouldIgnoreDeleteWhenProductionAlreadyInactive() {
+        productionRepositoryHandler.store(new ProductionEntity(
+                "production-1",
+                "animal-1",
+                LocalDate.of(2026, 3, 20),
+                12.5,
+                "11111111-1111-1111-1111-111111111111",
+                ProductionEntity.STATUS_INACTIVE));
+
+        productionService.deleteProduction("production-1");
+
+        assertEquals(
+                ProductionEntity.STATUS_INACTIVE,
+                productionRepositoryHandler.getRequired("production-1").getStatus());
+    }
+
     private static class InMemoryProductionRepository {
 
         private final Map<String, ProductionEntity> data = new LinkedHashMap<>();
@@ -369,39 +445,50 @@ class ProductionServiceTest {
                         }
                         if ("findAll".equals(methodName)) {
                             if (args != null && args.length == 1 && args[0] instanceof org.springframework.data.domain.Pageable pageable) {
-                                List<ProductionEntity> all = new ArrayList<>(data.values());
+                                List<ProductionEntity> all = data.values().stream()
+                                        .filter(entity -> ProductionEntity.STATUS_ACTIVE.equals(entity.getStatus()))
+                                        .toList();
                                 return paginate(all, pageable);
                             }
-                            return new ArrayList<>(data.values());
+                            return data.values().stream()
+                                    .filter(entity -> ProductionEntity.STATUS_ACTIVE.equals(entity.getStatus()))
+                                    .toList();
                         }
                         if ("findById".equals(methodName)) {
+                            return Optional.ofNullable(data.get(args[0]))
+                                    .filter(entity -> ProductionEntity.STATUS_ACTIVE.equals(entity.getStatus()));
+                        }
+                        if ("findAnyById".equals(methodName)) {
                             return Optional.ofNullable(data.get(args[0]));
                         }
-                        if ("findByAnimalId".equals(methodName)) {
+                        if ("findByAnimalIdAndStatus".equals(methodName)) {
                             List<ProductionEntity> filtered = data.values().stream()
                                     .filter(entity -> entity.getAnimalId().equals(args[0]))
-                                    .toList();
-                            if (args.length == 2) {
-                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[1]);
-                            }
-                            return filtered;
-                        }
-                        if ("findByDate".equals(methodName)) {
-                            List<ProductionEntity> filtered = data.values().stream()
-                                    .filter(entity -> entity.getDate().equals(args[0]))
-                                    .toList();
-                            if (args.length == 2) {
-                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[1]);
-                            }
-                            return filtered;
-                        }
-                        if ("findByAnimalIdAndDate".equals(methodName)) {
-                            List<ProductionEntity> filtered = data.values().stream()
-                                    .filter(entity -> entity.getAnimalId().equals(args[0]))
-                                    .filter(entity -> entity.getDate().equals(args[1]))
+                                    .filter(entity -> entity.getStatus().equals(args[1]))
                                     .toList();
                             if (args.length == 3) {
                                 return paginate(filtered, (org.springframework.data.domain.Pageable) args[2]);
+                            }
+                            return filtered;
+                        }
+                        if ("findByDateAndStatus".equals(methodName)) {
+                            List<ProductionEntity> filtered = data.values().stream()
+                                    .filter(entity -> entity.getDate().equals(args[0]))
+                                    .filter(entity -> entity.getStatus().equals(args[1]))
+                                    .toList();
+                            if (args.length == 3) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[2]);
+                            }
+                            return filtered;
+                        }
+                        if ("findByAnimalIdAndDateAndStatus".equals(methodName)) {
+                            List<ProductionEntity> filtered = data.values().stream()
+                                    .filter(entity -> entity.getAnimalId().equals(args[0]))
+                                    .filter(entity -> entity.getDate().equals(args[1]))
+                                    .filter(entity -> entity.getStatus().equals(args[2]))
+                                    .toList();
+                            if (args.length == 4) {
+                                return paginate(filtered, (org.springframework.data.domain.Pageable) args[3]);
                             }
                             return filtered;
                         }
@@ -426,7 +513,14 @@ class ProductionServiceTest {
         }
 
         void store(ProductionEntity entity) {
+            if (entity.getStatus() == null) {
+                entity.setStatus(ProductionEntity.STATUS_ACTIVE);
+            }
             data.put(entity.getId(), entity);
+        }
+
+        ProductionEntity getRequired(String id) {
+            return data.get(id);
         }
 
         void setTotalQuantity(String animalId, Double totalQuantity) {

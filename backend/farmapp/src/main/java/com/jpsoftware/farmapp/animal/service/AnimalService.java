@@ -6,6 +6,7 @@ import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
 import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
 import com.jpsoftware.farmapp.animal.mapper.AnimalMapper;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,15 +19,18 @@ public class AnimalService {
 
     private final AnimalRepository animalRepository;
     private final AnimalMapper animalMapper;
+    private final FarmAccessService farmAccessService;
 
-    public AnimalService(AnimalRepository animalRepository, AnimalMapper animalMapper) {
+    public AnimalService(AnimalRepository animalRepository, AnimalMapper animalMapper, FarmAccessService farmAccessService) {
         this.animalRepository = animalRepository;
         this.animalMapper = animalMapper;
+        this.farmAccessService = farmAccessService;
     }
 
     @Transactional
     public AnimalResponse create(CreateAnimalRequest request) {
         validateInput(request);
+        farmAccessService.validateAccessibleFarm(request.getFarmId());
         ensureTagIsUnique(request.getTag());
 
         AnimalEntity animalEntity = animalMapper.toEntity(request);
@@ -36,15 +40,15 @@ public class AnimalService {
     }
 
     @Transactional(readOnly = true)
-    public AnimalResponse findById(String id) {
-        AnimalEntity animalEntity = animalRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Animal not found"));
+    public AnimalResponse findById(String id, String farmId) {
+        AnimalEntity animalEntity = findAnimal(id, farmId);
 
         return animalMapper.toResponse(animalEntity);
     }
 
     @Transactional(readOnly = true)
     public List<AnimalResponse> findAll(String farmId) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
         List<AnimalEntity> animals = StringUtils.hasText(farmId)
                 ? animalRepository.findByFarmId(farmId)
                 : animalRepository.findAll();
@@ -55,15 +59,17 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse update(String id, UpdateAnimalRequest request) {
+    public AnimalResponse update(String id, UpdateAnimalRequest request, String farmId) {
         if (request == null) {
             throw new IllegalArgumentException("Update animal request must not be null");
         }
 
-        AnimalEntity animalEntity = animalRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Animal not found"));
+        AnimalEntity animalEntity = findAnimal(id, farmId);
 
         validateTagUpdate(animalEntity, request);
+        if (request.getFarmId() != null) {
+            farmAccessService.validateAccessibleFarm(request.getFarmId());
+        }
         applyUpdates(animalEntity, request);
 
         AnimalEntity updatedAnimal = animalRepository.save(animalEntity);
@@ -71,11 +77,10 @@ public class AnimalService {
     }
 
     @Transactional
-    public void delete(String id) {
-        animalRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Animal not found"));
+    public void delete(String id, String farmId) {
+        AnimalEntity animalEntity = findAnimal(id, farmId);
 
-        animalRepository.deleteById(id);
+        animalRepository.deleteById(animalEntity.getId());
     }
 
     private void validateInput(CreateAnimalRequest request) {
@@ -125,5 +130,13 @@ public class AnimalService {
         if (!request.getTag().equals(animalEntity.getTag())) {
             ensureTagIsUnique(request.getTag());
         }
+    }
+
+    private AnimalEntity findAnimal(String id, String farmId) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        return (StringUtils.hasText(farmId)
+                ? animalRepository.findByIdAndFarmId(id, farmId)
+                : animalRepository.findById(id))
+                .orElseThrow(() -> new ResourceNotFoundException("Animal not found"));
     }
 }

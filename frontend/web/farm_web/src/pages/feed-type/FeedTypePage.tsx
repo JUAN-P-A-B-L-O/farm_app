@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import FeedTypeForm from '../../components/feed-type/FeedTypeForm'
+import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
   createFeedType,
@@ -43,6 +44,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
 
 function FeedTypePage() {
   const { t } = useTranslation()
+  const { selectedFarmId } = useFarm()
   const [feedTypes, setFeedTypes] = useState<FeedType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -53,11 +55,18 @@ function FeedTypePage() {
   const [formInitialValues, setFormInitialValues] = useState<FeedTypeFormData>(emptyFeedTypeForm)
 
   async function loadFeedTypes() {
+    if (!selectedFarmId) {
+      setFeedTypes([])
+      setListErrorMessage('')
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
     setListErrorMessage('')
 
     try {
-      const data = await getAllFeedTypes()
+      const data = await getAllFeedTypes(selectedFarmId)
       setFeedTypes(data)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('feedType.errors.loadList'), t))
@@ -68,7 +77,7 @@ function FeedTypePage() {
 
   useEffect(() => {
     void loadFeedTypes()
-  }, [])
+  }, [selectedFarmId])
 
   async function handleCreateOrUpdate(data: FeedTypeFormData) {
     setIsSubmitting(true)
@@ -76,9 +85,9 @@ function FeedTypePage() {
 
     try {
       if (editingFeedTypeId) {
-        await updateFeedType(editingFeedTypeId, data)
+        await updateFeedType(editingFeedTypeId, data, selectedFarmId)
       } else {
-        await createFeedType(data)
+        await createFeedType(data, selectedFarmId)
       }
 
       setEditingFeedTypeId(null)
@@ -123,7 +132,7 @@ function FeedTypePage() {
     setListErrorMessage('')
 
     try {
-      await deleteFeedType(id)
+      await deleteFeedType(id, selectedFarmId)
 
       if (editingFeedTypeId === id) {
         handleCancelEdit()

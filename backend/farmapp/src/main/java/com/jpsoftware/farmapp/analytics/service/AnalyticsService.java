@@ -10,10 +10,12 @@ import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.entity.FeedingEntity;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -39,16 +41,19 @@ public class AnalyticsService {
     private final FeedingRepository feedingRepository;
     private final AnimalRepository animalRepository;
     private final FeedTypeRepository feedTypeRepository;
+    private final FarmAccessService farmAccessService;
 
     public AnalyticsService(
             ProductionRepository productionRepository,
             FeedingRepository feedingRepository,
             AnimalRepository animalRepository,
-            FeedTypeRepository feedTypeRepository) {
+            FeedTypeRepository feedTypeRepository,
+            FarmAccessService farmAccessService) {
         this.productionRepository = productionRepository;
         this.feedingRepository = feedingRepository;
         this.animalRepository = animalRepository;
         this.feedTypeRepository = feedTypeRepository;
+        this.farmAccessService = farmAccessService;
     }
 
     @Transactional(readOnly = true)
@@ -56,9 +61,10 @@ public class AnalyticsService {
             LocalDate startDate,
             LocalDate endDate,
             String animalId,
-            String groupByParam) {
-        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam);
-        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId);
+            String groupByParam,
+            String farmId) {
+        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);
+        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId, farmId);
 
         return aggregateSeries(
                 productions,
@@ -72,16 +78,19 @@ public class AnalyticsService {
             LocalDate startDate,
             LocalDate endDate,
             String animalId,
-            String groupByParam) {
-        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam);
-        List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId);
+            String groupByParam,
+            String farmId) {
+        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);
+        List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId, farmId);
         Map<String, Double> feedCostsById = loadFeedCostsById(feedings);
 
         return aggregateSeries(
                 feedings,
                 groupBy,
                 FeedingEntity::getDate,
-                feeding -> defaultToZero(feedCostsById.get(feeding.getFeedTypeId())) * defaultToZero(feeding.getQuantity()));
+                feeding -> DecimalScaleUtils.multiply(
+                        DecimalScaleUtils.zeroIfNull(feedCostsById.get(feeding.getFeedTypeId())),
+                        DecimalScaleUtils.zeroIfNull(feeding.getQuantity())));
     }
 
     @Transactional(readOnly = true)
@@ -89,10 +98,11 @@ public class AnalyticsService {
             LocalDate startDate,
             LocalDate endDate,
             String animalId,
-            String groupByParam) {
-        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam);
-        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId);
-        List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId);
+            String groupByParam,
+            String farmId) {
+        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);
+        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId, farmId);
+        List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId, farmId);
         Map<String, Double> productionByPeriod = aggregateValues(
                 productions,
                 groupBy,
@@ -103,7 +113,9 @@ public class AnalyticsService {
                 feedings,
                 groupBy,
                 FeedingEntity::getDate,
-                feeding -> defaultToZero(feedCostsById.get(feeding.getFeedTypeId())) * defaultToZero(feeding.getQuantity()));
+                feeding -> DecimalScaleUtils.multiply(
+                        DecimalScaleUtils.zeroIfNull(feedCostsById.get(feeding.getFeedTypeId())),
+                        DecimalScaleUtils.zeroIfNull(feeding.getQuantity())));
 
         Set<String> periods = new java.util.TreeSet<>();
         periods.addAll(productionByPeriod.keySet());
@@ -111,10 +123,10 @@ public class AnalyticsService {
 
         return periods.stream()
                 .map(period -> {
-                    Double production = defaultToZero(productionByPeriod.get(period));
-                    Double feedingCost = defaultToZero(feedingCostByPeriod.get(period));
-                    Double revenue = production * MILK_PRICE;
-                    Double profit = revenue - feedingCost;
+                    Double production = DecimalScaleUtils.zeroIfNull(productionByPeriod.get(period));
+                    Double feedingCost = DecimalScaleUtils.zeroIfNull(feedingCostByPeriod.get(period));
+                    Double revenue = DecimalScaleUtils.multiply(production, MILK_PRICE);
+                    Double profit = DecimalScaleUtils.subtract(revenue, feedingCost);
                     return new AnalyticsProfitPointResponse(period, production, feedingCost, revenue, profit);
                 })
                 .toList();
@@ -124,31 +136,42 @@ public class AnalyticsService {
     public List<AnalyticsAnimalProductionPointResponse> getProductionByAnimal(
             LocalDate startDate,
             LocalDate endDate,
-            String animalId) {
-        validateFilters(startDate, endDate, animalId, AnalyticsGroupBy.DAY.name());
-        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId);
+            String animalId,
+            String farmId) {
+        validateFilters(startDate, endDate, animalId, AnalyticsGroupBy.DAY.name(), farmId);
+        List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId, farmId);
         Map<String, AnimalEntity> animalsById = loadAnimalsById(productions);
 
         return productions.stream()
                 .collect(Collectors.groupingBy(
                         ProductionEntity::getAnimalId,
-                        Collectors.summingDouble(production -> defaultToZero(production.getQuantity()))))
+                        Collectors.summingDouble(production -> DecimalScaleUtils.zeroIfNull(production.getQuantity()))))
                 .entrySet()
                 .stream()
                 .map(entry -> new AnalyticsAnimalProductionPointResponse(
                         entry.getKey(),
                         animalsById.containsKey(entry.getKey()) ? animalsById.get(entry.getKey()).getTag() : entry.getKey(),
-                        entry.getValue()))
+                        DecimalScaleUtils.normalize(entry.getValue())))
                 .sorted(Comparator.comparing(AnalyticsAnimalProductionPointResponse::getAnimalTag))
                 .toList();
     }
 
-    private AnalyticsGroupBy validateFilters(LocalDate startDate, LocalDate endDate, String animalId, String groupByParam) {
+    private AnalyticsGroupBy validateFilters(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId) {
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
             throw new ValidationException("startDate must be before or equal to endDate");
         }
 
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+
         if (StringUtils.hasText(animalId) && !animalRepository.existsById(animalId)) {
+            throw new ResourceNotFoundException("Animal not found");
+        }
+        if (StringUtils.hasText(animalId) && StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId)) {
             throw new ResourceNotFoundException("Animal not found");
         }
 
@@ -159,15 +182,23 @@ public class AnalyticsService {
         }
     }
 
-    private List<ProductionEntity> filterProductions(LocalDate startDate, LocalDate endDate, String animalId) {
-        return productionRepository.findAll().stream()
+    private List<ProductionEntity> filterProductions(LocalDate startDate, LocalDate endDate, String animalId, String farmId) {
+        List<ProductionEntity> productions = StringUtils.hasText(farmId)
+                ? productionRepository.findByFarmIdAndStatus(farmId, ProductionEntity.STATUS_ACTIVE)
+                : productionRepository.findAll();
+
+        return productions.stream()
                 .filter(production -> matchesAnimal(production.getAnimalId(), animalId))
                 .filter(production -> matchesDateRange(production.getDate(), startDate, endDate))
                 .toList();
     }
 
-    private List<FeedingEntity> filterFeedings(LocalDate startDate, LocalDate endDate, String animalId) {
-        return feedingRepository.findAll().stream()
+    private List<FeedingEntity> filterFeedings(LocalDate startDate, LocalDate endDate, String animalId, String farmId) {
+        List<FeedingEntity> feedings = StringUtils.hasText(farmId)
+                ? feedingRepository.findByFarmIdAndStatus(farmId, FeedingEntity.STATUS_ACTIVE)
+                : feedingRepository.findAll();
+
+        return feedings.stream()
                 .filter(feeding -> matchesAnimal(feeding.getAnimalId(), animalId))
                 .filter(feeding -> matchesDateRange(feeding.getDate(), startDate, endDate))
                 .toList();
@@ -194,7 +225,7 @@ public class AnalyticsService {
                 .collect(Collectors.toSet());
 
         return feedTypeRepository.findAllById(feedTypeIds).stream()
-                .collect(Collectors.toMap(FeedTypeEntity::getId, feedType -> defaultToZero(feedType.getCostPerKg())));
+                .collect(Collectors.toMap(FeedTypeEntity::getId, feedType -> DecimalScaleUtils.zeroIfNull(feedType.getCostPerKg())));
     }
 
     private Map<String, AnimalEntity> loadAnimalsById(Collection<ProductionEntity> productions) {
@@ -213,7 +244,7 @@ public class AnalyticsService {
             java.util.function.Function<T, LocalDate> dateExtractor,
             java.util.function.Function<T, Double> valueExtractor) {
         return aggregateValues(items, groupBy, dateExtractor, valueExtractor).entrySet().stream()
-                .map(entry -> new AnalyticsTimeSeriesPointResponse(entry.getKey(), entry.getValue()))
+                .map(entry -> new AnalyticsTimeSeriesPointResponse(entry.getKey(), DecimalScaleUtils.normalize(entry.getValue())))
                 .toList();
     }
 
@@ -226,13 +257,13 @@ public class AnalyticsService {
                 .collect(Collectors.groupingBy(
                         item -> toPeriodLabel(dateExtractor.apply(item), groupBy),
                         LinkedHashMap::new,
-                        Collectors.summingDouble(item -> defaultToZero(valueExtractor.apply(item)))))
+                        Collectors.summingDouble(item -> DecimalScaleUtils.zeroIfNull(valueExtractor.apply(item)))))
                 .entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByKey())
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        Map.Entry::getValue,
+                        entry -> DecimalScaleUtils.normalize(entry.getValue()),
                         (left, right) -> left,
                         LinkedHashMap::new));
     }
@@ -243,9 +274,5 @@ public class AnalyticsService {
         }
 
         return date.toString();
-    }
-
-    private Double defaultToZero(Double value) {
-        return value != null ? value : 0.0;
     }
 }

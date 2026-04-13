@@ -9,6 +9,7 @@ interface AnimalFormProps {
   isSubmitting: boolean
   submitLabel: string
   errorMessage: string
+  selectedFarmName?: string
 }
 
 function AnimalForm({
@@ -18,6 +19,7 @@ function AnimalForm({
   isSubmitting,
   submitLabel,
   errorMessage,
+  selectedFarmName,
 }: AnimalFormProps) {
   const { t } = useTranslation()
   const [formData, setFormData] = useState<AnimalFormData>(initialValues)
@@ -78,17 +80,24 @@ function AnimalForm({
           />
         </label>
 
-        <label className="animal-form__field">
-          <span>{t('animals.form.farmId')}</span>
-          <input
-            name="farmId"
-            type="text"
-            value={formData.farmId}
-            onChange={handleChange}
-            placeholder="farm-001"
-            required
-          />
-        </label>
+        {selectedFarmName ? (
+          <label className="animal-form__field">
+            <span>{t('animals.form.farm')}</span>
+            <input name="farmName" type="text" value={selectedFarmName} readOnly />
+          </label>
+        ) : (
+          <label className="animal-form__field">
+            <span>{t('animals.form.farmId')}</span>
+            <input
+              name="farmId"
+              type="text"
+              value={formData.farmId}
+              onChange={handleChange}
+              placeholder="farm-001"
+              required
+            />
+          </label>
+        )}
       </div>
 
       {errorMessage && (

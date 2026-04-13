@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.feed.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -14,6 +15,7 @@ public class CreateFeedTypeRequest {
 
     @NotNull(message = "costPerKg must not be null")
     @Positive(message = "costPerKg must be greater than zero")
+    @Digits(integer = 10, fraction = 2, message = "costPerKg must have at most 2 decimal places")
     @Schema(description = "Feed cost per kilogram.", example = "1.85")
     private Double costPerKg;
 

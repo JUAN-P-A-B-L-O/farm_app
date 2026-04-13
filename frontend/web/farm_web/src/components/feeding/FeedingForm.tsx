@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllUsers } from '../../services/userService'
+import { hasAtMostTwoDecimals, parseTwoDecimalInput } from '../../utils/decimal'
 import type {
   FeedingAnimalOption,
   FeedingFeedTypeOption,
@@ -13,9 +14,11 @@ interface FeedingFormProps {
   animals: FeedingAnimalOption[]
   feedTypes: FeedingFeedTypeOption[]
   onSubmit: (data: FeedingFormData) => Promise<void>
+  onCancel?: () => void
   isSubmitting: boolean
   submitLabel: string
   errorMessage: string
+  requireUserSelection?: boolean
 }
 
 function FeedingForm({
@@ -23,9 +26,11 @@ function FeedingForm({
   animals,
   feedTypes,
   onSubmit,
+  onCancel,
   isSubmitting,
   submitLabel,
   errorMessage,
+  requireUserSelection = true,
 }: FeedingFormProps) {
   const { t, language } = useTranslation()
   const [formData, setFormData] = useState<FeedingFormData>(initialValues)
@@ -40,6 +45,12 @@ function FeedingForm({
   }, [initialValues])
 
   useEffect(() => {
+    if (!requireUserSelection) {
+      setIsUsersLoading(false)
+      setUsersErrorMessage('')
+      return
+    }
+
     async function loadUsers() {
       setIsUsersLoading(true)
       setUsersErrorMessage('')
@@ -55,25 +66,38 @@ function FeedingForm({
     }
 
     void loadUsers()
-  }, [language])
+  }, [language, requireUserSelection])
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target
 
-    if (name === 'userId') {
-      setValidationMessage('')
-    }
+    setValidationMessage('')
 
     setFormData((currentData) => ({
       ...currentData,
-      [name]: name === 'quantity' ? Number(value) : value,
+      [name]: name === 'quantity' ? parseTwoDecimalInput(value, currentData.quantity) : value,
     }))
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!formData.userId) {
+    if (!formData.animalId) {
+      setValidationMessage(t('feeding.errors.selectAnimal'))
+      return
+    }
+
+    if (!formData.feedTypeId) {
+      setValidationMessage(t('feeding.errors.selectFeedType'))
+      return
+    }
+
+    if (!hasAtMostTwoDecimals(formData.quantity)) {
+      setValidationMessage(t('feeding.errors.quantityPrecision'))
+      return
+    }
+
+    if (requireUserSelection && !formData.userId) {
       setValidationMessage(t('feeding.errors.userRequired'))
       return
     }
@@ -83,13 +107,13 @@ function FeedingForm({
 
   const isFormDisabled =
     isSubmitting ||
-    isUsersLoading ||
     animals.length === 0 ||
     feedTypes.length === 0 ||
-    users.length === 0 ||
-    usersErrorMessage.length > 0
+    (requireUserSelection &&
+      (isUsersLoading || users.length === 0 || usersErrorMessage.length > 0))
 
-  const feedbackMessage = validationMessage || usersErrorMessage || errorMessage
+  const feedbackMessage =
+    validationMessage || (requireUserSelection ? usersErrorMessage : '') || errorMessage
 
   return (
     <form className="animal-form" onSubmit={handleSubmit}>
@@ -130,25 +154,27 @@ function FeedingForm({
           </select>
         </label>
 
-        <label className="animal-form__field">
-          <span>{t('feeding.form.user')}</span>
-          <select
-            name="userId"
-            value={formData.userId}
-            onChange={handleChange}
-            required
-            disabled={isFormDisabled}
-          >
-            <option value="">
-              {isUsersLoading ? t('feeding.form.loadingUsers') : t('feeding.form.selectUser')}
-            </option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
+        {requireUserSelection && (
+          <label className="animal-form__field">
+            <span>{t('feeding.form.user')}</span>
+            <select
+              name="userId"
+              value={formData.userId}
+              onChange={handleChange}
+              required
+              disabled={isFormDisabled}
+            >
+              <option value="">
+                {isUsersLoading ? t('feeding.form.loadingUsers') : t('feeding.form.selectUser')}
               </option>
-            ))}
-          </select>
-        </label>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className="animal-form__field">
           <span>{t('feeding.form.date')}</span>
@@ -167,7 +193,7 @@ function FeedingForm({
             name="quantity"
             type="number"
             min="0"
-            step="any"
+            step="0.01"
             value={formData.quantity}
             onChange={handleChange}
             placeholder="0"
@@ -186,6 +212,17 @@ function FeedingForm({
         <button type="submit" disabled={isFormDisabled}>
           {isSubmitting ? t('common.saving') : submitLabel}
         </button>
+
+        {onCancel && (
+          <button
+            type="button"
+            className="animal-form__secondary-button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            {t('common.cancel')}
+          </button>
+        )}
       </div>
     </form>
   )

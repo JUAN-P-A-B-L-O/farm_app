@@ -8,6 +8,9 @@
 
 ### Core features
 
+- Farms:
+  - create and list farms accessible to the authenticated user
+  - farm is the operating boundary used by animals, feeding, production, feed types, dashboard, and analytics
 - Animals:
   - create, list, retrieve, update, and delete animal records
   - optional filtering by `farmId`
@@ -102,6 +105,7 @@ Frontend architectural rules already visible in code:
 - typed service functions wrapping HTTP calls
 - route-based page organization
 - translation support via language context and dictionaries
+- farm selection is handled centrally through `FarmContext`
 
 Current frontend constraint:
 
@@ -125,6 +129,33 @@ Current frontend constraint:
   "path": "/animals"
 }
 ```
+
+### `/farms`
+
+Endpoints:
+
+- `GET /farms`
+- `POST /farms`
+
+Create request:
+
+```json
+{
+  "name": "North Dairy"
+}
+```
+
+Required fields:
+
+- `name`
+
+Key validations and rules:
+
+- `name` must not be blank
+- authenticated user is required for farm creation
+- created farm is owned by the authenticated user
+- `GET /farms` returns farms accessible to the authenticated user
+- frontend uses a dedicated farm creation flow before regular module access when no farm is selected
 
 ### `/animals`
 

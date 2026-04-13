@@ -17,8 +17,9 @@ function isValidLabel(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-function buildAnalyticsParams(filters: AnalyticsFilters) {
+function buildAnalyticsParams(filters: AnalyticsFilters, farmId?: string) {
   return {
+    ...(farmId ? { farmId } : {}),
     ...(filters.startDate ? { startDate: filters.startDate } : {}),
     ...(filters.endDate ? { endDate: filters.endDate } : {}),
     ...(filters.animalId ? { animalId: filters.animalId } : {}),
@@ -59,8 +60,8 @@ function mapProductionByAnimal(points: AnalyticsProductionByAnimalApiPoint[]): A
     : []
 }
 
-export async function getAnalyticsDataset(filters: AnalyticsFilters): Promise<AnalyticsDataset> {
-  const params = buildAnalyticsParams(filters)
+export async function getAnalyticsDataset(filters: AnalyticsFilters, farmId?: string): Promise<AnalyticsDataset> {
+  const params = buildAnalyticsParams(filters, farmId)
 
   const [productionResponse, feedingResponse, profitResponse, productionByAnimalResponse] = await Promise.all([
     api.get<AnalyticsSeriesApiPoint[]>('/analytics/production', { params }),
@@ -71,6 +72,7 @@ export async function getAnalyticsDataset(filters: AnalyticsFilters): Promise<An
         ...(filters.startDate ? { startDate: filters.startDate } : {}),
         ...(filters.endDate ? { endDate: filters.endDate } : {}),
         ...(filters.animalId ? { animalId: filters.animalId } : {}),
+        ...(farmId ? { farmId } : {}),
       },
     }),
   ])

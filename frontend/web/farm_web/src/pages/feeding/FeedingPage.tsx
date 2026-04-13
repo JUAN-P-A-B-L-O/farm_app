@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import FeedingForm from '../../components/feeding/FeedingForm'
+import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
-import { createFeeding, getAllFeedings, getAllFeedTypes } from '../../services/feedingService'
+import {
+  createFeeding,
+  deleteFeeding,
+  getAllFeedings,
+  getAllFeedTypes,
+  getFeedingById,
+  updateFeeding,
+} from '../../services/feedingService'
 import type { Animal } from '../../types/animal'
 import type {
   Feeding,
@@ -51,7 +59,8 @@ function mapAnimalsToOptions(animals: Animal[]): FeedingAnimalOption[] {
 }
 
 function FeedingPage() {
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
+  const { selectedFarmId } = useFarm()
   const [feedings, setFeedings] = useState<Feeding[]>([])
   const [animals, setAnimals] = useState<FeedingAnimalOption[]>([])
   const [feedTypes, setFeedTypes] = useState<FeedingFeedTypeOption[]>([])
@@ -59,15 +68,24 @@ function FeedingPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isFormOptionsLoading, setIsFormOptionsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
+  const [editingFeedingId, setEditingFeedingId] = useState<string | null>(null)
 
   async function loadFeedings() {
+    if (!selectedFarmId) {
+      setFeedings([])
+      setListErrorMessage('')
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
     setListErrorMessage('')
 
     try {
-      const data = await getAllFeedings()
+      const data = await getAllFeedings(selectedFarmId)
       setFeedings(data)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('feeding.errors.loadRecords'), t))
@@ -77,11 +95,22 @@ function FeedingPage() {
   }
 
   async function loadFormOptions() {
+    if (!selectedFarmId) {
+      setAnimals([])
+      setFeedTypes([])
+      setFormErrorMessage('')
+      setIsFormOptionsLoading(false)
+      return
+    }
+
     setIsFormOptionsLoading(true)
     setFormErrorMessage('')
 
     try {
-      const [animalsData, feedTypesData] = await Promise.all([getAllAnimals(), getAllFeedTypes()])
+      const [animalsData, feedTypesData] = await Promise.all([
+        getAllAnimals(selectedFarmId),
+        getAllFeedTypes(selectedFarmId),
+      ])
 
       setAnimals(mapAnimalsToOptions(animalsData))
       setFeedTypes(feedTypesData)
@@ -94,20 +123,85 @@ function FeedingPage() {
 
   useEffect(() => {
     void Promise.all([loadFeedings(), loadFormOptions()])
-  }, [language])
+  }, [selectedFarmId])
 
-  async function handleCreateFeeding(data: FeedingFormData) {
+  async function handleCreateOrUpdateFeeding(data: FeedingFormData) {
     setIsSubmitting(true)
     setFormErrorMessage('')
 
     try {
-      await createFeeding(data)
+      if (editingFeedingId) {
+        await updateFeeding(editingFeedingId, data, selectedFarmId)
+      } else {
+        await createFeeding(data, selectedFarmId)
+      }
+
+      setEditingFeedingId(null)
       setFormInitialValues({ ...emptyFeedingForm })
       await loadFeedings()
     } catch (error) {
-      setFormErrorMessage(getErrorMessage(error, t('feeding.errors.create'), t))
+      setFormErrorMessage(
+        getErrorMessage(
+          error,
+          editingFeedingId ? t('feeding.errors.update') : t('feeding.errors.create'),
+          t,
+        ),
+      )
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  async function handleEdit(id: string) {
+    setIsSubmitting(true)
+    setFormErrorMessage('')
+
+    try {
+      const feeding = await getFeedingById(id, selectedFarmId)
+
+      setEditingFeedingId(feeding.id)
+      setFormInitialValues({
+        animalId: feeding.animalId,
+        feedTypeId: feeding.feedTypeId,
+        date: feeding.date,
+        quantity: feeding.quantity,
+        userId: '',
+      })
+    } catch (error) {
+      setFormErrorMessage(getErrorMessage(error, t('feeding.errors.loadDetails'), t))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  function handleCancelEdit() {
+    setEditingFeedingId(null)
+    setFormErrorMessage('')
+    setFormInitialValues({ ...emptyFeedingForm })
+  }
+
+  async function handleDelete(id: string) {
+    const shouldDelete = window.confirm(t('feeding.confirmDelete'))
+
+    if (!shouldDelete) {
+      return
+    }
+
+    setIsDeletingId(id)
+    setListErrorMessage('')
+
+    try {
+      await deleteFeeding(id, selectedFarmId)
+
+      if (editingFeedingId === id) {
+        handleCancelEdit()
+      }
+
+      await loadFeedings()
+    } catch (error) {
+      setListErrorMessage(getErrorMessage(error, t('feeding.errors.delete'), t))
+    } finally {
+      setIsDeletingId(null)
     }
   }
 
@@ -125,8 +219,12 @@ function FeedingPage() {
         <article className="animals-panel">
           <div className="animals-panel__header">
             <div>
-              <h2>{t('feeding.createTitle')}</h2>
-              <p>{t('feeding.createDescription')}</p>
+              <h2>{editingFeedingId ? t('feeding.updateTitle') : t('feeding.createTitle')}</h2>
+              <p>
+                {editingFeedingId
+                  ? t('feeding.updateDescription')
+                  : t('feeding.createDescription')}
+              </p>
             </div>
           </div>
 
@@ -145,10 +243,12 @@ function FeedingPage() {
               initialValues={formInitialValues}
               animals={animals}
               feedTypes={feedTypes}
-              onSubmit={handleCreateFeeding}
+              onSubmit={handleCreateOrUpdateFeeding}
+              onCancel={editingFeedingId ? handleCancelEdit : undefined}
               isSubmitting={isSubmitting}
-              submitLabel={t('feeding.submit')}
+              submitLabel={editingFeedingId ? t('feeding.submitUpdate') : t('feeding.submitCreate')}
               errorMessage={formErrorMessage}
+              requireUserSelection={!editingFeedingId}
             />
           )}
         </article>
@@ -182,6 +282,7 @@ function FeedingPage() {
                     <th>{t('feeding.table.feedType')}</th>
                     <th>{t('feeding.table.date')}</th>
                     <th>{t('feeding.table.quantity')}</th>
+                    <th>{t('feeding.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -191,6 +292,24 @@ function FeedingPage() {
                       <td>{feeding.feedType?.name}</td>
                       <td>{feeding.date}</td>
                       <td>{feeding.quantity}</td>
+                      <td className="animals-table__actions">
+                        <button
+                          type="button"
+                          className="animals-table__action-button animals-table__action-button--secondary"
+                          onClick={() => void handleEdit(feeding.id)}
+                          disabled={isSubmitting || isDeletingId === feeding.id}
+                        >
+                          {t('feeding.edit')}
+                        </button>
+                        <button
+                          type="button"
+                          className="animals-table__action-button animals-table__action-button--danger"
+                          onClick={() => void handleDelete(feeding.id)}
+                          disabled={isDeletingId === feeding.id}
+                        >
+                          {isDeletingId === feeding.id ? t('feeding.deleting') : t('feeding.delete')}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { useFarm } from '../../hooks/useFarm'
 import { getAnimalById } from '../../services/animalService'
 import { getFeedingsByAnimalId } from '../../services/feedingService'
 import { getProductionsByAnimalId } from '../../services/productionService'
@@ -35,6 +36,7 @@ function sortByDateDescending<T extends { date: string }>(records: T[]): T[] {
 }
 
 function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps) {
+  const { selectedFarmId } = useFarm()
   const [animal, setAnimal] = useState<Animal | null>(null)
   const [productions, setProductions] = useState<ProductionTrendPoint[]>([])
   const [feedings, setFeedings] = useState<FeedingTrendPoint[]>([])
@@ -43,14 +45,22 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
 
   useEffect(() => {
     async function loadAnimalDetails() {
+      if (!selectedFarmId) {
+        setAnimal(null)
+        setProductions([])
+        setFeedings([])
+        setIsLoading(false)
+        return
+      }
+
       setIsLoading(true)
       setErrorMessage('')
 
       try {
         const [animalData, productionsData, feedingsData] = await Promise.all([
-          getAnimalById(animalId),
-          getProductionsByAnimalId(animalId),
-          getFeedingsByAnimalId(animalId),
+          getAnimalById(animalId, selectedFarmId),
+          getProductionsByAnimalId(animalId, selectedFarmId),
+          getFeedingsByAnimalId(animalId, selectedFarmId),
         ])
 
         setAnimal(animalData)
@@ -64,7 +74,7 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
     }
 
     void loadAnimalDetails()
-  }, [animalId])
+  }, [animalId, selectedFarmId])
 
   return (
     <main className="animals-page">

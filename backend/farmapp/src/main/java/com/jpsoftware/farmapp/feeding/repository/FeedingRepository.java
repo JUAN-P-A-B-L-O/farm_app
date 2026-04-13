@@ -11,23 +11,60 @@ import org.springframework.data.repository.query.Param;
 
 public interface FeedingRepository extends JpaRepository<FeedingEntity, String> {
 
-    List<FeedingEntity> findByAnimalId(String animalId);
+    @Override
+    @Query("SELECT f FROM FeedingEntity f WHERE f.status = 'ACTIVE'")
+    List<FeedingEntity> findAll();
 
-    Page<FeedingEntity> findByAnimalId(String animalId, Pageable pageable);
+    @Override
+    @Query("SELECT f FROM FeedingEntity f WHERE f.status = 'ACTIVE'")
+    Page<FeedingEntity> findAll(Pageable pageable);
 
-    List<FeedingEntity> findByDate(LocalDate date);
+    @Override
+    @Query("SELECT f FROM FeedingEntity f WHERE f.id = :id AND f.status = 'ACTIVE'")
+    java.util.Optional<FeedingEntity> findById(@Param("id") String id);
 
-    Page<FeedingEntity> findByDate(LocalDate date, Pageable pageable);
+    List<FeedingEntity> findByAnimalIdAndStatus(String animalId, String status);
 
-    List<FeedingEntity> findByAnimalIdAndDate(String animalId, LocalDate date);
+    List<FeedingEntity> findByFarmIdAndStatus(String farmId, String status);
 
-    Page<FeedingEntity> findByAnimalIdAndDate(String animalId, LocalDate date, Pageable pageable);
+    Page<FeedingEntity> findByAnimalIdAndStatus(String animalId, String status, Pageable pageable);
+
+    Page<FeedingEntity> findByFarmIdAndStatus(String farmId, String status, Pageable pageable);
+
+    List<FeedingEntity> findByDateAndStatus(LocalDate date, String status);
+
+    List<FeedingEntity> findByFarmIdAndDateAndStatus(String farmId, LocalDate date, String status);
+
+    Page<FeedingEntity> findByDateAndStatus(LocalDate date, String status, Pageable pageable);
+
+    Page<FeedingEntity> findByFarmIdAndDateAndStatus(String farmId, LocalDate date, String status, Pageable pageable);
+
+    List<FeedingEntity> findByAnimalIdAndDateAndStatus(String animalId, LocalDate date, String status);
+
+    List<FeedingEntity> findByFarmIdAndAnimalIdAndDateAndStatus(String farmId, String animalId, LocalDate date, String status);
+
+    List<FeedingEntity> findByFarmIdAndAnimalIdAndStatus(String farmId, String animalId, String status);
+
+    Page<FeedingEntity> findByAnimalIdAndDateAndStatus(String animalId, LocalDate date, String status, Pageable pageable);
+
+    Page<FeedingEntity> findByFarmIdAndAnimalIdAndDateAndStatus(String farmId, String animalId, LocalDate date, String status, Pageable pageable);
+
+    Page<FeedingEntity> findByFarmIdAndAnimalIdAndStatus(String farmId, String animalId, String status, Pageable pageable);
+
+    java.util.Optional<FeedingEntity> findByIdAndFarmIdAndStatus(String id, String farmId, String status);
+
+    @Query("SELECT f FROM FeedingEntity f WHERE f.id = :id")
+    java.util.Optional<FeedingEntity> findAnyById(@Param("id") String id);
+
+    @Query("SELECT f FROM FeedingEntity f WHERE f.id = :id AND f.farmId = :farmId")
+    java.util.Optional<FeedingEntity> findAnyByIdAndFarmId(@Param("id") String id, @Param("farmId") String farmId);
 
     @Query("""
             SELECT COALESCE(SUM(f.quantity * ft.costPerKg), 0)
             FROM FeedingEntity f
             JOIN FeedTypeEntity ft ON f.feedTypeId = ft.id
             WHERE f.animalId = :animalId
+            AND f.status = 'ACTIVE'
             """)
     Double sumFeedingCostByAnimalId(@Param("animalId") String animalId);
 
@@ -35,6 +72,16 @@ public interface FeedingRepository extends JpaRepository<FeedingEntity, String> 
             SELECT COALESCE(SUM(f.quantity * ft.costPerKg), 0)
             FROM FeedingEntity f
             JOIN FeedTypeEntity ft ON f.feedTypeId = ft.id
+            WHERE f.farmId = :farmId
+            AND f.status = 'ACTIVE'
+            """)
+    Double sumTotalFeedingCostByFarmId(@Param("farmId") String farmId);
+
+    @Query("""
+            SELECT COALESCE(SUM(f.quantity * ft.costPerKg), 0)
+            FROM FeedingEntity f
+            JOIN FeedTypeEntity ft ON f.feedTypeId = ft.id
+            WHERE f.status = 'ACTIVE'
             """)
     Double sumTotalFeedingCost();
 }

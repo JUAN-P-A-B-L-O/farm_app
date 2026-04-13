@@ -15,10 +15,13 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -39,8 +42,10 @@ public class FeedTypeController {
             @ApiResponse(responseCode = "400", description = "Invalid request data",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<FeedTypeResponse> create(@Valid @RequestBody CreateFeedTypeRequest request) {
-        FeedTypeResponse response = feedTypeService.create(request);
+    public ResponseEntity<FeedTypeResponse> create(
+            @Valid @RequestBody CreateFeedTypeRequest request,
+            @RequestParam(required = false) String farmId) {
+        FeedTypeResponse response = feedTypeService.create(request, farmId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -49,8 +54,8 @@ public class FeedTypeController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Feed types retrieved successfully")
     })
-    public ResponseEntity<List<FeedTypeResponse>> findAll() {
-        List<FeedTypeResponse> response = feedTypeService.findAll();
+    public ResponseEntity<List<FeedTypeResponse>> findAll(@RequestParam(required = false) String farmId) {
+        List<FeedTypeResponse> response = feedTypeService.findAll(farmId);
         return ResponseEntity.ok(response);
     }
 
@@ -63,8 +68,29 @@ public class FeedTypeController {
             @ApiResponse(responseCode = "404", description = "Feed type not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<FeedTypeResponse> findById(@PathVariable String id) {
-        FeedTypeResponse response = feedTypeService.findById(id);
+    public ResponseEntity<FeedTypeResponse> findById(
+            @PathVariable String id,
+            @RequestParam(required = false) String farmId) {
+        FeedTypeResponse response = feedTypeService.findById(id, farmId);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update feed type", description = "Updates an existing feed type.")
+    public ResponseEntity<FeedTypeResponse> update(
+            @PathVariable String id,
+            @Valid @RequestBody CreateFeedTypeRequest request,
+            @RequestParam(required = false) String farmId) {
+        FeedTypeResponse response = feedTypeService.update(id, request, farmId);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete feed type", description = "Soft deletes a feed type by marking it inactive.")
+    public ResponseEntity<Void> delete(
+            @PathVariable String id,
+            @RequestParam(required = false) String farmId) {
+        feedTypeService.delete(id, farmId);
+        return ResponseEntity.noContent().build();
     }
 }

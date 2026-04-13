@@ -1,32 +1,75 @@
 import api from './api'
+import { normalizeToTwoDecimals } from '../utils/decimal'
 import type {
   CreateFeedingPayload,
   Feeding,
   FeedingFormData,
   FeedingTrendPoint,
+  UpdateFeedingPayload,
 } from '../types/feeding'
 export { getAllFeedTypes } from './feedTypeService'
 
-export async function getAllFeedings(): Promise<Feeding[]> {
-  const response = await api.get<Feeding[]>('/feedings')
-
-  return response.data
+function buildFarmParams(farmId?: string, params: Record<string, string> = {}) {
+  return {
+    ...(farmId ? { farmId } : {}),
+    ...params,
+  }
 }
 
-export async function getFeedingsByAnimalId(animalId: string): Promise<FeedingTrendPoint[]> {
-  const response = await api.get<FeedingTrendPoint[]>('/feedings', {
-    params: {
-      animalId,
-    },
+export async function getAllFeedings(farmId?: string): Promise<Feeding[]> {
+  const response = await api.get<Feeding[]>('/feedings', {
+    params: buildFarmParams(farmId),
   })
 
   return response.data
 }
 
-export async function createFeeding(data: FeedingFormData): Promise<Feeding> {
-  const payload: CreateFeedingPayload = data
-
-  const response = await api.post<Feeding>('/feedings', payload)
+export async function getFeedingsByAnimalId(animalId: string, farmId?: string): Promise<FeedingTrendPoint[]> {
+  const response = await api.get<FeedingTrendPoint[]>('/feedings', {
+    params: buildFarmParams(farmId, { animalId }),
+  })
 
   return response.data
+}
+
+export async function createFeeding(data: FeedingFormData, farmId?: string): Promise<Feeding> {
+  const payload: CreateFeedingPayload = {
+    ...data,
+    quantity: normalizeToTwoDecimals(data.quantity),
+  }
+
+  const response = await api.post<Feeding>('/feedings', payload, {
+    params: buildFarmParams(farmId),
+  })
+
+  return response.data
+}
+
+export async function getFeedingById(id: string, farmId?: string): Promise<Feeding> {
+  const response = await api.get<Feeding>(`/feedings/${id}`, {
+    params: buildFarmParams(farmId),
+  })
+
+  return response.data
+}
+
+export async function updateFeeding(id: string, data: FeedingFormData, farmId?: string): Promise<Feeding> {
+  const payload: UpdateFeedingPayload = {
+    animalId: data.animalId,
+    feedTypeId: data.feedTypeId,
+    date: data.date,
+    quantity: normalizeToTwoDecimals(data.quantity),
+  }
+
+  const response = await api.put<Feeding>(`/feedings/${id}`, payload, {
+    params: buildFarmParams(farmId),
+  })
+
+  return response.data
+}
+
+export async function deleteFeeding(id: string, farmId?: string): Promise<void> {
+  await api.delete(`/feedings/${id}`, {
+    params: buildFarmParams(farmId),
+  })
 }

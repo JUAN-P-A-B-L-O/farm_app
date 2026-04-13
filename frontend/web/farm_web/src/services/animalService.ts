@@ -1,14 +1,22 @@
 import api from './api'
 import type { Animal, AnimalFormData } from '../types/animal'
 
-export async function getAllAnimals(): Promise<Animal[]> {
-  const response = await api.get<Animal[]>('/animals')
+function buildFarmParams(farmId?: string) {
+  return farmId ? { farmId } : undefined
+}
+
+export async function getAllAnimals(farmId?: string): Promise<Animal[]> {
+  const response = await api.get<Animal[]>('/animals', {
+    params: buildFarmParams(farmId),
+  })
 
   return response.data
 }
 
-export async function getAnimalById(id: string): Promise<Animal> {
-  const response = await api.get<Animal>(`/animals/${id}`)
+export async function getAnimalById(id: string, farmId?: string): Promise<Animal> {
+  const response = await api.get<Animal>(`/animals/${id}`, {
+    params: buildFarmParams(farmId),
+  })
 
   return response.data
 }
@@ -19,12 +27,16 @@ export async function createAnimal(data: AnimalFormData): Promise<Animal> {
   return response.data
 }
 
-export async function updateAnimal(id: string, data: AnimalFormData): Promise<Animal> {
-  const response = await api.put<Animal>(`/animals/${id}`, data)
+export async function updateAnimal(id: string, data: AnimalFormData, farmId?: string): Promise<Animal> {
+  const response = await api.put<Animal>(`/animals/${id}`, data, {
+    params: buildFarmParams(farmId),
+  })
 
   return response.data
 }
 
-export async function deleteAnimal(id: string): Promise<void> {
-  await api.delete(`/animals/${id}`)
+export async function deleteAnimal(id: string, farmId?: string): Promise<void> {
+  await api.delete(`/animals/${id}`, {
+    params: buildFarmParams(farmId),
+  })
 }

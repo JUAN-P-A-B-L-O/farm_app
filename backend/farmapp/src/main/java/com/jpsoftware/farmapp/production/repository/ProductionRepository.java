@@ -11,22 +11,59 @@ import org.springframework.data.repository.query.Param;
 
 public interface ProductionRepository extends JpaRepository<ProductionEntity, String> {
 
-    List<ProductionEntity> findByAnimalId(String animalId);
+    @Override
+    @Query("SELECT p FROM ProductionEntity p WHERE p.status = 'ACTIVE'")
+    List<ProductionEntity> findAll();
 
-    Page<ProductionEntity> findByAnimalId(String animalId, Pageable pageable);
+    @Override
+    @Query("SELECT p FROM ProductionEntity p WHERE p.status = 'ACTIVE'")
+    Page<ProductionEntity> findAll(Pageable pageable);
 
-    List<ProductionEntity> findByDate(LocalDate date);
+    @Override
+    @Query("SELECT p FROM ProductionEntity p WHERE p.id = :id AND p.status = 'ACTIVE'")
+    java.util.Optional<ProductionEntity> findById(@Param("id") String id);
 
-    Page<ProductionEntity> findByDate(LocalDate date, Pageable pageable);
+    List<ProductionEntity> findByAnimalIdAndStatus(String animalId, String status);
 
-    List<ProductionEntity> findByAnimalIdAndDate(String animalId, LocalDate date);
+    List<ProductionEntity> findByFarmIdAndStatus(String farmId, String status);
 
-    Page<ProductionEntity> findByAnimalIdAndDate(String animalId, LocalDate date, Pageable pageable);
+    Page<ProductionEntity> findByAnimalIdAndStatus(String animalId, String status, Pageable pageable);
+
+    Page<ProductionEntity> findByFarmIdAndStatus(String farmId, String status, Pageable pageable);
+
+    List<ProductionEntity> findByDateAndStatus(LocalDate date, String status);
+
+    List<ProductionEntity> findByFarmIdAndDateAndStatus(String farmId, LocalDate date, String status);
+
+    Page<ProductionEntity> findByDateAndStatus(LocalDate date, String status, Pageable pageable);
+
+    Page<ProductionEntity> findByFarmIdAndDateAndStatus(String farmId, LocalDate date, String status, Pageable pageable);
+
+    List<ProductionEntity> findByAnimalIdAndDateAndStatus(String animalId, LocalDate date, String status);
+
+    List<ProductionEntity> findByFarmIdAndAnimalIdAndDateAndStatus(String farmId, String animalId, LocalDate date, String status);
+
+    List<ProductionEntity> findByFarmIdAndAnimalIdAndStatus(String farmId, String animalId, String status);
+
+    Page<ProductionEntity> findByAnimalIdAndDateAndStatus(String animalId, LocalDate date, String status, Pageable pageable);
+
+    Page<ProductionEntity> findByFarmIdAndAnimalIdAndDateAndStatus(String farmId, String animalId, LocalDate date, String status, Pageable pageable);
+
+    Page<ProductionEntity> findByFarmIdAndAnimalIdAndStatus(String farmId, String animalId, String status, Pageable pageable);
+
+    java.util.Optional<ProductionEntity> findByIdAndFarmIdAndStatus(String id, String farmId, String status);
+
+    @Query("SELECT p FROM ProductionEntity p WHERE p.id = :id")
+    java.util.Optional<ProductionEntity> findAnyById(@Param("id") String id);
+
+    @Query("SELECT p FROM ProductionEntity p WHERE p.id = :id AND p.farmId = :farmId")
+    java.util.Optional<ProductionEntity> findAnyByIdAndFarmId(@Param("id") String id, @Param("farmId") String farmId);
 
     @Query("""
             SELECT COALESCE(SUM(p.quantity), 0)
             FROM ProductionEntity p
             WHERE p.animalId = :animalId
+            AND p.status = 'ACTIVE'
             """)
     Double sumQuantityByAnimalId(@Param("animalId") String animalId);
 
@@ -34,12 +71,22 @@ public interface ProductionRepository extends JpaRepository<ProductionEntity, St
             SELECT COALESCE(SUM(p.quantity), 0)
             FROM ProductionEntity p
             WHERE p.animalId = :animalId
+            AND p.status = 'ACTIVE'
             """)
     Double sumProductionByAnimalId(@Param("animalId") String animalId);
 
     @Query("""
             SELECT COALESCE(SUM(p.quantity), 0)
             FROM ProductionEntity p
+            WHERE p.status = 'ACTIVE'
             """)
     Double sumTotalProduction();
+
+    @Query("""
+            SELECT COALESCE(SUM(p.quantity), 0)
+            FROM ProductionEntity p
+            WHERE p.farmId = :farmId
+            AND p.status = 'ACTIVE'
+            """)
+    Double sumTotalProductionByFarmId(@Param("farmId") String farmId);
 }

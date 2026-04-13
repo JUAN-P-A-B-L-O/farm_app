@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllUsers } from '../../services/userService'
+import { hasAtMostTwoDecimals, parseTwoDecimalInput } from '../../utils/decimal'
 import type { ProductionAnimalOption, ProductionFormData } from '../../types/production'
 import type { User } from '../../types/user'
 
@@ -8,18 +9,22 @@ interface ProductionFormProps {
   initialValues: ProductionFormData
   animals: ProductionAnimalOption[]
   onSubmit: (data: ProductionFormData) => Promise<void>
+  onCancel?: () => void
   isSubmitting: boolean
   submitLabel: string
   errorMessage: string
+  requireUserSelection?: boolean
 }
 
 function ProductionForm({
   initialValues,
   animals,
   onSubmit,
+  onCancel,
   isSubmitting,
   submitLabel,
   errorMessage,
+  requireUserSelection = true,
 }: ProductionFormProps) {
   const { t, language } = useTranslation()
   const [formData, setFormData] = useState<ProductionFormData>(initialValues)
@@ -34,6 +39,12 @@ function ProductionForm({
   }, [initialValues])
 
   useEffect(() => {
+    if (!requireUserSelection) {
+      setIsUsersLoading(false)
+      setUsersErrorMessage('')
+      return
+    }
+
     async function loadUsers() {
       setIsUsersLoading(true)
       setUsersErrorMessage('')
@@ -49,7 +60,7 @@ function ProductionForm({
     }
 
     void loadUsers()
-  }, [language])
+  }, [language, requireUserSelection])
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target
@@ -57,7 +68,7 @@ function ProductionForm({
     setValidationMessage('')
     setFormData((currentData) => ({
       ...currentData,
-      [name]: name === 'quantity' ? Number(value) : value,
+      [name]: name === 'quantity' ? parseTwoDecimalInput(value, currentData.quantity) : value,
     }))
   }
 
@@ -79,7 +90,12 @@ function ProductionForm({
       return
     }
 
-    if (!formData.userId) {
+    if (!hasAtMostTwoDecimals(formData.quantity)) {
+      setValidationMessage(t('production.errors.quantityPrecision'))
+      return
+    }
+
+    if (requireUserSelection && !formData.userId) {
       setValidationMessage(t('production.errors.selectUser'))
       return
     }
@@ -88,9 +104,13 @@ function ProductionForm({
   }
 
   const isFormDisabled =
-    isSubmitting || isUsersLoading || animals.length === 0 || users.length === 0 || usersErrorMessage.length > 0
+    isSubmitting ||
+    animals.length === 0 ||
+    (requireUserSelection &&
+      (isUsersLoading || users.length === 0 || usersErrorMessage.length > 0))
 
-  const feedbackMessage = validationMessage || usersErrorMessage || errorMessage
+  const feedbackMessage =
+    validationMessage || (requireUserSelection ? usersErrorMessage : '') || errorMessage
 
   return (
     <form className="animal-form" onSubmit={handleSubmit}>
@@ -113,25 +133,27 @@ function ProductionForm({
           </select>
         </label>
 
-        <label className="animal-form__field">
-          <span>{t('production.form.user')}</span>
-          <select
-            name="userId"
-            value={formData.userId}
-            onChange={handleChange}
-            required
-            disabled={isFormDisabled}
-          >
-            <option value="">
-              {isUsersLoading ? t('production.form.loadingUsers') : t('production.form.selectUser')}
-            </option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
+        {requireUserSelection && (
+          <label className="animal-form__field">
+            <span>{t('production.form.user')}</span>
+            <select
+              name="userId"
+              value={formData.userId}
+              onChange={handleChange}
+              required
+              disabled={isFormDisabled}
+            >
+              <option value="">
+                {isUsersLoading ? t('production.form.loadingUsers') : t('production.form.selectUser')}
               </option>
-            ))}
-          </select>
-        </label>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className="animal-form__field">
           <span>{t('production.form.date')}</span>
@@ -150,7 +172,7 @@ function ProductionForm({
             name="quantity"
             type="number"
             min="0"
-            step="any"
+            step="0.01"
             value={formData.quantity}
             onChange={handleChange}
             placeholder="0"
@@ -169,6 +191,17 @@ function ProductionForm({
         <button type="submit" disabled={isFormDisabled}>
           {isSubmitting ? t('common.saving') : submitLabel}
         </button>
+
+        {onCancel && (
+          <button
+            type="button"
+            className="animal-form__secondary-button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            {t('common.cancel')}
+          </button>
+        )}
       </div>
     </form>
   )

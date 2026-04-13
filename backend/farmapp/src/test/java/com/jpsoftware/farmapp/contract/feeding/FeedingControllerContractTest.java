@@ -4,6 +4,8 @@ package com.jpsoftware.farmapp.contract.feeding;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -12,6 +14,7 @@ import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.controller.FeedingController;
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
+import com.jpsoftware.farmapp.feeding.dto.UpdateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.mapper.FeedingMapper;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
@@ -19,6 +22,7 @@ import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.lang.reflect.Proxy;
 import java.time.LocalDate;
@@ -202,6 +206,9 @@ class FeedingControllerContractTest {
         private PaginatedResponse<FeedingResponse> paginatedResponse;
         private FeedingResponse findByIdResponse;
         private RuntimeException findByIdException;
+        private FeedingResponse updateResponse;
+        private RuntimeException updateException;
+        private RuntimeException deleteException;
 
         TestFeedingService() {
             super(
@@ -234,6 +241,21 @@ class FeedingControllerContractTest {
                 throw findByIdException;
             }
             return findByIdResponse;
+        }
+
+        @Override
+        public FeedingResponse updateFeeding(String id, UpdateFeedingRequest request) {
+            if (updateException != null) {
+                throw updateException;
+            }
+            return updateResponse;
+        }
+
+        @Override
+        public void deleteFeeding(String id) {
+            if (deleteException != null) {
+                throw deleteException;
+            }
         }
 
         private static FeedingRepository dummyFeedingRepository() {
@@ -329,5 +351,48 @@ class FeedingControllerContractTest {
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(2))
                 .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void shouldUpdateFeedingSuccessfully() throws Exception {
+        feedingService.updateResponse = buildResponse();
+
+        mockMvc.perform(put("/feedings/feeding-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "animalId": "animal-1",
+                                  "feedTypeId": "feed-type-1",
+                                  "date": "2026-03-24",
+                                  "quantity": 8.5
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("feeding-1"))
+                .andExpect(jsonPath("$.animalId").value("animal-1"))
+                .andExpect(jsonPath("$.feedTypeId").value("feed-type-1"));
+    }
+
+    @Test
+    void shouldFailToUpdateInactiveFeeding() throws Exception {
+        feedingService.updateException = new ConflictException("Inactive feeding cannot be updated");
+
+        mockMvc.perform(put("/feedings/feeding-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "quantity": 9.0
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("Inactive feeding cannot be updated"))
+                .andExpect(jsonPath("$.path").value("/feedings/feeding-1"));
+    }
+
+    @Test
+    void shouldDeleteFeedingSuccessfully() throws Exception {
+        mockMvc.perform(delete("/feedings/feeding-1"))
+                .andExpect(status().isNoContent());
     }
 }

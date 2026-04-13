@@ -34,6 +34,13 @@ export interface CreateFeedingPayload extends FeedingFormData {
   userId: string
 }
 
+export interface UpdateFeedingPayload {
+  animalId: string
+  feedTypeId: string
+  date: string
+  quantity: number
+}
+
 export interface FeedingApiErrorResponse {
   timestamp: string
   status: number
