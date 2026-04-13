@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useFarm } from '../hooks/useFarm'
 import { useLanguage, type Language } from '../context/LanguageContext'
@@ -16,6 +16,7 @@ const navigationItems = [
 
 function AppLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, logout } = useAuth()
   const {
     farms,
@@ -36,6 +37,8 @@ function AppLayout() {
     logout()
     navigate('/login', { replace: true })
   }
+
+  const isFarmCreationRoute = location.pathname === '/farms/new'
 
   return (
     <div className="app-layout">
@@ -82,6 +85,13 @@ function AppLayout() {
           {farmsErrorMessage && (
             <p className="animals-page__status animals-page__status--error">{t('farm.loadError')}</p>
           )}
+          <button
+            type="button"
+            className="animals-table__action-button animals-table__action-button--secondary"
+            onClick={() => navigate('/farms/new')}
+          >
+            {t('farm.createAction')}
+          </button>
         </div>
 
         <div className="app-layout__language-switcher" role="group" aria-label={t('layout.languageLabel')}>
@@ -122,14 +132,8 @@ function AppLayout() {
               <h1>{t('layout.loadingFarms')}</h1>
             </section>
           </main>
-        ) : !selectedFarm ? (
-          <main className="animals-page">
-            <section className="animals-page__header">
-              <p className="animals-page__eyebrow">{t('farm.eyebrow')}</p>
-              <h1>{t('farm.selectionRequiredTitle')}</h1>
-              <p className="animals-page__description">{t('farm.selectionRequiredDescription')}</p>
-            </section>
-          </main>
+        ) : !selectedFarm && !isFarmCreationRoute ? (
+          <Navigate to="/farms/new" replace />
         ) : (
           <Outlet />
         )}

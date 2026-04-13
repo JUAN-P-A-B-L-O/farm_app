@@ -11,6 +11,7 @@ import UsersPage from './pages/users/UsersPage'
 import AppLayout from './layout/AppLayout'
 import LoginPage from './pages/login/LoginPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import FarmCreatePage from './pages/farm/FarmCreatePage'
 
 function AnimalsRoute() {
   const navigate = useNavigate()
@@ -40,6 +41,7 @@ function App() {
           <Route path="/feed-types" element={<FeedTypePage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/farms/new" element={<FarmCreatePage />} />
           <Route path="/productions" element={<Navigate to="/production" replace />} />
           <Route path="/feedings" element={<Navigate to="/feeding" replace />} />
         </Route>

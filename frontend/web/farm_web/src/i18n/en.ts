@@ -56,10 +56,25 @@ const en = {
     },
   },
   farm: {
-    eyebrow: 'Farm Context',
-    selectionRequiredTitle: 'Select a farm to continue',
-    selectionRequiredDescription: 'Choose a farm before accessing animals, feeding, production, and analytics data.',
+    eyebrow: 'Farm Boundary',
+    createTitle: 'Create Farm',
+    createDescription: 'Create the farm boundary before entering the operational modules.',
+    formTitle: 'Farm Setup',
+    formDescription: 'This farm will become the active operating context for animals, feeding, production, and analytics.',
+    submitCreate: 'Create farm',
+    createAction: 'Create farm',
     loadError: 'Unable to load farms.',
+    selectionRequiredTitle: 'Select a farm to continue.',
+    selectionRequiredDescription: 'Choose an available farm or create a new one to access the system.',
+    form: {
+      name: 'Farm name',
+      placeholder: 'North Dairy',
+    },
+    errors: {
+      create: 'Unable to create farm.',
+      validationSave: 'Check the farm data and try again.',
+      unauthorized: 'You must be authenticated to create a farm.',
+    },
   },
   animals: {
     eyebrow: 'Livestock Control',

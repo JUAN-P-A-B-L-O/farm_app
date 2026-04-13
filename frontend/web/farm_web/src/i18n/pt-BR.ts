@@ -56,10 +56,25 @@ const ptBR = {
     },
   },
   farm: {
-    eyebrow: 'Contexto da fazenda',
-    selectionRequiredTitle: 'Selecione uma fazenda para continuar',
-    selectionRequiredDescription: 'Escolha uma fazenda antes de acessar dados de animais, alimentação, produção e análises.',
+    eyebrow: 'Limite da fazenda',
+    createTitle: 'Criar fazenda',
+    createDescription: 'Crie o limite da fazenda antes de entrar nos módulos operacionais.',
+    formTitle: 'Configuração da fazenda',
+    formDescription: 'Esta fazenda será o contexto ativo para animais, alimentação, produção e analytics.',
+    submitCreate: 'Criar fazenda',
+    createAction: 'Criar fazenda',
     loadError: 'Não foi possível carregar as fazendas.',
+    selectionRequiredTitle: 'Selecione uma fazenda para continuar.',
+    selectionRequiredDescription: 'Escolha uma fazenda disponível ou crie uma nova para acessar o sistema.',
+    form: {
+      name: 'Nome da fazenda',
+      placeholder: 'Fazenda Norte',
+    },
+    errors: {
+      create: 'Não foi possível criar a fazenda.',
+      validationSave: 'Revise os dados da fazenda e tente novamente.',
+      unauthorized: 'Você precisa estar autenticado para criar uma fazenda.',
+    },
   },
   animals: {
     eyebrow: 'Controle do Rebanho',
