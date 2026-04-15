@@ -9,6 +9,7 @@ import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -22,6 +23,7 @@ public class DashboardService {
     private final FarmAccessService farmAccessService;
     private final MilkPriceService milkPriceService;
 
+    @Autowired
     public DashboardService(
             ProductionRepository productionRepository,
             FeedingRepository feedingRepository,

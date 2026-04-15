@@ -601,6 +601,7 @@ Authorization: Bearer <jwt>
 - Do not mix domain logic directly into controllers
 - Controllers must remain thin and delegate to services
 - Services own business rules, validations, and orchestration
+- Services use constructor injection; if a Spring service keeps multiple constructors for compatibility, explicitly annotate the full dependency constructor with `@Autowired`
 - Do not couple business logic to JPA annotations or entity graph behavior
 - Do not introduce rich JPA relation graphs unless explicitly required
 - Preserve mapper usage for DTO/entity transformations
