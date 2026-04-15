@@ -21,6 +21,8 @@ const emptyAnimalForm: AnimalFormData = {
   tag: '',
   breed: '',
   birthDate: '',
+  origin: 'BORN',
+  acquisitionCost: null,
   farmId: '',
 }
 
@@ -126,6 +128,9 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
         tag: animal.tag,
         breed: animal.breed,
         birthDate: animal.birthDate,
+        origin: animal.origin,
+        acquisitionCost: animal.acquisitionCost,
+        status: animal.status,
         farmId: animal.farmId,
       })
     } catch (error) {
@@ -197,6 +202,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
             submitLabel={editingAnimalId ? t('animals.submitUpdate') : t('animals.submitCreate')}
             errorMessage={formErrorMessage}
             selectedFarmName={selectedFarm?.name}
+            showStatusField={editingAnimalId !== null}
           />
         </article>
 
@@ -228,6 +234,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                     <th>{t('animals.table.tag')}</th>
                     <th>{t('animals.table.breed')}</th>
                     <th>{t('animals.table.birthDate')}</th>
+                    <th>{t('animals.table.origin')}</th>
                     <th>{t('animals.table.status')}</th>
                     <th>{t('animals.table.actions')}</th>
                   </tr>
@@ -238,11 +245,12 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                       <td>{animal.tag}</td>
                       <td>{animal.breed}</td>
                       <td>{animal.birthDate}</td>
+                      <td>{t(`animals.origins.${animal.origin}`)}</td>
                       <td>
                         <span
                           className={`animals-table__status animals-table__status--${animal.status.toLowerCase()}`}
                         >
-                          {animal.status}
+                          {t(`animals.statuses.${animal.status}`)}
                         </span>
                       </td>
                       <td className="animals-table__actions">

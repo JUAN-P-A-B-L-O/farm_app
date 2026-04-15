@@ -13,6 +13,8 @@
   - farm is the operating boundary used by animals, feeding, production, feed types, dashboard, and analytics
 - Animals:
   - create, list, retrieve, update, and delete animal records
+  - track origin (`BORN` or `PURCHASED`) and optional acquisition cost
+  - lifecycle is status-based (`ACTIVE`, `SOLD`, `DEAD`, `INACTIVE`)
   - optional filtering by `farmId`
 - Feeding:
   - create and list feeding records
@@ -32,6 +34,7 @@
   - users are also the accountability reference for feeding and production records
 - Analytics:
   - dashboard aggregates total production, feeding cost, revenue, profit, and animal count
+  - profit-oriented endpoints support `includeAcquisitionCost` and default it to `true`
   - frontend includes analytics pages and charts
 
 ### Current implementation note
@@ -174,6 +177,8 @@ Create request:
   "tag": "COW-101",
   "breed": "Holstein",
   "birthDate": "2022-01-15",
+  "origin": "PURCHASED",
+  "acquisitionCost": 1250.50,
   "farmId": "farm-001"
 }
 ```
@@ -183,14 +188,20 @@ Required fields:
 - `tag`
 - `breed`
 - `birthDate`
+- `origin`
 - `farmId`
 
 Key validations and rules:
 
 - `tag`, `breed`, and `farmId` must not be blank
 - `birthDate` must not be null
+- `origin` must be `PURCHASED` or `BORN`
+- `acquisitionCost` is required and must be greater than zero when `origin = PURCHASED`
+- `acquisitionCost` is cleared when `origin = BORN`
 - `tag` must be unique
 - new animals default to status `ACTIVE`
+- `PUT /animals/{id}` can be used for lifecycle transitions by updating `status`
+- `DELETE /animals/{id}` is now soft-delete behavior and marks the animal as `INACTIVE`
 - `GET /animals` optionally accepts `farmId`
 - update is partial, but provided string fields must not be blank
 
@@ -201,7 +212,7 @@ Endpoints:
 - `GET /productions`
 - `GET /productions/{id}`
 - `GET /productions/summary/by-animal?animalId=...`
-- `GET /productions/summary/profit/by-animal?animalId=...`
+- `GET /productions/summary/profit/by-animal?animalId=...&includeAcquisitionCost=true`
 - `POST /productions`
 - `PUT /productions/{id}`
 
@@ -238,11 +249,12 @@ Key validations and rules:
 - `date` must not be null
 - `date` cannot be in the future
 - `quantity` must be greater than zero
-- referenced animal must exist
+- referenced animal must exist and be `ACTIVE`
 - `userId` must be a valid UUID and must exist as a user
 - authenticated user context can override/fill `createdBy`
 - list endpoint supports optional `animalId`, `date`, `page`, and `size`
 - pagination is only returned when both `page` and `size` are provided
+- profit summary includes acquisition cost by default and allows opting out with `includeAcquisitionCost=false`
 
 Response characteristics:
 
@@ -283,7 +295,7 @@ Key validations and rules:
 - all string identifiers must not be blank
 - `date` must not be null
 - `quantity` must be greater than zero
-- referenced animal must exist
+- referenced animal must exist and be `ACTIVE`
 - referenced feed type must exist
 - `userId` must be a valid UUID and must exist as a user
 - authenticated user context can override/fill `createdBy`
@@ -371,6 +383,13 @@ Important frontend mismatch:
 
 - frontend service code currently omits `password` on user creation
 - frontend service code also includes `updateUser` and `deleteUser`, but the current backend does not implement those endpoints
+
+### Dashboard and analytics profit behavior
+
+- `GET /dashboard` now accepts optional `includeAcquisitionCost` and defaults it to `true`
+- `GET /analytics/profit` now accepts optional `includeAcquisitionCost` and defaults it to `true`
+- dashboard total profit subtracts acquisition cost when enabled
+- analytics profit series applies acquisition cost once to the earliest returned period because the current animal model does not store a separate acquisition date
 
 ### `/auth/login`
 

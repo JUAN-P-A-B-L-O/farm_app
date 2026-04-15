@@ -127,26 +127,30 @@ public class ProductionService {
     @Transactional(readOnly = true)
     public ProductionSummaryResponse getSummaryByAnimal(String animalId, String farmId) {
         String validatedAnimalId = validateAnimalId(animalId);
-        validateAnimalExists(validatedAnimalId, farmId);
+        validateAnimal(validatedAnimalId, farmId);
 
         Double totalQuantity = productionRepository.sumQuantityByAnimalId(validatedAnimalId);
         return new ProductionSummaryResponse(validatedAnimalId, DecimalScaleUtils.zeroIfNull(totalQuantity));
     }
 
     @Transactional(readOnly = true)
-    public ProductionProfitResponse getProfitByAnimal(String animalId, String farmId) {
+    public ProductionProfitResponse getProfitByAnimal(String animalId, String farmId, boolean includeAcquisitionCost) {
         String validatedAnimalId = validateAnimalId(animalId);
-        validateAnimalExists(validatedAnimalId, farmId);
+        AnimalEntity animal = validateAnimal(validatedAnimalId, farmId);
 
         Double totalProduction = DecimalScaleUtils.zeroIfNull(productionRepository.sumProductionByAnimalId(validatedAnimalId));
         Double totalFeedingCost = DecimalScaleUtils.zeroIfNull(feedingRepository.sumFeedingCostByAnimalId(validatedAnimalId));
+        Double acquisitionCost = includeAcquisitionCost
+                ? DecimalScaleUtils.zeroIfNull(animal.getAcquisitionCost())
+                : 0.0;
         Double revenue = DecimalScaleUtils.multiply(totalProduction, MILK_PRICE);
-        Double profit = DecimalScaleUtils.subtract(revenue, totalFeedingCost);
+        Double totalCost = DecimalScaleUtils.normalize(totalFeedingCost + acquisitionCost);
+        Double profit = DecimalScaleUtils.subtract(revenue, totalCost);
 
         return new ProductionProfitResponse(
                 validatedAnimalId,
                 totalProduction,
-                totalFeedingCost,
+                totalCost,
                 MILK_PRICE,
                 revenue,
                 profit);
@@ -167,7 +171,7 @@ public class ProductionService {
         ensureProductionIsActive(productionEntity, "Inactive production cannot be updated");
 
         if (StringUtils.hasText(request.getAnimalId())) {
-            validateAnimalExists(request.getAnimalId(), farmId);
+            validateAnimalIsActive(request.getAnimalId(), farmId);
             productionEntity.setAnimalId(request.getAnimalId());
         }
         if (request.getDate() != null) {
@@ -244,7 +248,7 @@ public class ProductionService {
     }
 
     private void validateRelations(CreateProductionRequest request, String createdBy, String farmId) {
-        validateAnimalExists(request.getAnimalId(), farmId);
+        validateAnimalIsActive(request.getAnimalId(), farmId);
         if (!userRepository.existsById(parseUserId(createdBy))) {
             throw new ResourceNotFoundException("User not found");
         }
@@ -343,10 +347,22 @@ public class ProductionService {
         return animalId;
     }
 
-    private void validateAnimalExists(String animalId, String farmId) {
-        if (!animalRepository.existsById(animalId) || (StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId))) {
+    private AnimalEntity validateAnimal(String animalId, String farmId) {
+        AnimalEntity animal = StringUtils.hasText(farmId)
+                ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)
+                : animalRepository.findById(animalId).orElse(null);
+        if (animal == null) {
             throw new ResourceNotFoundException("Animal not found");
         }
+        return animal;
+    }
+
+    private AnimalEntity validateAnimalIsActive(String animalId, String farmId) {
+        AnimalEntity animal = validateAnimal(animalId, farmId);
+        if (!AnimalEntity.STATUS_ACTIVE.equals(animal.getStatus())) {
+            throw new ValidationException("Animal must be ACTIVE for production operations");
+        }
+        return animal;
     }
 
     private String resolveFarmId(CreateProductionRequest request, String farmId) {

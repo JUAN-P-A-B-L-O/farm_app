@@ -22,6 +22,7 @@ function DashboardPage() {
   const { t, language } = useTranslation()
   const { selectedFarmId } = useFarm()
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
+  const [includeAcquisitionCost, setIncludeAcquisitionCost] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -37,7 +38,7 @@ function DashboardPage() {
       }
 
       try {
-        const data = await fetchDashboard(selectedFarmId)
+        const data = await fetchDashboard(selectedFarmId, includeAcquisitionCost)
         setSummary(data)
       } catch {
         setErrorMessage(t('dashboard.error'))
@@ -47,7 +48,7 @@ function DashboardPage() {
     }
 
     void loadDashboard()
-  }, [language, selectedFarmId])
+  }, [includeAcquisitionCost, language, selectedFarmId])
   return (
     <main className="dashboard-page">
       <section className="dashboard-page__header">
@@ -56,6 +57,14 @@ function DashboardPage() {
         <p className="dashboard-page__description">
           {t('dashboard.description')}
         </p>
+        <label className="analytics-controls__checkbox">
+          <input
+            type="checkbox"
+            checked={includeAcquisitionCost}
+            onChange={(event) => setIncludeAcquisitionCost(event.target.checked)}
+          />
+          <span>{t('dashboard.includeAcquisitionCost')}</span>
+        </label>
       </section>
 
       {isLoading && <p className="dashboard-page__status">{t('dashboard.loading')}</p>}

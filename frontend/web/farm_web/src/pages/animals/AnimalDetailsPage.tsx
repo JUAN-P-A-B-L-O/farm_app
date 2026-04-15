@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useFarm } from '../../hooks/useFarm'
+import { useTranslation } from '../../hooks/useTranslation'
 import { getAnimalById } from '../../services/animalService'
 import { getFeedingsByAnimalId } from '../../services/feedingService'
 import { getProductionsByAnimalId } from '../../services/productionService'
@@ -36,6 +37,7 @@ function sortByDateDescending<T extends { date: string }>(records: T[]): T[] {
 }
 
 function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps) {
+  const { t } = useTranslation()
   const { selectedFarmId } = useFarm()
   const [animal, setAnimal] = useState<Animal | null>(null)
   const [productions, setProductions] = useState<ProductionTrendPoint[]>([])
@@ -79,21 +81,21 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
   return (
     <main className="animals-page">
       <section className="animals-page__header">
-        <p className="animals-page__eyebrow">Animal Details</p>
-        <h1>Animal Overview</h1>
+        <p className="animals-page__eyebrow">{t('animals.details')}</p>
+        <h1>{t('animals.detailsTitle')}</h1>
         <p className="animals-page__description">
-          Review the animal profile together with its production and feeding history.
+          {t('animals.detailsDescription')}
         </p>
         <button
           type="button"
           className="animals-table__action-button animals-table__action-button--secondary"
           onClick={onBackToAnimals}
         >
-          Back to animals
+          {t('animals.back')}
         </button>
       </section>
 
-      {isLoading && <p className="animals-page__status animals-page__status--standalone">Loading animal details...</p>}
+      {isLoading && <p className="animals-page__status animals-page__status--standalone">{t('animals.loadingDetails')}</p>}
 
       {!isLoading && errorMessage && (
         <p className="animals-page__status animals-page__status--error animals-page__status--standalone">
@@ -106,31 +108,39 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
           <article className="animals-panel">
             <div className="animals-panel__header">
               <div>
-                <h2>Animal Information</h2>
-                <p>Core data for the selected animal.</p>
+                <h2>{t('animals.detailsSections.infoTitle')}</h2>
+                <p>{t('animals.detailsSections.infoDescription')}</p>
               </div>
             </div>
 
             <dl className="animal-details-grid">
               <div className="animal-details-grid__item">
-                <dt>Tag</dt>
+                <dt>{t('animals.table.tag')}</dt>
                 <dd>{animal.tag}</dd>
               </div>
               <div className="animal-details-grid__item">
-                <dt>Breed</dt>
+                <dt>{t('animals.table.breed')}</dt>
                 <dd>{animal.breed}</dd>
               </div>
               <div className="animal-details-grid__item">
-                <dt>Birth date</dt>
+                <dt>{t('animals.table.birthDate')}</dt>
                 <dd>{animal.birthDate}</dd>
               </div>
               <div className="animal-details-grid__item">
-                <dt>Status</dt>
+                <dt>{t('animals.table.origin')}</dt>
+                <dd>{t(`animals.origins.${animal.origin}`)}</dd>
+              </div>
+              <div className="animal-details-grid__item">
+                <dt>{t('animals.form.acquisitionCost')}</dt>
+                <dd>{animal.acquisitionCost ?? t('animals.noAcquisitionCost')}</dd>
+              </div>
+              <div className="animal-details-grid__item">
+                <dt>{t('animals.table.status')}</dt>
                 <dd>
                   <span
                     className={`animals-table__status animals-table__status--${animal.status.toLowerCase()}`}
                   >
-                    {animal.status}
+                    {t(`animals.statuses.${animal.status}`)}
                   </span>
                 </dd>
               </div>

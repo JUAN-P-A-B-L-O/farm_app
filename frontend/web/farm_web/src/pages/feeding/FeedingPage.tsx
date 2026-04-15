@@ -52,10 +52,12 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
 }
 
 function mapAnimalsToOptions(animals: Animal[]): FeedingAnimalOption[] {
-  return animals.map(({ id, tag }) => ({
-    id,
-    tag,
-  }))
+  return animals
+    .filter((animal) => animal.status === 'ACTIVE')
+    .map(({ id, tag }) => ({
+      id,
+      tag,
+    }))
 }
 
 function FeedingPage() {

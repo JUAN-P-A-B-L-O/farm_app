@@ -99,7 +99,8 @@ public class AnalyticsService {
             LocalDate endDate,
             String animalId,
             String groupByParam,
-            String farmId) {
+            String farmId,
+            boolean includeAcquisitionCost) {
         AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);
         List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId, farmId);
         List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId, farmId);
@@ -120,11 +121,18 @@ public class AnalyticsService {
         Set<String> periods = new java.util.TreeSet<>();
         periods.addAll(productionByPeriod.keySet());
         periods.addAll(feedingCostByPeriod.keySet());
+        String acquisitionPeriod = periods.stream().findFirst().orElse(null);
+        Double acquisitionCost = includeAcquisitionCost
+                ? DecimalScaleUtils.zeroIfNull(sumAcquisitionCost(animalId, farmId))
+                : 0.0;
 
         return periods.stream()
                 .map(period -> {
                     Double production = DecimalScaleUtils.zeroIfNull(productionByPeriod.get(period));
                     Double feedingCost = DecimalScaleUtils.zeroIfNull(feedingCostByPeriod.get(period));
+                    if (includeAcquisitionCost && period.equals(acquisitionPeriod)) {
+                        feedingCost = DecimalScaleUtils.normalize(feedingCost + acquisitionCost);
+                    }
                     Double revenue = DecimalScaleUtils.multiply(production, MILK_PRICE);
                     Double profit = DecimalScaleUtils.subtract(revenue, feedingCost);
                     return new AnalyticsProfitPointResponse(period, production, feedingCost, revenue, profit);
@@ -236,6 +244,25 @@ public class AnalyticsService {
 
         return animalRepository.findAllById(animalIds).stream()
                 .collect(Collectors.toMap(AnimalEntity::getId, animal -> animal));
+    }
+
+    private Double sumAcquisitionCost(String animalId, String farmId) {
+        List<AnimalEntity> animals;
+        if (StringUtils.hasText(animalId)) {
+            AnimalEntity animal = StringUtils.hasText(farmId)
+                    ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)
+                    : animalRepository.findById(animalId).orElse(null);
+            animals = animal != null ? List.of(animal) : List.of();
+        } else if (StringUtils.hasText(farmId)) {
+            animals = animalRepository.findByFarmId(farmId);
+        } else {
+            animals = animalRepository.findAll();
+        }
+
+        return animals.stream()
+                .map(AnimalEntity::getAcquisitionCost)
+                .map(DecimalScaleUtils::zeroIfNull)
+                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
     }
 
     private <T> List<AnalyticsTimeSeriesPointResponse> aggregateSeries(

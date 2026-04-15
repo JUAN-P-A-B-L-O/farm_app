@@ -27,6 +27,12 @@ public class AnimalResponse {
     @Schema(description = "Current animal status.", example = "ACTIVE")
     private final String status;
 
+    @Schema(description = "Animal origin.", example = "PURCHASED")
+    private final String origin;
+
+    @Schema(description = "Acquisition cost when the animal was purchased.", example = "1250.50")
+    private final Double acquisitionCost;
+
     @Schema(description = "Farm identifier where the animal belongs.", example = "farm-001")
     private final String farmId;
 }

@@ -312,10 +312,17 @@ public class FeedingService {
         }
     }
 
-    private void validateAnimalExists(String animalId, String farmId) {
-        if (!animalRepository.existsById(animalId) || (StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId))) {
+    private AnimalEntity validateAnimalExists(String animalId, String farmId) {
+        AnimalEntity animal = StringUtils.hasText(farmId)
+                ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)
+                : animalRepository.findById(animalId).orElse(null);
+        if (animal == null) {
             throw new ResourceNotFoundException("Animal not found");
         }
+        if (!AnimalEntity.STATUS_ACTIVE.equals(animal.getStatus())) {
+            throw new ValidationException("Animal must be ACTIVE for feeding operations");
+        }
+        return animal;
     }
 
     private void validateFeedTypeExists(String feedTypeId, String farmId) {

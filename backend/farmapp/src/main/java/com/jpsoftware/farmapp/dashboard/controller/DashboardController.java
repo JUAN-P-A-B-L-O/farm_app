@@ -26,8 +26,10 @@ public class DashboardController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Dashboard data retrieved successfully")
     })
-    public ResponseEntity<DashboardResponse> getDashboard(@RequestParam(required = false) String farmId) {
-        DashboardResponse response = dashboardService.getDashboard(farmId);
+    public ResponseEntity<DashboardResponse> getDashboard(
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost) {
+        DashboardResponse response = dashboardService.getDashboard(farmId, includeAcquisitionCost);
         return ResponseEntity.ok(response);
     }
 }

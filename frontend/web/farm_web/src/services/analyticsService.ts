@@ -24,6 +24,7 @@ function buildAnalyticsParams(filters: AnalyticsFilters, farmId?: string) {
     ...(filters.endDate ? { endDate: filters.endDate } : {}),
     ...(filters.animalId ? { animalId: filters.animalId } : {}),
     groupBy: filters.groupBy,
+    includeAcquisitionCost: filters.includeAcquisitionCost,
   }
 }
 

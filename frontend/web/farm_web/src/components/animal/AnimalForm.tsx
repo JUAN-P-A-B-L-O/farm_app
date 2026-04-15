@@ -10,6 +10,7 @@ interface AnimalFormProps {
   submitLabel: string
   errorMessage: string
   selectedFarmName?: string
+  showStatusField?: boolean
 }
 
 function AnimalForm({
@@ -20,6 +21,7 @@ function AnimalForm({
   submitLabel,
   errorMessage,
   selectedFarmName,
+  showStatusField = false,
 }: AnimalFormProps) {
   const { t } = useTranslation()
   const [formData, setFormData] = useState<AnimalFormData>(initialValues)
@@ -28,12 +30,14 @@ function AnimalForm({
     setFormData(initialValues)
   }, [initialValues])
 
-  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+  function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target
 
     setFormData((currentData) => ({
       ...currentData,
-      [name]: value,
+      [name]: name === 'acquisitionCost'
+        ? (value === '' ? null : Number(value))
+        : value,
     }))
   }
 
@@ -79,6 +83,41 @@ function AnimalForm({
             required
           />
         </label>
+
+        <label className="animal-form__field">
+          <span>{t('animals.form.origin')}</span>
+          <select name="origin" value={formData.origin} onChange={handleChange} required>
+            <option value="BORN">{t('animals.origins.BORN')}</option>
+            <option value="PURCHASED">{t('animals.origins.PURCHASED')}</option>
+          </select>
+        </label>
+
+        {formData.origin === 'PURCHASED' && (
+          <label className="animal-form__field">
+            <span>{t('animals.form.acquisitionCost')}</span>
+            <input
+              name="acquisitionCost"
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={formData.acquisitionCost ?? ''}
+              onChange={handleChange}
+              required
+            />
+          </label>
+        )}
+
+        {showStatusField && (
+          <label className="animal-form__field">
+            <span>{t('animals.form.status')}</span>
+            <select name="status" value={formData.status ?? 'ACTIVE'} onChange={handleChange}>
+              <option value="ACTIVE">{t('animals.statuses.ACTIVE')}</option>
+              <option value="SOLD">{t('animals.statuses.SOLD')}</option>
+              <option value="DEAD">{t('animals.statuses.DEAD')}</option>
+              <option value="INACTIVE">{t('animals.statuses.INACTIVE')}</option>
+            </select>
+          </label>
+        )}
 
         {selectedFarmName ? (
           <label className="animal-form__field">

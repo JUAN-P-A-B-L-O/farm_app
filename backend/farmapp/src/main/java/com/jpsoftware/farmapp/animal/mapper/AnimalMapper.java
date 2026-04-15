@@ -19,7 +19,9 @@ public class AnimalMapper {
                 .tag(request.getTag())
                 .breed(request.getBreed())
                 .birthDate(request.getBirthDate())
-                .status("ACTIVE")
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(request.getOrigin())
+                .acquisitionCost(request.getAcquisitionCost())
                 .farmId(request.getFarmId())
                 .build();
     }
@@ -35,6 +37,8 @@ public class AnimalMapper {
                 .breed(entity.getBreed())
                 .birthDate(entity.getBirthDate())
                 .status(entity.getStatus())
+                .origin(entity.getOrigin())
+                .acquisitionCost(entity.getAcquisitionCost())
                 .farmId(entity.getFarmId())
                 .build();
     }
