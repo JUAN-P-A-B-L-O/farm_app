@@ -40,8 +40,11 @@
   - create users
   - list and retrieve users
   - users are also the accountability reference for feeding and production records
+  - current role values used by the frontend are `MANAGER` and `WORKER`
+  - `MANAGER` is the privileged role for dashboard, analytics, and delete operations
 - Analytics:
   - dashboard aggregates total production, feeding cost, revenue, profit, and animal count
+  - dashboard and analytics endpoints require role `MANAGER`
   - sold-animal revenue is included in dashboard and analytics revenue/profit calculations
   - profit-oriented endpoints support `includeAcquisitionCost` and default it to `true`
   - frontend includes analytics pages and charts
@@ -221,6 +224,7 @@ Key validations and rules:
 - only `ACTIVE` animals can be sold
 - once sold, the animal cannot transition back to another status through generic update
 - `DELETE /animals/{id}` is now soft-delete behavior and marks the animal as `INACTIVE`
+- `DELETE /animals/{id}` requires role `MANAGER`
 - `GET /animals` optionally accepts `farmId`
 - update is partial, but provided string fields must not be blank
 
@@ -291,6 +295,7 @@ Key validations and rules:
 - pagination is only returned when both `page` and `size` are provided
 - update can change `animalId`, `date`, and `quantity`
 - delete is soft-delete behavior and marks the record as `INACTIVE`
+- delete requires role `MANAGER`
 - profit summary includes acquisition cost by default and allows opting out with `includeAcquisitionCost=false`
 - profit summary uses the current milk price for the animal's farm
 
@@ -380,6 +385,7 @@ Key validations and rules:
 - pagination is only returned when both `page` and `size` are provided
 - update can change `animalId`, `feedTypeId`, `date`, and `quantity`
 - delete is soft-delete behavior and marks the record as `INACTIVE`
+- delete requires role `MANAGER`
 
 Response characteristics:
 
@@ -421,6 +427,7 @@ Key validations and rules:
 - list and read endpoints return active feed types
 - update changes `name` and `costPerKg`
 - delete is soft-delete behavior and marks the feed type inactive
+- delete requires role `MANAGER`
 
 ### `/users`
 
@@ -465,6 +472,8 @@ Important frontend mismatch:
 
 ### Dashboard and analytics profit behavior
 
+- `GET /dashboard` requires role `MANAGER`
+- all `/analytics/**` endpoints require role `MANAGER`
 - `GET /dashboard` now accepts optional `includeAcquisitionCost` and defaults it to `true`
 - `GET /analytics/profit` now accepts optional `includeAcquisitionCost` and defaults it to `true`
 - dashboard revenue now includes milk revenue plus sold-animal revenue
@@ -524,6 +533,10 @@ Response shape:
   - `/swagger-ui.html`
   - `POST /users`
 - All other endpoints require authentication
+- Role-based authorization:
+  - `MANAGER` can access dashboard and analytics
+  - `MANAGER` can perform `DELETE` requests
+  - non-manager authenticated users receive `403 Forbidden` for dashboard, analytics, and delete operations
 
 ### Login flow
 

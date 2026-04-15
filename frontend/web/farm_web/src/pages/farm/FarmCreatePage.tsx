@@ -2,10 +2,12 @@ import { useState } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import FarmForm from '../../components/farm/FarmForm'
+import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { createFarm } from '../../services/farmService'
 import type { FarmApiErrorResponse, FarmFormData } from '../../types/farm'
+import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
 const emptyFarmForm: FarmFormData = {
@@ -36,6 +38,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
 function FarmCreatePage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { user } = useAuth()
   const { refreshFarms } = useFarm()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -47,7 +50,7 @@ function FarmCreatePage() {
     try {
       await createFarm(data)
       await refreshFarms()
-      navigate('/dashboard', { replace: true })
+      navigate(isManager(user) ? '/dashboard' : '/animals', { replace: true })
     } catch (error) {
       setErrorMessage(getErrorMessage(error, t('farm.errors.create'), t))
     } finally {

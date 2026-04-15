@@ -12,7 +12,10 @@ import UsersPage from './pages/users/UsersPage'
 import AppLayout from './layout/AppLayout'
 import LoginPage from './pages/login/LoginPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import ManagerRoute from './components/auth/ManagerRoute'
 import FarmCreatePage from './pages/farm/FarmCreatePage'
+import { useAuth } from './hooks/useAuth'
+import { isManager } from './utils/authorization'
 
 function AnimalsRoute() {
   const navigate = useNavigate()
@@ -27,14 +30,27 @@ function AnimalDetailsRoute() {
   return <AnimalDetailsPage animalId={id} onBackToAnimals={() => navigate('/animals')} />
 }
 
+function DefaultRoute() {
+  const { user } = useAuth()
+
+  return <Navigate to={isManager(user) ? '/dashboard' : '/animals'} replace />
+}
+
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route index element={<DefaultRoute />} />
+          <Route
+            path="/dashboard"
+            element={(
+              <ManagerRoute>
+                <DashboardPage />
+              </ManagerRoute>
+            )}
+          />
           <Route path="/animals" element={<AnimalsRoute />} />
           <Route path="/animals/:id" element={<AnimalDetailsRoute />} />
           <Route path="/production" element={<ProductionPage />} />
@@ -42,7 +58,14 @@ function App() {
           <Route path="/feeding" element={<FeedingPage />} />
           <Route path="/feed-types" element={<FeedTypePage />} />
           <Route path="/users" element={<UsersPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route
+            path="/analytics"
+            element={(
+              <ManagerRoute>
+                <AnalyticsPage />
+              </ManagerRoute>
+            )}
+          />
           <Route path="/farms/new" element={<FarmCreatePage />} />
           <Route path="/productions" element={<Navigate to="/production" replace />} />
           <Route path="/feedings" element={<Navigate to="/feeding" replace />} />

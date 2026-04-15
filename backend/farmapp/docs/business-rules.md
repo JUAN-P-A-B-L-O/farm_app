@@ -22,6 +22,8 @@ Basic input shape is validated at the API edge. Cross-entity, access, lifecycle,
 - farm-scoped operations validate the requested farm when `farmId` is supplied or required
 - inaccessible farm-scoped resources are treated as not found
 - production, feeding, and milk price creation use the authenticated user as `createdBy` when available
+- role `MANAGER` is required for dashboard access, analytics access, and all delete operations
+- non-manager authenticated users receive `403 Forbidden` for those restricted operations
 
 ## Farm Rules
 
@@ -77,6 +79,7 @@ Basic input shape is validated at the API edge. Cross-entity, access, lifecycle,
 - target animal must exist and be accessible
 - deletion is soft and sets status to `INACTIVE`
 - deleting an already inactive animal is idempotent
+- deletion requires role `MANAGER`
 
 ## Feed Type Rules
 
@@ -104,6 +107,7 @@ Basic input shape is validated at the API edge. Cross-entity, access, lifecycle,
 - target feed type must exist and be accessible when scoped by `farmId`
 - deletion is soft and sets `active = false`
 - deleting an already inactive feed type is idempotent
+- deletion requires role `MANAGER`
 
 ## Feeding Rules
 
@@ -139,6 +143,7 @@ Basic input shape is validated at the API edge. Cross-entity, access, lifecycle,
 
 - deletion is soft and sets status to `INACTIVE`
 - deleting an already inactive feeding is idempotent
+- deletion requires role `MANAGER`
 
 ## Production Rules
 
@@ -172,6 +177,12 @@ Basic input shape is validated at the API edge. Cross-entity, access, lifecycle,
 
 - deletion is soft and sets status to `INACTIVE`
 - deleting an already inactive production is idempotent
+- deletion requires role `MANAGER`
+
+## Dashboard and Analytics Authorization
+
+- `GET /dashboard` requires role `MANAGER`
+- all `/analytics/**` endpoints require role `MANAGER`
 
 ### Summary and Profit
 

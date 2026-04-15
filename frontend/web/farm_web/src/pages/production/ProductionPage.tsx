@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ProductionForm from '../../components/production/ProductionForm'
+import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
@@ -18,6 +19,7 @@ import type {
   ProductionAnimalOption,
   ProductionFormData,
 } from '../../types/production'
+import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
 const emptyProductionForm: ProductionFormData = {
@@ -59,7 +61,9 @@ function mapAnimalsToOptions(animals: Animal[]): ProductionAnimalOption[] {
 
 function ProductionPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const canDeleteResources = isManager(user)
   const [productions, setProductions] = useState<Production[]>([])
   const [animals, setAnimals] = useState<ProductionAnimalOption[]>([])
   const [formInitialValues, setFormInitialValues] = useState<ProductionFormData>(emptyProductionForm)
@@ -303,16 +307,18 @@ function ProductionPage() {
                         >
                           {t('production.edit')}
                         </button>
-                        <button
-                          type="button"
-                          className="animals-table__action-button animals-table__action-button--danger"
-                          onClick={() => void handleDelete(production.id)}
-                          disabled={isDeletingId === production.id}
-                        >
-                          {isDeletingId === production.id
-                            ? t('production.deleting')
-                            : t('production.delete')}
-                        </button>
+                        {canDeleteResources && (
+                          <button
+                            type="button"
+                            className="animals-table__action-button animals-table__action-button--danger"
+                            onClick={() => void handleDelete(production.id)}
+                            disabled={isDeletingId === production.id}
+                          >
+                            {isDeletingId === production.id
+                              ? t('production.deleting')
+                              : t('production.delete')}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

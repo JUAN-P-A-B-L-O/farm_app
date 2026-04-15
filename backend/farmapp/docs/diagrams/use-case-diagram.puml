@@ -3,8 +3,13 @@ top to bottom direction
 skinparam packageStyle rectangle
 skinparam linetype ortho
 
-actor "Authenticated User" as User
 actor "Public Client" as Public
+actor "Authenticated User" as User
+actor "WORKER" as Worker
+actor "MANAGER" as Manager
+
+User <|-- Worker
+User <|-- Manager
 
 rectangle "Farm Management System" {
 
@@ -54,7 +59,7 @@ rectangle "Farm Management System" {
     (View Milk Price History) as UC_ViewMilkPriceHistory
   }
 
-  package "Reporting" {
+  package "Reporting - MANAGER only" {
     (View Dashboard) as UC_ViewDashboard
     (View Analytics) as UC_ViewAnalytics
   }
@@ -69,25 +74,33 @@ User --> UC_CreateAnimal
 User --> UC_ViewAnimals
 User --> UC_UpdateAnimal
 User --> UC_SellAnimal
-User --> UC_DeleteAnimal
 User --> UC_CreateFeedType
 User --> UC_ViewFeedTypes
 User --> UC_UpdateFeedType
-User --> UC_DeleteFeedType
 User --> UC_RecordFeeding
 User --> UC_ViewFeedingHistory
 User --> UC_UpdateFeeding
-User --> UC_DeleteFeeding
 User --> UC_RecordProduction
 User --> UC_ViewProductionHistory
 User --> UC_UpdateProduction
-User --> UC_DeleteProduction
 User --> UC_ViewProductionSummary
 User --> UC_RegisterMilkPrice
 User --> UC_ViewCurrentMilkPrice
 User --> UC_ViewMilkPriceHistory
-User --> UC_ViewDashboard
-User --> UC_ViewAnalytics
+
+Manager --> UC_DeleteAnimal
+Manager --> UC_DeleteFeedType
+Manager --> UC_DeleteFeeding
+Manager --> UC_DeleteProduction
+Manager --> UC_ViewDashboard
+Manager --> UC_ViewAnalytics
+
+note right of Manager
+  MANAGER is required for:
+  - dashboard
+  - analytics
+  - delete operations
+end note
 
 UC_ViewAnalytics .> UC_ViewProductionHistory : <<uses>>
 UC_ViewDashboard .> UC_ViewProductionSummary : <<uses>>

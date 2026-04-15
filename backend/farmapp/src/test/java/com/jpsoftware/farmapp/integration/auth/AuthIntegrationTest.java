@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.integration.auth;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -66,5 +67,41 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/animals")
                         .header("Authorization", bearerToken(user)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldAllowOnlyManagersToAccessDashboardAndAnalytics() throws Exception {
+        UserEntity manager = createAuthenticatedUser("MANAGER");
+        UserEntity worker = createAuthenticatedUser("WORKER");
+
+        mockMvc.perform(get("/dashboard")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/analytics/production")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/dashboard")
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/analytics/production")
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldAllowOnlyManagersToReachDeleteEndpoints() throws Exception {
+        UserEntity manager = createAuthenticatedUser("MANAGER");
+        UserEntity worker = createAuthenticatedUser("WORKER");
+
+        mockMvc.perform(delete("/animals/missing")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/animals/missing")
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isNotFound());
     }
 }

@@ -8,6 +8,7 @@ import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -56,10 +57,14 @@ public abstract class BaseIntegrationTest {
     }
 
     protected UserEntity createAuthenticatedUser() {
+        return createAuthenticatedUser("MANAGER");
+    }
+
+    protected UserEntity createAuthenticatedUser(String role) {
         UserEntity user = new UserEntity();
         user.setName("Jane Doe");
-        user.setEmail("jane@farm.com");
-        user.setRole("ADMIN");
+        user.setEmail(role.toLowerCase() + "-" + UUID.randomUUID() + "@farm.com");
+        user.setRole(role);
         user.setPassword(passwordEncoder.encode("farmapp@123"));
         return userRepository.save(user);
     }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AnimalForm from '../../components/animal/AnimalForm'
+import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
@@ -12,6 +13,7 @@ import {
   updateAnimal,
 } from '../../services/animalService'
 import type { Animal, AnimalFormData, ApiErrorResponse } from '../../types/animal'
+import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
 interface AnimalsPageProps {
@@ -50,7 +52,9 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
 
 function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const { selectedFarmId, selectedFarm } = useFarm()
+  const canDeleteResources = isManager(user)
   const [animals, setAnimals] = useState<Animal[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -399,14 +403,16 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                             {t('animals.sell')}
                           </button>
                         )}
-                        <button
-                          type="button"
-                          className="animals-table__action-button animals-table__action-button--danger"
-                          onClick={() => void handleDelete(animal.id)}
-                          disabled={isDeletingId === animal.id || isSellingId === animal.id}
-                        >
-                          {isDeletingId === animal.id ? t('animals.deleting') : t('animals.delete')}
-                        </button>
+                        {canDeleteResources && (
+                          <button
+                            type="button"
+                            className="animals-table__action-button animals-table__action-button--danger"
+                            onClick={() => void handleDelete(animal.id)}
+                            disabled={isDeletingId === animal.id || isSellingId === animal.id}
+                          >
+                            {isDeletingId === animal.id ? t('animals.deleting') : t('animals.delete')}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

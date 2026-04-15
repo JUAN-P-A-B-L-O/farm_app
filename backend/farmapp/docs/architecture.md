@@ -89,6 +89,12 @@ Public paths:
 
 All other endpoints require authentication. The JWT filter runs before `UsernamePasswordAuthenticationFilter`, and protected requests expose the authenticated user through `AuthenticationContextService`.
 
+Role-based authorization is enforced in Spring Security with the `MANAGER` authority:
+
+- `GET /dashboard` requires `MANAGER`
+- `/analytics/**` requires `MANAGER`
+- all `DELETE` requests require `MANAGER`
+
 ## Request Flow
 
 A typical protected request follows this sequence:
@@ -117,6 +123,7 @@ Main categories:
 
 - `400 Bad Request`: validation and business-rule violations
 - `401 Unauthorized`: invalid credentials or unauthenticated protected requests
+- `403 Forbidden`: authenticated user lacks the required role
 - `404 Not Found`: missing entities or inaccessible farm-scoped resources
 - `409 Conflict`: duplicate animal tag and inactive-record update conflicts
 - `500 Internal Server Error`: unexpected failures

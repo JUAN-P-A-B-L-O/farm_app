@@ -39,6 +39,7 @@ Notes:
 - `origin` is `BORN` or `PURCHASED`
 - `acquisitionCost` is required for purchased animals and omitted/cleared for born animals
 - `POST /animals/{id}/sell` requires `salePrice`; `saleDate` defaults to the current date when omitted
+- delete requires role `MANAGER`
 
 ## Productions
 
@@ -64,6 +65,7 @@ Notes:
 - create request requires `animalId`, `date`, `quantity`, and `userId`
 - authenticated user context overrides/fills `createdBy`
 - update supports `animalId`, `date`, and `quantity`
+- delete requires role `MANAGER`
 
 ## Feed Types
 
@@ -80,6 +82,7 @@ Notes:
 - create requires `name`, `costPerKg`, and query parameter `farmId`
 - update reuses the create request shape
 - responses include `id`, `name`, `costPerKg`, and `active`
+- delete requires role `MANAGER`
 
 ## Feedings
 
@@ -102,6 +105,7 @@ Notes:
 - update supports `animalId`, `feedTypeId`, `date`, and `quantity`
 - authenticated user context overrides/fills `createdBy`
 - responses embed animal and feed type summaries but do not expose calculated cost
+- delete requires role `MANAGER`
 
 ## Milk Prices
 
@@ -145,6 +149,10 @@ Supported query parameters:
 - optional `farmId`
 - optional `includeAcquisitionCost`, defaulting to `true`
 
+Notes:
+
+- access requires role `MANAGER`
+
 ## Analytics
 
 | Method | Path | Purpose |
@@ -163,6 +171,10 @@ Supported query parameters:
 - `groupBy`, accepted values `day` and `month`, defaulting to `day`
 - `includeAcquisitionCost` on `/analytics/profit`, defaulting to `true`
 
+Notes:
+
+- all analytics endpoints require role `MANAGER`
+
 ## Error Surface
 
 The API exposes a uniform error payload with:
@@ -176,6 +188,7 @@ Typical status usage:
 
 - `400` for validation and business-rule violations
 - `401` for invalid credentials or missing/invalid authentication
+- `403` for authenticated users without the required role
 - `404` for resource absence or inaccessible farm-scoped resources
 - `409` for conflicts such as duplicate animal tags or updates to inactive records
 - `500` for unhandled failures

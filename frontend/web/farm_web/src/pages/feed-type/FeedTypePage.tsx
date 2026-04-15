@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import FeedTypeForm from '../../components/feed-type/FeedTypeForm'
+import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
@@ -10,6 +11,7 @@ import {
   updateFeedType,
 } from '../../services/feedTypeService'
 import type { FeedType, FeedTypeApiErrorResponse, FeedTypeFormData } from '../../types/feedType'
+import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
 const emptyFeedTypeForm: FeedTypeFormData = {
@@ -44,7 +46,9 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
 
 function FeedTypePage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const canDeleteResources = isManager(user)
   const [feedTypes, setFeedTypes] = useState<FeedType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -223,14 +227,16 @@ function FeedTypePage() {
                         >
                           {t('feedType.edit')}
                         </button>
-                        <button
-                          type="button"
-                          className="animals-table__action-button animals-table__action-button--danger"
-                          onClick={() => handleDelete(feedType.id)}
-                          disabled={isSubmitting || isDeletingId === feedType.id}
-                        >
-                          {isDeletingId === feedType.id ? t('feedType.deleting') : t('feedType.delete')}
-                        </button>
+                        {canDeleteResources && (
+                          <button
+                            type="button"
+                            className="animals-table__action-button animals-table__action-button--danger"
+                            onClick={() => handleDelete(feedType.id)}
+                            disabled={isSubmitting || isDeletingId === feedType.id}
+                          >
+                            {isDeletingId === feedType.id ? t('feedType.deleting') : t('feedType.delete')}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -3,16 +3,17 @@ import { useAuth } from '../hooks/useAuth'
 import { useFarm } from '../hooks/useFarm'
 import { useLanguage, type Language } from '../context/LanguageContext'
 import { useTranslation } from '../hooks/useTranslation'
+import { isManager } from '../utils/authorization'
 
 const navigationItems = [
-  { to: '/dashboard', labelKey: 'layout.navigation.dashboard' },
+  { to: '/dashboard', labelKey: 'layout.navigation.dashboard', managerOnly: true },
   { to: '/animals', labelKey: 'layout.navigation.animals' },
   { to: '/production', labelKey: 'layout.navigation.production' },
   { to: '/milk-prices', labelKey: 'layout.navigation.milkPrices' },
   { to: '/feeding', labelKey: 'layout.navigation.feeding' },
   { to: '/feed-types', labelKey: 'layout.navigation.feedTypes' },
   { to: '/users', labelKey: 'layout.navigation.users' },
-  { to: '/analytics', labelKey: 'layout.navigation.analytics' },
+  { to: '/analytics', labelKey: 'layout.navigation.analytics', managerOnly: true },
 ]
 
 function AppLayout() {
@@ -29,6 +30,7 @@ function AppLayout() {
   } = useFarm()
   const { language, setLanguage } = useLanguage()
   const { t } = useTranslation()
+  const canManageRestrictedFeatures = isManager(user)
 
   function handleLanguageChange(nextLanguage: Language) {
     setLanguage(nextLanguage)
@@ -50,7 +52,7 @@ function AppLayout() {
         </div>
 
         <nav className="app-layout__nav">
-          {navigationItems.map((item) => (
+          {navigationItems.filter((item) => !item.managerOnly || canManageRestrictedFeatures).map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
