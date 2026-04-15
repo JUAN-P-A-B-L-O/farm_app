@@ -9,210 +9,133 @@ skinparam classAttributeIconSize 0
 hide empty members
 
 package "Controller Layer" {
+  class AuthController <<Controller>> {
+    + login(request: LoginRequest): ResponseEntity<LoginResponse>
+  }
+
+  class FarmController <<Controller>> {
+    + findAll(): ResponseEntity<List<FarmResponse>>
+    + create(request: CreateFarmRequest): ResponseEntity<FarmResponse>
+  }
+
   class AnimalController <<Controller>> {
-    - animalService: AnimalService
     + create(request: CreateAnimalRequest): ResponseEntity<AnimalResponse>
     + findAll(farmId: String): ResponseEntity<List<AnimalResponse>>
-    + findById(id: String): ResponseEntity<AnimalResponse>
-    + update(id: String, request: UpdateAnimalRequest): ResponseEntity<AnimalResponse>
-    + delete(id: String): ResponseEntity<Void>
-  }
-
-  class ProductionController <<Controller>> {
-    - productionService: ProductionService
-    + findAll(animalId: String, date: LocalDate): ResponseEntity<List<ProductionResponse>>
-    + findById(id: String): ResponseEntity<ProductionResponse>
-    + getSummaryByAnimal(animalId: String): ResponseEntity<ProductionSummaryResponse>
-    + getProfit(animalId: String): ResponseEntity<ProductionProfitResponse>
-    + create(request: CreateProductionRequest): ResponseEntity<ProductionResponse>
-    + update(id: String, request: UpdateProductionRequest): ResponseEntity<ProductionResponse>
-  }
-
-  class FeedingController <<Controller>> {
-    - feedingService: FeedingService
-    + create(request: CreateFeedingRequest): ResponseEntity<FeedingResponse>
-    + findAll(): ResponseEntity<List<FeedingResponse>>
-    + findById(id: String): ResponseEntity<FeedingResponse>
+    + findById(id: String, farmId: String): ResponseEntity<AnimalResponse>
+    + update(id: String, request: UpdateAnimalRequest, farmId: String): ResponseEntity<AnimalResponse>
+    + sell(id: String, request: SellAnimalRequest, farmId: String): ResponseEntity<AnimalResponse>
+    + delete(id: String, farmId: String): ResponseEntity<Void>
   }
 
   class FeedTypeController <<Controller>> {
-    - feedTypeService: FeedTypeService
-    + create(request: CreateFeedTypeRequest): ResponseEntity<FeedTypeResponse>
-    + findAll(): ResponseEntity<List<FeedTypeResponse>>
-    + findById(id: String): ResponseEntity<FeedTypeResponse>
+    + create(request: CreateFeedTypeRequest, farmId: String): ResponseEntity<FeedTypeResponse>
+    + findAll(farmId: String): ResponseEntity<List<FeedTypeResponse>>
+    + findById(id: String, farmId: String): ResponseEntity<FeedTypeResponse>
+    + update(id: String, request: CreateFeedTypeRequest, farmId: String): ResponseEntity<FeedTypeResponse>
+    + delete(id: String, farmId: String): ResponseEntity<Void>
+  }
+
+  class FeedingController <<Controller>> {
+    + create(request: CreateFeedingRequest, farmId: String): ResponseEntity<FeedingResponse>
+    + findAll(animalId: String, date: LocalDate, farmId: String, page: Integer, size: Integer): ResponseEntity<?>
+    + findById(id: String, farmId: String): ResponseEntity<FeedingResponse>
+    + update(id: String, request: UpdateFeedingRequest, farmId: String): ResponseEntity<FeedingResponse>
+    + delete(id: String, farmId: String): ResponseEntity<Void>
+  }
+
+  class ProductionController <<Controller>> {
+    + findAll(animalId: String, date: LocalDate, farmId: String, page: Integer, size: Integer): ResponseEntity<?>
+    + findById(id: String, farmId: String): ResponseEntity<ProductionResponse>
+    + getSummaryByAnimal(animalId: String, farmId: String): ResponseEntity<ProductionSummaryResponse>
+    + getProfit(animalId: String, farmId: String, includeAcquisitionCost: boolean): ResponseEntity<ProductionProfitResponse>
+    + create(request: CreateProductionRequest, farmId: String): ResponseEntity<ProductionResponse>
+    + update(id: String, request: UpdateProductionRequest, farmId: String): ResponseEntity<ProductionResponse>
+    + delete(id: String, farmId: String): ResponseEntity<Void>
+  }
+
+  class MilkPriceController <<Controller>> {
+    + create(request: CreateMilkPriceRequest, farmId: String): ResponseEntity<MilkPriceResponse>
+    + getCurrent(farmId: String): ResponseEntity<MilkPriceResponse>
+    + getHistory(farmId: String): ResponseEntity<List<MilkPriceResponse>>
+  }
+
+  class DashboardController <<Controller>> {
+    + getDashboard(farmId: String, includeAcquisitionCost: boolean): ResponseEntity<DashboardResponse>
+  }
+
+  class AnalyticsController <<Controller>> {
+    + getProductionAnalytics(startDate: LocalDate, endDate: LocalDate, animalId: String, farmId: String, groupBy: String): ResponseEntity<List<AnalyticsTimeSeriesPointResponse>>
+    + getFeedingAnalytics(startDate: LocalDate, endDate: LocalDate, animalId: String, farmId: String, groupBy: String): ResponseEntity<List<AnalyticsTimeSeriesPointResponse>>
+    + getProfitAnalytics(startDate: LocalDate, endDate: LocalDate, animalId: String, farmId: String, includeAcquisitionCost: boolean, groupBy: String): ResponseEntity<List<AnalyticsProfitPointResponse>>
+    + getProductionByAnimal(startDate: LocalDate, endDate: LocalDate, animalId: String, farmId: String): ResponseEntity<List<AnalyticsAnimalProductionPointResponse>>
   }
 
   class UserController <<Controller>> {
-    - userService: UserService
     + create(request: CreateUserRequest): ResponseEntity<UserResponse>
     + findAll(): ResponseEntity<List<UserResponse>>
     + findById(id: String): ResponseEntity<UserResponse>
   }
-
-  class DashboardController <<Controller>> {
-    - dashboardService: DashboardService
-    + getDashboard(): ResponseEntity<DashboardResponse>
-  }
 }
 
 package "Service Layer" {
-  class AnimalService <<Service>> {
-    - animalRepository: AnimalRepository
-    - animalMapper: AnimalMapper
-    + create(request: CreateAnimalRequest): AnimalResponse
-    + findAll(farmId: String): List<AnimalResponse>
-    + findById(id: String): AnimalResponse
-    + update(id: String, request: UpdateAnimalRequest): AnimalResponse
-    + delete(id: String): void
-    - validateInput(request: CreateAnimalRequest): void
-    - applyUpdates(entity: AnimalEntity, request: UpdateAnimalRequest): void
-  }
-
-  class ProductionService <<Service>> {
-    - productionRepository: ProductionRepository
-    - feedingRepository: FeedingRepository
-    - animalRepository: AnimalRepository
-    - userRepository: UserRepository
-    - productionMapper: ProductionMapper
-    - MILK_PRICE: Double
-    + create(request: CreateProductionRequest): ProductionResponse
-    + findAll(animalId: String, date: LocalDate): List<ProductionResponse>
-    + findById(id: String): ProductionResponse
-    + getSummaryByAnimal(animalId: String): ProductionSummaryResponse
-    + getProfitByAnimal(animalId: String): ProductionProfitResponse
-    + update(id: String, request: UpdateProductionRequest): ProductionResponse
-    - validateInput(request: CreateProductionRequest): void
-    - findProductions(animalId: String, date: LocalDate): List<ProductionEntity>
-  }
-
-  class FeedingService <<Service>> {
-    - feedingRepository: FeedingRepository
-    - animalRepository: AnimalRepository
-    - feedTypeRepository: FeedTypeRepository
-    - userRepository: UserRepository
-    - feedingMapper: FeedingMapper
-    + create(request: CreateFeedingRequest): FeedingResponse
-    + findAll(): List<FeedingResponse>
-    + findById(id: String): FeedingResponse
-    - validateInput(request: CreateFeedingRequest): void
-    - validateRelations(request: CreateFeedingRequest): void
-  }
-
-  class FeedTypeService <<Service>> {
-    - feedTypeRepository: FeedTypeRepository
-    - feedTypeMapper: FeedTypeMapper
-    + create(request: CreateFeedTypeRequest): FeedTypeResponse
-    + findAll(): List<FeedTypeResponse>
-    + findById(id: String): FeedTypeResponse
-    - validateInput(request: CreateFeedTypeRequest): void
-  }
-
-  class UserService <<Service>> {
-    - userRepository: UserRepository
-    - userMapper: UserMapper
-    + create(request: CreateUserRequest): UserResponse
-    + findAll(): List<UserResponse>
-    + findById(id: String): UserResponse
-    - validateInput(request: CreateUserRequest): void
-  }
-
-  class DashboardService <<Service>> {
-    - productionRepository: ProductionRepository
-    - feedingRepository: FeedingRepository
-    - animalRepository: AnimalRepository
-    - MILK_PRICE: Double
-    + getDashboard(): DashboardResponse
-    - defaultToZero(value: Double): Double
-  }
-
-  class AnimalMapper <<Mapper>> {
-    + toEntity(request: CreateAnimalRequest): AnimalEntity
-    + toResponse(entity: AnimalEntity): AnimalResponse
-  }
-
-  class ProductionMapper <<Mapper>> {
-    + toEntity(request: CreateProductionRequest): ProductionEntity
-    + toResponse(entity: ProductionEntity): ProductionResponse
-  }
-
-  class FeedingMapper <<Mapper>> {
-    + toEntity(request: CreateFeedingRequest): FeedingEntity
-    + toResponse(entity: FeedingEntity): FeedingResponse
-  }
-
-  class FeedTypeMapper <<Mapper>> {
-    + toEntity(request: CreateFeedTypeRequest): FeedTypeEntity
-    + toResponse(entity: FeedTypeEntity): FeedTypeResponse
-  }
-
-  class UserMapper <<Mapper>> {
-    + toEntity(request: CreateUserRequest): UserEntity
-    + toResponse(entity: UserEntity): UserResponse
-  }
+  class FarmAccessService <<Service>>
+  class AuthenticationContextService <<Service>>
+  class FarmService <<Service>>
+  class AnimalService <<Service>>
+  class FeedTypeService <<Service>>
+  class FeedingService <<Service>>
+  class ProductionService <<Service>>
+  class MilkPriceService <<Service>>
+  class DashboardService <<Service>>
+  class AnalyticsService <<Service>>
+  class UserService <<Service>>
+  class AuthService <<Service>>
 }
 
 package "Repository Layer" {
-  interface AnimalRepository <<Repository>> {
-    + findById(id: String): Optional<AnimalEntity>
-    + findAll(): List<AnimalEntity>
-    + findByFarmId(farmId: String): List<AnimalEntity>
-    + save(entity: AnimalEntity): AnimalEntity
-    + deleteById(id: String): void
-    + existsById(id: String): boolean
-    + count(): Long
-  }
-
-  interface ProductionRepository <<Repository>> {
-    + findById(id: String): Optional<ProductionEntity>
-    + findAll(): List<ProductionEntity>
-    + findByAnimalId(animalId: String): List<ProductionEntity>
-    + findByDate(date: LocalDate): List<ProductionEntity>
-    + findByAnimalIdAndDate(animalId: String, date: LocalDate): List<ProductionEntity>
-    + save(entity: ProductionEntity): ProductionEntity
-    + sumQuantityByAnimalId(animalId: String): Double
-    + sumProductionByAnimalId(animalId: String): Double
-    + sumTotalProduction(): Double
-  }
-
-  interface FeedingRepository <<Repository>> {
-    + findById(id: String): Optional<FeedingEntity>
-    + findAll(): List<FeedingEntity>
-    + save(entity: FeedingEntity): FeedingEntity
-    + sumFeedingCostByAnimalId(animalId: String): Double
-    + sumTotalFeedingCost(): Double
-  }
-
-  interface FeedTypeRepository <<Repository>> {
-    + findById(id: String): Optional<FeedTypeEntity>
-    + findAll(): List<FeedTypeEntity>
-    + save(entity: FeedTypeEntity): FeedTypeEntity
-    + existsById(id: String): boolean
-  }
-
-  interface UserRepository <<Repository>> {
-    + findById(id: UUID): Optional<UserEntity>
-    + findAll(): List<UserEntity>
-    + save(entity: UserEntity): UserEntity
-    + existsById(id: UUID): boolean
-  }
+  interface FarmRepository <<Repository>>
+  interface AnimalRepository <<Repository>>
+  interface FeedTypeRepository <<Repository>>
+  interface FeedingRepository <<Repository>>
+  interface ProductionRepository <<Repository>>
+  interface MilkPriceRepository <<Repository>>
+  interface UserRepository <<Repository>>
 }
 
-package "Domain Layer" {
+package "Entity Layer" {
+  class UserEntity <<Entity>> {
+    + id: UUID
+    + name: String
+    + email: String
+    + role: String
+    + password: String
+  }
+
+  class FarmEntity <<Entity>> {
+    + id: String
+    + name: String
+    + ownerId: UUID
+  }
+
   class AnimalEntity <<Entity>> {
     + id: String
     + tag: String
     + breed: String
     + birthDate: LocalDate
     + status: String
+    + origin: String
+    + acquisitionCost: Double
+    + salePrice: Double
+    + saleDate: LocalDate
     + farmId: String
   }
 
-  class ProductionEntity <<Entity>> {
+  class FeedTypeEntity <<Entity>> {
     + id: String
-    + animalId: String
-    + date: LocalDate
-    + quantity: Double
-    + createdBy: String
+    + name: String
+    + costPerKg: Double
+    + active: Boolean
+    + farmId: String
   }
 
   class FeedingEntity <<Entity>> {
@@ -222,191 +145,59 @@ package "Domain Layer" {
     + date: LocalDate
     + quantity: Double
     + createdBy: String
+    + farmId: String
+    + status: String
   }
 
-  class FeedTypeEntity <<Entity>> {
+  class ProductionEntity <<Entity>> {
     + id: String
-    + name: String
-    + costPerKg: Double
-    + active: Boolean
+    + animalId: String
+    + date: LocalDate
+    + quantity: Double
+    + createdBy: String
+    + farmId: String
+    + status: String
   }
 
-  class UserEntity <<Entity>> {
-    + id: UUID
-    + name: String
-    + email: String
-    + role: String
+  class MilkPriceEntity <<Entity>> {
+    + id: String
+    + farmId: String
+    + price: Double
+    + effectiveDate: LocalDate
+    + createdAt: LocalDateTime
+    + createdBy: String
   }
 }
 
-package "DTO Layer" {
-  class CreateAnimalRequest <<RequestDTO>> {
-    + tag: String
-    + breed: String
-    + birthDate: LocalDate
-    + farmId: String
-  }
-
-  class UpdateAnimalRequest <<RequestDTO>> {
-    + tag: String
-    + breed: String
-    + birthDate: LocalDate
-    + status: String
-    + farmId: String
-    + isTagValid(): boolean
-    + isBreedValid(): boolean
-    + isStatusValid(): boolean
-    + isFarmIdValid(): boolean
-  }
-
-  class AnimalResponse <<ResponseDTO>> {
-    + id: String
-    + tag: String
-    + breed: String
-    + birthDate: LocalDate
-    + status: String
-    + farmId: String
-  }
-
-  class CreateProductionRequest <<RequestDTO>> {
-    + animalId: String
-    + date: LocalDate
-    + quantity: Double
-    + userId: String
-  }
-
-  class UpdateProductionRequest <<RequestDTO>> {
-    + date: LocalDate
-    + quantity: Double
-  }
-
-  class ProductionResponse <<ResponseDTO>> {
-    + id: String
-    + animalId: String
-    + date: LocalDate
-    + quantity: Double
-  }
-
-  class ProductionSummaryResponse <<ResponseDTO>> {
-    + animalId: String
-    + totalQuantity: Double
-  }
-
-  class ProductionProfitResponse <<ResponseDTO>> {
-    + animalId: String
-    + totalProduction: Double
-    + totalFeedingCost: Double
-    + milkPrice: Double
-    + revenue: Double
-    + profit: Double
-  }
-
-  class CreateFeedingRequest <<RequestDTO>> {
-    + animalId: String
-    + feedTypeId: String
-    + date: LocalDate
-    + quantity: Double
-    + userId: String
-  }
-
-  class FeedingResponse <<ResponseDTO>> {
-    + id: String
-    + animalId: String
-    + feedTypeId: String
-    + date: LocalDate
-    + quantity: Double
-  }
-
-  class CreateFeedTypeRequest <<RequestDTO>> {
-    + name: String
-    + costPerKg: Double
-  }
-
-  class FeedTypeResponse <<ResponseDTO>> {
-    + id: String
-    + name: String
-    + costPerKg: Double
-    + active: Boolean
-  }
-
-  class CreateUserRequest <<RequestDTO>> {
-    + name: String
-    + email: String
-    + role: String
-  }
-
-  class UserResponse <<ResponseDTO>> {
-    + id: UUID
-    + name: String
-    + email: String
-    + role: String
-  }
-
-  class DashboardResponse <<ResponseDTO>> {
-    + totalProduction: Double
-    + totalFeedingCost: Double
-    + totalRevenue: Double
-    + totalProfit: Double
-    + animalCount: Long
-  }
-}
-
-AnimalController --> AnimalService
-ProductionController --> ProductionService
-FeedingController --> FeedingService
-FeedTypeController --> FeedTypeService
-UserController --> UserService
-DashboardController --> DashboardService
-
+FarmService --> FarmRepository
 AnimalService --> AnimalRepository
-AnimalService --> AnimalMapper
-AnimalService --> AnimalEntity
-AnimalMapper --> CreateAnimalRequest
-AnimalMapper --> AnimalEntity
-AnimalMapper --> AnimalResponse
-
-ProductionService --> ProductionRepository
-ProductionService --> FeedingRepository
-ProductionService --> AnimalRepository
-ProductionService --> UserRepository
-ProductionService --> ProductionMapper
-ProductionService --> ProductionEntity
-ProductionMapper --> CreateProductionRequest
-ProductionMapper --> ProductionEntity
-ProductionMapper --> ProductionResponse
-
+AnimalService --> FarmAccessService
+FeedTypeService --> FeedTypeRepository
+FeedTypeService --> FarmAccessService
 FeedingService --> FeedingRepository
 FeedingService --> AnimalRepository
 FeedingService --> FeedTypeRepository
 FeedingService --> UserRepository
-FeedingService --> FeedingMapper
-FeedingService --> FeedingEntity
-FeedingMapper --> CreateFeedingRequest
-FeedingMapper --> FeedingEntity
-FeedingMapper --> FeedingResponse
-
-FeedTypeService --> FeedTypeRepository
-FeedTypeService --> FeedTypeMapper
-FeedTypeService --> FeedTypeEntity
-FeedTypeMapper --> CreateFeedTypeRequest
-FeedTypeMapper --> FeedTypeEntity
-FeedTypeMapper --> FeedTypeResponse
-
-UserService --> UserRepository
-UserService --> UserMapper
-UserService --> UserEntity
-UserMapper --> CreateUserRequest
-UserMapper --> UserEntity
-UserMapper --> UserResponse
-
+FeedingService --> FarmAccessService
+ProductionService --> ProductionRepository
+ProductionService --> FeedingRepository
+ProductionService --> AnimalRepository
+ProductionService --> UserRepository
+ProductionService --> MilkPriceService
+ProductionService --> FarmAccessService
+MilkPriceService --> MilkPriceRepository
+MilkPriceService --> FarmRepository
+MilkPriceService --> FarmAccessService
 DashboardService --> ProductionRepository
 DashboardService --> FeedingRepository
 DashboardService --> AnimalRepository
-
-ProductionEntity --> AnimalEntity : references animalId
-ProductionEntity --> UserEntity : createdBy
-FeedingEntity --> AnimalEntity : references animalId
-FeedingEntity --> FeedTypeEntity : references feedTypeId
-FeedingEntity --> UserEntity : createdBy
+DashboardService --> MilkPriceService
+AnalyticsService --> ProductionRepository
+AnalyticsService --> FeedingRepository
+AnalyticsService --> AnimalRepository
+AnalyticsService --> FeedTypeRepository
+AnalyticsService --> MilkPriceService
+UserService --> UserRepository
+AuthService --> UserRepository
 
 @enduml

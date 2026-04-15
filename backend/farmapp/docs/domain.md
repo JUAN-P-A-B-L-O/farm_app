@@ -2,27 +2,35 @@
 
 ## Domain Scope
 
-The domain is centered on simplified dairy farm operations. The system models the operational chain required to turn feed consumption into financial visibility:
-
-- animals are managed as productive assets
-- feeding events represent cost-driving inputs
-- production events represent revenue-driving outputs
-- feed types provide the price basis for feed cost
-- users provide accountability for recorded operations
+The domain is centered on dairy farm operations. The system models the operational chain required to turn farm context, animal lifecycle, feed consumption, milk production, and pricing into financial visibility.
 
 Reference diagram: [domain.mmd](./diagrams/domain.mmd)
 
 ## Domain Entities
 
-## Animal
+## Farm
 
-`Animal` is the primary business subject of the system. Nearly every operational record is anchored to an animal.
+`Farm` is the operating boundary for animals, feed types, feeding records, production records, milk prices, dashboard metrics, and analytics filters.
 
 Responsibilities:
 
-- identify an animal through a unique tag
-- store descriptive herd data such as breed and birth date
-- expose lifecycle status
+- identify a farm through a generated string ID
+- store a farm name
+- store the owning user through `ownerId`
+- limit farm-specific operations to accessible farms
+
+## Animal
+
+`Animal` is the primary business subject of the system.
+
+Responsibilities:
+
+- identify an animal through a unique `tag`
+- store descriptive herd data such as `breed` and `birthDate`
+- store `origin` as `BORN` or `PURCHASED`
+- store optional `acquisitionCost` for purchased animals
+- expose lifecycle status: `ACTIVE`, `SOLD`, `DEAD`, or `INACTIVE`
+- store sale information through `salePrice` and `saleDate`
 - associate the animal with a `farmId`
 
 Operational role:
@@ -33,9 +41,9 @@ Operational role:
 
 Important characteristics:
 
-- created with default status `ACTIVE`
-- identified internally by a generated string ID
-- carries `farmId` as a scalar value rather than a relation to a farm aggregate
+- new animals default to `ACTIVE`
+- selling is a dedicated action, not a generic status update
+- deletion is soft and marks the animal `INACTIVE`
 
 ## Production
 
@@ -45,15 +53,15 @@ Responsibilities:
 
 - represent recorded production quantity
 - associate production with an animal
+- associate production with a farm
 - associate production with the responsible user through `createdBy`
+- expose an active/inactive status for soft deletion
 
 Business meaning:
 
 - production is a source event, not a derived metric
 - revenue is not stored in the record
-- profit depends on aggregating production with feeding cost later
-
-This design keeps production data atomic and auditable while leaving commercial calculations flexible.
+- revenue and profit are calculated at read time
 
 ## Feeding
 
@@ -64,98 +72,99 @@ Responsibilities:
 - store feed quantity consumed
 - associate the event with an animal
 - associate the event with a feed type
+- associate the event with a farm
 - associate the event with the responsible user through `createdBy`
+- expose an active/inactive status for soft deletion
 
 Business meaning:
 
-- feeding is the operational source of cost
-- cost is not persisted inside the feeding record
+- feeding is the operational source of feed cost
+- cost is not persisted in the feeding row
 - cost is derived later from `quantity * feedType.costPerKg`
-
-This keeps feed cost dependent on master data instead of duplicating price fields into every transaction.
 
 ## FeedType
 
-`FeedType` is a catalog entity representing a type of feed and its unit cost.
+`FeedType` is a farm-scoped feed catalog entity.
 
 Responsibilities:
 
-- define the commercial name of the feed
+- define the commercial feed name
 - define `costPerKg`
 - indicate whether the feed type is active
+- associate the feed type with a farm
+
+Important characteristics:
+
+- new feed types default to `active = true`
+- deletion is soft and sets `active = false`
+- list and read operations return only active feed types
+
+## MilkPrice
+
+`MilkPrice` stores append-only milk price history for a farm.
+
+Responsibilities:
+
+- store `price`
+- store `effectiveDate`
+- store creation metadata through `createdAt` and `createdBy`
+- allow current price resolution by farm
 
 Business meaning:
 
-- feed type is the pricing basis for feeding cost aggregation
-- feedings depend on feed types logically, not through JPA associations
-
-Important characteristic:
-
-- new feed types are created with `active = true`
+- the current milk price is the latest record whose effective date is on or before today
+- if no effective price exists for a farm, reporting falls back to `2.0`
+- historical price rows are preserved, but current reporting uses the currently resolved price rather than period-specific historical price lookup
 
 ## User
 
-`User` represents the actor responsible for creating feeding and production records.
+`User` represents both an authenticated account and an accountability reference for operational records.
 
 Responsibilities:
 
-- provide attribution and operational accountability
-- validate that input records were created by a known system user
-
-Business meaning:
-
-- the current model uses users for ownership of actions, not access control
-- there is no authentication subsystem attached to this entity in the current codebase
+- store `name`, `email`, `role`, and hashed `password`
+- authenticate through `/auth/login`
+- own farms through `Farm.ownerId`
+- provide `createdBy` attribution for feeding, production, and milk price records
 
 ## Logical Relationships
 
-The domain relationships are business-driven rather than ORM-driven:
+The domain relationships are business-driven and mostly represented through scalar IDs:
 
+- one user can own many farms
+- one farm can contain many animals, feed types, feeding records, production records, and milk price records
 - one animal can have many production records
 - one animal can have many feeding records
 - one feed type can be referenced by many feeding records
-- one user can create many feeding records
-- one user can create many production records
+- one user can create many feeding, production, and milk price records
 
-These relationships exist logically in the domain and operationally in the service layer, but they are not modeled with JPA relationship annotations.
+These relationships are enforced primarily in services and repository queries rather than rich JPA relationship annotations.
 
-## Why ID-Based References Matter
+## ID-Based References
 
-The system consistently uses scalar IDs for cross-entity references:
+The system consistently uses scalar identifiers for cross-entity references:
 
+- `farmId`
 - `animalId`
 - `feedTypeId`
 - `createdBy`
+- `ownerId`
 
-This has concrete domain implications:
+Practical implications:
 
-- the service layer owns referential validation
+- services own referential and access validation
 - records remain lightweight and independent
-- the persistence model avoids object graph coupling
-- repository queries must join manually when aggregation needs cross-entity data
-
-This approach is pragmatic for a small system, but it shifts integrity discipline from ORM configuration into application logic.
-
-## Domain Boundaries and Omissions
-
-The current domain intentionally excludes several concepts that would exist in a more mature farm management platform:
-
-- `Farm` as a first-class aggregate
-- inventory or stock balance
-- milk sale contracts or customer billing
-- pricing history
-- herd groups, lactation stage, or veterinary records
-
-This means the domain is optimized for operational recording and simplified financial visibility, not for full agricultural ERP coverage.
+- entity graph coupling is avoided
+- reporting queries join or aggregate explicitly
 
 ## Domain Behavior Summary
 
-The domain can be summarized as:
-
-- `Animal` is the productive asset
+- `Farm` is the operating boundary
+- `Animal` is the productive asset and lifecycle subject
 - `Feeding` is the cost input event
-- `Production` is the revenue input event
-- `FeedType` is the price source for cost calculation
-- `User` is the accountability source for operational entries
+- `Production` is the milk output event
+- `FeedType` is the feed cost source
+- `MilkPrice` is the milk revenue price source
+- `User` is the authentication and accountability source
 
-Profit is therefore not a domain entity. It is a derived business view over production and feeding aggregates.
+Profit is not a stored domain entity. It is a derived business view over production, feeding, milk price, acquisition cost, and sale data.

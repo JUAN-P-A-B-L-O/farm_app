@@ -4,7 +4,7 @@
 
 ### What the system does
 
-`farm_app` is a farm management system focused on cattle operations. The current implementation covers operational records for animals, feeding, milk production, users, and analytics/dashboard reporting.
+`farm_app` is a farm management system focused on cattle operations. The current implementation covers authentication, farms, operational records for animals, feeding, milk production, feed types, milk prices, users, and analytics/dashboard reporting.
 
 ### Core features
 
@@ -18,17 +18,24 @@
   - lifecycle is status-based (`ACTIVE`, `SOLD`, `DEAD`, `INACTIVE`)
   - optional filtering by `farmId`
 - Feeding:
-  - create and list feeding records
+  - create, list, update, and soft-delete feeding records
   - retrieve individual feeding entries
-  - optional filtering by `animalId` and `date`
+  - optional filtering by `animalId`, `date`, and `farmId`
   - optional pagination on listing endpoints
+  - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
 - Production:
-  - create and list milk production records
+  - create, list, update, and soft-delete milk production records
   - retrieve individual production entries
-  - update production date and quantity
-  - optional filtering by `animalId` and `date`
+  - update production animal, date, and quantity
+  - optional filtering by `animalId`, `date`, and `farmId`
   - optional pagination on listing endpoints
+  - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
   - summary and profit views by animal
+- Feed types:
+  - create, list, retrieve, update, and soft-delete feed type records
+  - feed types are scoped by farm
+  - new feed types default to `active = true`
+  - delete marks feed types inactive rather than physically deleting rows
 - Users:
   - create users
   - list and retrieve users
@@ -241,6 +248,7 @@ Endpoints:
 - `GET /productions/summary/profit/by-animal?animalId=...&includeAcquisitionCost=true`
 - `POST /productions`
 - `PUT /productions/{id}`
+- `DELETE /productions/{id}`
 
 Create request:
 
@@ -257,6 +265,7 @@ Update request:
 
 ```json
 {
+  "animalId": "animal-001",
   "date": "2026-03-21",
   "quantity": 34.2
 }
@@ -278,8 +287,10 @@ Key validations and rules:
 - referenced animal must exist and be `ACTIVE`
 - `userId` must be a valid UUID and must exist as a user
 - authenticated user context can override/fill `createdBy`
-- list endpoint supports optional `animalId`, `date`, `page`, and `size`
+- list endpoint supports optional `animalId`, `date`, `farmId`, `page`, and `size`
 - pagination is only returned when both `page` and `size` are provided
+- update can change `animalId`, `date`, and `quantity`
+- delete is soft-delete behavior and marks the record as `INACTIVE`
 - profit summary includes acquisition cost by default and allows opting out with `includeAcquisitionCost=false`
 - profit summary uses the current milk price for the animal's farm
 
@@ -333,6 +344,8 @@ Endpoints:
 - `POST /feedings`
 - `GET /feedings`
 - `GET /feedings/{id}`
+- `PUT /feedings/{id}`
+- `DELETE /feedings/{id}`
 
 Create request:
 
@@ -363,8 +376,10 @@ Key validations and rules:
 - referenced feed type must exist
 - `userId` must be a valid UUID and must exist as a user
 - authenticated user context can override/fill `createdBy`
-- list endpoint supports optional `animalId`, `date`, `page`, and `size`
+- list endpoint supports optional `animalId`, `date`, `farmId`, `page`, and `size`
 - pagination is only returned when both `page` and `size` are provided
+- update can change `animalId`, `feedTypeId`, `date`, and `quantity`
+- delete is soft-delete behavior and marks the record as `INACTIVE`
 
 Response characteristics:
 
@@ -380,6 +395,8 @@ Endpoints:
 - `POST /feed-types`
 - `GET /feed-types`
 - `GET /feed-types/{id}`
+- `PUT /feed-types/{id}`
+- `DELETE /feed-types/{id}`
 
 Create request:
 
@@ -392,6 +409,7 @@ Create request:
 
 Required fields:
 
+- `farmId` query param on create
 - `name`
 - `costPerKg`
 
@@ -400,11 +418,9 @@ Key validations and rules:
 - `name` must not be blank
 - `costPerKg` must be greater than zero
 - created feed types default to `active = true`
-- current backend has no update, deactivate, or delete endpoint for feed types
-
-Important frontend mismatch:
-
-- frontend service code includes `updateFeedType` and `deleteFeedType`, but the current backend does not implement those endpoints
+- list and read endpoints return active feed types
+- update changes `name` and `costPerKg`
+- delete is soft-delete behavior and marks the feed type inactive
 
 ### `/users`
 
@@ -445,8 +461,7 @@ Key validations and rules:
 
 Important frontend mismatch:
 
-- frontend service code currently omits `password` on user creation
-- frontend service code also includes `updateUser` and `deleteUser`, but the current backend does not implement those endpoints
+- frontend service code includes `updateUser` and `deleteUser`, but the current backend does not implement those endpoints
 
 ### Dashboard and analytics profit behavior
 
@@ -542,22 +557,26 @@ Authorization: Bearer <jwt>
 
 - User
   - `id`, `name`, `email`, `role`, `password`
+- Farm
+  - `id`, `name`, `ownerId`
 - Animal
-  - `id`, `tag`, `breed`, `birthDate`, `status`, `farmId`
+  - `id`, `tag`, `breed`, `birthDate`, `status`, `origin`, `acquisitionCost`, `salePrice`, `saleDate`, `farmId`
 - Production
-  - `id`, `animalId`, `date`, `quantity`, `createdBy`, `farmId`
+  - `id`, `animalId`, `date`, `quantity`, `createdBy`, `farmId`, `status`
 - Feeding
-  - `id`, `animalId`, `feedTypeId`, `date`, `quantity`, `createdBy`, `farmId`
+  - `id`, `animalId`, `feedTypeId`, `date`, `quantity`, `createdBy`, `farmId`, `status`
 - MilkPrice
   - `id`, `farmId`, `price`, `effectiveDate`, `createdAt`, `createdBy`
 - FeedType
-  - `id`, `name`, `costPerKg`, `active`
+  - `id`, `name`, `costPerKg`, `active`, `farmId`
 
 ### Database constraints and behavior
 
 - `animals.tag` is unique
 - many relational checks are enforced in services rather than via JPA relationships
 - operational tables use scalar IDs rather than object associations
+- production and feeding delete behavior is implemented with `status = INACTIVE`
+- feed type delete behavior is implemented with `active = false`
 - feeding cost is derived from `feedings.quantity * feed_types.cost_per_kg`
 - milk price history is persisted as append-only records per farm
 - revenue and profit are derived at query time, not persisted

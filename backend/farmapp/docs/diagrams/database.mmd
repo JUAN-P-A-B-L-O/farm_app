@@ -1,19 +1,29 @@
 erDiagram
+    USERS {
+        uuid id PK
+        string name
+        string email
+        string role
+        string password
+    }
+
+    FARMS {
+        string id PK
+        string name
+        uuid owner_id
+    }
+
     ANIMALS {
         string id PK
         string tag UK
         string breed
         date birth_date
         string status
+        string origin
+        double acquisition_cost
+        double sale_price
+        date sale_date
         string farm_id
-    }
-
-    PRODUCTIONS {
-        string id PK
-        string animal_id
-        date date
-        double quantity
-        string created_by
     }
 
     FEED_TYPES {
@@ -21,6 +31,7 @@ erDiagram
         string name
         double cost_per_kg
         boolean active
+        string farm_id
     }
 
     FEEDINGS {
@@ -30,17 +41,38 @@ erDiagram
         date date
         double quantity
         string created_by
+        string farm_id
+        string status
     }
 
-    USERS {
-        uuid id PK
-        string name
-        string email
-        string role
+    PRODUCTIONS {
+        string id PK
+        string animal_id
+        date date
+        double quantity
+        string created_by
+        string farm_id
+        string status
     }
 
+    MILK_PRICES {
+        string id PK
+        string farm_id
+        double price
+        date effective_date
+        datetime created_at
+        string created_by
+    }
+
+    USERS ||--o{ FARMS : "logical owner_id"
+    FARMS ||--o{ ANIMALS : "logical farm_id"
+    FARMS ||--o{ FEED_TYPES : "logical farm_id"
+    FARMS ||--o{ FEEDINGS : "logical farm_id"
+    FARMS ||--o{ PRODUCTIONS : "logical farm_id"
+    FARMS ||--o{ MILK_PRICES : "logical farm_id"
     ANIMALS ||--o{ PRODUCTIONS : "logical animal_id"
     ANIMALS ||--o{ FEEDINGS : "logical animal_id"
     FEED_TYPES ||--o{ FEEDINGS : "logical feed_type_id"
     USERS ||--o{ PRODUCTIONS : "logical created_by"
     USERS ||--o{ FEEDINGS : "logical created_by"
+    USERS ||--o{ MILK_PRICES : "logical created_by"

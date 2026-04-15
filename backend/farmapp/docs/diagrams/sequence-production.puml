@@ -7,79 +7,64 @@ skinparam responseMessageBelowArrow true
 skinparam ParticipantPadding 25
 skinparam BoxPadding 10
 
-actor User
+actor Client
+participant "JwtAuthenticationFilter" as Jwt
 participant "ProductionController" as Controller
 participant "ProductionService" as Service
-participant "ValidationService" as Validation
-participant "ProductionRepository" as Repository
+participant "AuthenticationContextService" as AuthContext
+participant "FarmAccessService" as FarmAccess
+participant "AnimalRepository" as AnimalRepo
+participant "UserRepository" as UserRepo
+participant "ProductionRepository" as ProductionRepo
 database "PostgreSQL / Database" as DB
 participant "GlobalExceptionHandler" as ErrorHandler
 
-User -> Controller: POST /productions\nCreateProductionRequest
+Client -> Jwt: Authorization: Bearer token
+Jwt -> Controller: POST /productions\nCreateProductionRequest\noptional farmId
 activate Controller
 
-Controller -> Service: create(request)
+Controller -> Service: create(request, farmId)
 activate Service
 
-Service -> Validation: validateInput(request)
-activate Validation
+Service -> AuthContext: resolveUserId(request.userId)
+AuthContext --> Service: authenticated user id or fallback userId
 
-alt Invalid payload or blank fields
-  Validation --> Service: ValidationException
-  deactivate Validation
-  Service --> ErrorHandler: propagate exception
-  deactivate Service
+Service -> Service: validate request\nanimalId, date, quantity, userId
+
+alt Invalid payload, future date, or invalid UUID
+  Service --> ErrorHandler: ValidationException / BusinessException
   ErrorHandler --> Controller: 400 Bad Request\nErrorResponse
-  Controller --> User: 400 Bad Request
-else Animal not found
-  Validation -> Repository: existsByAnimalId()
-  Validation --> Service: ResourceNotFoundException
-  deactivate Validation
+  Controller --> Client: 400 Bad Request
+else Farm inaccessible
+  Service -> FarmAccess: validateAccessibleFarm(farmId or animal.farmId)
+  FarmAccess --> Service: ResourceNotFoundException
   Service --> ErrorHandler: propagate exception
-  deactivate Service
   ErrorHandler --> Controller: 404 Not Found\nErrorResponse
-  Controller --> User: 404 Not Found
-else User not found or invalid UUID
-  Validation --> Service: ValidationException / ResourceNotFoundException
-  deactivate Validation
-  Service --> ErrorHandler: propagate exception
-  deactivate Service
-  ErrorHandler --> Controller: 400 or 404\nErrorResponse
-  Controller --> User: error response
+  Controller --> Client: 404 Not Found
+else Animal not active or not found
+  Service -> AnimalRepo: findById / findByIdAndFarmId
+  AnimalRepo --> Service: missing or non-ACTIVE animal
+  Service --> ErrorHandler: ResourceNotFoundException / ValidationException
+  ErrorHandler --> Controller: 404 or 400\nErrorResponse
+  Controller --> Client: error response
+else User not found
+  Service -> UserRepo: existsById(createdBy)
+  UserRepo --> Service: false
+  Service --> ErrorHandler: ResourceNotFoundException
+  ErrorHandler --> Controller: 404 Not Found\nErrorResponse
+  Controller --> Client: 404 Not Found
 else Valid request
-  Validation --> Service: validated
-  deactivate Validation
-  Service -> Service: toEntity(request)
-  Service -> Repository: save(productionEntity)
-  activate Repository
-  Repository -> DB: INSERT productions
+  Service -> ProductionRepo: save(productionEntity ACTIVE)
+  activate ProductionRepo
+  ProductionRepo -> DB: INSERT productions
   activate DB
-  DB --> Repository: persisted row
+  DB --> ProductionRepo: persisted row
   deactivate DB
-  Repository --> Service: saved ProductionEntity
-  deactivate Repository
-  Service -> Service: toResponse(savedProduction)
+  ProductionRepo --> Service: saved ProductionEntity
+  deactivate ProductionRepo
   Service --> Controller: ProductionResponse
   deactivate Service
-  Controller --> User: 201 Created\nProductionResponse
+  Controller --> Client: 201 Created\nProductionResponse
 end
-
-note right of Validation
-  Validation covers:
-  - null request
-  - blank animalId
-  - null or future date
-  - quantity <= 0
-  - blank userId
-  - animal existence
-  - user existence / UUID format
-end note
-
-'note bottom of Repository
-'  Animal existence is checked through
-'  AnimalRepository in the real service.
-'  The sequence abstracts repository validation
-'  into a single validation stage for readability.
-'end note
 
 @enduml
