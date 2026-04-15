@@ -39,6 +39,8 @@ public class AnimalMapper {
                 .status(entity.getStatus())
                 .origin(entity.getOrigin())
                 .acquisitionCost(entity.getAcquisitionCost())
+                .salePrice(entity.getSalePrice())
+                .saleDate(entity.getSaleDate())
                 .farmId(entity.getFarmId())
                 .build();
     }

@@ -47,6 +47,10 @@ public class AnimalEntity {
 
     private Double acquisitionCost;
 
+    private Double salePrice;
+
+    private LocalDate saleDate;
+
     @Column(nullable = false)
     private String farmId;
 }

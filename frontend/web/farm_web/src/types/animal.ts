@@ -9,6 +9,8 @@ export interface Animal {
   status: AnimalStatus
   origin: AnimalOrigin
   acquisitionCost: number | null
+  salePrice: number | null
+  saleDate: string | null
   farmId: string
 }
 
@@ -27,4 +29,9 @@ export interface ApiErrorResponse {
   status: number
   error: string
   path: string
+}
+
+export interface SellAnimalData {
+  salePrice: number
+  saleDate?: string
 }

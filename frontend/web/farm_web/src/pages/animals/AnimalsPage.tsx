@@ -8,6 +8,7 @@ import {
   deleteAnimal,
   getAllAnimals,
   getAnimalById,
+  sellAnimal,
   updateAnimal,
 } from '../../services/animalService'
 import type { Animal, AnimalFormData, ApiErrorResponse } from '../../types/animal'
@@ -54,10 +55,15 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
+  const [isSellingId, setIsSellingId] = useState<string | null>(null)
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
+  const [sellErrorMessage, setSellErrorMessage] = useState('')
   const [editingAnimalId, setEditingAnimalId] = useState<string | null>(null)
+  const [sellingAnimal, setSellingAnimal] = useState<Animal | null>(null)
   const [formInitialValues, setFormInitialValues] = useState<AnimalFormData>(emptyAnimalForm)
+  const [salePrice, setSalePrice] = useState('')
+  const [saleDate, setSaleDate] = useState(() => new Date().toISOString().slice(0, 10))
 
   async function loadAnimals() {
     if (!selectedFarmId) {
@@ -146,6 +152,58 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
     setFormInitialValues(emptyAnimalForm)
   }
 
+  function handleStartSell(animal: Animal) {
+    setSellingAnimal(animal)
+    setSellErrorMessage('')
+    setSalePrice(animal.salePrice?.toString() ?? '')
+    setSaleDate(animal.saleDate ?? new Date().toISOString().slice(0, 10))
+  }
+
+  function handleCancelSell() {
+    setSellingAnimal(null)
+    setSellErrorMessage('')
+    setSalePrice('')
+    setSaleDate(new Date().toISOString().slice(0, 10))
+  }
+
+  async function handleSell() {
+    if (!sellingAnimal) {
+      return
+    }
+
+    const normalizedPrice = Number(salePrice)
+
+    if (!Number.isFinite(normalizedPrice) || normalizedPrice <= 0) {
+      setSellErrorMessage(t('animals.errors.invalidSalePrice'))
+      return
+    }
+
+    setIsSellingId(sellingAnimal.id)
+    setSellErrorMessage('')
+
+    try {
+      await sellAnimal(
+        sellingAnimal.id,
+        {
+          salePrice: normalizedPrice,
+          ...(saleDate ? { saleDate } : {}),
+        },
+        selectedFarmId,
+      )
+
+      if (editingAnimalId === sellingAnimal.id) {
+        handleCancelEdit()
+      }
+
+      handleCancelSell()
+      await loadAnimals()
+    } catch (error) {
+      setSellErrorMessage(getErrorMessage(error, t('animals.errors.sell'), t))
+    } finally {
+      setIsSellingId(null)
+    }
+  }
+
   async function handleDelete(id: string) {
     const shouldDelete = window.confirm(t('animals.confirmDelete'))
 
@@ -205,6 +263,67 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
             showStatusField={editingAnimalId !== null}
           />
         </article>
+
+        {sellingAnimal && (
+          <article className="animals-panel">
+            <div className="animals-panel__header">
+              <div>
+                <h2>{t('animals.sellTitle')}</h2>
+                <p>{t('animals.sellDescription').replace('{tag}', sellingAnimal.tag)}</p>
+              </div>
+            </div>
+
+            <div className="animal-form">
+              <div className="animal-form__grid">
+                <label className="animal-form__field">
+                  <span>{t('animals.form.salePrice')}</span>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={salePrice}
+                    onChange={(event) => setSalePrice(event.target.value)}
+                    required
+                  />
+                </label>
+
+                <label className="animal-form__field">
+                  <span>{t('animals.form.saleDate')}</span>
+                  <input
+                    type="date"
+                    value={saleDate}
+                    onChange={(event) => setSaleDate(event.target.value)}
+                  />
+                </label>
+              </div>
+
+              {sellErrorMessage && (
+                <p className="animal-form__feedback animal-form__feedback--error">
+                  {sellErrorMessage}
+                </p>
+              )}
+
+              <div className="animal-form__actions">
+                <button
+                  type="button"
+                  onClick={() => void handleSell()}
+                  disabled={isSellingId === sellingAnimal.id}
+                >
+                  {isSellingId === sellingAnimal.id ? t('animals.selling') : t('animals.sellConfirm')}
+                </button>
+
+                <button
+                  type="button"
+                  className="animal-form__secondary-button"
+                  onClick={handleCancelSell}
+                  disabled={isSellingId === sellingAnimal.id}
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          </article>
+        )}
 
         <article className="animals-panel animals-panel--table">
           <div className="animals-panel__header">
@@ -266,15 +385,25 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                           type="button"
                           className="animals-table__action-button animals-table__action-button--secondary"
                           onClick={() => void handleEdit(animal.id)}
-                          disabled={isSubmitting || isDeletingId === animal.id}
+                          disabled={isSubmitting || isDeletingId === animal.id || isSellingId === animal.id}
                         >
                           {t('animals.edit')}
                         </button>
+                        {animal.status === 'ACTIVE' && (
+                          <button
+                            type="button"
+                            className="animals-table__action-button animals-table__action-button--secondary"
+                            onClick={() => handleStartSell(animal)}
+                            disabled={isSubmitting || isDeletingId === animal.id || isSellingId === animal.id}
+                          >
+                            {t('animals.sell')}
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="animals-table__action-button animals-table__action-button--danger"
                           onClick={() => void handleDelete(animal.id)}
-                          disabled={isDeletingId === animal.id}
+                          disabled={isDeletingId === animal.id || isSellingId === animal.id}
                         >
                           {isDeletingId === animal.id ? t('animals.deleting') : t('animals.delete')}
                         </button>

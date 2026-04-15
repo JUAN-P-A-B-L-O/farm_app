@@ -25,6 +25,9 @@ function AnimalForm({
 }: AnimalFormProps) {
   const { t } = useTranslation()
   const [formData, setFormData] = useState<AnimalFormData>(initialValues)
+  const availableStatuses = formData.status === 'SOLD'
+    ? ['ACTIVE', 'SOLD', 'DEAD', 'INACTIVE'] as const
+    : ['ACTIVE', 'DEAD', 'INACTIVE'] as const
 
   useEffect(() => {
     setFormData(initialValues)
@@ -111,10 +114,9 @@ function AnimalForm({
           <label className="animal-form__field">
             <span>{t('animals.form.status')}</span>
             <select name="status" value={formData.status ?? 'ACTIVE'} onChange={handleChange}>
-              <option value="ACTIVE">{t('animals.statuses.ACTIVE')}</option>
-              <option value="SOLD">{t('animals.statuses.SOLD')}</option>
-              <option value="DEAD">{t('animals.statuses.DEAD')}</option>
-              <option value="INACTIVE">{t('animals.statuses.INACTIVE')}</option>
+              {availableStatuses.map((status) => (
+                <option key={status} value={status}>{t(`animals.statuses.${status}`)}</option>
+              ))}
             </select>
           </label>
         )}

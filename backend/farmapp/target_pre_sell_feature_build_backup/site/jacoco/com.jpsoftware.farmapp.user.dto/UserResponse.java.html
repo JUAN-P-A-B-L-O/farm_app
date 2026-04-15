@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.user.dto</a> &gt; <span class="el_source">UserResponse.java</span></div><h1>UserResponse.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.user.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.UUID;
+
+@Schema(description = &quot;User data returned by the API.&quot;)
+public class UserResponse {
+
+    @Schema(description = &quot;User identifier.&quot;, example = &quot;550e8400-e29b-41d4-a716-446655440000&quot;)
+    private UUID id;
+
+    @Schema(description = &quot;User full name.&quot;, example = &quot;Maria Silva&quot;)
+    private String name;
+
+    @Schema(description = &quot;User email address.&quot;, example = &quot;maria.silva@farmapp.com&quot;)
+    private String email;
+
+    @Schema(description = &quot;User role in the system.&quot;, example = &quot;MANAGER&quot;)
+    private String role;
+
+<span class="nc" id="L21">    public UserResponse() {</span>
+<span class="nc" id="L22">    }</span>
+
+<span class="fc" id="L24">    public UserResponse(UUID id, String name, String email, String role) {</span>
+<span class="fc" id="L25">        this.id = id;</span>
+<span class="fc" id="L26">        this.name = name;</span>
+<span class="fc" id="L27">        this.email = email;</span>
+<span class="fc" id="L28">        this.role = role;</span>
+<span class="fc" id="L29">    }</span>
+
+    public UUID getId() {
+<span class="fc" id="L32">        return id;</span>
+    }
+
+    public void setId(UUID id) {
+<span class="nc" id="L36">        this.id = id;</span>
+<span class="nc" id="L37">    }</span>
+
+    public String getName() {
+<span class="fc" id="L40">        return name;</span>
+    }
+
+    public void setName(String name) {
+<span class="nc" id="L44">        this.name = name;</span>
+<span class="nc" id="L45">    }</span>
+
+    public String getEmail() {
+<span class="fc" id="L48">        return email;</span>
+    }
+
+    public void setEmail(String email) {
+<span class="nc" id="L52">        this.email = email;</span>
+<span class="nc" id="L53">    }</span>
+
+    public String getRole() {
+<span class="fc" id="L56">        return role;</span>
+    }
+
+    public void setRole(String role) {
+<span class="nc" id="L60">        this.role = role;</span>
+<span class="nc" id="L61">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

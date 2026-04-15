@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GlobalExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.shared.exception</a> &gt; <span class="el_source">GlobalExceptionHandler.java</span></div><h1>GlobalExceptionHandler.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.shared.exception;
+
+import jakarta.validation.ConstraintViolationException;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+
+@RestControllerAdvice
+<span class="fc" id="L18">public class GlobalExceptionHandler {</span>
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleResourceNotFound(
+            ResourceNotFoundException exception,
+            HttpServletRequest request) {
+<span class="fc" id="L24">        return buildErrorResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleValidationException(
+            ValidationException exception,
+            HttpServletRequest request) {
+<span class="nc" id="L31">        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleMethodArgumentNotValid(
+            MethodArgumentNotValidException exception,
+            HttpServletRequest request) {
+<span class="fc" id="L38">        String errorMessage = exception.getBindingResult()</span>
+<span class="fc" id="L39">                .getFieldErrors()</span>
+<span class="fc" id="L40">                .stream()</span>
+<span class="fc" id="L41">                .findFirst()</span>
+<span class="fc" id="L42">                .map(FieldError::getDefaultMessage)</span>
+<span class="fc" id="L43">                .orElse(&quot;Validation failed&quot;);</span>
+
+<span class="fc" id="L45">        return buildErrorResponse(HttpStatus.BAD_REQUEST, errorMessage, request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleConstraintViolationException(
+            ConstraintViolationException exception,
+            HttpServletRequest request) {
+<span class="nc" id="L52">        String errorMessage = exception.getConstraintViolations()</span>
+<span class="nc" id="L53">                .stream()</span>
+<span class="nc" id="L54">                .findFirst()</span>
+<span class="nc" id="L55">                .map(constraintViolation -&gt; constraintViolation.getMessage())</span>
+<span class="nc" id="L56">                .orElse(&quot;Validation failed&quot;);</span>
+
+<span class="nc" id="L58">        return buildErrorResponse(HttpStatus.BAD_REQUEST, errorMessage, request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleHandlerMethodValidationException(
+            HandlerMethodValidationException exception,
+            HttpServletRequest request) {
+<span class="nc" id="L65">        String errorMessage = exception.getAllErrors()</span>
+<span class="nc" id="L66">                .stream()</span>
+<span class="nc" id="L67">                .findFirst()</span>
+<span class="nc" id="L68">                .map(error -&gt; error.getDefaultMessage())</span>
+<span class="nc" id="L69">                .orElse(&quot;Validation failed&quot;);</span>
+
+<span class="nc" id="L71">        return buildErrorResponse(HttpStatus.BAD_REQUEST, errorMessage, request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleMissingServletRequestParameterException(
+            MissingServletRequestParameterException exception,
+            HttpServletRequest request) {
+<span class="fc" id="L78">        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException exception,
+            HttpServletRequest request) {
+<span class="nc" id="L85">        return buildErrorResponse(HttpStatus.BAD_REQUEST, &quot;Malformed request body&quot;, request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleBusinessException(
+            BusinessException exception,
+            HttpServletRequest request) {
+<span class="nc" id="L92">        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleConflictException(
+            ConflictException exception,
+            HttpServletRequest request) {
+<span class="fc" id="L99">        return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleInvalidCredentialsException(
+            InvalidCredentialsException exception,
+            HttpServletRequest request) {
+<span class="fc" id="L106">        return buildErrorResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(), request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleDataIntegrityViolationException(
+            DataIntegrityViolationException exception,
+            HttpServletRequest request) {
+<span class="fc" id="L113">        return buildErrorResponse(</span>
+                HttpStatus.CONFLICT,
+<span class="fc" id="L115">                resolveDataIntegrityMessage(exception),</span>
+<span class="fc" id="L116">                request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleIllegalArgumentException(
+            IllegalArgumentException exception,
+            HttpServletRequest request) {
+<span class="nc" id="L123">        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());</span>
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleGenericException(
+            Exception exception,
+            HttpServletRequest request) {
+<span class="nc" id="L130">        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Internal server error&quot;, request.getRequestURI());</span>
+    }
+
+    private ResponseEntity&lt;ErrorResponse&gt; buildErrorResponse(
+            HttpStatus status,
+            String error,
+            String path) {
+<span class="fc" id="L137">        ErrorResponse response = ErrorResponse.builder()</span>
+<span class="fc" id="L138">                .timestamp(Instant.now())</span>
+<span class="fc" id="L139">                .status(status.value())</span>
+<span class="fc" id="L140">                .error(error)</span>
+<span class="fc" id="L141">                .path(path)</span>
+<span class="fc" id="L142">                .build();</span>
+
+<span class="fc" id="L144">        return ResponseEntity.status(status).body(response);</span>
+    }
+
+    private String resolveDataIntegrityMessage(DataIntegrityViolationException exception) {
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        String message = exception.getMostSpecificCause() != null</span>
+<span class="fc" id="L149">                ? exception.getMostSpecificCause().getMessage()</span>
+<span class="pc" id="L150">                : exception.getMessage();</span>
+
+<span class="pc bpc" id="L152" title="2 of 4 branches missed.">        if (message != null &amp;&amp; message.toLowerCase().contains(&quot;tag&quot;)) {</span>
+<span class="fc" id="L153">            return &quot;Animal with this tag already exists&quot;;</span>
+        }
+
+<span class="nc" id="L156">        return &quot;Data integrity violation&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

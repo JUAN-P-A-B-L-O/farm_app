@@ -33,6 +33,12 @@ public class AnimalResponse {
     @Schema(description = "Acquisition cost when the animal was purchased.", example = "1250.50")
     private final Double acquisitionCost;
 
+    @Schema(description = "Sale price when the animal has been sold.", example = "3200.00")
+    private final Double salePrice;
+
+    @Schema(description = "Sale date when the animal has been sold.", example = "2026-04-14")
+    private final LocalDate saleDate;
+
     @Schema(description = "Farm identifier where the animal belongs.", example = "farm-001")
     private final String farmId;
 }

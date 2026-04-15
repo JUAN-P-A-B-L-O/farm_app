@@ -1,5 +1,5 @@
 import api from './api'
-import type { Animal, AnimalFormData } from '../types/animal'
+import type { Animal, AnimalFormData, SellAnimalData } from '../types/animal'
 
 function buildFarmParams(farmId?: string) {
   return farmId ? { farmId } : undefined
@@ -39,4 +39,12 @@ export async function deleteAnimal(id: string, farmId?: string): Promise<void> {
   await api.delete(`/animals/${id}`, {
     params: buildFarmParams(farmId),
   })
+}
+
+export async function sellAnimal(id: string, data: SellAnimalData, farmId?: string): Promise<Animal> {
+  const response = await api.post<Animal>(`/animals/${id}/sell`, data, {
+    params: buildFarmParams(farmId),
+  })
+
+  return response.data
 }

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AnalyticsAnimalProductionPointResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.analytics.dto</a> &gt; <span class="el_source">AnalyticsAnimalProductionPointResponse.java</span></div><h1>AnalyticsAnimalProductionPointResponse.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.analytics.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+public class AnalyticsAnimalProductionPointResponse {
+
+    @Schema(description = &quot;Animal identifier.&quot;, example = &quot;animal-123&quot;)
+    private final String animalId;
+
+    @Schema(description = &quot;Animal tag.&quot;, example = &quot;COW-101&quot;)
+    private final String animalTag;
+
+    @Schema(description = &quot;Aggregated production quantity.&quot;, example = &quot;350.0&quot;)
+    private final Double quantity;
+
+<span class="nc" id="L16">    public AnalyticsAnimalProductionPointResponse(String animalId, String animalTag, Double quantity) {</span>
+<span class="nc" id="L17">        this.animalId = animalId;</span>
+<span class="nc" id="L18">        this.animalTag = animalTag;</span>
+<span class="nc" id="L19">        this.quantity = quantity;</span>
+<span class="nc" id="L20">    }</span>
+
+    public String getAnimalId() {
+<span class="nc" id="L23">        return animalId;</span>
+    }
+
+    public String getAnimalTag() {
+<span class="nc" id="L27">        return animalTag;</span>
+    }
+
+    public Double getQuantity() {
+<span class="nc" id="L31">        return quantity;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

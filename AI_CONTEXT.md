@@ -14,6 +14,7 @@
 - Animals:
   - create, list, retrieve, update, and delete animal records
   - track origin (`BORN` or `PURCHASED`) and optional acquisition cost
+  - support a dedicated sell action with persisted sale price and sale date
   - lifecycle is status-based (`ACTIVE`, `SOLD`, `DEAD`, `INACTIVE`)
   - optional filtering by `farmId`
 - Feeding:
@@ -34,6 +35,7 @@
   - users are also the accountability reference for feeding and production records
 - Analytics:
   - dashboard aggregates total production, feeding cost, revenue, profit, and animal count
+  - sold-animal revenue is included in dashboard and analytics revenue/profit calculations
   - profit-oriented endpoints support `includeAcquisitionCost` and default it to `true`
   - frontend includes analytics pages and charts
 
@@ -168,6 +170,7 @@ Endpoints:
 - `GET /animals`
 - `GET /animals/{id}`
 - `PUT /animals/{id}`
+- `POST /animals/{id}/sell`
 - `DELETE /animals/{id}`
 
 Create request:
@@ -200,10 +203,27 @@ Key validations and rules:
 - `acquisitionCost` is cleared when `origin = BORN`
 - `tag` must be unique
 - new animals default to status `ACTIVE`
-- `PUT /animals/{id}` can be used for lifecycle transitions by updating `status`
+- `PUT /animals/{id}` can update lifecycle status except that selling must use the dedicated sell action
+- `POST /animals/{id}/sell` stores `salePrice`, optional `saleDate` (defaults to current date), and changes status to `SOLD`
+- only `ACTIVE` animals can be sold
+- once sold, the animal cannot transition back to another status through generic update
 - `DELETE /animals/{id}` is now soft-delete behavior and marks the animal as `INACTIVE`
 - `GET /animals` optionally accepts `farmId`
 - update is partial, but provided string fields must not be blank
+
+Sell request:
+
+```json
+{
+  "salePrice": 3200.0,
+  "saleDate": "2026-04-14"
+}
+```
+
+Animal response characteristics:
+
+- includes optional `salePrice`
+- includes optional `saleDate`
 
 ### `/productions`
 
@@ -388,8 +408,10 @@ Important frontend mismatch:
 
 - `GET /dashboard` now accepts optional `includeAcquisitionCost` and defaults it to `true`
 - `GET /analytics/profit` now accepts optional `includeAcquisitionCost` and defaults it to `true`
-- dashboard total profit subtracts acquisition cost when enabled
+- dashboard revenue now includes milk revenue plus sold-animal revenue
+- dashboard total profit subtracts feeding cost and, when enabled, acquisition cost
 - analytics profit series applies acquisition cost once to the earliest returned period because the current animal model does not store a separate acquisition date
+- analytics profit series now also recognizes sold-animal revenue on each animal's `saleDate`
 
 ### `/auth/login`
 

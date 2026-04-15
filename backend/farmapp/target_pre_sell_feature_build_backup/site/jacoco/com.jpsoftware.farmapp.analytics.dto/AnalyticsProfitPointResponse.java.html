@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AnalyticsProfitPointResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.analytics.dto</a> &gt; <span class="el_source">AnalyticsProfitPointResponse.java</span></div><h1>AnalyticsProfitPointResponse.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.analytics.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+public class AnalyticsProfitPointResponse {
+
+    @Schema(description = &quot;Aggregation period label.&quot;, example = &quot;2026-04-01&quot;)
+    private final String period;
+
+    @Schema(description = &quot;Aggregated production quantity for the period.&quot;, example = &quot;120.5&quot;)
+    private final Double production;
+
+    @Schema(description = &quot;Aggregated feeding cost for the period.&quot;, example = &quot;80.75&quot;)
+    private final Double feedingCost;
+
+    @Schema(description = &quot;Aggregated revenue for the period.&quot;, example = &quot;241.0&quot;)
+    private final Double revenue;
+
+    @Schema(description = &quot;Aggregated profit for the period.&quot;, example = &quot;160.25&quot;)
+    private final Double profit;
+
+    public AnalyticsProfitPointResponse(
+            String period,
+            Double production,
+            Double feedingCost,
+            Double revenue,
+<span class="nc" id="L27">            Double profit) {</span>
+<span class="nc" id="L28">        this.period = period;</span>
+<span class="nc" id="L29">        this.production = production;</span>
+<span class="nc" id="L30">        this.feedingCost = feedingCost;</span>
+<span class="nc" id="L31">        this.revenue = revenue;</span>
+<span class="nc" id="L32">        this.profit = profit;</span>
+<span class="nc" id="L33">    }</span>
+
+    public String getPeriod() {
+<span class="nc" id="L36">        return period;</span>
+    }
+
+    public Double getProduction() {
+<span class="nc" id="L40">        return production;</span>
+    }
+
+    public Double getFeedingCost() {
+<span class="nc" id="L44">        return feedingCost;</span>
+    }
+
+    public Double getRevenue() {
+<span class="nc" id="L48">        return revenue;</span>
+    }
+
+    public Double getProfit() {
+<span class="nc" id="L52">        return profit;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -135,6 +135,14 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                 <dd>{animal.acquisitionCost ?? t('animals.noAcquisitionCost')}</dd>
               </div>
               <div className="animal-details-grid__item">
+                <dt>{t('animals.form.salePrice')}</dt>
+                <dd>{animal.salePrice ?? t('animals.noSaleData')}</dd>
+              </div>
+              <div className="animal-details-grid__item">
+                <dt>{t('animals.form.saleDate')}</dt>
+                <dd>{animal.saleDate ?? t('animals.noSaleData')}</dd>
+              </div>
+              <div className="animal-details-grid__item">
                 <dt>{t('animals.table.status')}</dt>
                 <dd>
                   <span

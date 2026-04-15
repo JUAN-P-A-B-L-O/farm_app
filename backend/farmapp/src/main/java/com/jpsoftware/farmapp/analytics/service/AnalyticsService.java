@@ -109,6 +109,7 @@ public class AnalyticsService {
                 groupBy,
                 ProductionEntity::getDate,
                 ProductionEntity::getQuantity);
+        Map<String, Double> saleRevenueByPeriod = aggregateSaleRevenue(startDate, endDate, animalId, farmId, groupBy);
         Map<String, Double> feedCostsById = loadFeedCostsById(feedings);
         Map<String, Double> feedingCostByPeriod = aggregateValues(
                 feedings,
@@ -120,6 +121,7 @@ public class AnalyticsService {
 
         Set<String> periods = new java.util.TreeSet<>();
         periods.addAll(productionByPeriod.keySet());
+        periods.addAll(saleRevenueByPeriod.keySet());
         periods.addAll(feedingCostByPeriod.keySet());
         String acquisitionPeriod = periods.stream().findFirst().orElse(null);
         Double acquisitionCost = includeAcquisitionCost
@@ -129,11 +131,13 @@ public class AnalyticsService {
         return periods.stream()
                 .map(period -> {
                     Double production = DecimalScaleUtils.zeroIfNull(productionByPeriod.get(period));
+                    Double saleRevenue = DecimalScaleUtils.zeroIfNull(saleRevenueByPeriod.get(period));
                     Double feedingCost = DecimalScaleUtils.zeroIfNull(feedingCostByPeriod.get(period));
                     if (includeAcquisitionCost && period.equals(acquisitionPeriod)) {
                         feedingCost = DecimalScaleUtils.normalize(feedingCost + acquisitionCost);
                     }
-                    Double revenue = DecimalScaleUtils.multiply(production, MILK_PRICE);
+                    Double revenue = DecimalScaleUtils.normalize(
+                            DecimalScaleUtils.multiply(production, MILK_PRICE) + saleRevenue);
                     Double profit = DecimalScaleUtils.subtract(revenue, feedingCost);
                     return new AnalyticsProfitPointResponse(period, production, feedingCost, revenue, profit);
                 })
@@ -247,6 +251,32 @@ public class AnalyticsService {
     }
 
     private Double sumAcquisitionCost(String animalId, String farmId) {
+        return filterAnimalsForFinancials(animalId, farmId).stream()
+                .map(AnimalEntity::getAcquisitionCost)
+                .map(DecimalScaleUtils::zeroIfNull)
+                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
+    }
+
+    private Map<String, Double> aggregateSaleRevenue(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String farmId,
+            AnalyticsGroupBy groupBy) {
+        List<AnimalEntity> soldAnimals = filterAnimalsForFinancials(animalId, farmId).stream()
+                .filter(animal -> animal.getSaleDate() != null)
+                .filter(animal -> matchesDateRange(animal.getSaleDate(), startDate, endDate))
+                .filter(animal -> animal.getSalePrice() != null)
+                .toList();
+
+        return aggregateValues(
+                soldAnimals,
+                groupBy,
+                AnimalEntity::getSaleDate,
+                AnimalEntity::getSalePrice);
+    }
+
+    private List<AnimalEntity> filterAnimalsForFinancials(String animalId, String farmId) {
         List<AnimalEntity> animals;
         if (StringUtils.hasText(animalId)) {
             AnimalEntity animal = StringUtils.hasText(farmId)
@@ -259,10 +289,7 @@ public class AnalyticsService {
             animals = animalRepository.findAll();
         }
 
-        return animals.stream()
-                .map(AnimalEntity::getAcquisitionCost)
-                .map(DecimalScaleUtils::zeroIfNull)
-                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
+        return animals;
     }
 
     private <T> List<AnalyticsTimeSeriesPointResponse> aggregateSeries(

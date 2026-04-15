@@ -46,7 +46,9 @@ public class DashboardService {
         Double totalAcquisitionCost = includeAcquisitionCost
                 ? DecimalScaleUtils.zeroIfNull(sumAcquisitionCost(farmId))
                 : 0.0;
-        Double totalRevenue = DecimalScaleUtils.multiply(totalProduction, MILK_PRICE);
+        Double totalSaleRevenue = DecimalScaleUtils.zeroIfNull(sumSaleRevenue(farmId));
+        Double totalRevenue = DecimalScaleUtils.normalize(
+                DecimalScaleUtils.multiply(totalProduction, MILK_PRICE) + totalSaleRevenue);
         Double totalProfit = DecimalScaleUtils.subtract(
                 totalRevenue,
                 DecimalScaleUtils.normalize(totalFeedingCost + totalAcquisitionCost));
@@ -69,6 +71,17 @@ public class DashboardService {
 
         return animals.stream()
                 .map(AnimalEntity::getAcquisitionCost)
+                .map(DecimalScaleUtils::zeroIfNull)
+                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
+    }
+
+    private Double sumSaleRevenue(String farmId) {
+        List<AnimalEntity> animals = StringUtils.hasText(farmId)
+                ? animalRepository.findByFarmId(farmId)
+                : animalRepository.findAll();
+
+        return animals.stream()
+                .map(AnimalEntity::getSalePrice)
                 .map(DecimalScaleUtils::zeroIfNull)
                 .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
     }

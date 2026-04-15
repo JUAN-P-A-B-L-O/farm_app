@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AnimalService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.animal.service</a> &gt; <span class="el_source">AnimalService.java</span></div><h1>AnimalService.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.animal.service;
+
+import com.jpsoftware.farmapp.animal.dto.AnimalResponse;
+import com.jpsoftware.farmapp.animal.dto.CreateAnimalRequest;
+import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
+import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
+import com.jpsoftware.farmapp.animal.mapper.AnimalMapper;
+import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import java.util.List;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class AnimalService {
+
+    private final AnimalRepository animalRepository;
+    private final AnimalMapper animalMapper;
+
+<span class="fc" id="L22">    public AnimalService(AnimalRepository animalRepository, AnimalMapper animalMapper) {</span>
+<span class="fc" id="L23">        this.animalRepository = animalRepository;</span>
+<span class="fc" id="L24">        this.animalMapper = animalMapper;</span>
+<span class="fc" id="L25">    }</span>
+
+    @Transactional
+    public AnimalResponse create(CreateAnimalRequest request) {
+<span class="fc" id="L29">        validateInput(request);</span>
+<span class="fc" id="L30">        ensureTagIsUnique(request.getTag());</span>
+
+<span class="fc" id="L32">        AnimalEntity animalEntity = animalMapper.toEntity(request);</span>
+<span class="fc" id="L33">        AnimalEntity savedAnimal = animalRepository.save(animalEntity);</span>
+
+<span class="fc" id="L35">        return animalMapper.toResponse(savedAnimal);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public AnimalResponse findById(String id) {
+<span class="fc" id="L40">        AnimalEntity animalEntity = animalRepository.findById(id)</span>
+<span class="fc" id="L41">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Animal not found&quot;));</span>
+
+<span class="fc" id="L43">        return animalMapper.toResponse(animalEntity);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;AnimalResponse&gt; findAll(String farmId) {
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        List&lt;AnimalEntity&gt; animals = StringUtils.hasText(farmId)</span>
+<span class="nc" id="L49">                ? animalRepository.findByFarmId(farmId)</span>
+<span class="fc" id="L50">                : animalRepository.findAll();</span>
+
+<span class="fc" id="L52">        return animals.stream()</span>
+<span class="fc" id="L53">                .map(animalMapper::toResponse)</span>
+<span class="fc" id="L54">                .toList();</span>
+    }
+
+    @Transactional
+    public AnimalResponse update(String id, UpdateAnimalRequest request) {
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L60">            throw new IllegalArgumentException(&quot;Update animal request must not be null&quot;);</span>
+        }
+
+<span class="fc" id="L63">        AnimalEntity animalEntity = animalRepository.findById(id)</span>
+<span class="pc" id="L64">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Animal not found&quot;));</span>
+
+<span class="fc" id="L66">        validateTagUpdate(animalEntity, request);</span>
+<span class="fc" id="L67">        applyUpdates(animalEntity, request);</span>
+
+<span class="fc" id="L69">        AnimalEntity updatedAnimal = animalRepository.save(animalEntity);</span>
+<span class="fc" id="L70">        return animalMapper.toResponse(updatedAnimal);</span>
+    }
+
+    @Transactional
+    public void delete(String id) {
+<span class="fc" id="L75">        animalRepository.findById(id)</span>
+<span class="pc" id="L76">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Animal not found&quot;));</span>
+
+<span class="fc" id="L78">        animalRepository.deleteById(id);</span>
+<span class="fc" id="L79">    }</span>
+
+    private void validateInput(CreateAnimalRequest request) {
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L83">            throw new IllegalArgumentException(&quot;Create animal request must not be null&quot;);</span>
+        }
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if (!StringUtils.hasText(request.getTag())) {</span>
+<span class="nc" id="L86">            throw new IllegalArgumentException(&quot;Animal tag must not be blank&quot;);</span>
+        }
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (!StringUtils.hasText(request.getBreed())) {</span>
+<span class="nc" id="L89">            throw new IllegalArgumentException(&quot;Animal breed must not be blank&quot;);</span>
+        }
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (!StringUtils.hasText(request.getFarmId())) {</span>
+<span class="nc" id="L92">            throw new IllegalArgumentException(&quot;Animal farmId must not be blank&quot;);</span>
+        }
+<span class="fc" id="L94">    }</span>
+
+    private void applyUpdates(AnimalEntity animalEntity, UpdateAnimalRequest request) {
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (request.getTag() != null) {</span>
+<span class="fc" id="L98">            animalEntity.setTag(request.getTag());</span>
+        }
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (request.getBreed() != null) {</span>
+<span class="fc" id="L101">            animalEntity.setBreed(request.getBreed());</span>
+        }
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        if (request.getBirthDate() != null) {</span>
+<span class="fc" id="L104">            animalEntity.setBirthDate(request.getBirthDate());</span>
+        }
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (request.getStatus() != null) {</span>
+<span class="fc" id="L107">            animalEntity.setStatus(request.getStatus());</span>
+        }
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        if (request.getFarmId() != null) {</span>
+<span class="fc" id="L110">            animalEntity.setFarmId(request.getFarmId());</span>
+        }
+<span class="fc" id="L112">    }</span>
+
+    private void ensureTagIsUnique(String tag) {
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (animalRepository.existsByTag(tag)) {</span>
+<span class="fc" id="L116">            throw new DataIntegrityViolationException(&quot;Animal with this tag already exists&quot;);</span>
+        }
+<span class="fc" id="L118">    }</span>
+
+    private void validateTagUpdate(AnimalEntity animalEntity, UpdateAnimalRequest request) {
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if (request.getTag() == null) {</span>
+<span class="nc" id="L122">            return;</span>
+        }
+
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (!request.getTag().equals(animalEntity.getTag())) {</span>
+<span class="fc" id="L126">            ensureTagIsUnique(request.getTag());</span>
+        }
+<span class="fc" id="L128">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
