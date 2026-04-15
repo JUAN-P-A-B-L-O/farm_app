@@ -7,6 +7,7 @@ import AnalyticsPage from './pages/analytics/AnalyticsPage'
 import FeedingPage from './pages/feeding/FeedingPage'
 import FeedTypePage from './pages/feed-type/FeedTypePage'
 import ProductionPage from './pages/production/ProductionPage'
+import MilkPricePage from './pages/milk-price/MilkPricePage'
 import UsersPage from './pages/users/UsersPage'
 import AppLayout from './layout/AppLayout'
 import LoginPage from './pages/login/LoginPage'
@@ -37,6 +38,7 @@ function App() {
           <Route path="/animals" element={<AnimalsRoute />} />
           <Route path="/animals/:id" element={<AnimalDetailsRoute />} />
           <Route path="/production" element={<ProductionPage />} />
+          <Route path="/milk-prices" element={<MilkPricePage />} />
           <Route path="/feeding" element={<FeedingPage />} />
           <Route path="/feed-types" element={<FeedTypePage />} />
           <Route path="/users" element={<UsersPage />} />

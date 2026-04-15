@@ -11,6 +11,7 @@ import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.entity.FeedingEntity;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
@@ -34,7 +35,6 @@ import org.springframework.util.StringUtils;
 @Service
 public class AnalyticsService {
 
-    private static final Double MILK_PRICE = 2.0;
     private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
     private final ProductionRepository productionRepository;
@@ -42,6 +42,22 @@ public class AnalyticsService {
     private final AnimalRepository animalRepository;
     private final FeedTypeRepository feedTypeRepository;
     private final FarmAccessService farmAccessService;
+    private final MilkPriceService milkPriceService;
+
+    public AnalyticsService(
+            ProductionRepository productionRepository,
+            FeedingRepository feedingRepository,
+            AnimalRepository animalRepository,
+            FeedTypeRepository feedTypeRepository,
+            FarmAccessService farmAccessService,
+            MilkPriceService milkPriceService) {
+        this.productionRepository = productionRepository;
+        this.feedingRepository = feedingRepository;
+        this.animalRepository = animalRepository;
+        this.feedTypeRepository = feedTypeRepository;
+        this.farmAccessService = farmAccessService;
+        this.milkPriceService = milkPriceService;
+    }
 
     public AnalyticsService(
             ProductionRepository productionRepository,
@@ -49,11 +65,13 @@ public class AnalyticsService {
             AnimalRepository animalRepository,
             FeedTypeRepository feedTypeRepository,
             FarmAccessService farmAccessService) {
-        this.productionRepository = productionRepository;
-        this.feedingRepository = feedingRepository;
-        this.animalRepository = animalRepository;
-        this.feedTypeRepository = feedTypeRepository;
-        this.farmAccessService = farmAccessService;
+        this(
+                productionRepository,
+                feedingRepository,
+                animalRepository,
+                feedTypeRepository,
+                farmAccessService,
+                null);
     }
 
     @Transactional(readOnly = true)
@@ -109,6 +127,15 @@ public class AnalyticsService {
                 groupBy,
                 ProductionEntity::getDate,
                 ProductionEntity::getQuantity);
+        Map<String, Double> milkRevenueByPeriod = aggregateValues(
+                productions,
+                groupBy,
+                ProductionEntity::getDate,
+                production -> DecimalScaleUtils.multiply(
+                        DecimalScaleUtils.zeroIfNull(production.getQuantity()),
+                        milkPriceService != null
+                                ? milkPriceService.resolveCurrentPriceValue(production.getFarmId())
+                                : MilkPriceService.DEFAULT_MILK_PRICE));
         Map<String, Double> saleRevenueByPeriod = aggregateSaleRevenue(startDate, endDate, animalId, farmId, groupBy);
         Map<String, Double> feedCostsById = loadFeedCostsById(feedings);
         Map<String, Double> feedingCostByPeriod = aggregateValues(
@@ -121,6 +148,7 @@ public class AnalyticsService {
 
         Set<String> periods = new java.util.TreeSet<>();
         periods.addAll(productionByPeriod.keySet());
+        periods.addAll(milkRevenueByPeriod.keySet());
         periods.addAll(saleRevenueByPeriod.keySet());
         periods.addAll(feedingCostByPeriod.keySet());
         String acquisitionPeriod = periods.stream().findFirst().orElse(null);
@@ -131,13 +159,13 @@ public class AnalyticsService {
         return periods.stream()
                 .map(period -> {
                     Double production = DecimalScaleUtils.zeroIfNull(productionByPeriod.get(period));
+                    Double milkRevenue = DecimalScaleUtils.zeroIfNull(milkRevenueByPeriod.get(period));
                     Double saleRevenue = DecimalScaleUtils.zeroIfNull(saleRevenueByPeriod.get(period));
                     Double feedingCost = DecimalScaleUtils.zeroIfNull(feedingCostByPeriod.get(period));
                     if (includeAcquisitionCost && period.equals(acquisitionPeriod)) {
                         feedingCost = DecimalScaleUtils.normalize(feedingCost + acquisitionCost);
                     }
-                    Double revenue = DecimalScaleUtils.normalize(
-                            DecimalScaleUtils.multiply(production, MILK_PRICE) + saleRevenue);
+                    Double revenue = DecimalScaleUtils.normalize(milkRevenue + saleRevenue);
                     Double profit = DecimalScaleUtils.subtract(revenue, feedingCost);
                     return new AnalyticsProfitPointResponse(period, production, feedingCost, revenue, profit);
                 })
@@ -178,7 +206,9 @@ public class AnalyticsService {
             throw new ValidationException("startDate must be before or equal to endDate");
         }
 
-        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        if (farmAccessService != null) {
+            farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        }
 
         if (StringUtils.hasText(animalId) && !animalRepository.existsById(animalId)) {
             throw new ResourceNotFoundException("Animal not found");

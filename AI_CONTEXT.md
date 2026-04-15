@@ -38,6 +38,11 @@
   - sold-animal revenue is included in dashboard and analytics revenue/profit calculations
   - profit-oriented endpoints support `includeAcquisitionCost` and default it to `true`
   - frontend includes analytics pages and charts
+- Milk prices:
+  - milk price is managed per farm as a time-based history
+  - each new price is stored as a new record with `price`, `effectiveDate`, `createdAt`, and `createdBy`
+  - current price is the latest record whose `effectiveDate` is on or before today
+  - if a farm has no effective milk price yet, reporting falls back to the legacy default price `2.0`
 
 ### Current implementation note
 
@@ -89,7 +94,8 @@ Important constraint:
 - Persistence is ID-based rather than relation-heavy
 - JPA entities mostly store scalar foreign keys such as `animalId`, `feedTypeId`, and `createdBy`
 - Financial values such as revenue and profit are calculated at read time
-- Milk price is currently hard-coded as `2.0` in reporting services
+- milk price resolution now lives in `milkprice.service.MilkPriceService`
+- production, dashboard, and analytics services use the current farm milk price by default for revenue/profit calculations
 
 ### Frontend
 
@@ -275,12 +281,50 @@ Key validations and rules:
 - list endpoint supports optional `animalId`, `date`, `page`, and `size`
 - pagination is only returned when both `page` and `size` are provided
 - profit summary includes acquisition cost by default and allows opting out with `includeAcquisitionCost=false`
+- profit summary uses the current milk price for the animal's farm
 
 Response characteristics:
 
 - includes top-level production fields
 - includes embedded animal summary
 - does not expose `createdBy`
+
+### `/milk-prices`
+
+Endpoints:
+
+- `POST /milk-prices?farmId=...`
+- `GET /milk-prices/current?farmId=...`
+- `GET /milk-prices?farmId=...`
+
+Create request:
+
+```json
+{
+  "price": 2.35,
+  "effectiveDate": "2026-04-14"
+}
+```
+
+Required fields:
+
+- `farmId` query param
+- `price`
+- `effectiveDate`
+
+Key validations and rules:
+
+- `farmId` must reference an accessible existing farm
+- `price` must be greater than zero and have at most 2 decimal places
+- `effectiveDate` must not be null
+- creating a price always inserts a new history record; previous values are never overwritten
+- `GET /milk-prices/current` returns the latest price effective on or before today for the farm
+- when no effective price exists yet, `GET /milk-prices/current` returns the legacy default price `2.0` with `fallbackDefault = true`
+- `GET /milk-prices` returns full farm price history ordered from newest to oldest
+
+Response characteristics:
+
+- includes `id`, `farmId`, `price`, `effectiveDate`, `createdAt`, `createdBy`, and `fallbackDefault`
 
 ### `/feedings`
 
@@ -412,6 +456,8 @@ Important frontend mismatch:
 - dashboard total profit subtracts feeding cost and, when enabled, acquisition cost
 - analytics profit series applies acquisition cost once to the earliest returned period because the current animal model does not store a separate acquisition date
 - analytics profit series now also recognizes sold-animal revenue on each animal's `saleDate`
+- milk revenue in dashboard and analytics is based on the current milk price resolved for each farm
+- historical milk price records are preserved for future period-aware analytics, but current reporting still applies the latest effective farm price by default
 
 ### `/auth/login`
 
@@ -499,9 +545,11 @@ Authorization: Bearer <jwt>
 - Animal
   - `id`, `tag`, `breed`, `birthDate`, `status`, `farmId`
 - Production
-  - `id`, `animalId`, `date`, `quantity`, `createdBy`
+  - `id`, `animalId`, `date`, `quantity`, `createdBy`, `farmId`
 - Feeding
-  - `id`, `animalId`, `feedTypeId`, `date`, `quantity`, `createdBy`
+  - `id`, `animalId`, `feedTypeId`, `date`, `quantity`, `createdBy`, `farmId`
+- MilkPrice
+  - `id`, `farmId`, `price`, `effectiveDate`, `createdAt`, `createdBy`
 - FeedType
   - `id`, `name`, `costPerKg`, `active`
 
@@ -511,6 +559,7 @@ Authorization: Bearer <jwt>
 - many relational checks are enforced in services rather than via JPA relationships
 - operational tables use scalar IDs rather than object associations
 - feeding cost is derived from `feedings.quantity * feed_types.cost_per_kg`
+- milk price history is persisted as append-only records per farm
 - revenue and profit are derived at query time, not persisted
 
 ## 6. Coding Standards

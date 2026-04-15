@@ -8,6 +8,7 @@ const navigationItems = [
   { to: '/dashboard', labelKey: 'layout.navigation.dashboard' },
   { to: '/animals', labelKey: 'layout.navigation.animals' },
   { to: '/production', labelKey: 'layout.navigation.production' },
+  { to: '/milk-prices', labelKey: 'layout.navigation.milkPrices' },
   { to: '/feeding', labelKey: 'layout.navigation.feeding' },
   { to: '/feed-types', labelKey: 'layout.navigation.feedTypes' },
   { to: '/users', labelKey: 'layout.navigation.users' },

@@ -5,6 +5,7 @@ import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.dashboard.dto.DashboardResponse;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.util.List;
@@ -15,27 +16,38 @@ import org.springframework.util.StringUtils;
 @Service
 public class DashboardService {
 
-    private static final Double MILK_PRICE = 2.0;
-
     private final ProductionRepository productionRepository;
     private final FeedingRepository feedingRepository;
     private final AnimalRepository animalRepository;
     private final FarmAccessService farmAccessService;
+    private final MilkPriceService milkPriceService;
+
+    public DashboardService(
+            ProductionRepository productionRepository,
+            FeedingRepository feedingRepository,
+            AnimalRepository animalRepository,
+            FarmAccessService farmAccessService,
+            MilkPriceService milkPriceService) {
+        this.productionRepository = productionRepository;
+        this.feedingRepository = feedingRepository;
+        this.animalRepository = animalRepository;
+        this.farmAccessService = farmAccessService;
+        this.milkPriceService = milkPriceService;
+    }
 
     public DashboardService(
             ProductionRepository productionRepository,
             FeedingRepository feedingRepository,
             AnimalRepository animalRepository,
             FarmAccessService farmAccessService) {
-        this.productionRepository = productionRepository;
-        this.feedingRepository = feedingRepository;
-        this.animalRepository = animalRepository;
-        this.farmAccessService = farmAccessService;
+        this(productionRepository, feedingRepository, animalRepository, farmAccessService, null);
     }
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboard(String farmId, boolean includeAcquisitionCost) {
-        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        if (farmAccessService != null) {
+            farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        }
 
         Double totalProduction = DecimalScaleUtils.zeroIfNull(StringUtils.hasText(farmId)
                 ? productionRepository.sumTotalProductionByFarmId(farmId)
@@ -47,8 +59,7 @@ public class DashboardService {
                 ? DecimalScaleUtils.zeroIfNull(sumAcquisitionCost(farmId))
                 : 0.0;
         Double totalSaleRevenue = DecimalScaleUtils.zeroIfNull(sumSaleRevenue(farmId));
-        Double totalRevenue = DecimalScaleUtils.normalize(
-                DecimalScaleUtils.multiply(totalProduction, MILK_PRICE) + totalSaleRevenue);
+        Double totalRevenue = DecimalScaleUtils.normalize(sumMilkRevenue(farmId, totalProduction) + totalSaleRevenue);
         Double totalProfit = DecimalScaleUtils.subtract(
                 totalRevenue,
                 DecimalScaleUtils.normalize(totalFeedingCost + totalAcquisitionCost));
@@ -62,6 +73,24 @@ public class DashboardService {
                 totalRevenue,
                 totalProfit,
                 animalCount);
+    }
+
+    private Double sumMilkRevenue(String farmId, Double totalProduction) {
+        if (StringUtils.hasText(farmId)) {
+            Double milkPrice = milkPriceService != null
+                    ? milkPriceService.resolveCurrentPriceValue(farmId)
+                    : MilkPriceService.DEFAULT_MILK_PRICE;
+            return DecimalScaleUtils.multiply(totalProduction, milkPrice);
+        }
+
+        return productionRepository.findAll()
+                .stream()
+                .map(production -> DecimalScaleUtils.multiply(
+                        DecimalScaleUtils.zeroIfNull(production.getQuantity()),
+                        milkPriceService != null
+                                ? milkPriceService.resolveCurrentPriceValue(production.getFarmId())
+                                : MilkPriceService.DEFAULT_MILK_PRICE))
+                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
     }
 
     private Double sumAcquisitionCost(String farmId) {
