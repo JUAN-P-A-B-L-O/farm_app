@@ -123,6 +123,7 @@ function ProductionPage() {
   }, [selectedFarmId])
 
   async function handleCreateOrUpdateProduction(data: ProductionFormData) {
+    const requiresDate = editingProductionId !== null || canSelectCreateDate
     const payload: ProductionFormData = {
       animalId: data.animalId.trim(),
       date: data.date,
@@ -132,7 +133,7 @@ function ProductionPage() {
 
     if (
       !payload.animalId ||
-      !payload.date ||
+      (requiresDate && !payload.date) ||
       !Number.isFinite(payload.quantity) ||
       payload.quantity <= 0 ||
       (!editingProductionId && !payload.userId)

@@ -31,6 +31,7 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
                         .content(ProductionFixture.createRequestJson("animal-1", savedUser.getId().toString())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
+                .andExpect(jsonPath("$.date").value("2026-03-20"))
                 .andExpect(jsonPath("$.animal.id").value("animal-1"))
                 .andExpect(jsonPath("$.animal.tag").value("TAG-001"))
                 .andReturn();
@@ -66,6 +67,7 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
                         .content(ProductionFixture.createRequestJson("animal-1", savedUser.getId().toString())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
+                .andExpect(jsonPath("$.date").value("2026-03-20"))
                 .andExpect(jsonPath("$.quantity").value(12.5))
                 .andReturn();
 

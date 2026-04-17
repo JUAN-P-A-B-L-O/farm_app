@@ -22,7 +22,7 @@
   - retrieve individual feeding entries
   - optional filtering by `animalId`, `date`, and `farmId`
   - optional pagination on listing endpoints
-  - on create, `WORKER` users cannot choose the date; backend uses the current server date and ignores any incoming date
+  - on create, `WORKER` users cannot choose the date; frontend hides the date field and backend uses the current server date, ignoring any incoming date
   - on create, `MANAGER` users can set the date manually
   - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
 - Production:
@@ -31,7 +31,7 @@
   - update production animal, date, and quantity
   - optional filtering by `animalId`, `date`, and `farmId`
   - optional pagination on listing endpoints
-  - on create, `WORKER` users cannot choose the date; backend uses the current server date and ignores any incoming date
+  - on create, `WORKER` users cannot choose the date; frontend hides the date field and backend uses the current server date, ignoring any incoming date
   - on create, `MANAGER` users can set the date manually
   - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
   - summary and profit views by animal

@@ -17,15 +17,6 @@ interface ProductionFormProps {
   allowDateSelection?: boolean
 }
 
-function getCurrentDateInputValue() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
 function ProductionForm({
   initialValues,
   animals,
@@ -85,7 +76,7 @@ function ProductionForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const submissionDate = allowDateSelection ? formData.date : getCurrentDateInputValue()
+    const submissionDate = allowDateSelection ? formData.date : ''
 
     if (!formData.animalId) {
       setValidationMessage(t('production.errors.selectAnimal'))

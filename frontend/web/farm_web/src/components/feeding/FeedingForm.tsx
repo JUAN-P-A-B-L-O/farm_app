@@ -22,15 +22,6 @@ interface FeedingFormProps {
   allowDateSelection?: boolean
 }
 
-function getCurrentDateInputValue() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
 function FeedingForm({
   initialValues,
   animals,
@@ -92,7 +83,7 @@ function FeedingForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const submissionDate = allowDateSelection ? formData.date : getCurrentDateInputValue()
+    const submissionDate = allowDateSelection ? formData.date : ''
 
     if (!formData.animalId) {
       setValidationMessage(t('feeding.errors.selectAnimal'))

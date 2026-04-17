@@ -32,6 +32,7 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
                 .andExpect(jsonPath("$.feedTypeId").value(feedType.getId()))
+                .andExpect(jsonPath("$.date").value("2026-03-24"))
                 .andExpect(jsonPath("$.animal.id").value("animal-1"))
                 .andExpect(jsonPath("$.animal.tag").value("TAG-001"))
                 .andExpect(jsonPath("$.feedType.id").value(feedType.getId()))
@@ -66,6 +67,7 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
                 .andExpect(jsonPath("$.feedTypeId").value(feedType.getId()))
+                .andExpect(jsonPath("$.date").value("2026-03-24"))
                 .andReturn();
 
         String feedingId = objectMapper.readTree(createdResult.getResponse().getContentAsString()).get("id").asText();

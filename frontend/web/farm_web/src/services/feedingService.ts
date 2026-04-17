@@ -34,8 +34,11 @@ export async function getFeedingsByAnimalId(animalId: string, farmId?: string): 
 
 export async function createFeeding(data: FeedingFormData, farmId?: string): Promise<Feeding> {
   const payload: CreateFeedingPayload = {
-    ...data,
+    animalId: data.animalId,
+    feedTypeId: data.feedTypeId,
     quantity: normalizeToTwoDecimals(data.quantity),
+    userId: data.userId,
+    ...(data.date ? { date: data.date } : {}),
   }
 
   const response = await api.post<Feeding>('/feedings', payload, {

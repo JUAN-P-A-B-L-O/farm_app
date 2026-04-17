@@ -1,6 +1,7 @@
 import api from './api'
 import { normalizeToTwoDecimals } from '../utils/decimal'
 import type {
+  CreateProductionPayload,
   Production,
   ProductionFormData,
   ProductionTrendPoint,
@@ -31,10 +32,14 @@ export async function getProductionsByAnimalId(animalId: string, farmId?: string
 }
 
 export async function createProduction(data: ProductionFormData, farmId?: string): Promise<Production> {
-  const response = await api.post<Production>('/productions', {
-    ...data,
+  const payload: CreateProductionPayload = {
+    animalId: data.animalId,
     quantity: normalizeToTwoDecimals(data.quantity),
-  }, {
+    userId: data.userId,
+    ...(data.date ? { date: data.date } : {}),
+  }
+
+  const response = await api.post<Production>('/productions', payload, {
     params: buildFarmParams(farmId),
   })
 
