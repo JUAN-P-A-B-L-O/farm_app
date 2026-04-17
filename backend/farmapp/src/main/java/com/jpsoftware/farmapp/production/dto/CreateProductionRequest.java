@@ -16,7 +16,6 @@ public class CreateProductionRequest {
     @Schema(description = "Animal identifier.", example = "animal-001")
     private String animalId;
 
-    @NotNull
     @Schema(description = "Production date.", example = "2026-03-20")
     private LocalDate date;
 

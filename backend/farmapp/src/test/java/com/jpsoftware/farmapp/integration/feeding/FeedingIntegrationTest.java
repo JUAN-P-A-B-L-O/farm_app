@@ -133,4 +133,19 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
     }
+
+    @Test
+    void shouldIgnoreProvidedCreateDateForWorker() throws Exception {
+        UserEntity worker = createAuthenticatedUser("WORKER");
+        String authorization = bearerToken(worker);
+        animalRepository.save(AnimalFixture.animalEntity());
+        FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 1.75, true));
+
+        mockMvc.perform(post("/feedings")
+                        .header("Authorization", authorization)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(FeedingFixture.createRequestJson("animal-1", feedType.getId(), worker.getId().toString())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.date").value(java.time.LocalDate.now().toString()));
+    }
 }

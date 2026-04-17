@@ -22,6 +22,8 @@
   - retrieve individual feeding entries
   - optional filtering by `animalId`, `date`, and `farmId`
   - optional pagination on listing endpoints
+  - on create, `WORKER` users cannot choose the date; backend uses the current server date and ignores any incoming date
+  - on create, `MANAGER` users can set the date manually
   - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
 - Production:
   - create, list, update, and soft-delete milk production records
@@ -29,6 +31,8 @@
   - update production animal, date, and quantity
   - optional filtering by `animalId`, `date`, and `farmId`
   - optional pagination on listing endpoints
+  - on create, `WORKER` users cannot choose the date; backend uses the current server date and ignores any incoming date
+  - on create, `MANAGER` users can set the date manually
   - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
   - summary and profit views by animal
 - Feed types:
@@ -291,6 +295,8 @@ Key validations and rules:
 - referenced animal must exist and be `ACTIVE`
 - `userId` must be a valid UUID and must exist as a user
 - authenticated user context can override/fill `createdBy`
+- when the authenticated user has role `WORKER`, create ignores the incoming `date` and stores the current server date
+- when the authenticated user has role `MANAGER`, create still requires an explicit date
 - list endpoint supports optional `animalId`, `date`, `farmId`, `page`, and `size`
 - pagination is only returned when both `page` and `size` are provided
 - update can change `animalId`, `date`, and `quantity`
@@ -381,6 +387,8 @@ Key validations and rules:
 - referenced feed type must exist
 - `userId` must be a valid UUID and must exist as a user
 - authenticated user context can override/fill `createdBy`
+- when the authenticated user has role `WORKER`, create ignores the incoming `date` and stores the current server date
+- when the authenticated user has role `MANAGER`, create still requires an explicit date
 - list endpoint supports optional `animalId`, `date`, `farmId`, `page`, and `size`
 - pagination is only returned when both `page` and `size` are provided
 - update can change `animalId`, `feedTypeId`, `date`, and `quantity`

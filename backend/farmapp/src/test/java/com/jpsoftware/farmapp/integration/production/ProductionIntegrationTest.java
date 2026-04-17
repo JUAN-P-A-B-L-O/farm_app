@@ -105,6 +105,20 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldIgnoreProvidedCreateDateForWorker() throws Exception {
+        UserEntity worker = createAuthenticatedUser("WORKER");
+        String authorization = bearerToken(worker);
+        animalRepository.save(AnimalFixture.animalEntity());
+
+        mockMvc.perform(post("/productions")
+                        .header("Authorization", authorization)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(ProductionFixture.createRequestJson("animal-1", worker.getId().toString())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.date").value(java.time.LocalDate.now().toString()));
+    }
+
+    @Test
     void shouldSoftDeleteProductionThroughRealSpringContext() throws Exception {
         UserEntity savedUser = createAuthenticatedUser();
         String authorization = bearerToken(savedUser);

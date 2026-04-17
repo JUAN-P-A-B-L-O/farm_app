@@ -63,6 +63,7 @@ function ProductionPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const canSelectCreateDate = isManager(user)
   const canDeleteResources = isManager(user)
   const [productions, setProductions] = useState<Production[]>([])
   const [animals, setAnimals] = useState<ProductionAnimalOption[]>([])
@@ -257,6 +258,7 @@ function ProductionPage() {
               submitLabel={editingProductionId ? t('production.submitUpdate') : t('production.submitCreate')}
               errorMessage={formErrorMessage}
               requireUserSelection={!editingProductionId}
+              allowDateSelection={editingProductionId !== null || canSelectCreateDate}
             />
           )}
         </article>

@@ -37,6 +37,7 @@ import org.springframework.util.StringUtils;
 
 @Service
 public class ProductionService {
+    private static final String WORKER_ROLE = "WORKER";
 
     private final ProductionRepository productionRepository;
     private final FeedingRepository feedingRepository;
@@ -88,11 +89,13 @@ public class ProductionService {
     @Transactional
     public ProductionResponse create(CreateProductionRequest request, String farmId) {
         String createdBy = authenticationContextService.resolveUserId(request != null ? request.getUserId() : null);
-        validateInput(request, createdBy);
+        LocalDate effectiveDate = resolveCreationDate(request);
+        validateInput(request, createdBy, effectiveDate);
         String resolvedFarmId = resolveFarmId(request, farmId);
         validateRelations(request, createdBy, resolvedFarmId);
 
         ProductionEntity productionEntity = toEntity(request);
+        productionEntity.setDate(effectiveDate);
         productionEntity.setQuantity(DecimalScaleUtils.normalize(productionEntity.getQuantity()));
         productionEntity.setCreatedBy(createdBy);
         productionEntity.setFarmId(resolvedFarmId);
@@ -295,17 +298,17 @@ public class ProductionService {
         return new AnimalSummaryResponse(animalEntity.getId(), animalEntity.getTag());
     }
 
-    private void validateInput(CreateProductionRequest request, String createdBy) {
+    private void validateInput(CreateProductionRequest request, String createdBy, LocalDate effectiveDate) {
         if (request == null) {
             throw new ValidationException("request must not be null");
         }
         if (!StringUtils.hasText(request.getAnimalId())) {
             throw new ValidationException("animalId must not be blank");
         }
-        if (request.getDate() == null) {
+        if (effectiveDate == null) {
             throw new ValidationException("date must not be null");
         }
-        if (request.getDate().isAfter(LocalDate.now())) {
+        if (effectiveDate.isAfter(LocalDate.now())) {
             throw new BusinessException("Date cannot be in the future");
         }
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
@@ -326,6 +329,14 @@ public class ProductionService {
 
     private ProductionEntity toEntity(CreateProductionRequest request) {
         return productionMapper.toEntity(request);
+    }
+
+    private LocalDate resolveCreationDate(CreateProductionRequest request) {
+        if (authenticationContextService.hasRole(WORKER_ROLE)) {
+            return LocalDate.now();
+        }
+
+        return request != null ? request.getDate() : null;
     }
 
     private List<ProductionEntity> findProductions(String animalId, LocalDate date, String farmId) {

@@ -249,7 +249,7 @@ const en = {
     description: 'Register feeding entries and review animal feed consumption records.',
     createTitle: 'Create Feeding',
     updateTitle: 'Update Feeding',
-    createDescription: 'Select the animal, feed type, date, and quantity for the new feeding entry.',
+    createDescription: 'Select the animal, feed type, and quantity for the new feeding entry.',
     updateDescription: 'Edit the selected feeding using the existing data.',
     submitCreate: 'Create feeding',
     submitUpdate: 'Update feeding',

@@ -249,7 +249,7 @@ const ptBR = {
     description: 'Registre alimentações e consulte os registros de consumo de ração dos animais.',
     createTitle: 'Criar alimentação',
     updateTitle: 'Atualizar alimentação',
-    createDescription: 'Selecione o animal, o tipo de ração, a data e a quantidade para a nova alimentação.',
+    createDescription: 'Selecione o animal, o tipo de ração e a quantidade para a nova alimentação.',
     updateDescription: 'Edite a alimentação selecionada usando os dados existentes.',
     submitCreate: 'Criar alimentação',
     submitUpdate: 'Atualizar alimentação',

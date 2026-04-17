@@ -66,6 +66,7 @@ function FeedingPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const canSelectCreateDate = isManager(user)
   const canDeleteResources = isManager(user)
   const [feedings, setFeedings] = useState<Feeding[]>([])
   const [animals, setAnimals] = useState<FeedingAnimalOption[]>([])
@@ -255,6 +256,7 @@ function FeedingPage() {
               submitLabel={editingFeedingId ? t('feeding.submitUpdate') : t('feeding.submitCreate')}
               errorMessage={formErrorMessage}
               requireUserSelection={!editingFeedingId}
+              allowDateSelection={editingFeedingId !== null || canSelectCreateDate}
             />
           )}
         </article>

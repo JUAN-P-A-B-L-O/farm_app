@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ import org.springframework.util.StringUtils;
 
 @Service
 public class FeedingService {
+    private static final String WORKER_ROLE = "WORKER";
 
     private final FeedingRepository feedingRepository;
     private final AnimalRepository animalRepository;
@@ -43,6 +45,7 @@ public class FeedingService {
     private final AuthenticationContextService authenticationContextService;
     private final FarmAccessService farmAccessService;
 
+    @Autowired
     public FeedingService(
             FeedingRepository feedingRepository,
             AnimalRepository animalRepository,
@@ -60,14 +63,33 @@ public class FeedingService {
         this.farmAccessService = farmAccessService;
     }
 
+    public FeedingService(
+            FeedingRepository feedingRepository,
+            AnimalRepository animalRepository,
+            FeedTypeRepository feedTypeRepository,
+            UserRepository userRepository,
+            FeedingMapper feedingMapper,
+            AuthenticationContextService authenticationContextService) {
+        this(
+                feedingRepository,
+                animalRepository,
+                feedTypeRepository,
+                userRepository,
+                feedingMapper,
+                authenticationContextService,
+                null);
+    }
+
     @Transactional
     public FeedingResponse create(CreateFeedingRequest request, String farmId) {
         String createdBy = authenticationContextService.resolveUserId(request != null ? request.getUserId() : null);
-        validateInput(request, createdBy);
+        LocalDate effectiveDate = resolveCreationDate(request);
+        validateInput(request, createdBy, effectiveDate);
         String resolvedFarmId = resolveFarmId(request, farmId);
         validateRelations(request, createdBy, resolvedFarmId);
 
         FeedingEntity feedingEntity = feedingMapper.toEntity(request);
+        feedingEntity.setDate(effectiveDate);
         feedingEntity.setQuantity(DecimalScaleUtils.normalize(feedingEntity.getQuantity()));
         feedingEntity.setCreatedBy(createdBy);
         feedingEntity.setFarmId(resolvedFarmId);
@@ -77,9 +99,19 @@ public class FeedingService {
         return toEnrichedResponse(savedFeeding);
     }
 
+    @Transactional
+    public FeedingResponse create(CreateFeedingRequest request) {
+        return create(request, null);
+    }
+
     @Transactional(readOnly = true)
     public List<FeedingResponse> findAll(String animalId, LocalDate date, String farmId) {
         return getAllFeedings(animalId, date, farmId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FeedingResponse> findAll(String animalId, LocalDate date) {
+        return findAll(animalId, date, null);
     }
 
     @Transactional(readOnly = true)
@@ -101,6 +133,11 @@ public class FeedingService {
     }
 
     @Transactional(readOnly = true)
+    public PaginatedResponse<FeedingResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
+        return findAllPaginated(animalId, date, null, page, size);
+    }
+
+    @Transactional(readOnly = true)
     public PaginatedResponse<FeedingResponse> getAllFeedingsPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
         Page<FeedingEntity> feedings = findFeedings(animalId, date, farmId, PageRequest.of(page, size));
         Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(feedings.getContent());
@@ -118,8 +155,13 @@ public class FeedingService {
     }
 
     @Transactional(readOnly = true)
+    public FeedingResponse findById(String id) {
+        return findById(id, null);
+    }
+
+    @Transactional(readOnly = true)
     public FeedingResponse getFeedingById(String id, String farmId) {
-        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        validateAccessibleFarmIfPresent(farmId);
         FeedingEntity feedingEntity = (StringUtils.hasText(farmId)
                 ? feedingRepository.findByIdAndFarmIdAndStatus(validateId(id), farmId, FeedingEntity.STATUS_ACTIVE)
                 : feedingRepository.findById(validateId(id)))
@@ -161,6 +203,11 @@ public class FeedingService {
     }
 
     @Transactional
+    public FeedingResponse updateFeeding(String id, UpdateFeedingRequest request) {
+        return updateFeeding(id, request, null);
+    }
+
+    @Transactional
     public void deleteFeeding(String id, String farmId) {
         FeedingEntity feedingEntity = getFeedingIncludingInactive(id, farmId);
         if (FeedingEntity.STATUS_INACTIVE.equals(feedingEntity.getStatus())) {
@@ -169,6 +216,11 @@ public class FeedingService {
 
         feedingEntity.setStatus(FeedingEntity.STATUS_INACTIVE);
         feedingRepository.save(feedingEntity);
+    }
+
+    @Transactional
+    public void deleteFeeding(String id) {
+        deleteFeeding(id, null);
     }
 
     private FeedingResponse toEnrichedResponse(FeedingEntity feedingEntity) {
@@ -209,7 +261,7 @@ public class FeedingService {
         return new FeedTypeSummaryResponse(feedTypeEntity.getId(), feedTypeEntity.getName());
     }
 
-    private void validateInput(CreateFeedingRequest request, String createdBy) {
+    private void validateInput(CreateFeedingRequest request, String createdBy, LocalDate effectiveDate) {
         if (request == null) {
             throw new ValidationException("request must not be null");
         }
@@ -219,7 +271,7 @@ public class FeedingService {
         if (!StringUtils.hasText(request.getFeedTypeId())) {
             throw new ValidationException("feedTypeId must not be blank");
         }
-        if (request.getDate() == null) {
+        if (effectiveDate == null) {
             throw new ValidationException("date must not be null");
         }
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
@@ -247,7 +299,7 @@ public class FeedingService {
     }
 
     private List<FeedingEntity> findFeedings(String animalId, LocalDate date, String farmId) {
-        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        validateAccessibleFarmIfPresent(farmId);
         if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId) && date != null) {
             return feedingRepository.findByFarmIdAndAnimalIdAndDateAndStatus(farmId, animalId, date, FeedingEntity.STATUS_ACTIVE);
         }
@@ -273,7 +325,7 @@ public class FeedingService {
     }
 
     private Page<FeedingEntity> findFeedings(String animalId, LocalDate date, String farmId, org.springframework.data.domain.Pageable pageable) {
-        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        validateAccessibleFarmIfPresent(farmId);
         if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId) && date != null) {
             return feedingRepository.findByFarmIdAndAnimalIdAndDateAndStatus(farmId, animalId, date, FeedingEntity.STATUS_ACTIVE, pageable);
         }
@@ -299,7 +351,7 @@ public class FeedingService {
     }
 
     private FeedingEntity getFeedingIncludingInactive(String id, String farmId) {
-        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        validateAccessibleFarmIfPresent(farmId);
         return (StringUtils.hasText(farmId)
                 ? feedingRepository.findAnyByIdAndFarmId(validateId(id), farmId)
                 : feedingRepository.findAnyById(validateId(id)))
@@ -334,12 +386,14 @@ public class FeedingService {
 
     private String resolveFarmId(CreateFeedingRequest request, String farmId) {
         if (StringUtils.hasText(farmId)) {
-            return farmAccessService.validateAccessibleFarm(farmId);
+            return farmAccessService != null ? farmAccessService.validateAccessibleFarm(farmId) : farmId;
         }
 
         AnimalEntity animalEntity = animalRepository.findById(request.getAnimalId())
                 .orElseThrow(() -> new ResourceNotFoundException("Animal not found"));
-        return farmAccessService.validateAccessibleFarm(animalEntity.getFarmId());
+        return farmAccessService != null
+                ? farmAccessService.validateAccessibleFarm(animalEntity.getFarmId())
+                : animalEntity.getFarmId();
     }
 
     private PaginatedResponse<FeedingResponse> toPaginatedResponse(Page<FeedingResponse> page) {
@@ -356,6 +410,20 @@ public class FeedingService {
             return java.util.UUID.fromString(userId);
         } catch (IllegalArgumentException exception) {
             throw new ValidationException("userId must be a valid UUID");
+        }
+    }
+
+    private LocalDate resolveCreationDate(CreateFeedingRequest request) {
+        if (authenticationContextService.hasRole(WORKER_ROLE)) {
+            return LocalDate.now();
+        }
+
+        return request != null ? request.getDate() : null;
+    }
+
+    private void validateAccessibleFarmIfPresent(String farmId) {
+        if (farmAccessService != null) {
+            farmAccessService.validateAccessibleFarmIfPresent(farmId);
         }
     }
 }

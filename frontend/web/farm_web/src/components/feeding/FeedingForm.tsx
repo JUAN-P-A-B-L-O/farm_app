@@ -19,6 +19,16 @@ interface FeedingFormProps {
   submitLabel: string
   errorMessage: string
   requireUserSelection?: boolean
+  allowDateSelection?: boolean
+}
+
+function getCurrentDateInputValue() {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
 }
 
 function FeedingForm({
@@ -31,6 +41,7 @@ function FeedingForm({
   submitLabel,
   errorMessage,
   requireUserSelection = true,
+  allowDateSelection = true,
 }: FeedingFormProps) {
   const { t, language } = useTranslation()
   const [formData, setFormData] = useState<FeedingFormData>(initialValues)
@@ -81,6 +92,7 @@ function FeedingForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const submissionDate = allowDateSelection ? formData.date : getCurrentDateInputValue()
 
     if (!formData.animalId) {
       setValidationMessage(t('feeding.errors.selectAnimal'))
@@ -102,7 +114,10 @@ function FeedingForm({
       return
     }
 
-    await onSubmit(formData)
+    await onSubmit({
+      ...formData,
+      date: submissionDate,
+    })
   }
 
   const isFormDisabled =
@@ -176,16 +191,18 @@ function FeedingForm({
           </label>
         )}
 
-        <label className="animal-form__field">
-          <span>{t('feeding.form.date')}</span>
-          <input
-            name="date"
-            type="date"
-            value={formData.date}
-            onChange={handleChange}
-            required
-          />
-        </label>
+        {allowDateSelection && (
+          <label className="animal-form__field">
+            <span>{t('feeding.form.date')}</span>
+            <input
+              name="date"
+              type="date"
+              value={formData.date}
+              onChange={handleChange}
+              required
+            />
+          </label>
+        )}
 
         <label className="animal-form__field">
           <span>{t('feeding.form.quantity')}</span>
