@@ -108,6 +108,15 @@ You MUST return your response in JSON format:
 
 ---
 
+## EXECUTION MODE
+
+- Do NOT ask questions
+- Do NOT wait for user input
+- Make reasonable assumptions
+- Always produce a complete output
+
+---
+
 ## GOAL
 
 Produce clean, minimal, production-ready changes that integrate perfectly with the existing codebase and respect all constraints defined in AI_CONTEXT.md.
