@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AnalyticsController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.analytics.controller</a> &gt; <span class="el_source">AnalyticsController.java</span></div><h1>AnalyticsController.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.analytics.controller;
+
+import com.jpsoftware.farmapp.analytics.dto.AnalyticsAnimalProductionPointResponse;
+import com.jpsoftware.farmapp.analytics.dto.AnalyticsProfitPointResponse;
+import com.jpsoftware.farmapp.analytics.dto.AnalyticsTimeSeriesPointResponse;
+import com.jpsoftware.farmapp.analytics.service.AnalyticsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping(&quot;/analytics&quot;)
+@Tag(name = &quot;Analytics&quot;, description = &quot;Aggregated analytics for charts and dashboards.&quot;)
+public class AnalyticsController {
+
+    private final AnalyticsService analyticsService;
+
+<span class="fc" id="L26">    public AnalyticsController(AnalyticsService analyticsService) {</span>
+<span class="fc" id="L27">        this.analyticsService = analyticsService;</span>
+<span class="fc" id="L28">    }</span>
+
+    @GetMapping(&quot;/production&quot;)
+    @Operation(summary = &quot;Get production analytics&quot;, description = &quot;Returns aggregated production over time.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Production analytics retrieved successfully&quot;)
+    })
+    public ResponseEntity&lt;List&lt;AnalyticsTimeSeriesPointResponse&gt;&gt; getProductionAnalytics(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false, defaultValue = &quot;day&quot;) String groupBy) {
+<span class="nc" id="L40">        return ResponseEntity.ok(analyticsService.getProductionSeries(startDate, endDate, animalId, groupBy));</span>
+    }
+
+    @GetMapping(&quot;/feeding&quot;)
+    @Operation(summary = &quot;Get feeding analytics&quot;, description = &quot;Returns aggregated feeding cost over time.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Feeding analytics retrieved successfully&quot;)
+    })
+    public ResponseEntity&lt;List&lt;AnalyticsTimeSeriesPointResponse&gt;&gt; getFeedingAnalytics(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false, defaultValue = &quot;day&quot;) String groupBy) {
+<span class="nc" id="L53">        return ResponseEntity.ok(analyticsService.getFeedingCostSeries(startDate, endDate, animalId, groupBy));</span>
+    }
+
+    @GetMapping(&quot;/profit&quot;)
+    @Operation(summary = &quot;Get profit analytics&quot;, description = &quot;Returns aggregated profit evolution over time.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Profit analytics retrieved successfully&quot;)
+    })
+    public ResponseEntity&lt;List&lt;AnalyticsProfitPointResponse&gt;&gt; getProfitAnalytics(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false, defaultValue = &quot;day&quot;) String groupBy) {
+<span class="nc" id="L66">        return ResponseEntity.ok(analyticsService.getProfitSeries(startDate, endDate, animalId, groupBy));</span>
+    }
+
+    @GetMapping(&quot;/production/by-animal&quot;)
+    @Operation(summary = &quot;Get production by animal&quot;, description = &quot;Returns aggregated production grouped by animal.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Production by animal retrieved successfully&quot;)
+    })
+    public ResponseEntity&lt;List&lt;AnalyticsAnimalProductionPointResponse&gt;&gt; getProductionByAnimal(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId) {
+<span class="nc" id="L78">        return ResponseEntity.ok(analyticsService.getProductionByAnimal(startDate, endDate, animalId));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

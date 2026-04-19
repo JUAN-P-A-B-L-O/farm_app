@@ -65,8 +65,15 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
             @RequestParam(required = false, defaultValue = "day") String groupBy) {
-        return ResponseEntity.ok(analyticsService.getProfitSeries(startDate, endDate, animalId, groupBy, farmId));
+        return ResponseEntity.ok(analyticsService.getProfitSeries(
+                startDate,
+                endDate,
+                animalId,
+                groupBy,
+                farmId,
+                includeAcquisitionCost));
     }
 
     @GetMapping("/production/by-animal")

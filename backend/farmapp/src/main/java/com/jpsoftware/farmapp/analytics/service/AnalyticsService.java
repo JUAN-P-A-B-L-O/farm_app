@@ -11,6 +11,7 @@ import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.entity.FeedingEntity;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -34,7 +36,6 @@ import org.springframework.util.StringUtils;
 @Service
 public class AnalyticsService {
 
-    private static final Double MILK_PRICE = 2.0;
     private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
     private final ProductionRepository productionRepository;
@@ -42,6 +43,23 @@ public class AnalyticsService {
     private final AnimalRepository animalRepository;
     private final FeedTypeRepository feedTypeRepository;
     private final FarmAccessService farmAccessService;
+    private final MilkPriceService milkPriceService;
+
+    @Autowired
+    public AnalyticsService(
+            ProductionRepository productionRepository,
+            FeedingRepository feedingRepository,
+            AnimalRepository animalRepository,
+            FeedTypeRepository feedTypeRepository,
+            FarmAccessService farmAccessService,
+            MilkPriceService milkPriceService) {
+        this.productionRepository = productionRepository;
+        this.feedingRepository = feedingRepository;
+        this.animalRepository = animalRepository;
+        this.feedTypeRepository = feedTypeRepository;
+        this.farmAccessService = farmAccessService;
+        this.milkPriceService = milkPriceService;
+    }
 
     public AnalyticsService(
             ProductionRepository productionRepository,
@@ -49,11 +67,13 @@ public class AnalyticsService {
             AnimalRepository animalRepository,
             FeedTypeRepository feedTypeRepository,
             FarmAccessService farmAccessService) {
-        this.productionRepository = productionRepository;
-        this.feedingRepository = feedingRepository;
-        this.animalRepository = animalRepository;
-        this.feedTypeRepository = feedTypeRepository;
-        this.farmAccessService = farmAccessService;
+        this(
+                productionRepository,
+                feedingRepository,
+                animalRepository,
+                feedTypeRepository,
+                farmAccessService,
+                null);
     }
 
     @Transactional(readOnly = true)
@@ -99,7 +119,8 @@ public class AnalyticsService {
             LocalDate endDate,
             String animalId,
             String groupByParam,
-            String farmId) {
+            String farmId,
+            boolean includeAcquisitionCost) {
         AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);
         List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId, farmId);
         List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId, farmId);
@@ -108,6 +129,16 @@ public class AnalyticsService {
                 groupBy,
                 ProductionEntity::getDate,
                 ProductionEntity::getQuantity);
+        Map<String, Double> milkRevenueByPeriod = aggregateValues(
+                productions,
+                groupBy,
+                ProductionEntity::getDate,
+                production -> DecimalScaleUtils.multiply(
+                        DecimalScaleUtils.zeroIfNull(production.getQuantity()),
+                        milkPriceService != null
+                                ? milkPriceService.resolveCurrentPriceValue(production.getFarmId())
+                                : MilkPriceService.DEFAULT_MILK_PRICE));
+        Map<String, Double> saleRevenueByPeriod = aggregateSaleRevenue(startDate, endDate, animalId, farmId, groupBy);
         Map<String, Double> feedCostsById = loadFeedCostsById(feedings);
         Map<String, Double> feedingCostByPeriod = aggregateValues(
                 feedings,
@@ -119,13 +150,24 @@ public class AnalyticsService {
 
         Set<String> periods = new java.util.TreeSet<>();
         periods.addAll(productionByPeriod.keySet());
+        periods.addAll(milkRevenueByPeriod.keySet());
+        periods.addAll(saleRevenueByPeriod.keySet());
         periods.addAll(feedingCostByPeriod.keySet());
+        String acquisitionPeriod = periods.stream().findFirst().orElse(null);
+        Double acquisitionCost = includeAcquisitionCost
+                ? DecimalScaleUtils.zeroIfNull(sumAcquisitionCost(animalId, farmId))
+                : 0.0;
 
         return periods.stream()
                 .map(period -> {
                     Double production = DecimalScaleUtils.zeroIfNull(productionByPeriod.get(period));
+                    Double milkRevenue = DecimalScaleUtils.zeroIfNull(milkRevenueByPeriod.get(period));
+                    Double saleRevenue = DecimalScaleUtils.zeroIfNull(saleRevenueByPeriod.get(period));
                     Double feedingCost = DecimalScaleUtils.zeroIfNull(feedingCostByPeriod.get(period));
-                    Double revenue = DecimalScaleUtils.multiply(production, MILK_PRICE);
+                    if (includeAcquisitionCost && period.equals(acquisitionPeriod)) {
+                        feedingCost = DecimalScaleUtils.normalize(feedingCost + acquisitionCost);
+                    }
+                    Double revenue = DecimalScaleUtils.normalize(milkRevenue + saleRevenue);
                     Double profit = DecimalScaleUtils.subtract(revenue, feedingCost);
                     return new AnalyticsProfitPointResponse(period, production, feedingCost, revenue, profit);
                 })
@@ -166,7 +208,9 @@ public class AnalyticsService {
             throw new ValidationException("startDate must be before or equal to endDate");
         }
 
-        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        if (farmAccessService != null) {
+            farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        }
 
         if (StringUtils.hasText(animalId) && !animalRepository.existsById(animalId)) {
             throw new ResourceNotFoundException("Animal not found");
@@ -236,6 +280,48 @@ public class AnalyticsService {
 
         return animalRepository.findAllById(animalIds).stream()
                 .collect(Collectors.toMap(AnimalEntity::getId, animal -> animal));
+    }
+
+    private Double sumAcquisitionCost(String animalId, String farmId) {
+        return filterAnimalsForFinancials(animalId, farmId).stream()
+                .map(AnimalEntity::getAcquisitionCost)
+                .map(DecimalScaleUtils::zeroIfNull)
+                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
+    }
+
+    private Map<String, Double> aggregateSaleRevenue(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String farmId,
+            AnalyticsGroupBy groupBy) {
+        List<AnimalEntity> soldAnimals = filterAnimalsForFinancials(animalId, farmId).stream()
+                .filter(animal -> animal.getSaleDate() != null)
+                .filter(animal -> matchesDateRange(animal.getSaleDate(), startDate, endDate))
+                .filter(animal -> animal.getSalePrice() != null)
+                .toList();
+
+        return aggregateValues(
+                soldAnimals,
+                groupBy,
+                AnimalEntity::getSaleDate,
+                AnimalEntity::getSalePrice);
+    }
+
+    private List<AnimalEntity> filterAnimalsForFinancials(String animalId, String farmId) {
+        List<AnimalEntity> animals;
+        if (StringUtils.hasText(animalId)) {
+            AnimalEntity animal = StringUtils.hasText(farmId)
+                    ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)
+                    : animalRepository.findById(animalId).orElse(null);
+            animals = animal != null ? List.of(animal) : List.of();
+        } else if (StringUtils.hasText(farmId)) {
+            animals = animalRepository.findByFarmId(farmId);
+        } else {
+            animals = animalRepository.findAll();
+        }
+
+        return animals;
     }
 
     private <T> List<AnalyticsTimeSeriesPointResponse> aggregateSeries(

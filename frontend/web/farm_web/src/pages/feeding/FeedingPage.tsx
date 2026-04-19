@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import FeedingForm from '../../components/feeding/FeedingForm'
+import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
@@ -20,6 +21,7 @@ import type {
   FeedingFeedTypeOption,
   FeedingFormData,
 } from '../../types/feeding'
+import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
 const emptyFeedingForm: FeedingFormData = {
@@ -52,15 +54,20 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
 }
 
 function mapAnimalsToOptions(animals: Animal[]): FeedingAnimalOption[] {
-  return animals.map(({ id, tag }) => ({
-    id,
-    tag,
-  }))
+  return animals
+    .filter((animal) => animal.status === 'ACTIVE')
+    .map(({ id, tag }) => ({
+      id,
+      tag,
+    }))
 }
 
 function FeedingPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const canSelectCreateDate = isManager(user)
+  const canDeleteResources = isManager(user)
   const [feedings, setFeedings] = useState<Feeding[]>([])
   const [animals, setAnimals] = useState<FeedingAnimalOption[]>([])
   const [feedTypes, setFeedTypes] = useState<FeedingFeedTypeOption[]>([])
@@ -249,6 +256,7 @@ function FeedingPage() {
               submitLabel={editingFeedingId ? t('feeding.submitUpdate') : t('feeding.submitCreate')}
               errorMessage={formErrorMessage}
               requireUserSelection={!editingFeedingId}
+              allowDateSelection={editingFeedingId !== null || canSelectCreateDate}
             />
           )}
         </article>
@@ -301,14 +309,16 @@ function FeedingPage() {
                         >
                           {t('feeding.edit')}
                         </button>
-                        <button
-                          type="button"
-                          className="animals-table__action-button animals-table__action-button--danger"
-                          onClick={() => void handleDelete(feeding.id)}
-                          disabled={isDeletingId === feeding.id}
-                        >
-                          {isDeletingId === feeding.id ? t('feeding.deleting') : t('feeding.delete')}
-                        </button>
+                        {canDeleteResources && (
+                          <button
+                            type="button"
+                            className="animals-table__action-button animals-table__action-button--danger"
+                            onClick={() => void handleDelete(feeding.id)}
+                            disabled={isDeletingId === feeding.id}
+                          >
+                            {isDeletingId === feeding.id ? t('feeding.deleting') : t('feeding.delete')}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

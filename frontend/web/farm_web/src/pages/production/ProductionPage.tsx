@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ProductionForm from '../../components/production/ProductionForm'
+import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
@@ -18,6 +19,7 @@ import type {
   ProductionAnimalOption,
   ProductionFormData,
 } from '../../types/production'
+import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
 const emptyProductionForm: ProductionFormData = {
@@ -49,15 +51,20 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
 }
 
 function mapAnimalsToOptions(animals: Animal[]): ProductionAnimalOption[] {
-  return animals.map(({ id, tag }) => ({
-    id,
-    tag,
-  }))
+  return animals
+    .filter((animal) => animal.status === 'ACTIVE')
+    .map(({ id, tag }) => ({
+      id,
+      tag,
+    }))
 }
 
 function ProductionPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const canSelectCreateDate = isManager(user)
+  const canDeleteResources = isManager(user)
   const [productions, setProductions] = useState<Production[]>([])
   const [animals, setAnimals] = useState<ProductionAnimalOption[]>([])
   const [formInitialValues, setFormInitialValues] = useState<ProductionFormData>(emptyProductionForm)
@@ -116,6 +123,7 @@ function ProductionPage() {
   }, [selectedFarmId])
 
   async function handleCreateOrUpdateProduction(data: ProductionFormData) {
+    const requiresDate = editingProductionId !== null || canSelectCreateDate
     const payload: ProductionFormData = {
       animalId: data.animalId.trim(),
       date: data.date,
@@ -125,7 +133,7 @@ function ProductionPage() {
 
     if (
       !payload.animalId ||
-      !payload.date ||
+      (requiresDate && !payload.date) ||
       !Number.isFinite(payload.quantity) ||
       payload.quantity <= 0 ||
       (!editingProductionId && !payload.userId)
@@ -251,6 +259,7 @@ function ProductionPage() {
               submitLabel={editingProductionId ? t('production.submitUpdate') : t('production.submitCreate')}
               errorMessage={formErrorMessage}
               requireUserSelection={!editingProductionId}
+              allowDateSelection={editingProductionId !== null || canSelectCreateDate}
             />
           )}
         </article>
@@ -301,16 +310,18 @@ function ProductionPage() {
                         >
                           {t('production.edit')}
                         </button>
-                        <button
-                          type="button"
-                          className="animals-table__action-button animals-table__action-button--danger"
-                          onClick={() => void handleDelete(production.id)}
-                          disabled={isDeletingId === production.id}
-                        >
-                          {isDeletingId === production.id
-                            ? t('production.deleting')
-                            : t('production.delete')}
-                        </button>
+                        {canDeleteResources && (
+                          <button
+                            type="button"
+                            className="animals-table__action-button animals-table__action-button--danger"
+                            onClick={() => void handleDelete(production.id)}
+                            disabled={isDeletingId === production.id}
+                          >
+                            {isDeletingId === production.id
+                              ? t('production.deleting')
+                              : t('production.delete')}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

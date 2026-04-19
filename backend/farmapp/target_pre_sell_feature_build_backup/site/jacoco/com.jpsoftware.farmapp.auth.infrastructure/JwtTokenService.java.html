@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtTokenService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.auth.infrastructure</a> &gt; <span class="el_source">JwtTokenService.java</span></div><h1>JwtTokenService.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.auth.infrastructure;
+
+import com.jpsoftware.farmapp.auth.service.TokenService;
+import com.jpsoftware.farmapp.user.entity.UserEntity;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
+import java.util.UUID;
+import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+@Service
+public class JwtTokenService implements TokenService {
+
+    private final SecretKey secretKey;
+    private final long expirationInMillis;
+
+    public JwtTokenService(
+            @Value(&quot;${app.security.jwt.secret}&quot;) String secret,
+<span class="fc" id="L24">            @Value(&quot;${app.security.jwt.expiration}&quot;) long expirationInMillis) {</span>
+<span class="fc" id="L25">        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L26">        this.expirationInMillis = expirationInMillis;</span>
+<span class="fc" id="L27">    }</span>
+
+    @Override
+    public String generateToken(UserEntity user) {
+<span class="fc" id="L31">        Instant now = Instant.now();</span>
+<span class="fc" id="L32">        return Jwts.builder()</span>
+<span class="fc" id="L33">                .subject(user.getId().toString())</span>
+<span class="fc" id="L34">                .claim(&quot;role&quot;, user.getRole())</span>
+<span class="fc" id="L35">                .issuedAt(Date.from(now))</span>
+<span class="fc" id="L36">                .expiration(Date.from(now.plusMillis(expirationInMillis)))</span>
+<span class="fc" id="L37">                .signWith(secretKey)</span>
+<span class="fc" id="L38">                .compact();</span>
+    }
+
+    @Override
+    public boolean validateToken(String token) {
+        try {
+<span class="fc" id="L44">            parseClaims(token);</span>
+<span class="fc" id="L45">            return true;</span>
+<span class="nc" id="L46">        } catch (RuntimeException exception) {</span>
+<span class="nc" id="L47">            return false;</span>
+        }
+    }
+
+    @Override
+    public UUID extractUserId(String token) {
+<span class="fc" id="L53">        return UUID.fromString(parseClaims(token).getSubject());</span>
+    }
+
+    private Claims parseClaims(String token) {
+<span class="fc" id="L57">        return Jwts.parser()</span>
+<span class="fc" id="L58">                .verifyWith(secretKey)</span>
+<span class="fc" id="L59">                .build()</span>
+<span class="fc" id="L60">                .parseSignedClaims(token)</span>
+<span class="fc" id="L61">                .getPayload();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

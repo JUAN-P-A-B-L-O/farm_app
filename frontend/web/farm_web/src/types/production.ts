@@ -23,6 +23,13 @@ export interface ProductionFormData {
   userId: string
 }
 
+export interface CreateProductionPayload {
+  animalId: string
+  quantity: number
+  userId: string
+  date?: string
+}
+
 export interface UpdateProductionPayload {
   animalId: string
   date: string

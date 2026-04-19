@@ -1,0 +1,78 @@
+====================================
+MANDATORY CONTEXT USAGE
+====================================
+
+- BEFORE making any decision, you MUST read AI_CONTEXT.md
+- Do NOT assume roles, fields, or API behavior
+- Validate everything against the actual codebase
+
+====================================
+TASK
+====================================
+
+Restrict date selection in creation flows (e.g., production, feeding):
+
+- MANAGER users can choose the date manually
+- WORKER users cannot choose the date
+- For WORKER, the system must automatically use the current timestamp
+
+====================================
+CONSTRAINTS
+====================================
+
+- Do NOT break existing endpoints
+- Keep changes minimal and isolated
+- Respect existing role/authorization patterns
+- Controllers must remain thin
+- Business logic must stay in services
+- Frontend must use service layer
+
+====================================
+IMPLEMENTATION INSTRUCTIONS
+====================================
+
+1. Analyze:
+   - Read AI_CONTEXT.md
+   - Identify where date is handled in relevant flows
+   - Identify how roles are determined
+
+2. Backend:
+   - Enforce rule in service layer:
+     - If WORKER → ignore incoming date and use current timestamp
+     - If MANAGER → allow provided date
+   - Do NOT rely only on frontend validation
+
+3. Frontend:
+   - Hide or disable date input for WORKER users
+   - Allow date selection for MANAGER users
+   - Keep behavior consistent with backend
+
+====================================
+AI_CONTEXT.md MAINTENANCE (MANDATORY)
+====================================
+
+- Update AI_CONTEXT.md to reflect this rule
+- Keep it concise and structured
+
+====================================
+VALIDATION (MANDATORY)
+====================================
+
+- MANAGER can set custom date
+- WORKER always uses current timestamp
+- Backend enforces rule regardless of frontend
+- No regression in existing flows
+
+====================================
+OUTPUT REQUIREMENTS
+====================================
+
+- Show only necessary changes
+- Always return a Conventional Commit message
+- Provide git commands if possible
+
+====================================
+GOAL
+====================================
+
+Enforce role-based control over date handling in a consistent and secure way.

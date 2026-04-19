@@ -20,6 +20,13 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AnimalEntity {
 
+    public static final String STATUS_ACTIVE = "ACTIVE";
+    public static final String STATUS_INACTIVE = "INACTIVE";
+    public static final String STATUS_SOLD = "SOLD";
+    public static final String STATUS_DEAD = "DEAD";
+    public static final String ORIGIN_BORN = "BORN";
+    public static final String ORIGIN_PURCHASED = "PURCHASED";
+
     @Id
     private String id;
 
@@ -34,6 +41,15 @@ public class AnimalEntity {
 
     @Column(nullable = false)
     private String status;
+
+    @Column(nullable = false)
+    private String origin;
+
+    private Double acquisitionCost;
+
+    private Double salePrice;
+
+    private LocalDate saleDate;
 
     @Column(nullable = false)
     private String farmId;

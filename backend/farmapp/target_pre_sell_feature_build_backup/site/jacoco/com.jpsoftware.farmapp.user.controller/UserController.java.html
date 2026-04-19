@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.user.controller</a> &gt; <span class="el_source">UserController.java</span></div><h1>UserController.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.user.controller;
+
+import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
+import com.jpsoftware.farmapp.user.dto.UserResponse;
+import com.jpsoftware.farmapp.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping(&quot;/users&quot;)
+@Tag(name = &quot;Users&quot;, description = &quot;Operations for managing application users.&quot;)
+public class UserController {
+
+    private final UserService userService;
+
+<span class="fc" id="L31">    public UserController(UserService userService) {</span>
+<span class="fc" id="L32">        this.userService = userService;</span>
+<span class="fc" id="L33">    }</span>
+
+    @PostMapping
+    @Operation(summary = &quot;Create user&quot;, description = &quot;Creates a new application user.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;201&quot;, description = &quot;User created successfully&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Invalid request data&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity&lt;UserResponse&gt; create(@Valid @RequestBody CreateUserRequest request) {
+<span class="fc" id="L43">        UserResponse response = userService.create(request);</span>
+<span class="fc" id="L44">        return ResponseEntity.status(HttpStatus.CREATED).body(response);</span>
+    }
+
+    @GetMapping
+    @Operation(summary = &quot;List users&quot;, description = &quot;Returns all registered users.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Users retrieved successfully&quot;)
+    })
+    public ResponseEntity&lt;List&lt;UserResponse&gt;&gt; findAll() {
+<span class="fc" id="L53">        List&lt;UserResponse&gt; response = userService.findAll();</span>
+<span class="fc" id="L54">        return ResponseEntity.ok(response);</span>
+    }
+
+    @GetMapping(&quot;/{id}&quot;)
+    @Operation(summary = &quot;Get user by id&quot;, description = &quot;Returns a user by its identifier.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;User retrieved successfully&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Invalid user identifier&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;User not found&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity&lt;UserResponse&gt; findById(@PathVariable String id) {
+<span class="fc" id="L67">        UserResponse response = userService.findById(id);</span>
+<span class="fc" id="L68">        return ResponseEntity.ok(response);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

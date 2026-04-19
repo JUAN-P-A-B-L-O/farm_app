@@ -1,4 +1,5 @@
-export type AnimalStatus = 'ACTIVE' | 'INACTIVE'
+export type AnimalStatus = 'ACTIVE' | 'INACTIVE' | 'SOLD' | 'DEAD'
+export type AnimalOrigin = 'PURCHASED' | 'BORN'
 
 export interface Animal {
   id: string
@@ -6,6 +7,10 @@ export interface Animal {
   breed: string
   birthDate: string
   status: AnimalStatus
+  origin: AnimalOrigin
+  acquisitionCost: number | null
+  salePrice: number | null
+  saleDate: string | null
   farmId: string
 }
 
@@ -13,6 +18,9 @@ export interface AnimalFormData {
   tag: string
   breed: string
   birthDate: string
+  origin: AnimalOrigin
+  acquisitionCost: number | null
+  status?: AnimalStatus
   farmId: string
 }
 
@@ -21,4 +29,9 @@ export interface ApiErrorResponse {
   status: number
   error: string
   path: string
+}
+
+export interface SellAnimalData {
+  salePrice: number
+  saleDate?: string
 }

@@ -4,7 +4,7 @@
 
 ### What the system does
 
-`farm_app` is a farm management system focused on cattle operations. The current implementation covers operational records for animals, feeding, milk production, users, and analytics/dashboard reporting.
+`farm_app` is a farm management system focused on cattle operations. The current implementation covers authentication, farms, operational records for animals, feeding, milk production, feed types, milk prices, users, and analytics/dashboard reporting.
 
 ### Core features
 
@@ -13,26 +13,50 @@
   - farm is the operating boundary used by animals, feeding, production, feed types, dashboard, and analytics
 - Animals:
   - create, list, retrieve, update, and delete animal records
+  - track origin (`BORN` or `PURCHASED`) and optional acquisition cost
+  - support a dedicated sell action with persisted sale price and sale date
+  - lifecycle is status-based (`ACTIVE`, `SOLD`, `DEAD`, `INACTIVE`)
   - optional filtering by `farmId`
 - Feeding:
-  - create and list feeding records
+  - create, list, update, and soft-delete feeding records
   - retrieve individual feeding entries
-  - optional filtering by `animalId` and `date`
+  - optional filtering by `animalId`, `date`, and `farmId`
   - optional pagination on listing endpoints
+  - on create, `WORKER` users cannot choose the date; frontend hides the date field and backend uses the current server date, ignoring any incoming date
+  - on create, `MANAGER` users can set the date manually
+  - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
 - Production:
-  - create and list milk production records
+  - create, list, update, and soft-delete milk production records
   - retrieve individual production entries
-  - update production date and quantity
-  - optional filtering by `animalId` and `date`
+  - update production animal, date, and quantity
+  - optional filtering by `animalId`, `date`, and `farmId`
   - optional pagination on listing endpoints
+  - on create, `WORKER` users cannot choose the date; frontend hides the date field and backend uses the current server date, ignoring any incoming date
+  - on create, `MANAGER` users can set the date manually
+  - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
   - summary and profit views by animal
+- Feed types:
+  - create, list, retrieve, update, and soft-delete feed type records
+  - feed types are scoped by farm
+  - new feed types default to `active = true`
+  - delete marks feed types inactive rather than physically deleting rows
 - Users:
   - create users
   - list and retrieve users
   - users are also the accountability reference for feeding and production records
+  - current role values used by the frontend are `MANAGER` and `WORKER`
+  - `MANAGER` is the privileged role for dashboard, analytics, and delete operations
 - Analytics:
   - dashboard aggregates total production, feeding cost, revenue, profit, and animal count
+  - dashboard and analytics endpoints require role `MANAGER`
+  - sold-animal revenue is included in dashboard and analytics revenue/profit calculations
+  - profit-oriented endpoints support `includeAcquisitionCost` and default it to `true`
   - frontend includes analytics pages and charts
+- Milk prices:
+  - milk price is managed per farm as a time-based history
+  - each new price is stored as a new record with `price`, `effectiveDate`, `createdAt`, and `createdBy`
+  - current price is the latest record whose `effectiveDate` is on or before today
+  - if a farm has no effective milk price yet, reporting falls back to the legacy default price `2.0`
 
 ### Current implementation note
 
@@ -84,7 +108,8 @@ Important constraint:
 - Persistence is ID-based rather than relation-heavy
 - JPA entities mostly store scalar foreign keys such as `animalId`, `feedTypeId`, and `createdBy`
 - Financial values such as revenue and profit are calculated at read time
-- Milk price is currently hard-coded as `2.0` in reporting services
+- milk price resolution now lives in `milkprice.service.MilkPriceService`
+- production, dashboard, and analytics services use the current farm milk price by default for revenue/profit calculations
 
 ### Frontend
 
@@ -165,6 +190,7 @@ Endpoints:
 - `GET /animals`
 - `GET /animals/{id}`
 - `PUT /animals/{id}`
+- `POST /animals/{id}/sell`
 - `DELETE /animals/{id}`
 
 Create request:
@@ -174,6 +200,8 @@ Create request:
   "tag": "COW-101",
   "breed": "Holstein",
   "birthDate": "2022-01-15",
+  "origin": "PURCHASED",
+  "acquisitionCost": 1250.50,
   "farmId": "farm-001"
 }
 ```
@@ -183,16 +211,40 @@ Required fields:
 - `tag`
 - `breed`
 - `birthDate`
+- `origin`
 - `farmId`
 
 Key validations and rules:
 
 - `tag`, `breed`, and `farmId` must not be blank
 - `birthDate` must not be null
+- `origin` must be `PURCHASED` or `BORN`
+- `acquisitionCost` is required and must be greater than zero when `origin = PURCHASED`
+- `acquisitionCost` is cleared when `origin = BORN`
 - `tag` must be unique
 - new animals default to status `ACTIVE`
+- `PUT /animals/{id}` can update lifecycle status except that selling must use the dedicated sell action
+- `POST /animals/{id}/sell` stores `salePrice`, optional `saleDate` (defaults to current date), and changes status to `SOLD`
+- only `ACTIVE` animals can be sold
+- once sold, the animal cannot transition back to another status through generic update
+- `DELETE /animals/{id}` is now soft-delete behavior and marks the animal as `INACTIVE`
+- `DELETE /animals/{id}` requires role `MANAGER`
 - `GET /animals` optionally accepts `farmId`
 - update is partial, but provided string fields must not be blank
+
+Sell request:
+
+```json
+{
+  "salePrice": 3200.0,
+  "saleDate": "2026-04-14"
+}
+```
+
+Animal response characteristics:
+
+- includes optional `salePrice`
+- includes optional `saleDate`
 
 ### `/productions`
 
@@ -201,9 +253,10 @@ Endpoints:
 - `GET /productions`
 - `GET /productions/{id}`
 - `GET /productions/summary/by-animal?animalId=...`
-- `GET /productions/summary/profit/by-animal?animalId=...`
+- `GET /productions/summary/profit/by-animal?animalId=...&includeAcquisitionCost=true`
 - `POST /productions`
 - `PUT /productions/{id}`
+- `DELETE /productions/{id}`
 
 Create request:
 
@@ -220,6 +273,7 @@ Update request:
 
 ```json
 {
+  "animalId": "animal-001",
   "date": "2026-03-21",
   "quantity": 34.2
 }
@@ -238,17 +292,61 @@ Key validations and rules:
 - `date` must not be null
 - `date` cannot be in the future
 - `quantity` must be greater than zero
-- referenced animal must exist
+- referenced animal must exist and be `ACTIVE`
 - `userId` must be a valid UUID and must exist as a user
 - authenticated user context can override/fill `createdBy`
-- list endpoint supports optional `animalId`, `date`, `page`, and `size`
+- when the authenticated user has role `WORKER`, create ignores the incoming `date` and stores the current server date
+- when the authenticated user has role `MANAGER`, create still requires an explicit date
+- list endpoint supports optional `animalId`, `date`, `farmId`, `page`, and `size`
 - pagination is only returned when both `page` and `size` are provided
+- update can change `animalId`, `date`, and `quantity`
+- delete is soft-delete behavior and marks the record as `INACTIVE`
+- delete requires role `MANAGER`
+- profit summary includes acquisition cost by default and allows opting out with `includeAcquisitionCost=false`
+- profit summary uses the current milk price for the animal's farm
 
 Response characteristics:
 
 - includes top-level production fields
 - includes embedded animal summary
 - does not expose `createdBy`
+
+### `/milk-prices`
+
+Endpoints:
+
+- `POST /milk-prices?farmId=...`
+- `GET /milk-prices/current?farmId=...`
+- `GET /milk-prices?farmId=...`
+
+Create request:
+
+```json
+{
+  "price": 2.35,
+  "effectiveDate": "2026-04-14"
+}
+```
+
+Required fields:
+
+- `farmId` query param
+- `price`
+- `effectiveDate`
+
+Key validations and rules:
+
+- `farmId` must reference an accessible existing farm
+- `price` must be greater than zero and have at most 2 decimal places
+- `effectiveDate` must not be null
+- creating a price always inserts a new history record; previous values are never overwritten
+- `GET /milk-prices/current` returns the latest price effective on or before today for the farm
+- when no effective price exists yet, `GET /milk-prices/current` returns the legacy default price `2.0` with `fallbackDefault = true`
+- `GET /milk-prices` returns full farm price history ordered from newest to oldest
+
+Response characteristics:
+
+- includes `id`, `farmId`, `price`, `effectiveDate`, `createdAt`, `createdBy`, and `fallbackDefault`
 
 ### `/feedings`
 
@@ -257,6 +355,8 @@ Endpoints:
 - `POST /feedings`
 - `GET /feedings`
 - `GET /feedings/{id}`
+- `PUT /feedings/{id}`
+- `DELETE /feedings/{id}`
 
 Create request:
 
@@ -283,12 +383,17 @@ Key validations and rules:
 - all string identifiers must not be blank
 - `date` must not be null
 - `quantity` must be greater than zero
-- referenced animal must exist
+- referenced animal must exist and be `ACTIVE`
 - referenced feed type must exist
 - `userId` must be a valid UUID and must exist as a user
 - authenticated user context can override/fill `createdBy`
-- list endpoint supports optional `animalId`, `date`, `page`, and `size`
+- when the authenticated user has role `WORKER`, create ignores the incoming `date` and stores the current server date
+- when the authenticated user has role `MANAGER`, create still requires an explicit date
+- list endpoint supports optional `animalId`, `date`, `farmId`, `page`, and `size`
 - pagination is only returned when both `page` and `size` are provided
+- update can change `animalId`, `feedTypeId`, `date`, and `quantity`
+- delete is soft-delete behavior and marks the record as `INACTIVE`
+- delete requires role `MANAGER`
 
 Response characteristics:
 
@@ -304,6 +409,8 @@ Endpoints:
 - `POST /feed-types`
 - `GET /feed-types`
 - `GET /feed-types/{id}`
+- `PUT /feed-types/{id}`
+- `DELETE /feed-types/{id}`
 
 Create request:
 
@@ -316,6 +423,7 @@ Create request:
 
 Required fields:
 
+- `farmId` query param on create
 - `name`
 - `costPerKg`
 
@@ -324,11 +432,10 @@ Key validations and rules:
 - `name` must not be blank
 - `costPerKg` must be greater than zero
 - created feed types default to `active = true`
-- current backend has no update, deactivate, or delete endpoint for feed types
-
-Important frontend mismatch:
-
-- frontend service code includes `updateFeedType` and `deleteFeedType`, but the current backend does not implement those endpoints
+- list and read endpoints return active feed types
+- update changes `name` and `costPerKg`
+- delete is soft-delete behavior and marks the feed type inactive
+- delete requires role `MANAGER`
 
 ### `/users`
 
@@ -369,8 +476,20 @@ Key validations and rules:
 
 Important frontend mismatch:
 
-- frontend service code currently omits `password` on user creation
-- frontend service code also includes `updateUser` and `deleteUser`, but the current backend does not implement those endpoints
+- frontend service code includes `updateUser` and `deleteUser`, but the current backend does not implement those endpoints
+
+### Dashboard and analytics profit behavior
+
+- `GET /dashboard` requires role `MANAGER`
+- all `/analytics/**` endpoints require role `MANAGER`
+- `GET /dashboard` now accepts optional `includeAcquisitionCost` and defaults it to `true`
+- `GET /analytics/profit` now accepts optional `includeAcquisitionCost` and defaults it to `true`
+- dashboard revenue now includes milk revenue plus sold-animal revenue
+- dashboard total profit subtracts feeding cost and, when enabled, acquisition cost
+- analytics profit series applies acquisition cost once to the earliest returned period because the current animal model does not store a separate acquisition date
+- analytics profit series now also recognizes sold-animal revenue on each animal's `saleDate`
+- milk revenue in dashboard and analytics is based on the current milk price resolved for each farm
+- historical milk price records are preserved for future period-aware analytics, but current reporting still applies the latest effective farm price by default
 
 ### `/auth/login`
 
@@ -422,6 +541,10 @@ Response shape:
   - `/swagger-ui.html`
   - `POST /users`
 - All other endpoints require authentication
+- Role-based authorization:
+  - `MANAGER` can access dashboard and analytics
+  - `MANAGER` can perform `DELETE` requests
+  - non-manager authenticated users receive `403 Forbidden` for dashboard, analytics, and delete operations
 
 ### Login flow
 
@@ -455,21 +578,28 @@ Authorization: Bearer <jwt>
 
 - User
   - `id`, `name`, `email`, `role`, `password`
+- Farm
+  - `id`, `name`, `ownerId`
 - Animal
-  - `id`, `tag`, `breed`, `birthDate`, `status`, `farmId`
+  - `id`, `tag`, `breed`, `birthDate`, `status`, `origin`, `acquisitionCost`, `salePrice`, `saleDate`, `farmId`
 - Production
-  - `id`, `animalId`, `date`, `quantity`, `createdBy`
+  - `id`, `animalId`, `date`, `quantity`, `createdBy`, `farmId`, `status`
 - Feeding
-  - `id`, `animalId`, `feedTypeId`, `date`, `quantity`, `createdBy`
+  - `id`, `animalId`, `feedTypeId`, `date`, `quantity`, `createdBy`, `farmId`, `status`
+- MilkPrice
+  - `id`, `farmId`, `price`, `effectiveDate`, `createdAt`, `createdBy`
 - FeedType
-  - `id`, `name`, `costPerKg`, `active`
+  - `id`, `name`, `costPerKg`, `active`, `farmId`
 
 ### Database constraints and behavior
 
 - `animals.tag` is unique
 - many relational checks are enforced in services rather than via JPA relationships
 - operational tables use scalar IDs rather than object associations
+- production and feeding delete behavior is implemented with `status = INACTIVE`
+- feed type delete behavior is implemented with `active = false`
 - feeding cost is derived from `feedings.quantity * feed_types.cost_per_kg`
+- milk price history is persisted as append-only records per farm
 - revenue and profit are derived at query time, not persisted
 
 ## 6. Coding Standards
@@ -479,6 +609,7 @@ Authorization: Bearer <jwt>
 - Do not mix domain logic directly into controllers
 - Controllers must remain thin and delegate to services
 - Services own business rules, validations, and orchestration
+- Services use constructor injection; if a Spring service keeps multiple constructors for compatibility, explicitly annotate the full dependency constructor with `@Autowired`
 - Do not couple business logic to JPA annotations or entity graph behavior
 - Do not introduce rich JPA relation graphs unless explicitly required
 - Preserve mapper usage for DTO/entity transformations

@@ -5,6 +5,7 @@ export interface AnalyticsFilters {
   endDate: string
   animalId: string
   groupBy: AnalyticsGroupBy
+  includeAcquisitionCost: boolean
 }
 
 export interface AnalyticsSeriesApiPoint {

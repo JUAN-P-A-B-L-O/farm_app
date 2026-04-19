@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.animal.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,6 +28,14 @@ public class CreateAnimalRequest {
     @NotNull
     @Schema(description = "Animal birth date.", example = "2022-01-15")
     private LocalDate birthDate;
+
+    @NotBlank
+    @Schema(description = "Animal origin.", example = "PURCHASED", allowableValues = {"PURCHASED", "BORN"})
+    private String origin;
+
+    @Positive(message = "Animal acquisitionCost must be greater than zero")
+    @Schema(description = "Acquisition cost for purchased animals.", example = "1250.50")
+    private Double acquisitionCost;
 
     @NotBlank
     @Schema(description = "Farm identifier where the animal belongs.", example = "farm-001")

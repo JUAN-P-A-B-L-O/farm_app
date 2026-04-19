@@ -14,6 +14,7 @@ interface ProductionFormProps {
   submitLabel: string
   errorMessage: string
   requireUserSelection?: boolean
+  allowDateSelection?: boolean
 }
 
 function ProductionForm({
@@ -25,6 +26,7 @@ function ProductionForm({
   submitLabel,
   errorMessage,
   requireUserSelection = true,
+  allowDateSelection = true,
 }: ProductionFormProps) {
   const { t, language } = useTranslation()
   const [formData, setFormData] = useState<ProductionFormData>(initialValues)
@@ -74,13 +76,14 @@ function ProductionForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const submissionDate = allowDateSelection ? formData.date : ''
 
     if (!formData.animalId) {
       setValidationMessage(t('production.errors.selectAnimal'))
       return
     }
 
-    if (!formData.date) {
+    if (allowDateSelection && !submissionDate) {
       setValidationMessage(t('production.errors.selectDate'))
       return
     }
@@ -100,7 +103,10 @@ function ProductionForm({
       return
     }
 
-    await onSubmit(formData)
+    await onSubmit({
+      ...formData,
+      date: submissionDate,
+    })
   }
 
   const isFormDisabled =
@@ -155,16 +161,18 @@ function ProductionForm({
           </label>
         )}
 
-        <label className="animal-form__field">
-          <span>{t('production.form.date')}</span>
-          <input
-            name="date"
-            type="date"
-            value={formData.date}
-            onChange={handleChange}
-            required
-          />
-        </label>
+        {allowDateSelection && (
+          <label className="animal-form__field">
+            <span>{t('production.form.date')}</span>
+            <input
+              name="date"
+              type="date"
+              value={formData.date}
+              onChange={handleChange}
+              required
+            />
+          </label>
+        )}
 
         <label className="animal-form__field">
           <span>{t('production.form.quantity')}</span>

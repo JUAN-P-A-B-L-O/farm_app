@@ -3,70 +3,106 @@ top to bottom direction
 skinparam packageStyle rectangle
 skinparam linetype ortho
 
-actor "Farm Manager" as Manager
-actor "Farm Worker" as Worker
+actor "Public Client" as Public
+actor "Authenticated User" as User
+actor "WORKER" as Worker
+actor "MANAGER" as Manager
+
+User <|-- Worker
+User <|-- Manager
 
 rectangle "Farm Management System" {
 
-  package "Animals" {
-    (View Animals) as UC_ViewAnimals
-    (Manage Animals) as UC_ManageAnimals
-    (View Animal Details) as UC_ViewAnimalDetails
+  package "Authentication" {
+    (Login) as UC_Login
+    (Create User) as UC_CreateUser
   }
 
-  package "Production" {
-    (Record Production) as UC_RecordProduction
-    (View Production History) as UC_ViewProductionHistory
+  package "Farms" {
+    (Create Farm) as UC_CreateFarm
+    (View Accessible Farms) as UC_ViewFarms
+  }
+
+  package "Animals" {
+    (Create Animal) as UC_CreateAnimal
+    (View Animals) as UC_ViewAnimals
+    (Update Animal) as UC_UpdateAnimal
+    (Sell Animal) as UC_SellAnimal
+    (Soft Delete Animal) as UC_DeleteAnimal
+  }
+
+  package "Feed Types" {
+    (Create Feed Type) as UC_CreateFeedType
+    (View Feed Types) as UC_ViewFeedTypes
+    (Update Feed Type) as UC_UpdateFeedType
+    (Soft Delete Feed Type) as UC_DeleteFeedType
   }
 
   package "Feeding" {
     (Record Feeding) as UC_RecordFeeding
     (View Feeding History) as UC_ViewFeedingHistory
+    (Update Feeding) as UC_UpdateFeeding
+    (Soft Delete Feeding) as UC_DeleteFeeding
   }
 
-  package "Feed Types" {
-    (Manage Feed Types) as UC_ManageFeedTypes
-    (View Feed Types) as UC_ViewFeedTypes
+  package "Production" {
+    (Record Production) as UC_RecordProduction
+    (View Production History) as UC_ViewProductionHistory
+    (Update Production) as UC_UpdateProduction
+    (Soft Delete Production) as UC_DeleteProduction
+    (View Production Summary) as UC_ViewProductionSummary
   }
 
-  package "Users" {
-    (Manage Users) as UC_ManageUsers
+  package "Milk Prices" {
+    (Register Milk Price) as UC_RegisterMilkPrice
+    (View Current Milk Price) as UC_ViewCurrentMilkPrice
+    (View Milk Price History) as UC_ViewMilkPriceHistory
   }
 
-  package "Analytics" {
+  package "Reporting - MANAGER only" {
     (View Dashboard) as UC_ViewDashboard
     (View Analytics) as UC_ViewAnalytics
   }
-
-  package "System" {
-    (Switch Language) as UC_SwitchLanguage
-  }
 }
 
-' -------- Manager --------
-Manager --> UC_ManageAnimals
-Manager --> UC_ViewAnimals
-Manager --> UC_ViewAnimalDetails
-Manager --> UC_RecordProduction
-Manager --> UC_RecordFeeding
-Manager --> UC_ManageFeedTypes
-Manager --> UC_ManageUsers
+Public --> UC_Login
+Public --> UC_CreateUser
+
+User --> UC_CreateFarm
+User --> UC_ViewFarms
+User --> UC_CreateAnimal
+User --> UC_ViewAnimals
+User --> UC_UpdateAnimal
+User --> UC_SellAnimal
+User --> UC_CreateFeedType
+User --> UC_ViewFeedTypes
+User --> UC_UpdateFeedType
+User --> UC_RecordFeeding
+User --> UC_ViewFeedingHistory
+User --> UC_UpdateFeeding
+User --> UC_RecordProduction
+User --> UC_ViewProductionHistory
+User --> UC_UpdateProduction
+User --> UC_ViewProductionSummary
+User --> UC_RegisterMilkPrice
+User --> UC_ViewCurrentMilkPrice
+User --> UC_ViewMilkPriceHistory
+
+Manager --> UC_DeleteAnimal
+Manager --> UC_DeleteFeedType
+Manager --> UC_DeleteFeeding
+Manager --> UC_DeleteProduction
 Manager --> UC_ViewDashboard
 Manager --> UC_ViewAnalytics
-Manager --> UC_SwitchLanguage
 
-' -------- Worker --------
-Worker --> UC_ViewAnimals
-Worker --> UC_ViewAnimalDetails
-Worker --> UC_RecordProduction
-Worker --> UC_RecordFeeding
-Worker --> UC_ViewFeedTypes
-Worker --> UC_ViewDashboard
-Worker --> UC_ViewAnalytics
-Worker --> UC_SwitchLanguage
+note right of Manager
+  MANAGER is required for:
+  - dashboard
+  - analytics
+  - delete operations
+end note
 
-' -------- Includes --------
-UC_ViewAnimalDetails .> UC_ViewProductionHistory : <<include>>
-UC_ViewAnimalDetails .> UC_ViewFeedingHistory : <<include>>
+UC_ViewAnalytics .> UC_ViewProductionHistory : <<uses>>
+UC_ViewDashboard .> UC_ViewProductionSummary : <<uses>>
 
 @enduml

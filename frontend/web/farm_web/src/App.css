@@ -439,6 +439,16 @@
   color: #65717d;
 }
 
+.animals-table__status--sold {
+  background: #eef2ff;
+  color: #3346a3;
+}
+
+.animals-table__status--dead {
+  background: #fdecec;
+  color: #9c2f2f;
+}
+
 .animals-table__actions {
   display: flex;
   flex-wrap: wrap;
@@ -464,6 +474,18 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
+}
+
+.analytics-controls .analytics-controls__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.analytics-controls .analytics-controls__checkbox input {
+  width: auto;
+  padding: 0;
+  border: 0;
 }
 
 .analytics-controls label {

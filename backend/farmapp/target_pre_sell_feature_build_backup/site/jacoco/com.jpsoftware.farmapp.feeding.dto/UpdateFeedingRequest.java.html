@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UpdateFeedingRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.feeding.dto</a> &gt; <span class="el_source">UpdateFeedingRequest.java</span></div><h1>UpdateFeedingRequest.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.feeding.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDate;
+
+@Schema(description = &quot;Request payload for updating a feeding record.&quot;)
+public class UpdateFeedingRequest {
+
+    @Schema(description = &quot;Animal identifier.&quot;, example = &quot;animal-001&quot;)
+    private String animalId;
+
+    @Schema(description = &quot;Feed type identifier.&quot;, example = &quot;feed-type-001&quot;)
+    private String feedTypeId;
+
+    @Schema(description = &quot;Feeding date.&quot;, example = &quot;2026-03-20&quot;)
+    private LocalDate date;
+
+    @Schema(description = &quot;Feed quantity in kilograms.&quot;, example = &quot;14.5&quot;)
+    private Double quantity;
+
+<span class="fc" id="L21">    public UpdateFeedingRequest() {</span>
+<span class="fc" id="L22">    }</span>
+
+<span class="fc" id="L24">    public UpdateFeedingRequest(String animalId, String feedTypeId, LocalDate date, Double quantity) {</span>
+<span class="fc" id="L25">        this.animalId = animalId;</span>
+<span class="fc" id="L26">        this.feedTypeId = feedTypeId;</span>
+<span class="fc" id="L27">        this.date = date;</span>
+<span class="fc" id="L28">        this.quantity = quantity;</span>
+<span class="fc" id="L29">    }</span>
+
+    public String getAnimalId() {
+<span class="fc" id="L32">        return animalId;</span>
+    }
+
+    public void setAnimalId(String animalId) {
+<span class="fc" id="L36">        this.animalId = animalId;</span>
+<span class="fc" id="L37">    }</span>
+
+    public String getFeedTypeId() {
+<span class="fc" id="L40">        return feedTypeId;</span>
+    }
+
+    public void setFeedTypeId(String feedTypeId) {
+<span class="fc" id="L44">        this.feedTypeId = feedTypeId;</span>
+<span class="fc" id="L45">    }</span>
+
+    public LocalDate getDate() {
+<span class="fc" id="L48">        return date;</span>
+    }
+
+    public void setDate(LocalDate date) {
+<span class="fc" id="L52">        this.date = date;</span>
+<span class="fc" id="L53">    }</span>
+
+    public Double getQuantity() {
+<span class="fc" id="L56">        return quantity;</span>
+    }
+
+    public void setQuantity(Double quantity) {
+<span class="fc" id="L60">        this.quantity = quantity;</span>
+<span class="fc" id="L61">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

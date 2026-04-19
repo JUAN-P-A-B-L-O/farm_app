@@ -1,46 +1,78 @@
 classDiagram
     class User {
-        id
-        name
-        email
-        role
+        UUID id
+        String name
+        String email
+        String role
+        String password
+    }
+
+    class Farm {
+        String id
+        String name
+        UUID ownerId
     }
 
     class Animal {
-        id
-        tag
-        breed
-        birthDate
-        status
-        farmId
+        String id
+        String tag
+        String breed
+        LocalDate birthDate
+        String status
+        String origin
+        Double acquisitionCost
+        Double salePrice
+        LocalDate saleDate
+        String farmId
     }
 
     class FeedType {
-        id
-        name
-        costPerKg
-        active
+        String id
+        String name
+        Double costPerKg
+        Boolean active
+        String farmId
     }
 
     class Feeding {
-        id
-        animalId
-        feedTypeId
-        date
-        quantity
-        createdBy
+        String id
+        String animalId
+        String feedTypeId
+        LocalDate date
+        Double quantity
+        String createdBy
+        String farmId
+        String status
     }
 
     class Production {
-        id
-        animalId
-        date
-        quantity
-        createdBy
+        String id
+        String animalId
+        LocalDate date
+        Double quantity
+        String createdBy
+        String farmId
+        String status
     }
 
+    class MilkPrice {
+        String id
+        String farmId
+        Double price
+        LocalDate effectiveDate
+        LocalDateTime createdAt
+        String createdBy
+    }
+
+    User "1" --> "0..*" Farm : owns
+    Farm "1" --> "0..*" Animal : contains
+    Farm "1" --> "0..*" FeedType : catalogs
+    Farm "1" --> "0..*" MilkPrice : prices
+    Farm "1" --> "0..*" Feeding : scopes
+    Farm "1" --> "0..*" Production : scopes
     Animal "1" --> "0..*" Production : produces
     Animal "1" --> "0..*" Feeding : receives
-    FeedType "1" --> "0..*" Feeding : priced by
+    FeedType "1" --> "0..*" Feeding : prices
     User "1" --> "0..*" Feeding : records
     User "1" --> "0..*" Production : records
+    User "1" --> "0..*" MilkPrice : registers

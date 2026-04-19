@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProductionController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.production.controller</a> &gt; <span class="el_source">ProductionController.java</span></div><h1>ProductionController.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.production.controller;
+
+import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
+import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
+import com.jpsoftware.farmapp.production.dto.ProductionResponse;
+import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
+import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
+import com.jpsoftware.farmapp.production.service.ProductionService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@Validated
+@RequestMapping(&quot;/productions&quot;)
+@Tag(name = &quot;Productions&quot;, description = &quot;Operations for managing milk production records and summaries.&quot;)
+public class ProductionController {
+
+    private final ProductionService productionService;
+
+<span class="fc" id="L41">    public ProductionController(ProductionService productionService) {</span>
+<span class="fc" id="L42">        this.productionService = productionService;</span>
+<span class="fc" id="L43">    }</span>
+
+    @GetMapping
+    @Operation(summary = &quot;List productions&quot;, description = &quot;Returns production records, optionally filtered by animal or date.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Production records retrieved successfully&quot;)
+    })
+    public ResponseEntity&lt;?&gt; findAll(
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+<span class="pc bpc" id="L55" title="1 of 4 branches missed.">        if (page != null &amp;&amp; size != null) {</span>
+<span class="fc" id="L56">            PaginatedResponse&lt;ProductionResponse&gt; response = productionService.findAllPaginated(animalId, date, page, size);</span>
+<span class="fc" id="L57">            return ResponseEntity.ok(response);</span>
+        }
+
+<span class="fc" id="L60">        List&lt;ProductionResponse&gt; response = productionService.findAll(animalId, date);</span>
+<span class="fc" id="L61">        return ResponseEntity.ok(response);</span>
+    }
+
+    @GetMapping(&quot;/{id}&quot;)
+    @Operation(summary = &quot;Get production by id&quot;, description = &quot;Returns a production record by its identifier.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Production record retrieved successfully&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Invalid production identifier&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Production not found&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity&lt;ProductionResponse&gt; findById(@PathVariable String id) {
+<span class="fc" id="L74">        ProductionResponse response = productionService.findById(id);</span>
+<span class="fc" id="L75">        return ResponseEntity.ok(response);</span>
+    }
+
+    @GetMapping(&quot;/summary/by-animal&quot;)
+    @Operation(summary = &quot;Get production summary by animal&quot;, description = &quot;Returns the total produced quantity for a specific animal.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Production summary retrieved successfully&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Invalid animal identifier&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Animal not found&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity&lt;ProductionSummaryResponse&gt; getSummaryByAnimal(
+            @RequestParam @NotBlank(message = &quot;animalId must not be blank&quot;) String animalId) {
+<span class="fc" id="L89">        ProductionSummaryResponse response = productionService.getSummaryByAnimal(animalId);</span>
+<span class="fc" id="L90">        return ResponseEntity.ok(response);</span>
+    }
+
+    @GetMapping(&quot;/summary/profit/by-animal&quot;)
+    @Operation(summary = &quot;Get production profit by animal&quot;, description = &quot;Returns production, cost, revenue, and profit metrics for a specific animal.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Production profit summary retrieved successfully&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Invalid animal identifier&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Animal not found&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity&lt;ProductionProfitResponse&gt; getProfit(
+            @RequestParam @NotBlank(message = &quot;animalId must not be blank&quot;) String animalId) {
+<span class="fc" id="L104">        ProductionProfitResponse response = productionService.getProfitByAnimal(animalId);</span>
+<span class="fc" id="L105">        return ResponseEntity.ok(response);</span>
+    }
+
+    @PostMapping
+    @Operation(summary = &quot;Create production&quot;, description = &quot;Creates a new production record.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;201&quot;, description = &quot;Production record created successfully&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Invalid request data&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Related resource not found&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity&lt;ProductionResponse&gt; create(@Valid @RequestBody CreateProductionRequest request) {
+<span class="fc" id="L118">        ProductionResponse response = productionService.create(request);</span>
+<span class="fc" id="L119">        return ResponseEntity.status(HttpStatus.CREATED).body(response);</span>
+    }
+
+    @PutMapping(&quot;/{id}&quot;)
+    @Operation(summary = &quot;Update production&quot;, description = &quot;Updates mutable fields of an existing production record.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Production record updated successfully&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Invalid request data&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Production not found&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity&lt;ProductionResponse&gt; update(
+            @PathVariable String id,
+            @RequestBody UpdateProductionRequest request) {
+<span class="fc" id="L134">        ProductionResponse response = productionService.update(id, request);</span>
+<span class="fc" id="L135">        return ResponseEntity.ok(response);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

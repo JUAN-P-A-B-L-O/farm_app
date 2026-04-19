@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import UserForm from '../../components/user/UserForm'
+import { useAuth } from '../../hooks/useAuth'
 import { useTranslation } from '../../hooks/useTranslation'
 import { createUser, deleteUser, getAllUsers, updateUser } from '../../services/userService'
 import type { User, UserApiErrorResponse, UserFormData } from '../../types/user'
+import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
 const emptyUserForm: UserFormData = {
@@ -39,6 +41,8 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
 
 function UsersPage() {
   const { t } = useTranslation()
+  const { user: authenticatedUser } = useAuth()
+  const canDeleteResources = isManager(authenticatedUser)
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -209,14 +213,16 @@ function UsersPage() {
                         >
                           {t('accessControl.edit')}
                         </button>
-                        <button
-                          type="button"
-                          className="animals-table__action-button animals-table__action-button--danger"
-                          onClick={() => void handleDelete(user.id)}
-                          disabled={isSubmitting || isDeletingId === user.id}
-                        >
-                          {isDeletingId === user.id ? t('accessControl.deleting') : t('accessControl.delete')}
-                        </button>
+                        {canDeleteResources && (
+                          <button
+                            type="button"
+                            className="animals-table__action-button animals-table__action-button--danger"
+                            onClick={() => void handleDelete(user.id)}
+                            disabled={isSubmitting || isDeletingId === user.id}
+                          >
+                            {isDeletingId === user.id ? t('accessControl.deleting') : t('accessControl.delete')}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

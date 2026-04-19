@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.auth.model.AuthenticatedUser;
 import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
@@ -34,6 +35,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 class ProductionServiceTest {
 
@@ -47,6 +50,7 @@ class ProductionServiceTest {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.clearContext();
         productionRepositoryHandler = new InMemoryProductionRepository();
         animalRepositoryHandler = new ExistsByIdRepository();
         feedingRepositoryHandler = new InMemoryFeedingRepository();
@@ -93,12 +97,37 @@ class ProductionServiceTest {
     }
 
     @Test
+    void shouldUseCurrentDateWhenAuthenticatedUserIsWorker() {
+        UUID workerId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        animalRepositoryHandler.add("animal-1", "TAG-001");
+        userRepositoryHandler.add(workerId);
+        authenticate(workerId, "WORKER");
+
+        ProductionResponse response = productionService.create(
+                new CreateProductionRequest(
+                        "animal-1",
+                        LocalDate.of(2026, 3, 20),
+                        12.5,
+                        "11111111-1111-1111-1111-111111111111"));
+
+        assertEquals(LocalDate.now(), response.getDate());
+    }
+
+    @Test
     void shouldFailWhenAnimalDoesNotExist() {
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
                 () -> productionService.create(createProductionRequest));
 
         assertEquals("Animal not found", exception.getMessage());
+    }
+
+    private void authenticate(UUID userId, String role) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(
+                        new AuthenticatedUser(userId, List.of(role)),
+                        null,
+                        role));
     }
 
     @Test

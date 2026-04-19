@@ -30,8 +30,12 @@ export interface FeedingFormData {
   userId: string
 }
 
-export interface CreateFeedingPayload extends FeedingFormData {
+export interface CreateFeedingPayload {
+  animalId: string
+  feedTypeId: string
+  quantity: number
   userId: string
+  date?: string
 }
 
 export interface UpdateFeedingPayload {

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DashboardController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.dashboard.controller</a> &gt; <span class="el_source">DashboardController.java</span></div><h1>DashboardController.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.dashboard.controller;
+
+import com.jpsoftware.farmapp.dashboard.dto.DashboardResponse;
+import com.jpsoftware.farmapp.dashboard.service.DashboardService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@Tag(name = &quot;Dashboard&quot;, description = &quot;Operations for retrieving aggregated dashboard metrics.&quot;)
+public class DashboardController {
+
+    private final DashboardService dashboardService;
+
+<span class="fc" id="L19">    public DashboardController(DashboardService dashboardService) {</span>
+<span class="fc" id="L20">        this.dashboardService = dashboardService;</span>
+<span class="fc" id="L21">    }</span>
+
+    @GetMapping(&quot;/dashboard&quot;)
+    @Operation(summary = &quot;Get dashboard&quot;, description = &quot;Returns aggregated production, feeding cost, revenue, profit, and animal count metrics.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Dashboard data retrieved successfully&quot;)
+    })
+    public ResponseEntity&lt;DashboardResponse&gt; getDashboard() {
+<span class="fc" id="L29">        DashboardResponse response = dashboardService.getDashboard();</span>
+<span class="fc" id="L30">        return ResponseEntity.ok(response);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

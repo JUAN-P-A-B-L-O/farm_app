@@ -3,6 +3,7 @@ import axios from 'axios'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useTranslation } from '../../hooks/useTranslation'
+import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
 interface LoginLocationState {
@@ -12,7 +13,7 @@ interface LoginLocationState {
 }
 
 function LoginPage() {
-  const { isAuthenticated, login } = useAuth()
+  const { isAuthenticated, login, user } = useAuth()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
@@ -22,7 +23,7 @@ function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to={isManager(user) ? '/dashboard' : '/animals'} replace />
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -33,8 +34,8 @@ function LoginPage() {
     try {
       await login(email, password)
 
-      const nextPath =
-        (location.state as LoginLocationState | null)?.from?.pathname ?? '/dashboard'
+      const requestedPath = (location.state as LoginLocationState | null)?.from?.pathname
+      const nextPath = requestedPath ?? '/dashboard'
 
       navigate(nextPath, { replace: true })
     } catch (error) {

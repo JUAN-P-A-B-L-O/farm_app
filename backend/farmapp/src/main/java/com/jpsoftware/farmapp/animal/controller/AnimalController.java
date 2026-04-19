@@ -2,6 +2,7 @@ package com.jpsoftware.farmapp.animal.controller;
 
 import com.jpsoftware.farmapp.animal.dto.AnimalResponse;
 import com.jpsoftware.farmapp.animal.dto.CreateAnimalRequest;
+import com.jpsoftware.farmapp.animal.dto.SellAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
 import com.jpsoftware.farmapp.animal.service.AnimalService;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
@@ -86,6 +87,23 @@ public class AnimalController {
             @Valid @RequestBody UpdateAnimalRequest request,
             @RequestParam(required = false) String farmId) {
         AnimalResponse response = animalService.update(id, request, farmId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/sell")
+    @Operation(summary = "Sell animal", description = "Marks an animal as sold and stores its sale information.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Animal sold successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Animal not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<AnimalResponse> sell(
+            @PathVariable String id,
+            @Valid @RequestBody SellAnimalRequest request,
+            @RequestParam(required = false) String farmId) {
+        AnimalResponse response = animalService.sell(id, request, farmId);
         return ResponseEntity.ok(response);
     }
 

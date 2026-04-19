@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FeedTypeService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.feed.service</a> &gt; <span class="el_source">FeedTypeService.java</span></div><h1>FeedTypeService.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.feed.service;
+
+import com.jpsoftware.farmapp.feed.dto.CreateFeedTypeRequest;
+import com.jpsoftware.farmapp.feed.dto.FeedTypeResponse;
+import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
+import com.jpsoftware.farmapp.feed.mapper.FeedTypeMapper;
+import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class FeedTypeService {
+
+    private final FeedTypeRepository feedTypeRepository;
+    private final FeedTypeMapper feedTypeMapper;
+
+<span class="fc" id="L21">    public FeedTypeService(FeedTypeRepository feedTypeRepository, FeedTypeMapper feedTypeMapper) {</span>
+<span class="fc" id="L22">        this.feedTypeRepository = feedTypeRepository;</span>
+<span class="fc" id="L23">        this.feedTypeMapper = feedTypeMapper;</span>
+<span class="fc" id="L24">    }</span>
+
+    @Transactional
+    public FeedTypeResponse create(CreateFeedTypeRequest request) {
+<span class="fc" id="L28">        validateInput(request);</span>
+
+<span class="fc" id="L30">        FeedTypeEntity feedTypeEntity = feedTypeMapper.toEntity(request);</span>
+<span class="fc" id="L31">        FeedTypeEntity savedFeedType = feedTypeRepository.save(feedTypeEntity);</span>
+
+<span class="fc" id="L33">        return feedTypeMapper.toResponse(savedFeedType);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;FeedTypeResponse&gt; findAll() {
+<span class="fc" id="L38">        return feedTypeRepository.findAll().stream()</span>
+<span class="fc" id="L39">                .map(feedTypeMapper::toResponse)</span>
+<span class="fc" id="L40">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public FeedTypeResponse findById(String id) {
+<span class="fc" id="L45">        FeedTypeEntity feedTypeEntity = feedTypeRepository.findById(validateId(id))</span>
+<span class="fc" id="L46">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Feed type not found&quot;));</span>
+
+<span class="fc" id="L48">        return feedTypeMapper.toResponse(feedTypeEntity);</span>
+    }
+
+    private void validateInput(CreateFeedTypeRequest request) {
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L53">            throw new ValidationException(&quot;request must not be null&quot;);</span>
+        }
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (!StringUtils.hasText(request.getName())) {</span>
+<span class="fc" id="L56">            throw new ValidationException(&quot;name must not be blank&quot;);</span>
+        }
+<span class="pc bpc" id="L58" title="1 of 4 branches missed.">        if (request.getCostPerKg() == null || request.getCostPerKg() &lt;= 0) {</span>
+<span class="fc" id="L59">            throw new ValidationException(&quot;costPerKg must be greater than zero&quot;);</span>
+        }
+<span class="fc" id="L61">    }</span>
+
+    private String validateId(String id) {
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">        if (!StringUtils.hasText(id)) {</span>
+<span class="nc" id="L65">            throw new ValidationException(&quot;id must not be blank&quot;);</span>
+        }
+<span class="fc" id="L67">        return id;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

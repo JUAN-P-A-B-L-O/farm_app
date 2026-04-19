@@ -35,6 +35,7 @@ const initialFilters: AnalyticsFilters = {
   endDate: '',
   animalId: '',
   groupBy: 'day',
+  includeAcquisitionCost: true,
 }
 
 const emptyDataset: AnalyticsDataset = {
@@ -216,6 +217,16 @@ function AnalyticsPage() {
                 <option value="day">{t('analytics.groupByDay')}</option>
                 <option value="month">{t('analytics.groupByMonth')}</option>
               </select>
+            </label>
+
+            <label htmlFor="analytics-include-acquisition-cost" className="analytics-controls__checkbox">
+              <input
+                id="analytics-include-acquisition-cost"
+                type="checkbox"
+                checked={filters.includeAcquisitionCost}
+                onChange={(event) => updateFilter('includeAcquisitionCost', event.target.checked)}
+              />
+              <span>{t('analytics.includeAcquisitionCost')}</span>
             </label>
           </div>
 

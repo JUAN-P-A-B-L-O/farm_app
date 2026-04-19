@@ -106,8 +106,9 @@ public class ProductionController {
     })
     public ResponseEntity<ProductionProfitResponse> getProfit(
             @RequestParam @NotBlank(message = "animalId must not be blank") String animalId,
-            @RequestParam(required = false) String farmId) {
-        ProductionProfitResponse response = productionService.getProfitByAnimal(animalId, farmId);
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost) {
+        ProductionProfitResponse response = productionService.getProfitByAnimal(animalId, farmId, includeAcquisitionCost);
         return ResponseEntity.ok(response);
     }
 

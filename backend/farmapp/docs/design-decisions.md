@@ -2,128 +2,150 @@
 
 ## Context
 
-The codebase reflects a deliberate preference for implementation simplicity, explicit service-layer rules, and derived financial metrics over richer relational modeling. The decisions below are not accidental; they form the operating philosophy of the current system.
+The codebase favors implementation simplicity, explicit service-layer rules, JWT-secured REST endpoints, farm-scoped operations, and derived financial metrics over richer ORM modeling or materialized reporting projections.
 
-## 1. ID-Based References Instead of Object Relations
+## 1. Layered Monolith
 
 ### Decision
 
-Operational entities store scalar identifiers such as `animalId`, `feedTypeId`, and `createdBy` instead of using JPA associations.
+All backend functionality resides inside one Spring Boot application with module-oriented packages.
 
-### Why this design is likely used
+### Rationale
+
+- domain scope is still compact
+- local development and testing remain straightforward
+- controller, service, repository, mapper, entity, and DTO responsibilities are explicit
+- distributed-system complexity is not needed for the current feature set
+
+### Trade-offs
+
+Benefits:
+
+- low operational overhead
+- simple deployment model
+- easy cross-module service orchestration
+
+Costs:
+
+- scaling is coarse-grained
+- reporting and transactional concerns share one runtime
+- future domain growth may require clearer bounded contexts
+
+## 2. ID-Based References Instead of Object Relations
+
+### Decision
+
+Operational entities store scalar identifiers such as `farmId`, `animalId`, `feedTypeId`, `createdBy`, and `ownerId` instead of rich JPA associations.
+
+### Rationale
 
 - keeps the entity model simple
-- avoids lazy-loading pitfalls and bidirectional mapping complexity
-- makes request payloads straightforward and explicit
-- reduces coupling between modules at ORM level
-- keeps services in control of referential validation
+- avoids lazy-loading and bidirectional mapping complexity
+- makes request payloads explicit
+- keeps services in control of access and referential validation
 
 ### Trade-offs
 
 Benefits:
 
 - lower persistence complexity
-- easier debugging of entity state
-- more predictable serialization behavior
+- predictable serialization behavior
+- easy debugging of entity state
 
 Costs:
 
-- referential integrity is weaker at schema level
-- services must perform more manual checks
-- joins for reporting become explicit repository concerns
-- domain navigation is less expressive inside the codebase
+- weaker schema-level referential integrity
+- more manual checks in services
+- explicit joins or lookups are needed for reporting
 
-## 2. `userId` as Accountability Field Instead of User Relation
+## 3. Service-Layer Farm Access
 
 ### Decision
 
-Feeding and production records store the responsible user as a scalar identifier in `createdBy`, supplied from request `userId`.
+Farm ownership and access are enforced in services through `FarmAccessService` instead of database relationships or controller logic.
 
-### Why this design makes sense here
+### Rationale
 
-The current role of `User` is operational attribution, not identity management. The system only needs to know that a valid user recorded an action; it does not need rich user graph traversal or security-domain behavior.
-
-This makes a scalar reference sufficient for the current scope.
+- farm context applies across multiple modules
+- controllers stay thin
+- access failures can be treated consistently as not found
+- existing scalar-ID persistence style is preserved
 
 ### Trade-offs
 
 Benefits:
 
-- minimal coupling between user records and operational records
-- simpler persistence model
-- no dependency on user entity loading during normal writes
+- consistent farm validation path
+- minimal controller duplication
+- compatible with current entity design
 
 Costs:
 
-- no database-level navigation from production/feeding to user
-- UUID conversion must be handled carefully in services
-- future security features would likely require revisiting this model
+- direct database writes can bypass access expectations
+- every new farm-scoped service must explicitly use the access service
 
-## 3. Fixed Milk Price
+## 4. JWT Authentication With Public User Creation
 
 ### Decision
 
-Milk price is hard-coded as `2.0` in both production profit and dashboard calculations.
+The API uses stateless JWT authentication. `POST /users` remains public while most endpoints are protected.
 
-### Why this design is likely used
+### Rationale
 
-- establishes a deterministic financial baseline
-- keeps the profitability model easy to understand
-- avoids introducing pricing catalogs, historical price tables, or market integrations
-- allows revenue and profit features to exist without expanding the domain significantly
+- keeps backend security explicit and testable
+- supports authenticated farm ownership
+- allows initial user creation without an existing session
+- avoids server-side session storage
 
 ### Trade-offs
 
 Benefits:
 
-- trivial to reason about
-- no pricing synchronization problems
-- no additional persistence model required
+- simple protected endpoint model
+- works well for separate frontend/backend applications
+- authenticated user context can fill `createdBy`
 
 Costs:
 
-- not realistic for environments with variable milk prices
-- cannot support historical revenue accuracy by date
-- duplicates the constant across services, which would become a maintenance concern if pricing logic evolves
+- frontend must consistently attach tokens
+- public user creation may need stricter policy in a production deployment
 
-## 4. No `Farm` Entity
+## 5. Append-Only Milk Price History
 
 ### Decision
 
-The system stores `farmId` directly on `Animal` but does not model a dedicated `Farm` aggregate.
+Milk prices are stored as append-only farm-scoped records with `price`, `effectiveDate`, `createdAt`, and `createdBy`.
 
-### Why this design is likely used
+### Rationale
 
-- the current business workflow is animal-centric
-- farm-level master data is not required for the implemented features
-- a scalar identifier is enough to support grouping or filtering by farm
-- it keeps the scope narrow and avoids introducing another lifecycle to manage
+- preserves prior price entries
+- supports current price resolution without overwriting history
+- keeps price management separate from production writes
 
 ### Trade-offs
 
 Benefits:
 
-- reduced modeling overhead
-- simple filtering use case for animals
-- fewer dependencies between modules
+- simple audit trail for price changes
+- current price lookup is deterministic
+- future historical analytics can build on existing records
 
 Costs:
 
-- no farm-level referential integrity
-- no place to model farm attributes, ownership, or policy
-- future farm-level reporting would require additional domain work
+- current reporting still uses the latest effective farm price by default
+- production rows do not snapshot milk price at write time
 
-## 5. Calculated Values Instead of Persisted Financial Snapshots
+## 6. Calculated Values Instead of Persisted Financial Snapshots
 
 ### Decision
 
-Revenue, feeding cost, and profit are calculated at read time rather than persisted as stored values.
+Revenue, feeding cost, and profit are calculated at read time.
 
-### Why this design is strong for the current scope
+### Rationale
 
-- source-of-truth data stays limited to operational events
-- avoids synchronization bugs between raw records and stored aggregates
-- makes dashboards and profit queries immediately reflect the latest inputs
+- source-of-truth data stays limited to operational events and price records
+- dashboards and analytics immediately reflect changed inputs
+- no batch recalculation process is required
 
 ### Trade-offs
 
@@ -131,70 +153,54 @@ Benefits:
 
 - less risk of stale derived data
 - simpler write path
-- no batch recalculation process required
+- fewer persisted financial fields
 
 Costs:
 
 - every reporting request depends on live aggregation
-- performance may become a concern as data volume grows
-- historical recalculation behavior can become problematic if pricing rules change
+- historical results can change when feed type costs or current milk prices change
+- performance may require projections if data volume grows
 
-## 6. Service-Layer Integrity Over Schema-Layer Integrity
+## 7. Soft Deletes for Operational Records
 
 ### Decision
 
-The application validates relational consistency in services instead of relying on JPA associations and foreign-key modeling.
+Animal, feeding, production, and feed type delete endpoints do not hard-delete rows.
 
-### Why this design works in this codebase
+### Current behavior
 
-It aligns with the overall preference for explicit control and small-system pragmatism. The services already own business validation, so existence checks fit naturally into the same layer.
+- animals are marked `INACTIVE`
+- feedings are marked `INACTIVE`
+- productions are marked `INACTIVE`
+- feed types are marked `active = false`
+
+### Rationale
+
+- preserves historical operational records
+- avoids accidental loss of data used for auditing
+- keeps delete operations reversible at database level if needed
 
 ### Trade-offs
 
 Benefits:
 
-- integrity rules are visible in one place
-- application behavior remains explicit
-- simpler entity classes
+- safer operational history
+- read paths can consistently filter active records
 
 Costs:
 
-- integrity protection is bypassable by direct database writes
-- cross-service consistency must remain carefully maintained
-- schema evolution toward stronger guarantees will require additional work
-
-## 7. Layered Monolith Instead of Distributed Components
-
-### Decision
-
-All functionality resides inside one Spring Boot application.
-
-### Why this is appropriate
-
-- domain scope is still small
-- module boundaries are clear enough within a single deployable unit
-- the operational burden of microservices would not be justified
-
-### Trade-offs
-
-Benefits:
-
-- lower operational overhead
-- simple deployment model
-- easy local development and testing
-
-Costs:
-
-- scaling is coarse-grained
-- reporting and transactional concerns share the same runtime boundary
-- future domain expansion may eventually require clearer bounded contexts
+- services and repositories must consistently filter inactive rows
+- aggregate queries must account for status/active flags
 
 ## Decision Summary
 
-The system favors:
+The system currently favors:
 
-- explicitness over ORM richness
-- derived reporting over stored projections
-- scope control over completeness
+- explicit service rules over ORM-rich modeling
+- JWT-secured REST over session-based state
+- farm-scoped source records over global-only operations
+- append-only price history over mutable price settings
+- derived reporting over persisted projections
+- soft deletion over physical deletion
 
-That makes the current implementation coherent for an early-stage operational backend. The main trade-off is that long-term scale, historical financial accuracy, and relational integrity would require deliberate architectural strengthening.
+These choices are coherent for the current backend. Long-term scale, stricter relational integrity, and historically exact financial reporting would require deliberate architectural strengthening.

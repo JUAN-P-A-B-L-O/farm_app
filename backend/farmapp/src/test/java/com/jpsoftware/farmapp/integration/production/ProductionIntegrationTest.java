@@ -31,6 +31,7 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
                         .content(ProductionFixture.createRequestJson("animal-1", savedUser.getId().toString())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
+                .andExpect(jsonPath("$.date").value("2026-03-20"))
                 .andExpect(jsonPath("$.animal.id").value("animal-1"))
                 .andExpect(jsonPath("$.animal.tag").value("TAG-001"))
                 .andReturn();
@@ -66,6 +67,7 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
                         .content(ProductionFixture.createRequestJson("animal-1", savedUser.getId().toString())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.animalId").value("animal-1"))
+                .andExpect(jsonPath("$.date").value("2026-03-20"))
                 .andExpect(jsonPath("$.quantity").value(12.5))
                 .andReturn();
 
@@ -102,6 +104,20 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.totalProduction").value(15.0))
                 .andExpect(jsonPath("$.totalFeedingCost").value(20.0))
                 .andExpect(jsonPath("$.profit").value(10.0));
+    }
+
+    @Test
+    void shouldIgnoreProvidedCreateDateForWorker() throws Exception {
+        UserEntity worker = createAuthenticatedUser("WORKER");
+        String authorization = bearerToken(worker);
+        animalRepository.save(AnimalFixture.animalEntity());
+
+        mockMvc.perform(post("/productions")
+                        .header("Authorization", authorization)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(ProductionFixture.createRequestJson("animal-1", worker.getId().toString())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.date").value(java.time.LocalDate.now().toString()));
     }
 
     @Test

@@ -1,20 +1,27 @@
 flowchart LR
-    U[Farm Operator / User]
+    U[API Client]
+    AUTH[JWT Authentication]
     API[FarmApp Backend API\nSpring Boot REST Application]
-    DB[(Relational Database)]
+    DB[(PostgreSQL Runtime DB\nH2 Test DB)]
 
-    U -->|Register production| API
-    U -->|Register feeding| API
-    U -->|Request dashboard and profit| API
+    U -->|POST /auth/login| API
+    API -->|Return JWT| U
+    U -->|Authorization: Bearer token| AUTH
+    AUTH --> API
 
-    API -->|Persist production records| DB
-    API -->|Persist feeding records| DB
-    API -->|Persist animals, feed types, users| DB
+    U -->|Manage farms, animals, feed types| API
+    U -->|Record feedings and productions| API
+    U -->|Manage milk prices| API
+    U -->|Request dashboard and analytics| API
 
-    DB -->|Load production aggregates| API
-    DB -->|Load feeding cost aggregates| API
-    DB -->|Load animal count| API
+    API -->|Persist users and farms| DB
+    API -->|Persist animals and lifecycle data| DB
+    API -->|Persist feed types, feedings, productions| DB
+    API -->|Persist milk price history| DB
 
-    API -->|Production response| U
-    API -->|Feeding response| U
-    API -->|Profit and dashboard response| U
+    DB -->|Load source records| API
+    DB -->|Load aggregate data| API
+    DB -->|Resolve current milk price| API
+
+    API -->|Operational responses| U
+    API -->|Derived financial metrics| U

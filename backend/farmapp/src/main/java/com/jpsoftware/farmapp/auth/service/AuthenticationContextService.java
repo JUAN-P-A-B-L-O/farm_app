@@ -32,4 +32,16 @@ public class AuthenticationContextService {
                 .map(UUID::toString)
                 .orElseGet(() -> StringUtils.hasText(fallbackUserId) ? fallbackUserId : null);
     }
+
+    public boolean hasRole(String role) {
+        if (!StringUtils.hasText(role)) {
+            return false;
+        }
+
+        return getAuthenticatedUser()
+                .map(AuthenticatedUser::roles)
+                .stream()
+                .flatMap(java.util.Collection::stream)
+                .anyMatch(authenticatedRole -> role.equalsIgnoreCase(authenticatedRole));
+    }
 }

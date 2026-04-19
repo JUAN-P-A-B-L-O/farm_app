@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest
+-------------------------------------------------------------------------------
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.272 s -- in com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest

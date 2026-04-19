@@ -2,6 +2,7 @@ package com.jpsoftware.farmapp.animal.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,6 +29,13 @@ public class UpdateAnimalRequest {
     @Schema(description = "Current animal status.", example = "ACTIVE")
     private String status;
 
+    @Schema(description = "Animal origin.", example = "BORN", allowableValues = {"PURCHASED", "BORN"})
+    private String origin;
+
+    @Positive(message = "Animal acquisitionCost must be greater than zero")
+    @Schema(description = "Acquisition cost for purchased animals.", example = "1250.50")
+    private Double acquisitionCost;
+
     @Schema(description = "Farm identifier where the animal belongs.", example = "farm-001")
     private String farmId;
 
@@ -47,6 +55,12 @@ public class UpdateAnimalRequest {
     @Schema(hidden = true)
     public boolean isStatusValid() {
         return status == null || StringUtils.hasText(status);
+    }
+
+    @AssertTrue(message = "Animal origin must not be blank")
+    @Schema(hidden = true)
+    public boolean isOriginValid() {
+        return origin == null || StringUtils.hasText(origin);
     }
 
     @AssertTrue(message = "Animal farmId must not be blank")

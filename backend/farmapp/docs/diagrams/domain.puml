@@ -7,25 +7,31 @@ skinparam linetype ortho
 skinparam shadowing false
 skinparam classAttributeIconSize 0
 
+class User {
+  id: UUID
+  name: String
+  email: String
+  role: String
+  password: String
+}
+
+class Farm {
+  id: String
+  name: String
+  ownerId: UUID
+}
+
 class Animal {
   id: String
   tag: String
   breed: String
   birthDate: LocalDate
   status: String
+  origin: String
+  acquisitionCost: Double
+  salePrice: Double
+  saleDate: LocalDate
   farmId: String
-}
-
-class Production {
-  id: String
-  date: LocalDate
-  quantity: Double
-}
-
-class Feeding {
-  id: String
-  date: LocalDate
-  quantity: Double
 }
 
 class FeedType {
@@ -33,29 +39,60 @@ class FeedType {
   name: String
   costPerKg: Double
   active: Boolean
+  farmId: String
 }
 
-class User {
-  id: UUID
-  name: String
-  email: String
-  role: String
+class Feeding {
+  id: String
+  animalId: String
+  feedTypeId: String
+  date: LocalDate
+  quantity: Double
+  createdBy: String
+  farmId: String
+  status: String
 }
 
+class Production {
+  id: String
+  animalId: String
+  date: LocalDate
+  quantity: Double
+  createdBy: String
+  farmId: String
+  status: String
+}
+
+class MilkPrice {
+  id: String
+  farmId: String
+  price: Double
+  effectiveDate: LocalDate
+  createdAt: LocalDateTime
+  createdBy: String
+}
+
+User "1" --> "0..*" Farm : owns
+Farm "1" --> "0..*" Animal : contains
+Farm "1" --> "0..*" FeedType : catalogs
+Farm "1" --> "0..*" Feeding : scopes
+Farm "1" --> "0..*" Production : scopes
+Farm "1" --> "0..*" MilkPrice : prices
 Animal "1" --> "0..*" Production : produces
 Animal "1" --> "0..*" Feeding : receives
 FeedType "1" --> "0..*" Feeding : used in
 User "1" --> "0..*" Production : recorded by
 User "1" --> "0..*" Feeding : recorded by
+User "1" --> "0..*" MilkPrice : registered by
 
 note right of Animal
-  Central livestock aggregate used by
-  production and feeding operations.
+  Lifecycle states:
+  ACTIVE, SOLD, DEAD, INACTIVE.
 end note
 
-note bottom of FeedType
-  Represents the catalog of feed options
-  and their operational cost.
+note bottom of MilkPrice
+  Append-only farm price history.
+  Current price is resolved at read time.
 end note
 
 @enduml

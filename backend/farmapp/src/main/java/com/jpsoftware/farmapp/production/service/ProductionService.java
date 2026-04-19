@@ -6,6 +6,7 @@ import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -35,8 +37,7 @@ import org.springframework.util.StringUtils;
 
 @Service
 public class ProductionService {
-
-    private static final Double MILK_PRICE = 2.0;
+    private static final String WORKER_ROLE = "WORKER";
 
     private final ProductionRepository productionRepository;
     private final FeedingRepository feedingRepository;
@@ -45,7 +46,9 @@ public class ProductionService {
     private final ProductionMapper productionMapper;
     private final AuthenticationContextService authenticationContextService;
     private final FarmAccessService farmAccessService;
+    private final MilkPriceService milkPriceService;
 
+    @Autowired
     public ProductionService(
             ProductionRepository productionRepository,
             FeedingRepository feedingRepository,
@@ -53,7 +56,8 @@ public class ProductionService {
             UserRepository userRepository,
             ProductionMapper productionMapper,
             AuthenticationContextService authenticationContextService,
-            FarmAccessService farmAccessService) {
+            FarmAccessService farmAccessService,
+            MilkPriceService milkPriceService) {
         this.productionRepository = productionRepository;
         this.feedingRepository = feedingRepository;
         this.animalRepository = animalRepository;
@@ -61,16 +65,37 @@ public class ProductionService {
         this.productionMapper = productionMapper;
         this.authenticationContextService = authenticationContextService;
         this.farmAccessService = farmAccessService;
+        this.milkPriceService = milkPriceService;
+    }
+
+    public ProductionService(
+            ProductionRepository productionRepository,
+            FeedingRepository feedingRepository,
+            AnimalRepository animalRepository,
+            UserRepository userRepository,
+            ProductionMapper productionMapper,
+            AuthenticationContextService authenticationContextService) {
+        this(
+                productionRepository,
+                feedingRepository,
+                animalRepository,
+                userRepository,
+                productionMapper,
+                authenticationContextService,
+                null,
+                null);
     }
 
     @Transactional
     public ProductionResponse create(CreateProductionRequest request, String farmId) {
         String createdBy = authenticationContextService.resolveUserId(request != null ? request.getUserId() : null);
-        validateInput(request, createdBy);
+        LocalDate effectiveDate = resolveCreationDate(request);
+        validateInput(request, createdBy, effectiveDate);
         String resolvedFarmId = resolveFarmId(request, farmId);
         validateRelations(request, createdBy, resolvedFarmId);
 
         ProductionEntity productionEntity = toEntity(request);
+        productionEntity.setDate(effectiveDate);
         productionEntity.setQuantity(DecimalScaleUtils.normalize(productionEntity.getQuantity()));
         productionEntity.setCreatedBy(createdBy);
         productionEntity.setFarmId(resolvedFarmId);
@@ -80,9 +105,19 @@ public class ProductionService {
         return toEnrichedResponse(savedProduction);
     }
 
+    @Transactional
+    public ProductionResponse create(CreateProductionRequest request) {
+        return create(request, null);
+    }
+
     @Transactional(readOnly = true)
     public List<ProductionResponse> findAll(String animalId, LocalDate date, String farmId) {
         return getAllProductions(animalId, date, farmId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductionResponse> findAll(String animalId, LocalDate date) {
+        return findAll(animalId, date, null);
     }
 
     @Transactional(readOnly = true)
@@ -100,6 +135,11 @@ public class ProductionService {
     }
 
     @Transactional(readOnly = true)
+    public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
+        return findAllPaginated(animalId, date, null, page, size);
+    }
+
+    @Transactional(readOnly = true)
     public PaginatedResponse<ProductionResponse> getAllProductionsPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
         Page<ProductionEntity> productions = findProductions(animalId, date, farmId, PageRequest.of(page, size));
         Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(productions.getContent());
@@ -114,8 +154,13 @@ public class ProductionService {
     }
 
     @Transactional(readOnly = true)
+    public ProductionResponse findById(String id) {
+        return findById(id, null);
+    }
+
+    @Transactional(readOnly = true)
     public ProductionResponse getProductionById(String id, String farmId) {
-        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        validateAccessibleFarmIfPresent(farmId);
         ProductionEntity productionEntity = (StringUtils.hasText(farmId)
                 ? productionRepository.findByIdAndFarmIdAndStatus(validateId(id), farmId, ProductionEntity.STATUS_ACTIVE)
                 : productionRepository.findById(validateId(id)))
@@ -127,34 +172,61 @@ public class ProductionService {
     @Transactional(readOnly = true)
     public ProductionSummaryResponse getSummaryByAnimal(String animalId, String farmId) {
         String validatedAnimalId = validateAnimalId(animalId);
-        validateAnimalExists(validatedAnimalId, farmId);
+        validateAnimal(validatedAnimalId, farmId);
 
         Double totalQuantity = productionRepository.sumQuantityByAnimalId(validatedAnimalId);
         return new ProductionSummaryResponse(validatedAnimalId, DecimalScaleUtils.zeroIfNull(totalQuantity));
     }
 
     @Transactional(readOnly = true)
-    public ProductionProfitResponse getProfitByAnimal(String animalId, String farmId) {
+    public ProductionSummaryResponse getSummaryByAnimal(String animalId) {
+        return getSummaryByAnimal(animalId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionProfitResponse getProfitByAnimal(String animalId, String farmId, boolean includeAcquisitionCost) {
         String validatedAnimalId = validateAnimalId(animalId);
-        validateAnimalExists(validatedAnimalId, farmId);
+        AnimalEntity animal = validateAnimal(validatedAnimalId, farmId);
 
         Double totalProduction = DecimalScaleUtils.zeroIfNull(productionRepository.sumProductionByAnimalId(validatedAnimalId));
         Double totalFeedingCost = DecimalScaleUtils.zeroIfNull(feedingRepository.sumFeedingCostByAnimalId(validatedAnimalId));
-        Double revenue = DecimalScaleUtils.multiply(totalProduction, MILK_PRICE);
-        Double profit = DecimalScaleUtils.subtract(revenue, totalFeedingCost);
+        Double acquisitionCost = includeAcquisitionCost
+                ? DecimalScaleUtils.zeroIfNull(animal.getAcquisitionCost())
+                : 0.0;
+        Double milkPrice = milkPriceService != null
+                ? milkPriceService.resolveCurrentPriceValue(animal.getFarmId())
+                : MilkPriceService.DEFAULT_MILK_PRICE;
+        Double revenue = DecimalScaleUtils.multiply(totalProduction, milkPrice);
+        Double totalCost = DecimalScaleUtils.normalize(totalFeedingCost + acquisitionCost);
+        Double profit = DecimalScaleUtils.subtract(revenue, totalCost);
 
         return new ProductionProfitResponse(
                 validatedAnimalId,
                 totalProduction,
-                totalFeedingCost,
-                MILK_PRICE,
+                totalCost,
+                milkPrice,
                 revenue,
                 profit);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionProfitResponse getProfitByAnimal(String animalId, String farmId) {
+        return getProfitByAnimal(animalId, farmId, true);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionProfitResponse getProfitByAnimal(String animalId) {
+        return getProfitByAnimal(animalId, null, true);
     }
 
     @Transactional
     public ProductionResponse update(String id, UpdateProductionRequest request, String farmId) {
         return updateProduction(id, request, farmId);
+    }
+
+    @Transactional
+    public ProductionResponse update(String id, UpdateProductionRequest request) {
+        return update(id, request, null);
     }
 
     @Transactional
@@ -167,7 +239,7 @@ public class ProductionService {
         ensureProductionIsActive(productionEntity, "Inactive production cannot be updated");
 
         if (StringUtils.hasText(request.getAnimalId())) {
-            validateAnimalExists(request.getAnimalId(), farmId);
+            validateAnimalIsActive(request.getAnimalId(), farmId);
             productionEntity.setAnimalId(request.getAnimalId());
         }
         if (request.getDate() != null) {
@@ -200,6 +272,11 @@ public class ProductionService {
         productionRepository.save(productionEntity);
     }
 
+    @Transactional
+    public void deleteProduction(String id) {
+        deleteProduction(id, null);
+    }
+
     private ProductionResponse toEnrichedResponse(ProductionEntity productionEntity) {
         AnimalSummaryResponse animal = animalRepository.findById(productionEntity.getAnimalId())
                 .map(this::toAnimalSummary)
@@ -221,17 +298,17 @@ public class ProductionService {
         return new AnimalSummaryResponse(animalEntity.getId(), animalEntity.getTag());
     }
 
-    private void validateInput(CreateProductionRequest request, String createdBy) {
+    private void validateInput(CreateProductionRequest request, String createdBy, LocalDate effectiveDate) {
         if (request == null) {
             throw new ValidationException("request must not be null");
         }
         if (!StringUtils.hasText(request.getAnimalId())) {
             throw new ValidationException("animalId must not be blank");
         }
-        if (request.getDate() == null) {
+        if (effectiveDate == null) {
             throw new ValidationException("date must not be null");
         }
-        if (request.getDate().isAfter(LocalDate.now())) {
+        if (effectiveDate.isAfter(LocalDate.now())) {
             throw new BusinessException("Date cannot be in the future");
         }
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
@@ -244,7 +321,7 @@ public class ProductionService {
     }
 
     private void validateRelations(CreateProductionRequest request, String createdBy, String farmId) {
-        validateAnimalExists(request.getAnimalId(), farmId);
+        validateAnimalIsActive(request.getAnimalId(), farmId);
         if (!userRepository.existsById(parseUserId(createdBy))) {
             throw new ResourceNotFoundException("User not found");
         }
@@ -254,8 +331,16 @@ public class ProductionService {
         return productionMapper.toEntity(request);
     }
 
+    private LocalDate resolveCreationDate(CreateProductionRequest request) {
+        if (authenticationContextService.hasRole(WORKER_ROLE)) {
+            return LocalDate.now();
+        }
+
+        return request != null ? request.getDate() : null;
+    }
+
     private List<ProductionEntity> findProductions(String animalId, LocalDate date, String farmId) {
-        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        validateAccessibleFarmIfPresent(farmId);
         if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId) && date != null) {
             return productionRepository.findByFarmIdAndAnimalIdAndDateAndStatus(farmId, animalId, date, ProductionEntity.STATUS_ACTIVE);
         }
@@ -281,7 +366,7 @@ public class ProductionService {
     }
 
     private Page<ProductionEntity> findProductions(String animalId, LocalDate date, String farmId, org.springframework.data.domain.Pageable pageable) {
-        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        validateAccessibleFarmIfPresent(farmId);
         if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId) && date != null) {
             return productionRepository.findByFarmIdAndAnimalIdAndDateAndStatus(farmId, animalId, date, ProductionEntity.STATUS_ACTIVE, pageable);
         }
@@ -307,7 +392,7 @@ public class ProductionService {
     }
 
     private ProductionEntity getProductionIncludingInactive(String id, String farmId) {
-        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        validateAccessibleFarmIfPresent(farmId);
         return (StringUtils.hasText(farmId)
                 ? productionRepository.findAnyByIdAndFarmId(validateId(id), farmId)
                 : productionRepository.findAnyById(validateId(id)))
@@ -343,20 +428,32 @@ public class ProductionService {
         return animalId;
     }
 
-    private void validateAnimalExists(String animalId, String farmId) {
-        if (!animalRepository.existsById(animalId) || (StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId))) {
+    private AnimalEntity validateAnimal(String animalId, String farmId) {
+        AnimalEntity animal = StringUtils.hasText(farmId)
+                ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)
+                : animalRepository.findById(animalId).orElse(null);
+        if (animal == null) {
             throw new ResourceNotFoundException("Animal not found");
         }
+        return animal;
+    }
+
+    private AnimalEntity validateAnimalIsActive(String animalId, String farmId) {
+        AnimalEntity animal = validateAnimal(animalId, farmId);
+        if (!AnimalEntity.STATUS_ACTIVE.equals(animal.getStatus())) {
+            throw new ValidationException("Animal must be ACTIVE for production operations");
+        }
+        return animal;
     }
 
     private String resolveFarmId(CreateProductionRequest request, String farmId) {
         if (StringUtils.hasText(farmId)) {
-            return farmAccessService.validateAccessibleFarm(farmId);
+            return farmAccessService != null ? farmAccessService.validateAccessibleFarm(farmId) : farmId;
         }
 
         AnimalEntity animalEntity = animalRepository.findById(request.getAnimalId())
                 .orElseThrow(() -> new ResourceNotFoundException("Animal not found"));
-        return farmAccessService.validateAccessibleFarm(animalEntity.getFarmId());
+        return farmAccessService != null ? farmAccessService.validateAccessibleFarm(animalEntity.getFarmId()) : animalEntity.getFarmId();
     }
 
     private java.util.UUID parseUserId(String userId) {
@@ -364,6 +461,12 @@ public class ProductionService {
             return java.util.UUID.fromString(userId);
         } catch (IllegalArgumentException exception) {
             throw new ValidationException("userId must be a valid UUID");
+        }
+    }
+
+    private void validateAccessibleFarmIfPresent(String farmId) {
+        if (farmAccessService != null) {
+            farmAccessService.validateAccessibleFarmIfPresent(farmId);
         }
     }
 

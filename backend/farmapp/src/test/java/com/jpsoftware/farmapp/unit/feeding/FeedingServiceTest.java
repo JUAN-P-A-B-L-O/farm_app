@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.auth.model.AuthenticatedUser;
 import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
@@ -33,6 +34,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 class FeedingServiceTest {
 
@@ -44,6 +47,7 @@ class FeedingServiceTest {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.clearContext();
         feedingRepositoryHandler = new InMemoryFeedingRepository();
         animalRepositoryHandler = new ExistsByIdRepository();
         feedTypeRepositoryHandler = new ExistsByIdRepository();
@@ -85,6 +89,25 @@ class FeedingServiceTest {
     }
 
     @Test
+    void shouldUseCurrentDateWhenAuthenticatedUserIsWorker() {
+        UUID workerId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
+        feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");
+        userRepositoryHandler.add(workerId);
+        authenticate(workerId, "WORKER");
+
+        FeedingResponse response = feedingService.create(
+                new CreateFeedingRequest(
+                        "animal-1",
+                        "feed-type-1",
+                        LocalDate.of(2026, 3, 24),
+                        8.5,
+                        "11111111-1111-1111-1111-111111111111"));
+
+        assertEquals(LocalDate.now(), response.getDate());
+    }
+
+    @Test
     void shouldFailWhenAnimalNotFound() {
         feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");
 
@@ -99,6 +122,14 @@ class FeedingServiceTest {
                                 "11111111-1111-1111-1111-111111111111")));
 
         assertEquals("Animal not found", exception.getMessage());
+    }
+
+    private void authenticate(UUID userId, String role) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(
+                        new AuthenticatedUser(userId, List.of(role)),
+                        null,
+                        role));
     }
 
     @Test

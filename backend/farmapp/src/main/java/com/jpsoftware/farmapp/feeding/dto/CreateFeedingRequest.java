@@ -20,7 +20,6 @@ public class CreateFeedingRequest {
     @Schema(description = "Feed type identifier.", example = "feed-type-001")
     private String feedTypeId;
 
-    @NotNull(message = "date must not be null")
     @Schema(description = "Feeding date.", example = "2026-03-20")
     private LocalDate date;
 

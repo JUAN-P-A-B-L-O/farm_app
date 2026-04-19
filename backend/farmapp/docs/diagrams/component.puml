@@ -9,81 +9,136 @@ skinparam shadowing false
 
 actor Client as "API Client"
 
+package "Security" {
+  [SecurityConfig]
+  [JwtAuthenticationFilter]
+  [AuthService]
+  [AuthenticationContextService]
+}
+
 package "API Layer" {
+  [AuthController]
+  [FarmController]
   [AnimalController]
-  [ProductionController]
-  [FeedingController]
   [FeedTypeController]
-  [UserController]
+  [FeedingController]
+  [ProductionController]
+  [MilkPriceController]
   [DashboardController]
+  [AnalyticsController]
+  [UserController]
 }
 
 package "Service Layer" {
+  [FarmAccessService]
+  [FarmService]
   [AnimalService]
-  [ProductionService]
-  [FeedingService]
   [FeedTypeService]
-  [UserService]
+  [FeedingService]
+  [ProductionService]
+  [MilkPriceService]
   [DashboardService]
-  [Validation Rules]
+  [AnalyticsService]
+  [UserService]
   [Mapper Components]
 }
 
 package "Repository Layer" {
+  [FarmRepository]
   [AnimalRepository]
-  [ProductionRepository]
-  [FeedingRepository]
   [FeedTypeRepository]
+  [FeedingRepository]
+  [ProductionRepository]
+  [MilkPriceRepository]
   [UserRepository]
 }
 
 database "Database" as Database
 
+Client --> [AuthController]
+Client --> [JwtAuthenticationFilter]
+[JwtAuthenticationFilter] --> [AuthenticationContextService]
+[AuthController] --> [AuthService]
+[AuthService] --> [UserRepository]
+
+Client --> [FarmController]
 Client --> [AnimalController]
-Client --> [ProductionController]
-Client --> [FeedingController]
 Client --> [FeedTypeController]
-Client --> [UserController]
+Client --> [FeedingController]
+Client --> [ProductionController]
+Client --> [MilkPriceController]
 Client --> [DashboardController]
+Client --> [AnalyticsController]
+Client --> [UserController]
 
+[FarmController] --> [FarmService]
 [AnimalController] --> [AnimalService]
-[ProductionController] --> [ProductionService]
-[FeedingController] --> [FeedingService]
 [FeedTypeController] --> [FeedTypeService]
-[UserController] --> [UserService]
+[FeedingController] --> [FeedingService]
+[ProductionController] --> [ProductionService]
+[MilkPriceController] --> [MilkPriceService]
 [DashboardController] --> [DashboardService]
+[AnalyticsController] --> [AnalyticsService]
+[UserController] --> [UserService]
 
-[AnimalService] --> [Validation Rules]
-[ProductionService] --> [Validation Rules]
-[FeedingService] --> [Validation Rules]
-[FeedTypeService] --> [Validation Rules]
-[UserService] --> [Validation Rules]
+[FarmService] --> [AuthenticationContextService]
+[FarmService] --> [FarmRepository]
 
-[AnimalService] --> [Mapper Components]
-[ProductionService] --> [Mapper Components]
-[FeedingService] --> [Mapper Components]
-[FeedTypeService] --> [Mapper Components]
-[UserService] --> [Mapper Components]
+[FarmAccessService] --> [AuthenticationContextService]
+[FarmAccessService] --> [FarmRepository]
 
+[AnimalService] --> [FarmAccessService]
 [AnimalService] --> [AnimalRepository]
-[ProductionService] --> [ProductionRepository]
-[ProductionService] --> [AnimalRepository]
-[ProductionService] --> [FeedingRepository]
-[ProductionService] --> [UserRepository]
+[AnimalService] --> [Mapper Components]
+
+[FeedTypeService] --> [FarmAccessService]
+[FeedTypeService] --> [FeedTypeRepository]
+[FeedTypeService] --> [Mapper Components]
+
+[FeedingService] --> [FarmAccessService]
+[FeedingService] --> [AuthenticationContextService]
 [FeedingService] --> [FeedingRepository]
 [FeedingService] --> [AnimalRepository]
 [FeedingService] --> [FeedTypeRepository]
 [FeedingService] --> [UserRepository]
-[FeedTypeService] --> [FeedTypeRepository]
-[UserService] --> [UserRepository]
+[FeedingService] --> [Mapper Components]
+
+[ProductionService] --> [FarmAccessService]
+[ProductionService] --> [AuthenticationContextService]
+[ProductionService] --> [ProductionRepository]
+[ProductionService] --> [FeedingRepository]
+[ProductionService] --> [AnimalRepository]
+[ProductionService] --> [UserRepository]
+[ProductionService] --> [MilkPriceService]
+[ProductionService] --> [Mapper Components]
+
+[MilkPriceService] --> [FarmAccessService]
+[MilkPriceService] --> [AuthenticationContextService]
+[MilkPriceService] --> [MilkPriceRepository]
+[MilkPriceService] --> [FarmRepository]
+
+[DashboardService] --> [FarmAccessService]
 [DashboardService] --> [ProductionRepository]
 [DashboardService] --> [FeedingRepository]
 [DashboardService] --> [AnimalRepository]
+[DashboardService] --> [MilkPriceService]
 
+[AnalyticsService] --> [FarmAccessService]
+[AnalyticsService] --> [ProductionRepository]
+[AnalyticsService] --> [FeedingRepository]
+[AnalyticsService] --> [AnimalRepository]
+[AnalyticsService] --> [FeedTypeRepository]
+[AnalyticsService] --> [MilkPriceService]
+
+[UserService] --> [UserRepository]
+[UserService] --> [Mapper Components]
+
+[FarmRepository] --> Database
 [AnimalRepository] --> Database
-[ProductionRepository] --> Database
-[FeedingRepository] --> Database
 [FeedTypeRepository] --> Database
+[FeedingRepository] --> Database
+[ProductionRepository] --> Database
+[MilkPriceRepository] --> Database
 [UserRepository] --> Database
 
 @enduml

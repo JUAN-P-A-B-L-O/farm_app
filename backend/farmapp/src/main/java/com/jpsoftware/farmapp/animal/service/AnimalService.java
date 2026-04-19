@@ -2,13 +2,18 @@ package com.jpsoftware.farmapp.animal.service;
 
 import com.jpsoftware.farmapp.animal.dto.AnimalResponse;
 import com.jpsoftware.farmapp.animal.dto.CreateAnimalRequest;
+import com.jpsoftware.farmapp.animal.dto.SellAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
 import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
 import com.jpsoftware.farmapp.animal.mapper.AnimalMapper;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +21,15 @@ import org.springframework.util.StringUtils;
 
 @Service
 public class AnimalService {
+
+    private static final Set<String> ALLOWED_STATUSES = Set.of(
+            AnimalEntity.STATUS_ACTIVE,
+            AnimalEntity.STATUS_INACTIVE,
+            AnimalEntity.STATUS_SOLD,
+            AnimalEntity.STATUS_DEAD);
+    private static final Set<String> ALLOWED_ORIGINS = Set.of(
+            AnimalEntity.ORIGIN_BORN,
+            AnimalEntity.ORIGIN_PURCHASED);
 
     private final AnimalRepository animalRepository;
     private final AnimalMapper animalMapper;
@@ -32,8 +46,13 @@ public class AnimalService {
         validateInput(request);
         farmAccessService.validateAccessibleFarm(request.getFarmId());
         ensureTagIsUnique(request.getTag());
+        String normalizedOrigin = normalizeOrigin(request.getOrigin());
+        Double normalizedAcquisitionCost = normalizeAcquisitionCost(normalizedOrigin, request.getAcquisitionCost());
 
         AnimalEntity animalEntity = animalMapper.toEntity(request);
+        animalEntity.setStatus(AnimalEntity.STATUS_ACTIVE);
+        animalEntity.setOrigin(normalizedOrigin);
+        animalEntity.setAcquisitionCost(normalizedAcquisitionCost);
         AnimalEntity savedAnimal = animalRepository.save(animalEntity);
 
         return animalMapper.toResponse(savedAnimal);
@@ -77,10 +96,35 @@ public class AnimalService {
     }
 
     @Transactional
+    public AnimalResponse sell(String id, SellAnimalRequest request, String farmId) {
+        if (request == null) {
+            throw new IllegalArgumentException("Sell animal request must not be null");
+        }
+
+        AnimalEntity animalEntity = findAnimal(id, farmId);
+        validateSellable(animalEntity);
+
+        Double salePrice = normalizeSalePrice(request.getSalePrice());
+        LocalDate saleDate = request.getSaleDate() != null ? request.getSaleDate() : LocalDate.now();
+
+        animalEntity.setStatus(AnimalEntity.STATUS_SOLD);
+        animalEntity.setSalePrice(salePrice);
+        animalEntity.setSaleDate(saleDate);
+
+        AnimalEntity soldAnimal = animalRepository.save(animalEntity);
+        return animalMapper.toResponse(soldAnimal);
+    }
+
+    @Transactional
     public void delete(String id, String farmId) {
         AnimalEntity animalEntity = findAnimal(id, farmId);
 
-        animalRepository.deleteById(animalEntity.getId());
+        if (AnimalEntity.STATUS_INACTIVE.equals(animalEntity.getStatus())) {
+            return;
+        }
+
+        animalEntity.setStatus(AnimalEntity.STATUS_INACTIVE);
+        animalRepository.save(animalEntity);
     }
 
     private void validateInput(CreateAnimalRequest request) {
@@ -92,6 +136,12 @@ public class AnimalService {
         }
         if (!StringUtils.hasText(request.getBreed())) {
             throw new IllegalArgumentException("Animal breed must not be blank");
+        }
+        if (request.getBirthDate() == null) {
+            throw new IllegalArgumentException("Animal birthDate must not be null");
+        }
+        if (!StringUtils.hasText(request.getOrigin())) {
+            throw new IllegalArgumentException("Animal origin must not be blank");
         }
         if (!StringUtils.hasText(request.getFarmId())) {
             throw new IllegalArgumentException("Animal farmId must not be blank");
@@ -109,7 +159,15 @@ public class AnimalService {
             animalEntity.setBirthDate(request.getBirthDate());
         }
         if (request.getStatus() != null) {
-            animalEntity.setStatus(request.getStatus());
+            animalEntity.setStatus(normalizeStatusForUpdate(animalEntity.getStatus(), request.getStatus()));
+        }
+        if (request.getOrigin() != null) {
+            animalEntity.setOrigin(normalizeOrigin(request.getOrigin()));
+        }
+        if (request.getAcquisitionCost() != null || request.getOrigin() != null) {
+            animalEntity.setAcquisitionCost(normalizeAcquisitionCost(
+                    animalEntity.getOrigin(),
+                    request.getAcquisitionCost() != null ? request.getAcquisitionCost() : animalEntity.getAcquisitionCost()));
         }
         if (request.getFarmId() != null) {
             animalEntity.setFarmId(request.getFarmId());
@@ -138,5 +196,69 @@ public class AnimalService {
                 ? animalRepository.findByIdAndFarmId(id, farmId)
                 : animalRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Animal not found"));
+    }
+
+    private String normalizeStatus(String status) {
+        String normalizedStatus = status.trim().toUpperCase();
+        if (!ALLOWED_STATUSES.contains(normalizedStatus)) {
+            throw new ValidationException("Animal status must be ACTIVE, SOLD, DEAD, or INACTIVE");
+        }
+        return normalizedStatus;
+    }
+
+    private String normalizeStatusForUpdate(String currentStatus, String requestedStatus) {
+        String normalizedStatus = normalizeStatus(requestedStatus);
+
+        if (AnimalEntity.STATUS_SOLD.equals(normalizedStatus) && !AnimalEntity.STATUS_SOLD.equals(currentStatus)) {
+            throw new ValidationException("Use the sell action to mark an animal as SOLD");
+        }
+
+        if (AnimalEntity.STATUS_SOLD.equals(currentStatus) && !AnimalEntity.STATUS_SOLD.equals(normalizedStatus)) {
+            throw new ValidationException("Sold animals cannot transition to another status");
+        }
+
+        return normalizedStatus;
+    }
+
+    private String normalizeOrigin(String origin) {
+        String normalizedOrigin = origin.trim().toUpperCase();
+        if (!ALLOWED_ORIGINS.contains(normalizedOrigin)) {
+            throw new ValidationException("Animal origin must be PURCHASED or BORN");
+        }
+        return normalizedOrigin;
+    }
+
+    private Double normalizeAcquisitionCost(String origin, Double acquisitionCost) {
+        if (AnimalEntity.ORIGIN_PURCHASED.equals(origin)) {
+            if (acquisitionCost == null || acquisitionCost <= 0) {
+                throw new ValidationException("Animal acquisitionCost must be greater than zero for purchased animals");
+            }
+            DecimalScaleUtils.requireMaxScale(acquisitionCost, "acquisitionCost");
+            return DecimalScaleUtils.normalize(acquisitionCost);
+        }
+
+        if (acquisitionCost != null && acquisitionCost > 0) {
+            DecimalScaleUtils.requireMaxScale(acquisitionCost, "acquisitionCost");
+        }
+        return null;
+    }
+
+    private void validateSellable(AnimalEntity animalEntity) {
+        if (AnimalEntity.STATUS_SOLD.equals(animalEntity.getStatus())) {
+            throw new ValidationException("Animal is already sold");
+        }
+        if (AnimalEntity.STATUS_DEAD.equals(animalEntity.getStatus())
+                || AnimalEntity.STATUS_INACTIVE.equals(animalEntity.getStatus())) {
+            throw new ValidationException("Only active animals can be sold");
+        }
+    }
+
+    private Double normalizeSalePrice(Double salePrice) {
+        if (salePrice == null || salePrice <= 0) {
+            throw new ValidationException("Animal salePrice must be greater than zero");
+        }
+
+        DecimalScaleUtils.requireMaxScale(salePrice, "salePrice");
+        return DecimalScaleUtils.normalize(salePrice);
     }
 }
