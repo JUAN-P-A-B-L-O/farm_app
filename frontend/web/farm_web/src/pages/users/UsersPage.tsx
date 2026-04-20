@@ -3,7 +3,7 @@ import axios from 'axios'
 import UserForm from '../../components/user/UserForm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAccessibleFarms } from '../../services/farmService'
-import { createUser, getAllUsers } from '../../services/userService'
+import { createUser, deleteUser, getAllUsers, inactivateUser, updateUser } from '../../services/userService'
 import type { Farm } from '../../types/farm'
 import type { User, UserApiErrorResponse, UserFormData } from '../../types/user'
 import '../../App.css'
@@ -49,8 +49,10 @@ function UsersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingFarms, setIsLoadingFarms] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isMutatingUserId, setIsMutatingUserId] = useState<string | null>(null)
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
+  const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [formInitialValues, setFormInitialValues] = useState<UserFormData>(emptyUserForm)
 
   async function loadUsers() {
@@ -85,19 +87,105 @@ function UsersPage() {
     void loadFarms()
   }, [])
 
-  async function handleCreate(data: UserFormData) {
+  async function handleCreateOrUpdate(data: UserFormData) {
     setIsSubmitting(true)
     setFormErrorMessage('')
 
     try {
-      await createUser(data)
+      if (editingUserId) {
+        await updateUser(editingUserId, data)
+      } else {
+        await createUser(data)
+      }
+      setEditingUserId(null)
       setFormInitialValues(emptyUserForm)
       await loadUsers()
     } catch (error) {
-      setFormErrorMessage(getErrorMessage(error, t('accessControl.errors.create'), t))
+      setFormErrorMessage(
+        getErrorMessage(
+          error,
+          editingUserId ? t('accessControl.errors.update') : t('accessControl.errors.create'),
+          t,
+        ),
+      )
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  function handleEdit(user: User) {
+    setFormErrorMessage('')
+    setEditingUserId(user.id)
+    setFormInitialValues({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      password: '',
+      active: user.active,
+      farmIds: user.farmIds,
+    })
+  }
+
+  function handleCancelEdit() {
+    setEditingUserId(null)
+    setFormErrorMessage('')
+    setFormInitialValues(emptyUserForm)
+  }
+
+  async function handleInactivate(user: User) {
+    const shouldInactivate = window.confirm(t('accessControl.confirmInactivate'))
+
+    if (!shouldInactivate) {
+      return
+    }
+
+    setIsMutatingUserId(user.id)
+    setListErrorMessage('')
+
+    try {
+      await inactivateUser(user.id)
+
+      if (editingUserId === user.id) {
+        handleCancelEdit()
+      }
+
+      await loadUsers()
+    } catch (error) {
+      setListErrorMessage(getErrorMessage(error, t('accessControl.errors.inactivate'), t))
+    } finally {
+      setIsMutatingUserId(null)
+    }
+  }
+
+  async function handleDelete(user: User) {
+    const shouldDelete = window.confirm(t('accessControl.confirmDelete'))
+
+    if (!shouldDelete) {
+      return
+    }
+
+    setIsMutatingUserId(user.id)
+    setListErrorMessage('')
+
+    try {
+      await deleteUser(user.id)
+
+      if (editingUserId === user.id) {
+        handleCancelEdit()
+      }
+
+      await loadUsers()
+    } catch (error) {
+      setListErrorMessage(getErrorMessage(error, t('accessControl.errors.delete'), t))
+    } finally {
+      setIsMutatingUserId(null)
+    }
+  }
+
+  function resolveFarmNames(farmIds: string[]) {
+    return farmIds
+      .map((farmId) => farms.find((farm) => farm.id === farmId)?.name ?? farmId)
+      .join(', ')
   }
 
   return (
@@ -114,8 +202,12 @@ function UsersPage() {
         <article className="animals-panel">
           <div className="animals-panel__header">
             <div>
-              <h2>{t('accessControl.createTitle')}</h2>
-              <p>{t('accessControl.createDescription')}</p>
+              <h2>{editingUserId ? t('accessControl.updateTitle') : t('accessControl.createTitle')}</h2>
+              <p>
+                {editingUserId
+                  ? t('accessControl.updateDescription')
+                  : t('accessControl.createDescription')}
+              </p>
             </div>
           </div>
 
@@ -123,9 +215,11 @@ function UsersPage() {
             initialValues={formInitialValues}
             farms={farms}
             isLoadingFarms={isLoadingFarms}
-            onSubmit={handleCreate}
+            mode={editingUserId ? 'edit' : 'create'}
+            onSubmit={handleCreateOrUpdate}
+            onCancel={editingUserId ? handleCancelEdit : undefined}
             isSubmitting={isSubmitting}
-            submitLabel={t('accessControl.submitCreate')}
+            submitLabel={editingUserId ? t('accessControl.submitUpdate') : t('accessControl.submitCreate')}
             errorMessage={formErrorMessage}
           />
         </article>
@@ -158,6 +252,9 @@ function UsersPage() {
                     <th>{t('accessControl.table.name')}</th>
                     <th>{t('accessControl.table.email')}</th>
                     <th>{t('accessControl.table.role')}</th>
+                    <th>{t('accessControl.table.status')}</th>
+                    <th>{t('accessControl.table.farms')}</th>
+                    <th>{t('accessControl.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -166,6 +263,40 @@ function UsersPage() {
                       <td>{user.name}</td>
                       <td>{user.email}</td>
                       <td>{user.role}</td>
+                      <td>{user.active ? t('accessControl.status.active') : t('accessControl.status.inactive')}</td>
+                      <td>{resolveFarmNames(user.farmIds)}</td>
+                      <td className="animals-table__actions">
+                        <button
+                          type="button"
+                          className="animals-table__action-button animals-table__action-button--secondary"
+                          onClick={() => handleEdit(user)}
+                          disabled={isSubmitting || isMutatingUserId === user.id}
+                        >
+                          {t('accessControl.edit')}
+                        </button>
+                        {user.active && (
+                          <button
+                            type="button"
+                            className="animals-table__action-button animals-table__action-button--secondary"
+                            onClick={() => handleInactivate(user)}
+                            disabled={isSubmitting || isMutatingUserId === user.id}
+                          >
+                            {isMutatingUserId === user.id
+                              ? t('accessControl.inactivating')
+                              : t('accessControl.inactivate')}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="animals-table__action-button animals-table__action-button--danger"
+                          onClick={() => handleDelete(user)}
+                          disabled={isSubmitting || isMutatingUserId === user.id}
+                        >
+                          {isMutatingUserId === user.id
+                            ? t('accessControl.deleting')
+                            : t('accessControl.delete')}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

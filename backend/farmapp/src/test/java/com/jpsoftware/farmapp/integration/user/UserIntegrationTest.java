@@ -1,8 +1,13 @@
 package com.jpsoftware.farmapp.integration.user;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -170,5 +175,145 @@ class UserIntegrationTest extends BaseIntegrationTest {
                                 """.formatted(otherFarm.getId())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("farmIds must reference farms owned by the authenticated manager"));
+    }
+
+    @Test
+    void shouldAllowManagerToUpdateUser() throws Exception {
+        UserEntity manager = createAuthenticatedUser("MANAGER");
+        FarmEntity farm = createFarmOwnedBy(manager, "North Dairy");
+        UserEntity worker = createAuthenticatedUser("WORKER");
+
+        userFarmAssignmentRepository.save(new com.jpsoftware.farmapp.user.entity.UserFarmAssignmentEntity(null, worker.getId(), farm.getId()));
+
+        mockMvc.perform(put("/users/" + worker.getId())
+                        .header("Authorization", bearerToken(manager))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Updated Worker",
+                                  "email": "updated.worker@farm.com",
+                                  "role": "WORKER",
+                                  "farmIds": ["%s"]
+                                }
+                                """.formatted(farm.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Updated Worker"))
+                .andExpect(jsonPath("$.email").value("updated.worker@farm.com"))
+                .andExpect(jsonPath("$.farmIds[0]").value(farm.getId()));
+
+        UserEntity updatedUser = userRepository.findById(worker.getId()).orElseThrow();
+        assertEquals("Updated Worker", updatedUser.getName());
+        assertEquals("updated.worker@farm.com", updatedUser.getEmail());
+    }
+
+    @Test
+    void shouldAllowManagerToInactivateUserAndBlockLogin() throws Exception {
+        UserEntity manager = createAuthenticatedUser("MANAGER");
+        UserEntity worker = createAuthenticatedUser("WORKER");
+
+        mockMvc.perform(patch("/users/" + worker.getId() + "/inactivate")
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false));
+
+        UserEntity updatedUser = userRepository.findById(worker.getId()).orElseThrow();
+        assertFalse(updatedUser.isActive());
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "password": "farmapp@123"
+                                }
+                                """.formatted(worker.getEmail())))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldAllowManagerToDeleteUser() throws Exception {
+        UserEntity manager = createAuthenticatedUser("MANAGER");
+        UserEntity worker = createAuthenticatedUser("WORKER");
+
+        mockMvc.perform(delete("/users/" + worker.getId())
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isNoContent());
+
+        assertTrue(userRepository.findById(worker.getId()).isEmpty());
+    }
+
+    @Test
+    void shouldRejectDeletingUserWhoOwnsFarms() throws Exception {
+        UserEntity manager = createAuthenticatedUser("MANAGER");
+        UserEntity owner = createAuthenticatedUser("MANAGER");
+        createFarmOwnedBy(owner, "Owner Farm");
+
+        mockMvc.perform(delete("/users/" + owner.getId())
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Cannot delete user who owns farms"));
+    }
+
+    @Test
+    void shouldAllowAuthenticatedUserToUpdateOwnPassword() throws Exception {
+        UserEntity worker = createAuthenticatedUser("WORKER");
+
+        mockMvc.perform(put("/users/me/password")
+                        .header("Authorization", bearerToken(worker))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "currentPassword": "farmapp@123",
+                                  "newPassword": "farmapp@456"
+                                }
+                                """))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "password": "farmapp@123"
+                                }
+                                """.formatted(worker.getEmail())))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "password": "farmapp@456"
+                                }
+                                """.formatted(worker.getEmail())))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldRejectUserLifecycleManagementFromNonManager() throws Exception {
+        UserEntity worker = createAuthenticatedUser("WORKER");
+        UserEntity target = createAuthenticatedUser("WORKER");
+
+        mockMvc.perform(put("/users/" + target.getId())
+                        .header("Authorization", bearerToken(worker))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Updated Worker",
+                                  "email": "updated.worker@farm.com",
+                                  "role": "WORKER",
+                                  "farmIds": ["farm-1"]
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(patch("/users/" + target.getId() + "/inactivate")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/users/" + target.getId())
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden());
     }
 }

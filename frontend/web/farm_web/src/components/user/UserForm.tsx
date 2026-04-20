@@ -9,7 +9,9 @@ interface UserFormProps {
   initialValues: UserFormData
   farms: Farm[]
   isLoadingFarms: boolean
+  mode: 'create' | 'edit'
   onSubmit: (data: UserFormData) => Promise<void>
+  onCancel?: () => void
   isSubmitting: boolean
   submitLabel: string
   errorMessage: string
@@ -19,7 +21,9 @@ function UserForm({
   initialValues,
   farms,
   isLoadingFarms,
+  mode,
   onSubmit,
+  onCancel,
   isSubmitting,
   submitLabel,
   errorMessage,
@@ -80,7 +84,7 @@ function UserForm({
       return
     }
 
-    if (payload.active && !payload.password) {
+    if (mode === 'create' && payload.active && !payload.password) {
       setValidationMessage(t('accessControl.errors.passwordRequired'))
       return
     }
@@ -133,28 +137,32 @@ function UserForm({
           </select>
         </label>
 
-        <label className="animal-form__field animal-form__field--checkbox">
-          <span>{t('accessControl.form.active')}</span>
-          <input
-            name="active"
-            type="checkbox"
-            checked={formData.active}
-            onChange={handleChange}
-          />
-        </label>
+        {mode === 'create' && (
+          <>
+            <label className="animal-form__field animal-form__field--checkbox">
+              <span>{t('accessControl.form.active')}</span>
+              <input
+                name="active"
+                type="checkbox"
+                checked={formData.active}
+                onChange={handleChange}
+              />
+            </label>
 
-        {formData.active && (
-          <label className="animal-form__field">
-            <span>{t('accessControl.form.password')}</span>
-            <input
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="farmapp@123"
-              required
-            />
-          </label>
+            {formData.active && (
+              <label className="animal-form__field">
+                <span>{t('accessControl.form.password')}</span>
+                <input
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="farmapp@123"
+                  required
+                />
+              </label>
+            )}
+          </>
         )}
 
         <label className="animal-form__field">
@@ -199,6 +207,17 @@ function UserForm({
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? t('common.saving') : submitLabel}
         </button>
+
+        {onCancel && (
+          <button
+            type="button"
+            className="animal-form__secondary-button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            {t('common.cancel')}
+          </button>
+        )}
       </div>
     </form>
   )

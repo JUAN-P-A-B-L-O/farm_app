@@ -10,6 +10,7 @@ import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import com.jpsoftware.farmapp.feed.mapper.FeedTypeMapper;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feed.service.FeedTypeService;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import java.lang.reflect.Proxy;
@@ -25,17 +26,23 @@ class FeedTypeServiceTest {
 
     private InMemoryFeedTypeRepository repositoryHandler;
     private FeedTypeService feedTypeService;
+    private FarmAccessService farmAccessService;
 
     @BeforeEach
     void setUp() {
         repositoryHandler = new InMemoryFeedTypeRepository();
         FeedTypeRepository repository = repositoryHandler.createProxy();
-        feedTypeService = new FeedTypeService(repository, new FeedTypeMapper());
+        farmAccessService = org.mockito.Mockito.mock(FarmAccessService.class);
+        org.mockito.Mockito.when(farmAccessService.validateAccessibleFarm(org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        org.mockito.Mockito.when(farmAccessService.validateAccessibleFarmIfPresent(org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(invocation -> Optional.ofNullable(invocation.getArgument(0)));
+        feedTypeService = new FeedTypeService(repository, new FeedTypeMapper(), farmAccessService);
     }
 
     @Test
     void shouldCreateFeedType() {
-        FeedTypeResponse response = feedTypeService.create(new CreateFeedTypeRequest("Corn Silage", 1.75));
+        FeedTypeResponse response = feedTypeService.create(new CreateFeedTypeRequest("Corn Silage", 1.75), "farm-1");
 
         assertNotNull(response);
         assertNotNull(response.getId());
@@ -50,7 +57,7 @@ class FeedTypeServiceTest {
 
         ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> feedTypeService.create(invalidRequest));
+                () -> feedTypeService.create(invalidRequest, "farm-1"));
 
         assertEquals("name must not be blank", exception.getMessage());
     }
@@ -61,16 +68,16 @@ class FeedTypeServiceTest {
 
         ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> feedTypeService.create(invalidRequest));
+                () -> feedTypeService.create(invalidRequest, "farm-1"));
 
         assertEquals("costPerKg must be greater than zero", exception.getMessage());
     }
 
     @Test
     void shouldReturnAllFeedTypes() {
-        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true));
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
 
-        List<FeedTypeResponse> responses = feedTypeService.findAll();
+        List<FeedTypeResponse> responses = feedTypeService.findAll("farm-1");
 
         assertEquals(1, responses.size());
         assertEquals("feed-type-1", responses.get(0).getId());
@@ -81,9 +88,9 @@ class FeedTypeServiceTest {
 
     @Test
     void shouldReturnFeedTypeById() {
-        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true));
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
 
-        FeedTypeResponse response = feedTypeService.findById("feed-type-1");
+        FeedTypeResponse response = feedTypeService.findById("feed-type-1", "farm-1");
 
         assertNotNull(response);
         assertEquals("feed-type-1", response.getId());
@@ -96,7 +103,7 @@ class FeedTypeServiceTest {
     void shouldFailWhenFeedTypeNotFound() {
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
-                () -> feedTypeService.findById("missing-id"));
+                () -> feedTypeService.findById("missing-id", "farm-1"));
 
         assertEquals("Feed type not found", exception.getMessage());
     }
@@ -124,8 +131,34 @@ class FeedTypeServiceTest {
                         if ("findAll".equals(methodName)) {
                             return new ArrayList<>(data.values());
                         }
+                        if ("findByFarmIdAndActiveTrue".equals(methodName)) {
+                            return data.values().stream()
+                                    .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
+                                    .filter(entity -> args[0].equals(entity.getFarmId()))
+                                    .toList();
+                        }
+                        if ("findByActiveTrue".equals(methodName)) {
+                            return data.values().stream()
+                                    .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
+                                    .toList();
+                        }
                         if ("findById".equals(methodName)) {
                             return Optional.ofNullable(data.get(args[0]));
+                        }
+                        if ("findByIdAndActiveTrue".equals(methodName)) {
+                            FeedTypeEntity entity = data.get(args[0]);
+                            return Optional.ofNullable(entity).filter(item -> Boolean.TRUE.equals(item.getActive()));
+                        }
+                        if ("findByIdAndFarmIdAndActiveTrue".equals(methodName)) {
+                            FeedTypeEntity entity = data.get(args[0]);
+                            return Optional.ofNullable(entity)
+                                    .filter(item -> Boolean.TRUE.equals(item.getActive()))
+                                    .filter(item -> args[1].equals(item.getFarmId()));
+                        }
+                        if ("findByIdAndFarmId".equals(methodName)) {
+                            FeedTypeEntity entity = data.get(args[0]);
+                            return Optional.ofNullable(entity)
+                                    .filter(item -> args[1].equals(item.getFarmId()));
                         }
                         if ("equals".equals(methodName)) {
                             return proxy == args[0];

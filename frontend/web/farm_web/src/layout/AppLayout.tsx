@@ -14,6 +14,7 @@ const navigationItems = [
   { to: '/feed-types', labelKey: 'layout.navigation.feedTypes' },
   { to: '/users', labelKey: 'layout.navigation.users', managerOnly: true },
   { to: '/analytics', labelKey: 'layout.navigation.analytics', managerOnly: true },
+  { to: '/settings', labelKey: 'layout.navigation.settings' },
 ]
 
 function AppLayout() {
@@ -41,7 +42,8 @@ function AppLayout() {
     navigate('/login', { replace: true })
   }
 
-  const isFarmCreationRoute = location.pathname === '/farms/new'
+  const isFarmSelectionOptionalRoute =
+    location.pathname === '/farms/new' || location.pathname === '/settings'
 
   return (
     <div className="app-layout">
@@ -135,7 +137,7 @@ function AppLayout() {
               <h1>{t('layout.loadingFarms')}</h1>
             </section>
           </main>
-        ) : !selectedFarm && !isFarmCreationRoute ? (
+        ) : !selectedFarm && !isFarmSelectionOptionalRoute ? (
           <Navigate to="/farms/new" replace />
         ) : (
           <Outlet />

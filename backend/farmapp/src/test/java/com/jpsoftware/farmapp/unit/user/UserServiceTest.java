@@ -4,18 +4,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
+import com.jpsoftware.farmapp.farm.entity.FarmEntity;
 import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
+import com.jpsoftware.farmapp.user.dto.UpdatePasswordRequest;
+import com.jpsoftware.farmapp.user.dto.UpdateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UserResponse;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
 import com.jpsoftware.farmapp.user.mapper.UserMapper;
@@ -53,6 +58,8 @@ class UserServiceTest {
                 passwordEncoder,
                 authenticationContextService);
         when(authenticationContextService.getAuthenticatedUserId()).thenReturn(Optional.of(managerId));
+        when(userFarmAssignmentRepository.findByUserId(any())).thenReturn(List.of());
+        when(farmRepository.findByOwnerId(any())).thenReturn(List.of());
     }
 
     @Test
@@ -73,6 +80,16 @@ class UserServiceTest {
             entity.setId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
             return entity;
         });
+        when(userFarmAssignmentRepository.findByUserId(UUID.fromString("00000000-0000-0000-0000-000000000001")))
+                .thenReturn(List.of(
+                        new com.jpsoftware.farmapp.user.entity.UserFarmAssignmentEntity(
+                                UUID.randomUUID(),
+                                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                                "farm-1"),
+                        new com.jpsoftware.farmapp.user.entity.UserFarmAssignmentEntity(
+                                UUID.randomUUID(),
+                                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                                "farm-2")));
 
         UserResponse response = userService.create(request);
 
@@ -81,6 +98,8 @@ class UserServiceTest {
         assertEquals("Jane Doe", response.getName());
         assertEquals("jane@farm.com", response.getEmail());
         assertEquals("MANAGER", response.getRole());
+        assertEquals(List.of("farm-1", "farm-2"), response.getFarmIds());
+        assertTrue(Boolean.TRUE.equals(response.getActive()));
         verify(userFarmAssignmentRepository, times(2)).save(any());
     }
 
@@ -104,6 +123,8 @@ class UserServiceTest {
 
     @Test
     void shouldFailWhenActiveUserHasNoPassword() {
+        when(farmRepository.existsByIdAndOwnerId(eq("farm-1"), eq(managerId))).thenReturn(true);
+
         ValidationException exception = assertThrows(
                 ValidationException.class,
                 () -> userService.create(new CreateUserRequest(
@@ -170,11 +191,126 @@ class UserServiceTest {
             entity.setId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
             return entity;
         });
+        when(userFarmAssignmentRepository.findByUserId(UUID.fromString("00000000-0000-0000-0000-000000000001")))
+                .thenReturn(List.of(
+                        new com.jpsoftware.farmapp.user.entity.UserFarmAssignmentEntity(
+                                UUID.randomUUID(),
+                                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                                "farm-1")));
 
         UserResponse response = userService.create(request);
 
         assertEquals("jane@farm.com", response.getEmail());
         verify(userRepository).save(any(UserEntity.class));
+    }
+
+    @Test
+    void shouldUpdateUserAndReplaceFarmAssignments() {
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000010");
+        UserEntity existingUser = new UserEntity(userId, "Jane Doe", "jane@farm.com", "WORKER", "encoded-password", true);
+        UpdateUserRequest request = new UpdateUserRequest(
+                "Updated Jane",
+                "Updated@Farm.com",
+                "MANAGER",
+                List.of("farm-1", "farm-2"));
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(farmRepository.existsByIdAndOwnerId("farm-1", managerId)).thenReturn(true);
+        when(farmRepository.existsByIdAndOwnerId("farm-2", managerId)).thenReturn(true);
+        when(userRepository.findByEmail("updated@farm.com")).thenReturn(Optional.empty());
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userFarmAssignmentRepository.findByUserId(userId)).thenReturn(List.of());
+
+        UserResponse response = userService.update(userId.toString(), request);
+
+        assertEquals("Updated Jane", response.getName());
+        assertEquals("updated@farm.com", response.getEmail());
+        assertEquals("MANAGER", response.getRole());
+        verify(userFarmAssignmentRepository).deleteByUserId(userId);
+        verify(userFarmAssignmentRepository, times(2)).save(any());
+    }
+
+    @Test
+    void shouldInactivateUser() {
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000011");
+        UserEntity existingUser = new UserEntity(userId, "Jane Doe", "jane@farm.com", "WORKER", "encoded-password", true);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserResponse response = userService.inactivate(userId.toString());
+
+        assertTrue(Boolean.FALSE.equals(response.getActive()));
+        verify(userRepository).save(argThat(user -> !user.isActive()));
+    }
+
+    @Test
+    void shouldFailToInactivateUserWhoOwnsFarms() {
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000012");
+        UserEntity existingUser = new UserEntity(userId, "Manager Owner", "owner@farm.com", "MANAGER", "encoded-password", true);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(farmRepository.findByOwnerId(userId)).thenReturn(List.of(new FarmEntity("farm-1", "North Dairy", userId)));
+
+        ConflictException exception = assertThrows(ConflictException.class, () -> userService.inactivate(userId.toString()));
+
+        assertEquals("Cannot inactivate user who owns farms", exception.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldDeleteUserAndAssignments() {
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000013");
+        UserEntity existingUser = new UserEntity(userId, "Jane Doe", "jane@farm.com", "WORKER", "encoded-password", true);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+
+        userService.delete(userId.toString());
+
+        verify(userFarmAssignmentRepository).deleteByUserId(userId);
+        verify(userRepository).delete(existingUser);
+    }
+
+    @Test
+    void shouldUpdateOwnPassword() {
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000014");
+        UserEntity existingUser = new UserEntity(
+                userId,
+                "Jane Doe",
+                "jane@farm.com",
+                "WORKER",
+                passwordEncoder.encode("farmapp@123"),
+                true);
+
+        when(authenticationContextService.getAuthenticatedUserId()).thenReturn(Optional.of(userId));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.updateOwnPassword(new UpdatePasswordRequest("farmapp@123", "farmapp@456"));
+
+        verify(userRepository).save(argThat(user -> passwordEncoder.matches("farmapp@456", user.getPassword())));
+    }
+
+    @Test
+    void shouldFailToUpdateOwnPasswordWhenCurrentPasswordIsIncorrect() {
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000015");
+        UserEntity existingUser = new UserEntity(
+                userId,
+                "Jane Doe",
+                "jane@farm.com",
+                "WORKER",
+                passwordEncoder.encode("farmapp@123"),
+                true);
+
+        when(authenticationContextService.getAuthenticatedUserId()).thenReturn(Optional.of(userId));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> userService.updateOwnPassword(new UpdatePasswordRequest("wrong-password", "farmapp@456")));
+
+        assertEquals("currentPassword is incorrect", exception.getMessage());
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -189,6 +325,7 @@ class UserServiceTest {
         assertEquals("Jane Doe", responses.get(0).getName());
         assertEquals("jane@farm.com", responses.get(0).getEmail());
         assertEquals("MANAGER", responses.get(0).getRole());
+        assertTrue(Boolean.TRUE.equals(responses.get(0).getActive()));
     }
 
     @Test
@@ -204,6 +341,7 @@ class UserServiceTest {
         assertEquals("Jane Doe", response.getName());
         assertEquals("jane@farm.com", response.getEmail());
         assertEquals("MANAGER", response.getRole());
+        assertTrue(Boolean.TRUE.equals(response.getActive()));
     }
 
     @Test
