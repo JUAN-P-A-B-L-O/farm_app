@@ -22,6 +22,11 @@ public class UserResponse {
     @Schema(description = "Whether the user can authenticate.", example = "true")
     private Boolean active;
 
+    @Schema(
+            description = "User avatar image as a URL or data URL.",
+            example = "https://example.com/avatar.png")
+    private String avatarUrl;
+
     @Schema(description = "Farm identifiers assigned to the user.", example = "[\"farm-001\"]")
     private List<String> farmIds;
 
@@ -29,15 +34,16 @@ public class UserResponse {
     }
 
     public UserResponse(UUID id, String name, String email, String role) {
-        this(id, name, email, role, null, null);
+        this(id, name, email, role, null, null, null);
     }
 
-    public UserResponse(UUID id, String name, String email, String role, Boolean active, List<String> farmIds) {
+    public UserResponse(UUID id, String name, String email, String role, Boolean active, String avatarUrl, List<String> farmIds) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.role = role;
         this.active = active;
+        this.avatarUrl = avatarUrl;
         this.farmIds = farmIds;
     }
 
@@ -79,6 +85,14 @@ public class UserResponse {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public List<String> getFarmIds() {

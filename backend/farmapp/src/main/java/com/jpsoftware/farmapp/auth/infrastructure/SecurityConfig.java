@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/users/me/password").authenticated()
                         .requestMatchers(HttpMethod.POST, "/users").hasAuthority(MANAGER_AUTHORITY)
                         .requestMatchers(HttpMethod.PUT, "/users/*").hasAuthority(MANAGER_AUTHORITY)
+                        .requestMatchers(HttpMethod.PATCH, "/users/*/activate").hasAuthority(MANAGER_AUTHORITY)
                         .requestMatchers(HttpMethod.PATCH, "/users/*/inactivate").hasAuthority(MANAGER_AUTHORITY)
                         .requestMatchers(HttpMethod.GET, "/dashboard").hasAuthority(MANAGER_AUTHORITY)
                         .requestMatchers("/analytics/**").hasAuthority(MANAGER_AUTHORITY)

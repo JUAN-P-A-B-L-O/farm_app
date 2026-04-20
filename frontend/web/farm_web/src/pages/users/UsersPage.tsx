@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import UserForm from '../../components/user/UserForm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAccessibleFarms } from '../../services/farmService'
-import { createUser, deleteUser, getAllUsers, inactivateUser, updateUser } from '../../services/userService'
+import {
+  activateUser,
+  createUser,
+  deleteUser,
+  getAllUsers,
+  inactivateUser,
+  updateUser,
+} from '../../services/userService'
 import type { Farm } from '../../types/farm'
-import type { User, UserApiErrorResponse, UserFormData } from '../../types/user'
+import type { User, UserApiErrorResponse, UserFormData, UserListFilters } from '../../types/user'
 import '../../App.css'
 
 const emptyUserForm: UserFormData = {
@@ -14,7 +22,14 @@ const emptyUserForm: UserFormData = {
   role: '',
   password: '',
   active: true,
+  avatarUrl: '',
   farmIds: [],
+}
+
+const defaultFilters: UserListFilters = {
+  search: '',
+  active: '',
+  role: '',
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
@@ -42,6 +57,15 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
   return fallbackMessage
 }
 
+function getInitials(user: User) {
+  return user.name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
 function UsersPage() {
   const { t } = useTranslation()
   const [users, setUsers] = useState<User[]>([])
@@ -54,13 +78,17 @@ function UsersPage() {
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [formInitialValues, setFormInitialValues] = useState<UserFormData>(emptyUserForm)
+  const [filters, setFilters] = useState<UserListFilters>(defaultFilters)
+  const [appliedFilters, setAppliedFilters] = useState<UserListFilters>(defaultFilters)
+  const [activationUserId, setActivationUserId] = useState<string | null>(null)
+  const [activationPassword, setActivationPassword] = useState('')
 
-  async function loadUsers() {
+  async function loadUsers(nextFilters: UserListFilters = appliedFilters) {
     setIsLoading(true)
     setListErrorMessage('')
 
     try {
-      const data = await getAllUsers()
+      const data = await getAllUsers(nextFilters)
       setUsers(data)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('accessControl.errors.loadList'), t))
@@ -83,7 +111,7 @@ function UsersPage() {
   }
 
   useEffect(() => {
-    void loadUsers()
+    void loadUsers(defaultFilters)
     void loadFarms()
   }, [])
 
@@ -122,6 +150,7 @@ function UsersPage() {
       role: user.role,
       password: '',
       active: user.active,
+      avatarUrl: user.avatarUrl ?? '',
       farmIds: user.farmIds,
     })
   }
@@ -148,10 +177,49 @@ function UsersPage() {
       if (editingUserId === user.id) {
         handleCancelEdit()
       }
+      if (activationUserId === user.id) {
+        setActivationUserId(null)
+        setActivationPassword('')
+      }
 
       await loadUsers()
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('accessControl.errors.inactivate'), t))
+    } finally {
+      setIsMutatingUserId(null)
+    }
+  }
+
+  function startActivation(user: User) {
+    setActivationUserId(user.id)
+    setActivationPassword('')
+    setListErrorMessage('')
+  }
+
+  function cancelActivation() {
+    setActivationUserId(null)
+    setActivationPassword('')
+  }
+
+  async function handleActivate() {
+    if (!activationUserId) {
+      return
+    }
+
+    if (!activationPassword.trim()) {
+      setListErrorMessage(t('accessControl.errors.activatePasswordRequired'))
+      return
+    }
+
+    setIsMutatingUserId(activationUserId)
+    setListErrorMessage('')
+
+    try {
+      await activateUser(activationUserId, activationPassword.trim())
+      cancelActivation()
+      await loadUsers()
+    } catch (error) {
+      setListErrorMessage(getErrorMessage(error, t('accessControl.errors.activate'), t))
     } finally {
       setIsMutatingUserId(null)
     }
@@ -173,6 +241,9 @@ function UsersPage() {
       if (editingUserId === user.id) {
         handleCancelEdit()
       }
+      if (activationUserId === user.id) {
+        cancelActivation()
+      }
 
       await loadUsers()
     } catch (error) {
@@ -182,20 +253,31 @@ function UsersPage() {
     }
   }
 
+  function applyFilters() {
+    setAppliedFilters(filters)
+    void loadUsers(filters)
+  }
+
+  function clearFilters() {
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    void loadUsers(defaultFilters)
+  }
+
   function resolveFarmNames(farmIds: string[]) {
     return farmIds
       .map((farmId) => farms.find((farm) => farm.id === farmId)?.name ?? farmId)
       .join(', ')
   }
 
+  const activationTarget = users.find((user) => user.id === activationUserId) ?? null
+
   return (
     <main className="animals-page">
       <section className="animals-page__header">
         <p className="animals-page__eyebrow">{t('accessControl.eyebrow')}</p>
         <h1>{t('accessControl.title')}</h1>
-        <p className="animals-page__description">
-          {t('accessControl.description')}
-        </p>
+        <p className="animals-page__description">{t('accessControl.description')}</p>
       </section>
 
       <section className="animals-layout">
@@ -232,12 +314,85 @@ function UsersPage() {
             </div>
           </div>
 
+          <ListingFiltersBar
+            searchId="users-search"
+            searchLabel={t('accessControl.filters.searchLabel')}
+            searchPlaceholder={t('accessControl.filters.searchPlaceholder')}
+            searchValue={filters.search}
+            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+            onApply={applyFilters}
+            onClear={clearFilters}
+            applyLabel={t('accessControl.filters.apply')}
+            clearLabel={t('accessControl.filters.clear')}
+            filters={[
+              {
+                id: 'users-status-filter',
+                label: t('accessControl.filters.statusLabel'),
+                value: filters.active,
+                onChange: (value) => setFilters((current) => ({ ...current, active: value as UserListFilters['active'] })),
+                options: [
+                  { value: '', label: t('accessControl.filters.allStatuses') },
+                  { value: 'true', label: t('accessControl.status.active') },
+                  { value: 'false', label: t('accessControl.status.inactive') },
+                ],
+              },
+              {
+                id: 'users-role-filter',
+                label: t('accessControl.filters.roleLabel'),
+                value: filters.role,
+                onChange: (value) => setFilters((current) => ({ ...current, role: value })),
+                options: [
+                  { value: '', label: t('accessControl.filters.allRoles') },
+                  { value: 'MANAGER', label: 'MANAGER' },
+                  { value: 'WORKER', label: 'WORKER' },
+                ],
+              },
+            ]}
+          />
+
+          {activationTarget && (
+            <div className="activation-panel">
+              <div>
+                <h3>{t('accessControl.activateTitle')}</h3>
+                <p>{t('accessControl.activateDescription').replace('{name}', activationTarget.name)}</p>
+              </div>
+              <label className="animal-form__field" htmlFor="activation-password">
+                <span>{t('accessControl.form.password')}</span>
+                <input
+                  id="activation-password"
+                  type="password"
+                  value={activationPassword}
+                  onChange={(event) => setActivationPassword(event.target.value)}
+                  placeholder="farmapp@123"
+                />
+              </label>
+              <div className="animal-form__actions">
+                <button
+                  type="button"
+                  className="animals-table__action-button"
+                  onClick={() => void handleActivate()}
+                  disabled={isMutatingUserId === activationTarget.id}
+                >
+                  {isMutatingUserId === activationTarget.id
+                    ? t('accessControl.activating')
+                    : t('accessControl.activate')}
+                </button>
+                <button
+                  type="button"
+                  className="animals-table__action-button animals-table__action-button--secondary"
+                  onClick={cancelActivation}
+                  disabled={isMutatingUserId === activationTarget.id}
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          )}
+
           {isLoading && <p className="animals-page__status">{t('accessControl.loading')}</p>}
 
           {listErrorMessage && (
-            <p className="animals-page__status animals-page__status--error">
-              {listErrorMessage}
-            </p>
+            <p className="animals-page__status animals-page__status--error">{listErrorMessage}</p>
           )}
 
           {!isLoading && !listErrorMessage && users.length === 0 && (
@@ -260,10 +415,23 @@ function UsersPage() {
                 <tbody>
                   {users.map((user) => (
                     <tr key={user.id}>
-                      <td>{user.name}</td>
+                      <td>
+                        <div className="user-table__identity">
+                          {user.avatarUrl ? (
+                            <img src={user.avatarUrl} alt={user.name} className="user-avatar" />
+                          ) : (
+                            <span className="user-avatar user-avatar--fallback">{getInitials(user)}</span>
+                          )}
+                          <span>{user.name}</span>
+                        </div>
+                      </td>
                       <td>{user.email}</td>
                       <td>{user.role}</td>
-                      <td>{user.active ? t('accessControl.status.active') : t('accessControl.status.inactive')}</td>
+                      <td>
+                        <span className={`animals-table__status animals-table__status--${user.active ? 'active' : 'inactive'}`}>
+                          {user.active ? t('accessControl.status.active') : t('accessControl.status.inactive')}
+                        </span>
+                      </td>
                       <td>{resolveFarmNames(user.farmIds)}</td>
                       <td className="animals-table__actions">
                         <button
@@ -274,22 +442,33 @@ function UsersPage() {
                         >
                           {t('accessControl.edit')}
                         </button>
-                        {user.active && (
+                        {user.active ? (
                           <button
                             type="button"
                             className="animals-table__action-button animals-table__action-button--secondary"
-                            onClick={() => handleInactivate(user)}
+                            onClick={() => void handleInactivate(user)}
                             disabled={isSubmitting || isMutatingUserId === user.id}
                           >
                             {isMutatingUserId === user.id
                               ? t('accessControl.inactivating')
                               : t('accessControl.inactivate')}
                           </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="animals-table__action-button"
+                            onClick={() => startActivation(user)}
+                            disabled={isSubmitting || isMutatingUserId === user.id}
+                          >
+                            {isMutatingUserId === user.id
+                              ? t('accessControl.activating')
+                              : t('accessControl.activate')}
+                          </button>
                         )}
                         <button
                           type="button"
                           className="animals-table__action-button animals-table__action-button--danger"
-                          onClick={() => handleDelete(user)}
+                          onClick={() => void handleDelete(user)}
                           disabled={isSubmitting || isMutatingUserId === user.id}
                         >
                           {isMutatingUserId === user.id
@@ -302,6 +481,15 @@ function UsersPage() {
                 </tbody>
               </table>
             </div>
+          )}
+
+          {!isLoading && !listErrorMessage && users.length > 0 && (
+            <p className="users-page__results">
+              {t('accessControl.filters.results').replace('{count}', String(users.length))}
+              {appliedFilters.search || appliedFilters.active || appliedFilters.role
+                ? ` ${t('accessControl.filters.filteredSuffix')}`
+                : ''}
+            </p>
           )}
         </article>
       </section>

@@ -35,13 +35,15 @@ class UserIntegrationTest extends BaseIntegrationTest {
                                   "role": "WORKER",
                                   "password": "farmapp@123",
                                   "active": true,
+                                  "avatarUrl": "https://example.com/avatar.png",
                                   "farmIds": ["%s"]
                                 }
                                 """.formatted(farm.getId())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Worker One"))
                 .andExpect(jsonPath("$.email").value("worker.one@farm.com"))
-                .andExpect(jsonPath("$.role").value("WORKER"));
+                .andExpect(jsonPath("$.role").value("WORKER"))
+                .andExpect(jsonPath("$.avatarUrl").value("https://example.com/avatar.png"));
 
         UserEntity createdUser = userRepository.findByEmail("worker.one@farm.com").orElseThrow();
         assertTrue(createdUser.isActive());
@@ -126,6 +128,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
                                   "role": "WORKER",
                                   "password": "farmapp@123",
                                   "active": true,
+                                  "avatarUrl": "https://example.com/avatar.png",
                                   "farmIds": ["%s"]
                                 }
                                 """.formatted(farm.getId())))
@@ -170,6 +173,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
                                   "role": "WORKER",
                                   "password": "farmapp@123",
                                   "active": true,
+                                  "avatarUrl": "https://example.com/avatar.png",
                                   "farmIds": ["%s"]
                                 }
                                 """.formatted(otherFarm.getId())))
@@ -193,12 +197,14 @@ class UserIntegrationTest extends BaseIntegrationTest {
                                   "name": "Updated Worker",
                                   "email": "updated.worker@farm.com",
                                   "role": "WORKER",
+                                  "avatarUrl": "https://example.com/avatar-updated.png",
                                   "farmIds": ["%s"]
                                 }
                                 """.formatted(farm.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Updated Worker"))
                 .andExpect(jsonPath("$.email").value("updated.worker@farm.com"))
+                .andExpect(jsonPath("$.avatarUrl").value("https://example.com/avatar-updated.png"))
                 .andExpect(jsonPath("$.farmIds[0]").value(farm.getId()));
 
         UserEntity updatedUser = userRepository.findById(worker.getId()).orElseThrow();
@@ -228,6 +234,38 @@ class UserIntegrationTest extends BaseIntegrationTest {
                                 }
                                 """.formatted(worker.getEmail())))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldAllowManagerToReactivateUserAndRestoreLogin() throws Exception {
+        UserEntity manager = createAuthenticatedUser("MANAGER");
+        UserEntity worker = createAuthenticatedUser("WORKER");
+        worker.setActive(false);
+        userRepository.save(worker);
+
+        mockMvc.perform(patch("/users/" + worker.getId() + "/activate")
+                        .header("Authorization", bearerToken(manager))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "password": "farmapp@456"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(true));
+
+        UserEntity updatedUser = userRepository.findById(worker.getId()).orElseThrow();
+        assertTrue(updatedUser.isActive());
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "password": "farmapp@456"
+                                }
+                                """.formatted(worker.getEmail())))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -291,6 +329,27 @@ class UserIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldFilterUsersBySearchStatusAndRole() throws Exception {
+        UserEntity manager = createAuthenticatedUser("MANAGER");
+        UserEntity inactiveWorker = createAuthenticatedUser("WORKER");
+        inactiveWorker.setName("Pedro Worker");
+        inactiveWorker.setEmail("pedro.worker@farm.com");
+        inactiveWorker.setActive(false);
+        userRepository.save(inactiveWorker);
+
+        mockMvc.perform(get("/users")
+                        .header("Authorization", bearerToken(manager))
+                        .param("search", "pedro")
+                        .param("active", "false")
+                        .param("role", "worker"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].email").value("pedro.worker@farm.com"))
+                .andExpect(jsonPath("$[0].active").value(false))
+                .andExpect(jsonPath("$[0].role").value("WORKER"));
+    }
+
+    @Test
     void shouldRejectUserLifecycleManagementFromNonManager() throws Exception {
         UserEntity worker = createAuthenticatedUser("WORKER");
         UserEntity target = createAuthenticatedUser("WORKER");
@@ -310,6 +369,16 @@ class UserIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(patch("/users/" + target.getId() + "/inactivate")
                         .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(patch("/users/" + target.getId() + "/activate")
+                        .header("Authorization", bearerToken(worker))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "password": "farmapp@456"
+                                }
+                                """))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(delete("/users/" + target.getId())

@@ -20,6 +20,11 @@ public class UpdateUserRequest {
     @Schema(description = "User role in the system.", example = "MANAGER")
     private String role;
 
+    @Schema(
+            description = "User avatar image as a URL or data URL.",
+            example = "https://example.com/avatar.png")
+    private String avatarUrl;
+
     @NotEmpty(message = "farmIds must not be empty")
     @Schema(description = "Farm identifiers assigned to the user.", example = "[\"farm-001\"]")
     private List<String> farmIds;
@@ -27,10 +32,11 @@ public class UpdateUserRequest {
     public UpdateUserRequest() {
     }
 
-    public UpdateUserRequest(String name, String email, String role, List<String> farmIds) {
+    public UpdateUserRequest(String name, String email, String role, String avatarUrl, List<String> farmIds) {
         this.name = name;
         this.email = email;
         this.role = role;
+        this.avatarUrl = avatarUrl;
         this.farmIds = farmIds;
     }
 
@@ -56,6 +62,14 @@ public class UpdateUserRequest {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public List<String> getFarmIds() {

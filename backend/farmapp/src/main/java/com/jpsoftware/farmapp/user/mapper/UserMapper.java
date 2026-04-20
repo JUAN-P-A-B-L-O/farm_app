@@ -14,6 +14,7 @@ public class UserMapper {
         userEntity.setName(request.getName());
         userEntity.setEmail(request.getEmail());
         userEntity.setRole(request.getRole());
+        userEntity.setAvatarUrl(request.getAvatarUrl());
         return userEntity;
     }
 
@@ -28,6 +29,7 @@ public class UserMapper {
                 entity.getEmail(),
                 entity.getRole(),
                 entity.isActive(),
+                entity.getAvatarUrl(),
                 farmIds);
     }
 }

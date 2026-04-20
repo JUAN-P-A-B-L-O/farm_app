@@ -4,6 +4,7 @@ export interface User {
   email: string
   role: string
   active: boolean
+  avatarUrl?: string | null
   farmIds: string[]
 }
 
@@ -13,7 +14,14 @@ export interface UserFormData {
   role: string
   password: string
   active: boolean
+  avatarUrl: string
   farmIds: string[]
+}
+
+export interface UserListFilters {
+  search: string
+  active: '' | 'true' | 'false'
+  role: string
 }
 
 export interface UserApiErrorResponse {

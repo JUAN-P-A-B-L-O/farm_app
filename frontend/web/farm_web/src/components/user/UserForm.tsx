@@ -49,12 +49,35 @@ function UserForm({
     setFormData((currentData) => ({
       ...currentData,
       [name]: value,
-      ...(name === 'active' && value === false ? { password: '' } : {}),
     }))
 
     if (validationMessage) {
       setValidationMessage('')
     }
+  }
+
+  function handleAvatarFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setFormData((currentData) => ({
+        ...currentData,
+        avatarUrl: typeof reader.result === 'string' ? reader.result : currentData.avatarUrl,
+      }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function handleClearAvatar() {
+    setFormData((currentData) => ({
+      ...currentData,
+      avatarUrl: '',
+    }))
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -66,6 +89,7 @@ function UserForm({
       role: formData.role.trim(),
       password: formData.password.trim(),
       active: formData.active,
+      avatarUrl: formData.avatarUrl.trim(),
       farmIds: formData.farmIds,
     }
 
@@ -138,32 +162,51 @@ function UserForm({
         </label>
 
         {mode === 'create' && (
-          <>
-            <label className="animal-form__field animal-form__field--checkbox">
-              <span>{t('accessControl.form.active')}</span>
-              <input
-                name="active"
-                type="checkbox"
-                checked={formData.active}
-                onChange={handleChange}
-              />
-            </label>
-
-            {formData.active && (
-              <label className="animal-form__field">
-                <span>{t('accessControl.form.password')}</span>
-                <input
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="farmapp@123"
-                  required
-                />
-              </label>
-            )}
-          </>
+          <label className="animal-form__field animal-form__field--checkbox">
+            <span>{t('accessControl.form.active')}</span>
+            <input
+              name="active"
+              type="checkbox"
+              checked={formData.active}
+              onChange={handleChange}
+            />
+          </label>
         )}
+
+        {mode === 'create' && (
+          <label className="animal-form__field">
+            <span>
+              {formData.active
+                ? t('accessControl.form.password')
+                : t('accessControl.form.passwordOptional')}
+            </span>
+            <input
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="farmapp@123"
+              required={formData.active}
+            />
+          </label>
+        )}
+
+        <label className="animal-form__field">
+          <span>{t('accessControl.form.avatarUrl')}</span>
+          <input
+            name="avatarUrl"
+            type="url"
+            value={formData.avatarUrl}
+            onChange={handleChange}
+            placeholder="https://example.com/avatar.png"
+          />
+          <small>{t('accessControl.form.avatarHint')}</small>
+        </label>
+
+        <label className="animal-form__field">
+          <span>{t('accessControl.form.avatarUpload')}</span>
+          <input type="file" accept="image/*" onChange={handleAvatarFileChange} />
+        </label>
 
         <label className="animal-form__field">
           <span>{t('accessControl.form.farms')}</span>
@@ -190,6 +233,23 @@ function UserForm({
           </small>
         </label>
       </div>
+
+      {formData.avatarUrl && (
+        <div className="user-avatar-preview">
+          <img
+            src={formData.avatarUrl}
+            alt={t('accessControl.form.avatarPreviewAlt')}
+            className="user-avatar user-avatar--large"
+          />
+          <button
+            type="button"
+            className="animal-form__secondary-button"
+            onClick={handleClearAvatar}
+          >
+            {t('accessControl.form.clearAvatar')}
+          </button>
+        </div>
+      )}
 
       {validationMessage && (
         <p className="animal-form__feedback animal-form__feedback--error">

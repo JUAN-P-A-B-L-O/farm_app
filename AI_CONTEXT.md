@@ -43,17 +43,20 @@
   - delete marks feed types inactive rather than physically deleting rows
 - Users:
   - create users
-  - list, retrieve, update, inactivate, and delete users
+  - list, retrieve, update, activate, inactivate, and delete users
   - users are also the accountability reference for feeding and production records
   - current role values used by the frontend are `MANAGER` and `WORKER`
   - `MANAGER` is the privileged role for dashboard, analytics, and delete operations
-  - only authenticated `MANAGER` users can create, update, inactivate, and delete users
+  - only authenticated `MANAGER` users can create, update, activate, inactivate, and delete users
   - new users must be assigned to at least one farm owned by the creating manager
   - user updates must also keep at least one farm owned by the authenticated manager
   - users store an `active` login flag; inactive users cannot authenticate
+  - managers can reactivate inactive users through a dedicated activation action and may set a replacement password during reactivation
   - inactivation sets `active = false` and blocks login plus JWT-authenticated access
   - users who own farms cannot be inactivated or deleted, and farm owners must remain `MANAGER`
   - user email is unique and enforced in service validation plus a database constraint
+  - users can store an optional `avatarUrl` image reference for list and form display
+  - user listing supports optional server-side filtering by search text, status, and role
   - authenticated users can update only their own password through a dedicated self-service settings flow
 - Analytics:
   - dashboard aggregates total production, feeding cost, revenue, profit, and animal count
@@ -140,6 +143,7 @@ Frontend architectural rules already visible in code:
 - route-based page organization
 - translation support via language context and dictionaries
 - farm selection is handled centrally through `FarmContext`
+- reusable listing search/filter controls should be implemented as configurable shared components when multiple pages can adopt the same pattern
 
 Current frontend constraint:
 
@@ -455,6 +459,7 @@ Endpoints:
 - `GET /users`
 - `GET /users/{id}`
 - `PUT /users/{id}`
+- `PATCH /users/{id}/activate`
 - `PATCH /users/{id}/inactivate`
 - `DELETE /users/{id}`
 - `PUT /users/me/password`
@@ -468,6 +473,7 @@ Create request:
   "role": "MANAGER",
   "password": "farmapp@123",
   "active": true,
+  "avatarUrl": "https://example.com/avatar.png",
   "farmIds": ["farm-001"]
 }
 ```
@@ -479,7 +485,16 @@ Update request:
   "name": "Maria Silva",
   "email": "maria.silva@farmapp.com",
   "role": "WORKER",
+  "avatarUrl": "https://example.com/avatar.png",
   "farmIds": ["farm-001"]
+}
+```
+
+Activate request:
+
+```json
+{
+  "password": "farmapp@456"
 }
 ```
 
@@ -515,16 +530,20 @@ Key validations and rules:
 - if `active = true`, `password` is required
 - if `active = false`, login is blocked even if a password hash is stored
 - every `farmId` must belong to the authenticated manager creating the user
-- update changes `name`, `email`, `role`, and `farmIds`
+- `avatarUrl` is optional on create and update
+- update changes `name`, `email`, `role`, `avatarUrl`, and `farmIds`
+- `PATCH /users/{id}/activate` marks the user active again and may replace the password used for the next login
 - password changes do not go through the manager edit endpoint
 - `PUT /users/me/password` is self-service only for the authenticated user
 - `currentPassword` and `newPassword` must not be blank
 - `currentPassword` must match the stored password
 - `newPassword` must differ from `currentPassword`
+- `PATCH /users/{id}/activate` requires role `MANAGER`
 - `PATCH /users/{id}/inactivate` marks the user inactive instead of deleting the row
 - `DELETE /users/{id}` removes the user row and its farm assignments
 - users who own farms cannot be inactivated or deleted
 - users who own farms cannot be changed from `MANAGER` to another role
+- `GET /users` accepts optional `search`, `active`, and `role` filters
 - `GET /users` and `GET /users/{id}` require JWT authentication
 
 ### Dashboard and analytics profit behavior
@@ -591,7 +610,7 @@ Response shape:
 - All other endpoints require authentication
 - Role-based authorization:
   - `MANAGER` can access dashboard and analytics
-  - `MANAGER` can create, update, inactivate, and delete users
+  - `MANAGER` can create, update, activate, inactivate, and delete users
   - `MANAGER` can perform `DELETE` requests
   - non-manager authenticated users receive `403 Forbidden` for user creation, dashboard, analytics, and delete operations
   - any authenticated user can call `PUT /users/me/password` to update their own password
@@ -683,6 +702,7 @@ Important interpretation:
 - Keep types in `src/types`
 - Preserve the current component/page/service separation
 - When adding auth-aware features, centralize token handling in the API/service layer rather than scattering headers across components
+- Prefer reusable search/filter components for listing screens instead of duplicating filter markup and query wiring
 
 ## 7. Development Rules
 

@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.user.controller;
 
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.user.dto.ActivateUserRequest;
 import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UpdatePasswordRequest;
 import com.jpsoftware.farmapp.user.dto.UpdateUserRequest;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -54,8 +56,11 @@ public class UserController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Users retrieved successfully")
     })
-    public ResponseEntity<List<UserResponse>> findAll() {
-        List<UserResponse> response = userService.findAll();
+    public ResponseEntity<List<UserResponse>> findAll(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) String role) {
+        List<UserResponse> response = userService.findAll(search, active, role);
         return ResponseEntity.ok(response);
     }
 
@@ -100,6 +105,18 @@ public class UserController {
     })
     public ResponseEntity<UserResponse> inactivate(@PathVariable String id) {
         UserResponse response = userService.inactivate(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/activate")
+    @Operation(summary = "Activate user", description = "Marks a user as active and optionally updates the password.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User activated successfully"),
+            @ApiResponse(responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<UserResponse> activate(@PathVariable String id, @RequestBody(required = false) ActivateUserRequest request) {
+        UserResponse response = userService.activate(id, request);
         return ResponseEntity.ok(response);
     }
 

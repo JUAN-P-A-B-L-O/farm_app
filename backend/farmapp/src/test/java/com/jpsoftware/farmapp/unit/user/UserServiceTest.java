@@ -18,6 +18,7 @@ import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.user.dto.ActivateUserRequest;
 import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UpdatePasswordRequest;
 import com.jpsoftware.farmapp.user.dto.UpdateUserRequest;
@@ -32,6 +33,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -70,6 +72,7 @@ class UserServiceTest {
                 "MANAGER",
                 "farmapp@123",
                 true,
+                "https://example.com/avatar.png",
                 List.of("farm-1", "farm-2", "farm-1"));
 
         when(farmRepository.existsByIdAndOwnerId(eq("farm-1"), eq(managerId))).thenReturn(true);
@@ -98,6 +101,7 @@ class UserServiceTest {
         assertEquals("Jane Doe", response.getName());
         assertEquals("jane@farm.com", response.getEmail());
         assertEquals("MANAGER", response.getRole());
+        assertEquals("https://example.com/avatar.png", response.getAvatarUrl());
         assertEquals(List.of("farm-1", "farm-2"), response.getFarmIds());
         assertTrue(Boolean.TRUE.equals(response.getActive()));
         verify(userFarmAssignmentRepository, times(2)).save(any());
@@ -107,7 +111,7 @@ class UserServiceTest {
     void shouldFailWhenNameIsBlank() {
         ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> userService.create(new CreateUserRequest(" ", "jane@farm.com", "MANAGER", "farmapp@123", true, List.of("farm-1"))));
+                () -> userService.create(new CreateUserRequest(" ", "jane@farm.com", "MANAGER", "farmapp@123", true, null, List.of("farm-1"))));
 
         assertEquals("name must not be blank", exception.getMessage());
     }
@@ -116,7 +120,7 @@ class UserServiceTest {
     void shouldFailWhenEmailIsBlank() {
         ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> userService.create(new CreateUserRequest("Jane Doe", " ", "MANAGER", "farmapp@123", true, List.of("farm-1"))));
+                () -> userService.create(new CreateUserRequest("Jane Doe", " ", "MANAGER", "farmapp@123", true, null, List.of("farm-1"))));
 
         assertEquals("email must not be blank", exception.getMessage());
     }
@@ -133,6 +137,7 @@ class UserServiceTest {
                         "MANAGER",
                         null,
                         true,
+                        null,
                         List.of("farm-1"))));
 
         assertEquals("password must not be blank when active is true", exception.getMessage());
@@ -146,6 +151,7 @@ class UserServiceTest {
                 "MANAGER",
                 "farmapp@123",
                 true,
+                null,
                 List.of("farm-1"));
 
         when(farmRepository.existsByIdAndOwnerId("farm-1", managerId)).thenReturn(true);
@@ -165,6 +171,7 @@ class UserServiceTest {
                 "MANAGER",
                 "farmapp@123",
                 true,
+                null,
                 List.of("farm-1"));
 
         when(farmRepository.existsByIdAndOwnerId("farm-1", managerId)).thenReturn(false);
@@ -182,6 +189,7 @@ class UserServiceTest {
                 "WORKER",
                 null,
                 false,
+                null,
                 List.of("farm-1"));
 
         when(farmRepository.existsByIdAndOwnerId("farm-1", managerId)).thenReturn(true);
@@ -212,6 +220,7 @@ class UserServiceTest {
                 "Updated Jane",
                 "Updated@Farm.com",
                 "MANAGER",
+                "https://example.com/updated-avatar.png",
                 List.of("farm-1", "farm-2"));
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
@@ -226,6 +235,7 @@ class UserServiceTest {
         assertEquals("Updated Jane", response.getName());
         assertEquals("updated@farm.com", response.getEmail());
         assertEquals("MANAGER", response.getRole());
+        assertEquals("https://example.com/updated-avatar.png", response.getAvatarUrl());
         verify(userFarmAssignmentRepository).deleteByUserId(userId);
         verify(userFarmAssignmentRepository, times(2)).save(any());
     }
@@ -242,6 +252,20 @@ class UserServiceTest {
 
         assertTrue(Boolean.FALSE.equals(response.getActive()));
         verify(userRepository).save(argThat(user -> !user.isActive()));
+    }
+
+    @Test
+    void shouldActivateUserAndUpdatePassword() {
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000016");
+        UserEntity existingUser = new UserEntity(userId, "Jane Doe", "jane@farm.com", "WORKER", passwordEncoder.encode("old-password"), false);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserResponse response = userService.activate(userId.toString(), new ActivateUserRequest("farmapp@456"));
+
+        assertTrue(Boolean.TRUE.equals(response.getActive()));
+        verify(userRepository).save(argThat(user -> user.isActive() && passwordEncoder.matches("farmapp@456", user.getPassword())));
     }
 
     @Test
@@ -316,9 +340,9 @@ class UserServiceTest {
     @Test
     void shouldReturnAllUsers() {
         UUID userId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-        when(userRepository.findAll()).thenReturn(List.of(new UserEntity(userId, "Jane Doe", "jane@farm.com", "MANAGER")));
+        when(userRepository.findAll(any(Sort.class))).thenReturn(List.of(new UserEntity(userId, "Jane Doe", "jane@farm.com", "MANAGER")));
 
-        List<UserResponse> responses = userService.findAll();
+        List<UserResponse> responses = userService.findAll(null, null, null);
 
         assertEquals(1, responses.size());
         assertEquals(userId, responses.get(0).getId());
@@ -326,6 +350,33 @@ class UserServiceTest {
         assertEquals("jane@farm.com", responses.get(0).getEmail());
         assertEquals("MANAGER", responses.get(0).getRole());
         assertTrue(Boolean.TRUE.equals(responses.get(0).getActive()));
+    }
+
+    @Test
+    void shouldFilterUsersBySearchRoleAndStatus() {
+        UserEntity manager = new UserEntity(
+                UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                "Jane Manager",
+                "jane@farm.com",
+                "MANAGER",
+                "encoded-password",
+                true);
+        UserEntity worker = new UserEntity(
+                UUID.fromString("22222222-2222-2222-2222-222222222222"),
+                "Pedro Worker",
+                "pedro@farm.com",
+                "WORKER",
+                "encoded-password",
+                false);
+
+        when(userRepository.findAll(any(Sort.class))).thenReturn(List.of(manager, worker));
+
+        List<UserResponse> responses = userService.findAll("pedro", false, "worker");
+
+        assertEquals(1, responses.size());
+        assertEquals(worker.getId(), responses.get(0).getId());
+        assertEquals("WORKER", responses.get(0).getRole());
+        assertTrue(Boolean.FALSE.equals(responses.get(0).getActive()));
     }
 
     @Test

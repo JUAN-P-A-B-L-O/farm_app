@@ -5,6 +5,7 @@ import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.user.dto.ActivateUserRequest;
 import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UpdatePasswordRequest;
 import com.jpsoftware.farmapp.user.dto.UpdateUserRequest;
@@ -18,6 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,6 +71,7 @@ public class UserService {
         userEntity.setEmail(normalizeEmail(request.getEmail()));
         userEntity.setRole(normalizeRole(request.getRole()));
         userEntity.setActive(Boolean.TRUE.equals(request.getActive()));
+        userEntity.setAvatarUrl(normalizeAvatarUrl(request.getAvatarUrl()));
         userEntity.setPassword(passwordEncoder.encode(resolveRawPassword(request)));
         UserEntity savedUser = userRepository.save(userEntity);
         persistFarmAssignments(savedUser.getId(), normalizedFarmIds);
@@ -77,8 +80,14 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserResponse> findAll() {
-        return userRepository.findAll().stream()
+    public List<UserResponse> findAll(String search, Boolean active, String role) {
+        String normalizedSearch = normalizeFilter(search);
+        String normalizedRole = normalizeFilterRole(role);
+
+        return userRepository.findAll(Sort.by(Sort.Direction.ASC, "name", "email")).stream()
+                .filter(userEntity -> matchesSearch(userEntity, normalizedSearch))
+                .filter(userEntity -> matchesActive(userEntity, active))
+                .filter(userEntity -> matchesRole(userEntity, normalizedRole))
                 .map(this::buildUserResponse)
                 .toList();
     }
@@ -111,6 +120,7 @@ public class UserService {
         userEntity.setName(request.getName().trim());
         userEntity.setEmail(normalizeEmail(request.getEmail()));
         userEntity.setRole(normalizeRole(request.getRole()));
+        userEntity.setAvatarUrl(normalizeAvatarUrl(request.getAvatarUrl()));
         UserEntity savedUser = userRepository.save(userEntity);
         replaceFarmAssignments(savedUser.getId(), normalizedFarmIds);
 
@@ -123,6 +133,18 @@ public class UserService {
         ensureUserDoesNotOwnFarms(userEntity.getId(), "Cannot inactivate user who owns farms");
 
         userEntity.setActive(false);
+        return buildUserResponse(userRepository.save(userEntity));
+    }
+
+    @Transactional
+    public UserResponse activate(String id, ActivateUserRequest request) {
+        UserEntity userEntity = findUserEntity(validateId(id));
+
+        userEntity.setActive(true);
+        if (request != null && StringUtils.hasText(request.getPassword())) {
+            userEntity.setPassword(passwordEncoder.encode(request.getPassword().trim()));
+        }
+
         return buildUserResponse(userRepository.save(userEntity));
     }
 
@@ -272,12 +294,51 @@ public class UserService {
         }
     }
 
+    private boolean matchesSearch(UserEntity userEntity, String normalizedSearch) {
+        if (!StringUtils.hasText(normalizedSearch)) {
+            return true;
+        }
+
+        return userEntity.getName().toLowerCase(Locale.ROOT).contains(normalizedSearch)
+                || userEntity.getEmail().toLowerCase(Locale.ROOT).contains(normalizedSearch);
+    }
+
+    private boolean matchesActive(UserEntity userEntity, Boolean active) {
+        return active == null || userEntity.isActive() == active;
+    }
+
+    private boolean matchesRole(UserEntity userEntity, String normalizedRole) {
+        return !StringUtils.hasText(normalizedRole)
+                || normalizedRole.equalsIgnoreCase(userEntity.getRole());
+    }
+
+    private String normalizeFilter(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeFilterRole(String role) {
+        if (!StringUtils.hasText(role)) {
+            return null;
+        }
+        return normalizeRole(role);
+    }
+
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private String normalizeRole(String role) {
         return role.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeAvatarUrl(String avatarUrl) {
+        if (!StringUtils.hasText(avatarUrl)) {
+            return null;
+        }
+        return avatarUrl.trim();
     }
 
     private UUID validateId(String id) {

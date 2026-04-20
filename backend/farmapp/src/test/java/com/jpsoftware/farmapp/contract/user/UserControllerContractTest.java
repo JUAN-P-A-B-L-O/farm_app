@@ -15,6 +15,7 @@ import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.user.dto.ActivateUserRequest;
 import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UpdatePasswordRequest;
 import com.jpsoftware.farmapp.user.dto.UpdateUserRequest;
@@ -70,6 +71,7 @@ class UserControllerContractTest {
                 .andExpect(jsonPath("$.email").value("jane@farm.com"))
                 .andExpect(jsonPath("$.role").value("MANAGER"))
                 .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.avatarUrl").value("https://example.com/avatar.png"))
                 .andExpect(jsonPath("$.farmIds[0]").value("farm-1"));
     }
 
@@ -84,6 +86,7 @@ class UserControllerContractTest {
                 .andExpect(jsonPath("$[0].email").value("jane@farm.com"))
                 .andExpect(jsonPath("$[0].role").value("MANAGER"))
                 .andExpect(jsonPath("$[0].active").value(true))
+                .andExpect(jsonPath("$[0].avatarUrl").value("https://example.com/avatar.png"))
                 .andExpect(jsonPath("$[0].farmIds[0]").value("farm-1"));
     }
 
@@ -98,6 +101,7 @@ class UserControllerContractTest {
                 .andExpect(jsonPath("$.email").value("jane@farm.com"))
                 .andExpect(jsonPath("$.role").value("MANAGER"))
                 .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.avatarUrl").value("https://example.com/avatar.png"))
                 .andExpect(jsonPath("$.farmIds[0]").value("farm-1"));
     }
 
@@ -108,6 +112,7 @@ class UserControllerContractTest {
                   "name": "Updated Jane Doe",
                   "email": "updated@farm.com",
                   "role": "WORKER",
+                  "avatarUrl": "https://example.com/avatar-updated.png",
                   "farmIds": ["farm-1"]
                 }
                 """;
@@ -118,6 +123,7 @@ class UserControllerContractTest {
                 "updated@farm.com",
                 "WORKER",
                 true,
+                "https://example.com/avatar-updated.png",
                 List.of("farm-1"));
 
         mockMvc.perform(put("/users/11111111-1111-1111-1111-111111111111")
@@ -126,7 +132,8 @@ class UserControllerContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Updated Jane Doe"))
                 .andExpect(jsonPath("$.email").value("updated@farm.com"))
-                .andExpect(jsonPath("$.role").value("WORKER"));
+                .andExpect(jsonPath("$.role").value("WORKER"))
+                .andExpect(jsonPath("$.avatarUrl").value("https://example.com/avatar-updated.png"));
     }
 
     @Test
@@ -137,11 +144,37 @@ class UserControllerContractTest {
                 "jane@farm.com",
                 "MANAGER",
                 false,
+                "https://example.com/avatar.png",
                 List.of("farm-1"));
 
         mockMvc.perform(patch("/users/11111111-1111-1111-1111-111111111111/inactivate"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(false));
+    }
+
+    @Test
+    void shouldActivateUser() throws Exception {
+        String requestBody = """
+                {
+                  "password": "farmapp@456"
+                }
+                """;
+
+        userService.activateResponse = new UserResponse(
+                UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                "Jane Doe",
+                "jane@farm.com",
+                "MANAGER",
+                true,
+                "https://example.com/avatar.png",
+                List.of("farm-1"));
+
+        mockMvc.perform(patch("/users/11111111-1111-1111-1111-111111111111/activate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.avatarUrl").value("https://example.com/avatar.png"));
     }
 
     @Test
@@ -201,6 +234,7 @@ class UserControllerContractTest {
                 "jane@farm.com",
                 "MANAGER",
                 true,
+                "https://example.com/avatar.png",
                 List.of("farm-1"));
     }
 
@@ -211,6 +245,7 @@ class UserControllerContractTest {
         private UserResponse findByIdResponse;
         private UserResponse updateResponse;
         private UserResponse inactivateResponse;
+        private UserResponse activateResponse;
         private RuntimeException findByIdException;
 
         TestUserService() {
@@ -229,7 +264,7 @@ class UserControllerContractTest {
         }
 
         @Override
-        public List<UserResponse> findAll() {
+        public List<UserResponse> findAll(String search, Boolean active, String role) {
             return findAllResponse;
         }
 
@@ -249,6 +284,11 @@ class UserControllerContractTest {
         @Override
         public UserResponse inactivate(String id) {
             return inactivateResponse;
+        }
+
+        @Override
+        public UserResponse activate(String id, ActivateUserRequest request) {
+            return activateResponse;
         }
 
         @Override

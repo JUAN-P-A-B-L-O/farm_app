@@ -1,8 +1,14 @@
 import api from './api'
-import type { User, UserFormData } from '../types/user'
+import type { User, UserFormData, UserListFilters } from '../types/user'
 
-export async function getAllUsers(): Promise<User[]> {
-  const response = await api.get<User[]>('/users')
+export async function getAllUsers(filters?: UserListFilters): Promise<User[]> {
+  const response = await api.get<User[]>('/users', {
+    params: {
+      ...(filters?.search ? { search: filters.search } : {}),
+      ...(filters?.active ? { active: filters.active } : {}),
+      ...(filters?.role ? { role: filters.role } : {}),
+    },
+  })
 
   return response.data
 }
@@ -14,6 +20,7 @@ export async function createUser(data: UserFormData): Promise<User> {
     role: data.role,
     password: data.active ? data.password : undefined,
     active: data.active,
+    avatarUrl: data.avatarUrl || undefined,
     farmIds: data.farmIds,
   }
 
@@ -27,6 +34,7 @@ export async function updateUser(id: string, data: UserFormData): Promise<User> 
     name: data.name,
     email: data.email,
     role: data.role,
+    avatarUrl: data.avatarUrl || undefined,
     farmIds: data.farmIds,
   }
 
@@ -37,6 +45,14 @@ export async function updateUser(id: string, data: UserFormData): Promise<User> 
 
 export async function inactivateUser(id: string): Promise<User> {
   const response = await api.patch<User>(`/users/${id}/inactivate`)
+
+  return response.data
+}
+
+export async function activateUser(id: string, password?: string): Promise<User> {
+  const response = await api.patch<User>(`/users/${id}/activate`, {
+    password: password || undefined,
+  })
 
   return response.data
 }

@@ -32,6 +32,9 @@ public class UserEntity {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(columnDefinition = "TEXT")
+    private String avatarUrl;
+
     public UserEntity() {
     }
 
@@ -98,5 +101,13 @@ public class UserEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 }
