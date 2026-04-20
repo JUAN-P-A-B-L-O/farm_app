@@ -71,7 +71,7 @@ function UsersPage() {
     setIsLoadingFarms(true)
 
     try {
-      const data = await getAccessibleFarms()
+      const data = await getAccessibleFarms({ ownedOnly: true })
       setFarms(data)
     } catch (error) {
       setFormErrorMessage(getErrorMessage(error, t('accessControl.errors.loadFarms'), t))

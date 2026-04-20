@@ -185,6 +185,7 @@ Key validations and rules:
 - authenticated user is required for farm creation
 - created farm is owned by the authenticated user
 - `GET /farms` returns farms accessible to the authenticated user, including farms explicitly assigned to that user
+- `GET /farms?ownedOnly=true` returns only farms owned by the authenticated user
 - frontend uses a dedicated farm creation flow before regular module access when no farm is selected
 
 ### `/animals`

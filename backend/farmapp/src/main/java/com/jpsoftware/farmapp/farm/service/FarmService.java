@@ -31,9 +31,9 @@ public class FarmService {
     }
 
     @Transactional(readOnly = true)
-    public List<FarmResponse> findAccessibleFarms() {
+    public List<FarmResponse> findAccessibleFarms(boolean ownedOnly) {
         return authenticationContextService.getAuthenticatedUserId()
-                .map(this::findAccessibleFarmEntities)
+                .map(userId -> ownedOnly ? farmRepository.findByOwnerId(userId) : findAccessibleFarmEntities(userId))
                 .orElseGet(farmRepository::findAll)
                 .stream()
                 .map(this::toResponse)
