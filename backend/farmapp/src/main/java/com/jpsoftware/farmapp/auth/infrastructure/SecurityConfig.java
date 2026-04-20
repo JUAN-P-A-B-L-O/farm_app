@@ -38,7 +38,7 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/users").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users").hasAuthority(MANAGER_AUTHORITY)
                         .requestMatchers(HttpMethod.GET, "/dashboard").hasAuthority(MANAGER_AUTHORITY)
                         .requestMatchers("/analytics/**").hasAuthority(MANAGER_AUTHORITY)
                         .requestMatchers(HttpMethod.DELETE, "/**").hasAuthority(MANAGER_AUTHORITY)

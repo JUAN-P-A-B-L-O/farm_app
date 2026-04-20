@@ -12,7 +12,7 @@ const navigationItems = [
   { to: '/milk-prices', labelKey: 'layout.navigation.milkPrices' },
   { to: '/feeding', labelKey: 'layout.navigation.feeding' },
   { to: '/feed-types', labelKey: 'layout.navigation.feedTypes' },
-  { to: '/users', labelKey: 'layout.navigation.users' },
+  { to: '/users', labelKey: 'layout.navigation.users', managerOnly: true },
   { to: '/analytics', labelKey: 'layout.navigation.analytics', managerOnly: true },
 ]
 

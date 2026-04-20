@@ -57,7 +57,14 @@ function App() {
           <Route path="/milk-prices" element={<MilkPricePage />} />
           <Route path="/feeding" element={<FeedingPage />} />
           <Route path="/feed-types" element={<FeedTypePage />} />
-          <Route path="/users" element={<UsersPage />} />
+          <Route
+            path="/users"
+            element={(
+              <ManagerRoute>
+                <UsersPage />
+              </ManagerRoute>
+            )}
+          />
           <Route
             path="/analytics"
             element={(

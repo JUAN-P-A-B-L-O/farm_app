@@ -8,11 +8,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jpsoftware.farmapp.user.controller.UserController;
+import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
+import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UserResponse;
 import com.jpsoftware.farmapp.user.mapper.UserMapper;
+import com.jpsoftware.farmapp.user.repository.UserFarmAssignmentRepository;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import com.jpsoftware.farmapp.user.service.UserService;
 import java.lang.reflect.Proxy;
@@ -44,7 +47,10 @@ class UserControllerContractTest {
                 {
                   "name": "Jane Doe",
                   "email": "jane@farm.com",
-                  "role": "ADMIN"
+                  "role": "MANAGER",
+                  "password": "farmapp@123",
+                  "active": true,
+                  "farmIds": ["farm-1"]
                 }
                 """;
 
@@ -57,7 +63,7 @@ class UserControllerContractTest {
                 .andExpect(jsonPath("$.id").value("11111111-1111-1111-1111-111111111111"))
                 .andExpect(jsonPath("$.name").value("Jane Doe"))
                 .andExpect(jsonPath("$.email").value("jane@farm.com"))
-                .andExpect(jsonPath("$.role").value("ADMIN"));
+                .andExpect(jsonPath("$.role").value("MANAGER"));
     }
 
     @Test
@@ -69,7 +75,7 @@ class UserControllerContractTest {
                 .andExpect(jsonPath("$[0].id").value("11111111-1111-1111-1111-111111111111"))
                 .andExpect(jsonPath("$[0].name").value("Jane Doe"))
                 .andExpect(jsonPath("$[0].email").value("jane@farm.com"))
-                .andExpect(jsonPath("$[0].role").value("ADMIN"));
+                .andExpect(jsonPath("$[0].role").value("MANAGER"));
     }
 
     @Test
@@ -81,7 +87,7 @@ class UserControllerContractTest {
                 .andExpect(jsonPath("$.id").value("11111111-1111-1111-1111-111111111111"))
                 .andExpect(jsonPath("$.name").value("Jane Doe"))
                 .andExpect(jsonPath("$.email").value("jane@farm.com"))
-                .andExpect(jsonPath("$.role").value("ADMIN"));
+                .andExpect(jsonPath("$.role").value("MANAGER"));
     }
 
     @Test
@@ -101,7 +107,9 @@ class UserControllerContractTest {
                 {
                   "name": " ",
                   "email": " ",
-                  "role": "ADMIN"
+                  "role": "MANAGER",
+                  "active": true,
+                  "farmIds": ["farm-1"]
                 }
                 """;
 
@@ -116,7 +124,7 @@ class UserControllerContractTest {
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
                 "Jane Doe",
                 "jane@farm.com",
-                "ADMIN");
+                "MANAGER");
     }
 
     private static class TestUserService extends UserService {
@@ -127,7 +135,13 @@ class UserControllerContractTest {
         private RuntimeException findByIdException;
 
         TestUserService() {
-            super(dummyRepository(), new UserMapper(), new BCryptPasswordEncoder());
+            super(
+                    dummyRepository(),
+                    dummyAssignmentRepository(),
+                    dummyFarmRepository(),
+                    new UserMapper(),
+                    new BCryptPasswordEncoder(),
+                    dummyAuthenticationContextService());
         }
 
         @Override
@@ -155,6 +169,28 @@ class UserControllerContractTest {
                     (proxy, method, args) -> {
                         throw new UnsupportedOperationException("Repository should not be used in controller test");
                     });
+        }
+
+        private static UserFarmAssignmentRepository dummyAssignmentRepository() {
+            return (UserFarmAssignmentRepository) Proxy.newProxyInstance(
+                    UserFarmAssignmentRepository.class.getClassLoader(),
+                    new Class<?>[]{UserFarmAssignmentRepository.class},
+                    (proxy, method, args) -> {
+                        throw new UnsupportedOperationException("Repository should not be used in controller test");
+                    });
+        }
+
+        private static FarmRepository dummyFarmRepository() {
+            return (FarmRepository) Proxy.newProxyInstance(
+                    FarmRepository.class.getClassLoader(),
+                    new Class<?>[]{FarmRepository.class},
+                    (proxy, method, args) -> {
+                        throw new UnsupportedOperationException("Repository should not be used in controller test");
+                    });
+        }
+
+        private static AuthenticationContextService dummyAuthenticationContextService() {
+            return new AuthenticationContextService();
         }
     }
 }

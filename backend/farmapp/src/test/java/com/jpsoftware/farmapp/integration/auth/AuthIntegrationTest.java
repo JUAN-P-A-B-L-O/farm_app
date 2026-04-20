@@ -19,8 +19,9 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 null,
                 "Jane Doe",
                 "jane@farm.com",
-                "ADMIN",
-                passwordEncoder.encode("farmapp@123")));
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -33,7 +34,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isString())
                 .andExpect(jsonPath("$.user.email").value("jane@farm.com"))
-                .andExpect(jsonPath("$.user.role").value("ADMIN"));
+                .andExpect(jsonPath("$.user.role").value("MANAGER"));
     }
 
     @Test
@@ -42,8 +43,9 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 null,
                 "Jane Doe",
                 "jane@farm.com",
-                "ADMIN",
-                passwordEncoder.encode("farmapp@123")));
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -51,6 +53,28 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                                 {
                                   "email": "jane@farm.com",
                                   "password": "wrong-password"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Invalid email or password"));
+    }
+
+    @Test
+    void shouldReturn401ForInactiveUser() throws Exception {
+        userRepository.save(new UserEntity(
+                null,
+                "Jane Doe",
+                "jane@farm.com",
+                "WORKER",
+                passwordEncoder.encode("farmapp@123"),
+                false));
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "jane@farm.com",
+                                  "password": "farmapp@123"
                                 }
                                 """))
                 .andExpect(status().isUnauthorized())

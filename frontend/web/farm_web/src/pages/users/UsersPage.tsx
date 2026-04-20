@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import UserForm from '../../components/user/UserForm'
-import { useAuth } from '../../hooks/useAuth'
 import { useTranslation } from '../../hooks/useTranslation'
-import { createUser, deleteUser, getAllUsers, updateUser } from '../../services/userService'
+import { getAccessibleFarms } from '../../services/farmService'
+import { createUser, getAllUsers } from '../../services/userService'
+import type { Farm } from '../../types/farm'
 import type { User, UserApiErrorResponse, UserFormData } from '../../types/user'
-import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
 const emptyUserForm: UserFormData = {
   name: '',
   email: '',
   role: '',
+  password: '',
+  active: true,
+  farmIds: [],
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
@@ -28,7 +31,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
     }
 
     if (status === 409) {
-      return apiMessage ?? t('accessControl.errors.duplicateName')
+      return apiMessage ?? t('accessControl.errors.duplicateEmail')
     }
 
     if (apiMessage) {
@@ -41,15 +44,13 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
 
 function UsersPage() {
   const { t } = useTranslation()
-  const { user: authenticatedUser } = useAuth()
-  const canDeleteResources = isManager(authenticatedUser)
   const [users, setUsers] = useState<User[]>([])
+  const [farms, setFarms] = useState<Farm[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingFarms, setIsLoadingFarms] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
-  const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [formInitialValues, setFormInitialValues] = useState<UserFormData>(emptyUserForm)
 
   async function loadUsers() {
@@ -66,75 +67,36 @@ function UsersPage() {
     }
   }
 
+  async function loadFarms() {
+    setIsLoadingFarms(true)
+
+    try {
+      const data = await getAccessibleFarms()
+      setFarms(data)
+    } catch (error) {
+      setFormErrorMessage(getErrorMessage(error, t('accessControl.errors.loadFarms'), t))
+    } finally {
+      setIsLoadingFarms(false)
+    }
+  }
+
   useEffect(() => {
     void loadUsers()
+    void loadFarms()
   }, [])
 
-  async function handleCreateOrUpdate(data: UserFormData) {
+  async function handleCreate(data: UserFormData) {
     setIsSubmitting(true)
     setFormErrorMessage('')
 
     try {
-      if (editingUserId) {
-        await updateUser(editingUserId, data)
-      } else {
-        await createUser(data)
-      }
-
-      setEditingUserId(null)
+      await createUser(data)
       setFormInitialValues(emptyUserForm)
       await loadUsers()
     } catch (error) {
-      setFormErrorMessage(
-        getErrorMessage(
-          error,
-          editingUserId ? t('accessControl.errors.update') : t('accessControl.errors.create'),
-          t,
-        ),
-      )
+      setFormErrorMessage(getErrorMessage(error, t('accessControl.errors.create'), t))
     } finally {
       setIsSubmitting(false)
-    }
-  }
-
-  function handleEdit(user: User) {
-    setFormErrorMessage('')
-    setEditingUserId(user.id)
-    setFormInitialValues({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    })
-  }
-
-  function handleCancelEdit() {
-    setEditingUserId(null)
-    setFormErrorMessage('')
-    setFormInitialValues(emptyUserForm)
-  }
-
-  async function handleDelete(id: string) {
-    const shouldDelete = window.confirm(t('accessControl.confirmDelete'))
-
-    if (!shouldDelete) {
-      return
-    }
-
-    setIsDeletingId(id)
-    setListErrorMessage('')
-
-    try {
-      await deleteUser(id)
-
-      if (editingUserId === id) {
-        handleCancelEdit()
-      }
-
-      await loadUsers()
-    } catch (error) {
-      setListErrorMessage(getErrorMessage(error, t('accessControl.errors.delete'), t))
-    } finally {
-      setIsDeletingId(null)
     }
   }
 
@@ -152,21 +114,18 @@ function UsersPage() {
         <article className="animals-panel">
           <div className="animals-panel__header">
             <div>
-              <h2>{editingUserId ? t('accessControl.updateTitle') : t('accessControl.createTitle')}</h2>
-              <p>
-                {editingUserId
-                  ? t('accessControl.updateDescription')
-                  : t('accessControl.createDescription')}
-              </p>
+              <h2>{t('accessControl.createTitle')}</h2>
+              <p>{t('accessControl.createDescription')}</p>
             </div>
           </div>
 
           <UserForm
             initialValues={formInitialValues}
-            onSubmit={handleCreateOrUpdate}
-            onCancel={editingUserId ? handleCancelEdit : undefined}
+            farms={farms}
+            isLoadingFarms={isLoadingFarms}
+            onSubmit={handleCreate}
             isSubmitting={isSubmitting}
-            submitLabel={editingUserId ? t('accessControl.submitUpdate') : t('accessControl.submitCreate')}
+            submitLabel={t('accessControl.submitCreate')}
             errorMessage={formErrorMessage}
           />
         </article>
@@ -197,33 +156,16 @@ function UsersPage() {
                 <thead>
                   <tr>
                     <th>{t('accessControl.table.name')}</th>
-                    <th>{t('accessControl.table.actions')}</th>
+                    <th>{t('accessControl.table.email')}</th>
+                    <th>{t('accessControl.table.role')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user) => (
                     <tr key={user.id}>
                       <td>{user.name}</td>
-                      <td className="animals-table__actions">
-                        <button
-                          type="button"
-                          className="animals-table__action-button animals-table__action-button--secondary"
-                          onClick={() => handleEdit(user)}
-                          disabled={isSubmitting || isDeletingId === user.id}
-                        >
-                          {t('accessControl.edit')}
-                        </button>
-                        {canDeleteResources && (
-                          <button
-                            type="button"
-                            className="animals-table__action-button animals-table__action-button--danger"
-                            onClick={() => void handleDelete(user.id)}
-                            disabled={isSubmitting || isDeletingId === user.id}
-                          >
-                            {isDeletingId === user.id ? t('accessControl.deleting') : t('accessControl.delete')}
-                          </button>
-                        )}
-                      </td>
+                      <td>{user.email}</td>
+                      <td>{user.role}</td>
                     </tr>
                   ))}
                 </tbody>

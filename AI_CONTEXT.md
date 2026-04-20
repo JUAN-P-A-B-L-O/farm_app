@@ -10,6 +10,7 @@
 
 - Farms:
   - create and list farms accessible to the authenticated user
+  - farm access can come from ownership or explicit user assignment
   - farm is the operating boundary used by animals, feeding, production, feed types, dashboard, and analytics
 - Animals:
   - create, list, retrieve, update, and delete animal records
@@ -46,6 +47,10 @@
   - users are also the accountability reference for feeding and production records
   - current role values used by the frontend are `MANAGER` and `WORKER`
   - `MANAGER` is the privileged role for dashboard, analytics, and delete operations
+  - only authenticated `MANAGER` users can create new users
+  - new users must be assigned to at least one farm owned by the creating manager
+  - users store an `active` login flag; inactive users cannot authenticate
+  - user email is unique and enforced in service validation plus a database constraint
 - Analytics:
   - dashboard aggregates total production, feeding cost, revenue, profit, and animal count
   - dashboard and analytics endpoints require role `MANAGER`
@@ -134,8 +139,8 @@ Frontend architectural rules already visible in code:
 
 Current frontend constraint:
 
-- the service layer exists, but the frontend does not currently attach JWT tokens to requests
-- backend security now requires JWT for almost all endpoints, so frontend work must account for that without broad refactoring
+- JWT attachment is centralized in the Axios service layer
+- backend security requires JWT for almost all endpoints, so frontend work should continue to centralize auth headers rather than scattering them across components
 
 ## 3. API Contract
 
@@ -179,7 +184,7 @@ Key validations and rules:
 - `name` must not be blank
 - authenticated user is required for farm creation
 - created farm is owned by the authenticated user
-- `GET /farms` returns farms accessible to the authenticated user
+- `GET /farms` returns farms accessible to the authenticated user, including farms explicitly assigned to that user
 - frontend uses a dedicated farm creation flow before regular module access when no farm is selected
 
 ### `/animals`
@@ -452,7 +457,9 @@ Create request:
   "name": "Maria Silva",
   "email": "maria.silva@farmapp.com",
   "role": "MANAGER",
-  "password": "farmapp@123"
+  "password": "farmapp@123",
+  "active": true,
+  "farmIds": ["farm-001"]
 }
 ```
 
@@ -461,22 +468,25 @@ Required fields:
 - `name`
 - `email`
 - `role`
+- `active`
+- `farmIds`
 
-Optional field:
+Conditional field:
 
 - `password`
 
 Key validations and rules:
 
 - `name`, `email`, and `role` must not be blank
+- `active` must not be null
+- `farmIds` must contain at least one value
 - `id` in read endpoints must be a valid UUID
-- if `password` is omitted, the backend generates a random password before hashing
-- `POST /users` is public
+- only authenticated `MANAGER` users can call `POST /users`
+- `email` must be unique
+- if `active = true`, `password` is required
+- if `active = false`, login is blocked even if a password hash is stored
+- every `farmId` must belong to the authenticated manager creating the user
 - `GET /users` and `GET /users/{id}` require JWT authentication
-
-Important frontend mismatch:
-
-- frontend service code includes `updateUser` and `deleteUser`, but the current backend does not implement those endpoints
 
 ### Dashboard and analytics profit behavior
 
@@ -539,12 +549,12 @@ Response shape:
   - `/v3/api-docs/**`
   - `/swagger-ui/**`
   - `/swagger-ui.html`
-  - `POST /users`
 - All other endpoints require authentication
 - Role-based authorization:
   - `MANAGER` can access dashboard and analytics
+  - `MANAGER` can create users
   - `MANAGER` can perform `DELETE` requests
-  - non-manager authenticated users receive `403 Forbidden` for dashboard, analytics, and delete operations
+  - non-manager authenticated users receive `403 Forbidden` for user creation, dashboard, analytics, and delete operations
 
 ### Login flow
 
@@ -562,6 +572,7 @@ Authorization: Bearer <jwt>
 - JWT filter runs before `UsernamePasswordAuthenticationFilter`
 - sessions are stateless
 - passwords are hashed with BCrypt
+- inactive users are rejected by the login service and by JWT request authentication
 - a default admin is created on startup if the user table is empty
 - default admin credentials come from environment or fallback values:
   - `ADMIN_EMAIL`, default `admin@farmapp.com`
@@ -577,9 +588,11 @@ Authorization: Bearer <jwt>
 ### Main entities
 
 - User
-  - `id`, `name`, `email`, `role`, `password`
+  - `id`, `name`, `email`, `role`, `password`, `active`
 - Farm
   - `id`, `name`, `ownerId`
+- UserFarmAssignment
+  - `id`, `userId`, `farmId`
 - Animal
   - `id`, `tag`, `breed`, `birthDate`, `status`, `origin`, `acquisitionCost`, `salePrice`, `saleDate`, `farmId`
 - Production
@@ -594,8 +607,10 @@ Authorization: Bearer <jwt>
 ### Database constraints and behavior
 
 - `animals.tag` is unique
+- `users.email` is unique
 - many relational checks are enforced in services rather than via JPA relationships
 - operational tables use scalar IDs rather than object associations
+- user-to-farm access is persisted through a scalar-ID assignment table rather than relation-heavy JPA mappings
 - production and feeding delete behavior is implemented with `status = INACTIVE`
 - feed type delete behavior is implemented with `active = false`
 - feeding cost is derived from `feedings.quantity * feed_types.cost_per_kg`

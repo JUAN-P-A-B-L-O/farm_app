@@ -4,6 +4,7 @@ import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.user.repository.UserFarmAssignmentRepository;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -13,10 +14,15 @@ import org.springframework.util.StringUtils;
 public class FarmAccessService {
 
     private final FarmRepository farmRepository;
+    private final UserFarmAssignmentRepository userFarmAssignmentRepository;
     private final AuthenticationContextService authenticationContextService;
 
-    public FarmAccessService(FarmRepository farmRepository, AuthenticationContextService authenticationContextService) {
+    public FarmAccessService(
+            FarmRepository farmRepository,
+            UserFarmAssignmentRepository userFarmAssignmentRepository,
+            AuthenticationContextService authenticationContextService) {
         this.farmRepository = farmRepository;
+        this.userFarmAssignmentRepository = userFarmAssignmentRepository;
         this.authenticationContextService = authenticationContextService;
     }
 
@@ -35,7 +41,8 @@ public class FarmAccessService {
 
         Optional<UUID> authenticatedUserId = authenticationContextService.getAuthenticatedUserId();
         boolean hasAccess = authenticatedUserId
-                .map(userId -> farmRepository.existsByIdAndOwnerId(farmId, userId))
+                .map(userId -> farmRepository.existsByIdAndOwnerId(farmId, userId)
+                        || userFarmAssignmentRepository.existsByUserIdAndFarmId(userId, farmId))
                 .orElseGet(() -> farmRepository.existsById(farmId));
 
         if (!hasAccess) {

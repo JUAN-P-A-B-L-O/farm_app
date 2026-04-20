@@ -1,13 +1,15 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
+import type { Farm } from '../../types/farm'
 import type { UserFormData } from '../../types/user'
 
 const roleOptions = ['MANAGER', 'WORKER']
 
 interface UserFormProps {
   initialValues: UserFormData
+  farms: Farm[]
+  isLoadingFarms: boolean
   onSubmit: (data: UserFormData) => Promise<void>
-  onCancel?: () => void
   isSubmitting: boolean
   submitLabel: string
   errorMessage: string
@@ -15,8 +17,9 @@ interface UserFormProps {
 
 function UserForm({
   initialValues,
+  farms,
+  isLoadingFarms,
   onSubmit,
-  onCancel,
   isSubmitting,
   submitLabel,
   errorMessage,
@@ -31,11 +34,18 @@ function UserForm({
   }, [initialValues])
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value } = event.target
+    const { name } = event.target
+    const value =
+      event.target instanceof HTMLInputElement && event.target.type === 'checkbox'
+        ? event.target.checked
+        : event.target instanceof HTMLSelectElement && event.target.multiple
+          ? Array.from(event.target.selectedOptions, (option) => option.value)
+          : event.target.value
 
     setFormData((currentData) => ({
       ...currentData,
       [name]: value,
+      ...(name === 'active' && value === false ? { password: '' } : {}),
     }))
 
     if (validationMessage) {
@@ -50,6 +60,9 @@ function UserForm({
       name: formData.name.trim(),
       email: formData.email.trim(),
       role: formData.role.trim(),
+      password: formData.password.trim(),
+      active: formData.active,
+      farmIds: formData.farmIds,
     }
 
     if (!payload.name) {
@@ -64,6 +77,16 @@ function UserForm({
 
     if (!payload.role) {
       setValidationMessage(t('accessControl.errors.roleRequired'))
+      return
+    }
+
+    if (payload.active && !payload.password) {
+      setValidationMessage(t('accessControl.errors.passwordRequired'))
+      return
+    }
+
+    if (payload.farmIds.length === 0) {
+      setValidationMessage(t('accessControl.errors.farmsRequired'))
       return
     }
 
@@ -109,6 +132,55 @@ function UserForm({
             ))}
           </select>
         </label>
+
+        <label className="animal-form__field animal-form__field--checkbox">
+          <span>{t('accessControl.form.active')}</span>
+          <input
+            name="active"
+            type="checkbox"
+            checked={formData.active}
+            onChange={handleChange}
+          />
+        </label>
+
+        {formData.active && (
+          <label className="animal-form__field">
+            <span>{t('accessControl.form.password')}</span>
+            <input
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="farmapp@123"
+              required
+            />
+          </label>
+        )}
+
+        <label className="animal-form__field">
+          <span>{t('accessControl.form.farms')}</span>
+          <select
+            name="farmIds"
+            value={formData.farmIds}
+            onChange={handleChange}
+            multiple
+            required
+            disabled={isLoadingFarms || farms.length === 0}
+          >
+            {farms.map((farm) => (
+              <option key={farm.id} value={farm.id}>
+                {farm.name}
+              </option>
+            ))}
+          </select>
+          <small>
+            {isLoadingFarms
+              ? t('accessControl.form.loadingFarms')
+              : farms.length === 0
+                ? t('accessControl.form.noFarms')
+                : t('accessControl.form.farmsHint')}
+          </small>
+        </label>
       </div>
 
       {validationMessage && (
@@ -127,17 +199,6 @@ function UserForm({
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? t('common.saving') : submitLabel}
         </button>
-
-        {onCancel && (
-          <button
-            type="button"
-            className="animal-form__secondary-button"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            {t('common.cancel')}
-          </button>
-        )}
       </div>
     </form>
   )

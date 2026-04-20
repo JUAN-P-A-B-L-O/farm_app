@@ -152,6 +152,9 @@ public class GlobalExceptionHandler {
         if (message != null && message.toLowerCase().contains("tag")) {
             return "Animal with this tag already exists";
         }
+        if (message != null && message.toLowerCase().contains("email")) {
+            return "User with this email already exists";
+        }
 
         return "Data integrity violation";
     }
