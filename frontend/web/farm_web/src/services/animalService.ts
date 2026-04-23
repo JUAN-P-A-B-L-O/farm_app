@@ -1,4 +1,5 @@
 import api from './api'
+import { downloadCsv } from './csvExportService'
 import type { Animal, AnimalFormData, SellAnimalData } from '../types/animal'
 
 function buildFarmParams(farmId?: string) {
@@ -47,4 +48,8 @@ export async function sellAnimal(id: string, data: SellAnimalData, farmId?: stri
   })
 
   return response.data
+}
+
+export async function exportAnimalsCsv(farmId?: string): Promise<void> {
+  await downloadCsv('/animals/export', buildFarmParams(farmId), 'animals.csv')
 }

@@ -1,4 +1,5 @@
 import api from './api'
+import { downloadCsv } from './csvExportService'
 import { normalizeToTwoDecimals } from '../utils/decimal'
 import type {
   CreateFeedingPayload,
@@ -75,4 +76,8 @@ export async function deleteFeeding(id: string, farmId?: string): Promise<void> 
   await api.delete(`/feedings/${id}`, {
     params: buildFarmParams(farmId),
   })
+}
+
+export async function exportFeedingsCsv(farmId?: string): Promise<void> {
+  await downloadCsv('/feedings/export', buildFarmParams(farmId), 'feedings.csv')
 }

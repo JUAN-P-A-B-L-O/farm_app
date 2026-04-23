@@ -4,6 +4,8 @@ package com.jpsoftware.farmapp.contract.feed;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -13,10 +15,12 @@ import com.jpsoftware.farmapp.feed.dto.FeedTypeResponse;
 import com.jpsoftware.farmapp.feed.mapper.FeedTypeMapper;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feed.service.FeedTypeService;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import java.lang.reflect.Proxy;
 import java.util.List;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -48,6 +52,7 @@ class FeedTypeControllerContractTest {
         feedTypeService.createResponse = buildResponse();
 
         mockMvc.perform(post("/feed-types")
+                        .queryParam("farmId", "farm-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
@@ -61,7 +66,7 @@ class FeedTypeControllerContractTest {
     void shouldReturnAll() throws Exception {
         feedTypeService.findAllResponse = List.of(buildResponse());
 
-        mockMvc.perform(get("/feed-types"))
+        mockMvc.perform(get("/feed-types").queryParam("farmId", "farm-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("feed-type-1"))
                 .andExpect(jsonPath("$[0].name").value("Corn Silage"))
@@ -70,10 +75,21 @@ class FeedTypeControllerContractTest {
     }
 
     @Test
+    void shouldExportFeedTypes() throws Exception {
+        feedTypeService.exportResponse = "id,name\nfeed-type-1,Corn Silage\n";
+
+        mockMvc.perform(get("/feed-types/export").queryParam("farmId", "farm-1"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("feed-types.csv")))
+                .andExpect(content().string("id,name\nfeed-type-1,Corn Silage\n"));
+    }
+
+    @Test
     void shouldReturnById() throws Exception {
         feedTypeService.findByIdResponse = buildResponse();
 
-        mockMvc.perform(get("/feed-types/feed-type-1"))
+        mockMvc.perform(get("/feed-types/feed-type-1").queryParam("farmId", "farm-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("feed-type-1"))
                 .andExpect(jsonPath("$.name").value("Corn Silage"))
@@ -115,24 +131,30 @@ class FeedTypeControllerContractTest {
         private FeedTypeResponse createResponse;
         private List<FeedTypeResponse> findAllResponse = List.of();
         private FeedTypeResponse findByIdResponse;
+        private String exportResponse = "";
         private RuntimeException findByIdException;
 
         TestFeedTypeService() {
-            super(dummyRepository(), new FeedTypeMapper());
+            super(dummyRepository(), new FeedTypeMapper(), dummyFarmAccessService());
         }
 
         @Override
-        public FeedTypeResponse create(CreateFeedTypeRequest request) {
+        public FeedTypeResponse create(CreateFeedTypeRequest request, String farmId) {
             return createResponse;
         }
 
         @Override
-        public List<FeedTypeResponse> findAll() {
+        public List<FeedTypeResponse> findAll(String farmId) {
             return findAllResponse;
         }
 
         @Override
-        public FeedTypeResponse findById(String id) {
+        public String exportAll(String farmId) {
+            return exportResponse;
+        }
+
+        @Override
+        public FeedTypeResponse findById(String id, String farmId) {
             if (findByIdException != null) {
                 throw findByIdException;
             }
@@ -146,6 +168,10 @@ class FeedTypeControllerContractTest {
                     (proxy, method, args) -> {
                         throw new UnsupportedOperationException("Repository should not be used in controller test");
                     });
+        }
+
+        private static FarmAccessService dummyFarmAccessService() {
+            return org.mockito.Mockito.mock(FarmAccessService.class);
         }
     }
 }

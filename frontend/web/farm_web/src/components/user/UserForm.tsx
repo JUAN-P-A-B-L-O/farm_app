@@ -1,11 +1,15 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
+import type { Farm } from '../../types/farm'
 import type { UserFormData } from '../../types/user'
 
 const roleOptions = ['MANAGER', 'WORKER']
 
 interface UserFormProps {
   initialValues: UserFormData
+  farms: Farm[]
+  isLoadingFarms: boolean
+  mode: 'create' | 'edit'
   onSubmit: (data: UserFormData) => Promise<void>
   onCancel?: () => void
   isSubmitting: boolean
@@ -15,6 +19,9 @@ interface UserFormProps {
 
 function UserForm({
   initialValues,
+  farms,
+  isLoadingFarms,
+  mode,
   onSubmit,
   onCancel,
   isSubmitting,
@@ -31,7 +38,13 @@ function UserForm({
   }, [initialValues])
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value } = event.target
+    const { name } = event.target
+    const value =
+      event.target instanceof HTMLInputElement && event.target.type === 'checkbox'
+        ? event.target.checked
+        : event.target instanceof HTMLSelectElement && event.target.multiple
+          ? Array.from(event.target.selectedOptions, (option) => option.value)
+          : event.target.value
 
     setFormData((currentData) => ({
       ...currentData,
@@ -43,6 +56,30 @@ function UserForm({
     }
   }
 
+  function handleAvatarFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setFormData((currentData) => ({
+        ...currentData,
+        avatarUrl: typeof reader.result === 'string' ? reader.result : currentData.avatarUrl,
+      }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function handleClearAvatar() {
+    setFormData((currentData) => ({
+      ...currentData,
+      avatarUrl: '',
+    }))
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -50,6 +87,10 @@ function UserForm({
       name: formData.name.trim(),
       email: formData.email.trim(),
       role: formData.role.trim(),
+      password: formData.password.trim(),
+      active: formData.active,
+      avatarUrl: formData.avatarUrl.trim(),
+      farmIds: formData.farmIds,
     }
 
     if (!payload.name) {
@@ -64,6 +105,16 @@ function UserForm({
 
     if (!payload.role) {
       setValidationMessage(t('accessControl.errors.roleRequired'))
+      return
+    }
+
+    if (mode === 'create' && payload.active && !payload.password) {
+      setValidationMessage(t('accessControl.errors.passwordRequired'))
+      return
+    }
+
+    if (payload.farmIds.length === 0) {
+      setValidationMessage(t('accessControl.errors.farmsRequired'))
       return
     }
 
@@ -109,7 +160,96 @@ function UserForm({
             ))}
           </select>
         </label>
+
+        {mode === 'create' && (
+          <label className="animal-form__field animal-form__field--checkbox">
+            <span>{t('accessControl.form.active')}</span>
+            <input
+              name="active"
+              type="checkbox"
+              checked={formData.active}
+              onChange={handleChange}
+            />
+          </label>
+        )}
+
+        {mode === 'create' && (
+          <label className="animal-form__field">
+            <span>
+              {formData.active
+                ? t('accessControl.form.password')
+                : t('accessControl.form.passwordOptional')}
+            </span>
+            <input
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="farmapp@123"
+              required={formData.active}
+            />
+          </label>
+        )}
+
+        <label className="animal-form__field">
+          <span>{t('accessControl.form.avatarUrl')}</span>
+          <input
+            name="avatarUrl"
+            type="url"
+            value={formData.avatarUrl}
+            onChange={handleChange}
+            placeholder="https://example.com/avatar.png"
+          />
+          <small>{t('accessControl.form.avatarHint')}</small>
+        </label>
+
+        <label className="animal-form__field">
+          <span>{t('accessControl.form.avatarUpload')}</span>
+          <input type="file" accept="image/*" onChange={handleAvatarFileChange} />
+        </label>
+
+        <label className="animal-form__field">
+          <span>{t('accessControl.form.farms')}</span>
+          <select
+            name="farmIds"
+            value={formData.farmIds}
+            onChange={handleChange}
+            multiple
+            required
+            disabled={isLoadingFarms || farms.length === 0}
+          >
+            {farms.map((farm) => (
+              <option key={farm.id} value={farm.id}>
+                {farm.name}
+              </option>
+            ))}
+          </select>
+          <small>
+            {isLoadingFarms
+              ? t('accessControl.form.loadingFarms')
+              : farms.length === 0
+                ? t('accessControl.form.noFarms')
+                : t('accessControl.form.farmsHint')}
+          </small>
+        </label>
       </div>
+
+      {formData.avatarUrl && (
+        <div className="user-avatar-preview">
+          <img
+            src={formData.avatarUrl}
+            alt={t('accessControl.form.avatarPreviewAlt')}
+            className="user-avatar user-avatar--large"
+          />
+          <button
+            type="button"
+            className="animal-form__secondary-button"
+            onClick={handleClearAvatar}
+          >
+            {t('accessControl.form.clearAvatar')}
+          </button>
+        </div>
+      )}
 
       {validationMessage && (
         <p className="animal-form__feedback animal-form__feedback--error">

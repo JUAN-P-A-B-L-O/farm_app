@@ -10,6 +10,8 @@ import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.time.LocalDate;
 import java.util.List;
@@ -75,6 +77,21 @@ public class AnimalService {
         return animals.stream()
                 .map(animalMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId) {
+        return CsvExportUtils.write(findAll(farmId), List.of(
+                new CsvColumn<>("id", AnimalResponse::getId),
+                new CsvColumn<>("tag", AnimalResponse::getTag),
+                new CsvColumn<>("breed", AnimalResponse::getBreed),
+                new CsvColumn<>("birthDate", AnimalResponse::getBirthDate),
+                new CsvColumn<>("origin", AnimalResponse::getOrigin),
+                new CsvColumn<>("status", AnimalResponse::getStatus),
+                new CsvColumn<>("acquisitionCost", AnimalResponse::getAcquisitionCost),
+                new CsvColumn<>("salePrice", AnimalResponse::getSalePrice),
+                new CsvColumn<>("saleDate", AnimalResponse::getSaleDate),
+                new CsvColumn<>("farmId", AnimalResponse::getFarmId)));
     }
 
     @Transactional

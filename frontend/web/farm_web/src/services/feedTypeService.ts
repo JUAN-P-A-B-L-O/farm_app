@@ -1,4 +1,5 @@
 import api from './api'
+import { downloadCsv } from './csvExportService'
 import type { FeedType, FeedTypeFormData } from '../types/feedType'
 import { normalizeToTwoDecimals } from '../utils/decimal'
 
@@ -40,4 +41,8 @@ export async function deleteFeedType(id: string, farmId?: string): Promise<void>
   await api.delete(`/feed-types/${id}`, {
     params: buildFarmParams(farmId),
   })
+}
+
+export async function exportFeedTypesCsv(farmId?: string): Promise<void> {
+  await downloadCsv('/feed-types/export', buildFarmParams(farmId), 'feed-types.csv')
 }

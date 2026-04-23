@@ -2,6 +2,7 @@ package com.jpsoftware.farmapp.dashboard.controller;
 
 import com.jpsoftware.farmapp.dashboard.dto.DashboardResponse;
 import com.jpsoftware.farmapp.dashboard.service.DashboardService;
+import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,5 +32,15 @@ public class DashboardController {
             @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost) {
         DashboardResponse response = dashboardService.getDashboard(farmId, includeAcquisitionCost);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/dashboard/export")
+    @Operation(summary = "Export dashboard", description = "Exports dashboard metrics as CSV using the current farm and acquisition-cost settings.")
+    public ResponseEntity<byte[]> exportDashboard(
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost) {
+        return CsvResponseFactory.buildDownload(
+                "dashboard-summary.csv",
+                dashboardService.exportDashboard(farmId, includeAcquisitionCost));
     }
 }

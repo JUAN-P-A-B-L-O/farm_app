@@ -6,6 +6,7 @@ import com.jpsoftware.farmapp.feeding.dto.UpdateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -72,6 +73,15 @@ public class FeedingController {
 
         List<FeedingResponse> response = feedingService.findAll(animalId, date, farmId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Export feedings", description = "Exports feeding records as CSV using the current filters.")
+    public ResponseEntity<byte[]> export(
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) String farmId) {
+        return CsvResponseFactory.buildDownload("feedings.csv", feedingService.exportAll(animalId, date, farmId));
     }
 
     @GetMapping("/{id}")

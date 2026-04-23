@@ -1,4 +1,5 @@
 import api from './api'
+import { downloadCsv } from './csvExportService'
 import { normalizeToTwoDecimals } from '../utils/decimal'
 import type { CreateMilkPricePayload, MilkPrice } from '../types/milkPrice'
 
@@ -31,4 +32,8 @@ export async function getMilkPriceHistory(farmId?: string): Promise<MilkPrice[]>
   })
 
   return response.data
+}
+
+export async function exportMilkPriceHistoryCsv(farmId?: string): Promise<void> {
+  await downloadCsv('/milk-prices/export', buildFarmParams(farmId), 'milk-prices.csv')
 }

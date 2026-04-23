@@ -16,6 +16,8 @@ import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -94,6 +96,18 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
+    public String exportProductionSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId) {
+        return CsvExportUtils.write(getProductionSeries(startDate, endDate, animalId, groupByParam, farmId), List.of(
+                new CsvColumn<>("period", AnalyticsTimeSeriesPointResponse::getPeriod),
+                new CsvColumn<>("value", AnalyticsTimeSeriesPointResponse::getValue)));
+    }
+
+    @Transactional(readOnly = true)
     public List<AnalyticsTimeSeriesPointResponse> getFeedingCostSeries(
             LocalDate startDate,
             LocalDate endDate,
@@ -111,6 +125,18 @@ public class AnalyticsService {
                 feeding -> DecimalScaleUtils.multiply(
                         DecimalScaleUtils.zeroIfNull(feedCostsById.get(feeding.getFeedTypeId())),
                         DecimalScaleUtils.zeroIfNull(feeding.getQuantity())));
+    }
+
+    @Transactional(readOnly = true)
+    public String exportFeedingCostSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId) {
+        return CsvExportUtils.write(getFeedingCostSeries(startDate, endDate, animalId, groupByParam, farmId), List.of(
+                new CsvColumn<>("period", AnalyticsTimeSeriesPointResponse::getPeriod),
+                new CsvColumn<>("value", AnalyticsTimeSeriesPointResponse::getValue)));
     }
 
     @Transactional(readOnly = true)
@@ -175,6 +201,24 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
+    public String exportProfitSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            boolean includeAcquisitionCost) {
+        return CsvExportUtils.write(
+                getProfitSeries(startDate, endDate, animalId, groupByParam, farmId, includeAcquisitionCost),
+                List.of(
+                        new CsvColumn<>("period", AnalyticsProfitPointResponse::getPeriod),
+                        new CsvColumn<>("production", AnalyticsProfitPointResponse::getProduction),
+                        new CsvColumn<>("feedingCost", AnalyticsProfitPointResponse::getFeedingCost),
+                        new CsvColumn<>("revenue", AnalyticsProfitPointResponse::getRevenue),
+                        new CsvColumn<>("profit", AnalyticsProfitPointResponse::getProfit)));
+    }
+
+    @Transactional(readOnly = true)
     public List<AnalyticsAnimalProductionPointResponse> getProductionByAnimal(
             LocalDate startDate,
             LocalDate endDate,
@@ -196,6 +240,18 @@ public class AnalyticsService {
                         DecimalScaleUtils.normalize(entry.getValue())))
                 .sorted(Comparator.comparing(AnalyticsAnimalProductionPointResponse::getAnimalTag))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public String exportProductionByAnimal(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String farmId) {
+        return CsvExportUtils.write(getProductionByAnimal(startDate, endDate, animalId, farmId), List.of(
+                new CsvColumn<>("animalId", AnalyticsAnimalProductionPointResponse::getAnimalId),
+                new CsvColumn<>("animalTag", AnalyticsAnimalProductionPointResponse::getAnimalTag),
+                new CsvColumn<>("quantity", AnalyticsAnimalProductionPointResponse::getQuantity)));
     }
 
     private AnalyticsGroupBy validateFilters(

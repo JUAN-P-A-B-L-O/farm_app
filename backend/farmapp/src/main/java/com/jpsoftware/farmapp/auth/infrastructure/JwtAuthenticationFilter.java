@@ -68,6 +68,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (!user.isActive()) {
+            authenticationEntryPoint.commence(
+                    request,
+                    response,
+                    new BadCredentialsException("Invalid or expired token"));
+            return;
+        }
+
         AuthenticatedUser authenticatedUser = new AuthenticatedUser(user.getId(), List.of(user.getRole()));
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 authenticatedUser,

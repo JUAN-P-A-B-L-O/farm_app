@@ -1,8 +1,15 @@
 import api from './api'
-import type { User, UserFormData } from '../types/user'
+import { downloadCsv } from './csvExportService'
+import type { User, UserFormData, UserListFilters } from '../types/user'
 
-export async function getAllUsers(): Promise<User[]> {
-  const response = await api.get<User[]>('/users')
+export async function getAllUsers(filters?: UserListFilters): Promise<User[]> {
+  const response = await api.get<User[]>('/users', {
+    params: {
+      ...(filters?.search ? { search: filters.search } : {}),
+      ...(filters?.active ? { active: filters.active } : {}),
+      ...(filters?.role ? { role: filters.role } : {}),
+    },
+  })
 
   return response.data
 }
@@ -12,9 +19,11 @@ export async function createUser(data: UserFormData): Promise<User> {
     name: data.name,
     email: data.email,
     role: data.role,
+    password: data.active ? data.password : undefined,
+    active: data.active,
+    avatarUrl: data.avatarUrl || undefined,
+    farmIds: data.farmIds,
   }
-
-  console.log('User payload:', payload)
 
   const response = await api.post<User>('/users', payload)
 
@@ -26,15 +35,44 @@ export async function updateUser(id: string, data: UserFormData): Promise<User> 
     name: data.name,
     email: data.email,
     role: data.role,
+    avatarUrl: data.avatarUrl || undefined,
+    farmIds: data.farmIds,
   }
-
-  console.log('User payload:', payload)
 
   const response = await api.put<User>(`/users/${id}`, payload)
 
   return response.data
 }
 
+export async function inactivateUser(id: string): Promise<User> {
+  const response = await api.patch<User>(`/users/${id}/inactivate`)
+
+  return response.data
+}
+
+export async function activateUser(id: string, password?: string): Promise<User> {
+  const response = await api.patch<User>(`/users/${id}/activate`, {
+    password: password || undefined,
+  })
+
+  return response.data
+}
+
 export async function deleteUser(id: string): Promise<void> {
   await api.delete(`/users/${id}`)
+}
+
+export async function updateOwnPassword(currentPassword: string, newPassword: string): Promise<void> {
+  await api.put('/users/me/password', {
+    currentPassword,
+    newPassword,
+  })
+}
+
+export async function exportUsersCsv(filters?: UserListFilters): Promise<void> {
+  await downloadCsv('/users/export', {
+    ...(filters?.search ? { search: filters.search } : {}),
+    ...(filters?.active ? { active: filters.active } : {}),
+    ...(filters?.role ? { role: filters.role } : {}),
+  }, 'users.csv')
 }

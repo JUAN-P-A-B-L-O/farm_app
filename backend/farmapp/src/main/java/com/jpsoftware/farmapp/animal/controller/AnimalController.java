@@ -6,6 +6,7 @@ import com.jpsoftware.farmapp.animal.dto.SellAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
 import com.jpsoftware.farmapp.animal.service.AnimalService;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -57,6 +58,12 @@ public class AnimalController {
     public ResponseEntity<List<AnimalResponse>> findAll(@RequestParam(required = false) String farmId) {
         List<AnimalResponse> response = animalService.findAll(farmId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Export animals", description = "Exports animals as CSV using the current farm filter.")
+    public ResponseEntity<byte[]> export(@RequestParam(required = false) String farmId) {
+        return CsvResponseFactory.buildDownload("animals.csv", animalService.exportAll(farmId));
     }
 
     @GetMapping("/{id}")

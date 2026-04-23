@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -33,8 +34,9 @@ public class FarmController {
 
     @GetMapping
     @Operation(summary = "List farms", description = "Returns the farms accessible to the authenticated user.")
-    public ResponseEntity<List<FarmResponse>> findAll() {
-        return ResponseEntity.ok(farmService.findAccessibleFarms());
+    public ResponseEntity<List<FarmResponse>> findAll(
+            @RequestParam(defaultValue = "false") boolean ownedOnly) {
+        return ResponseEntity.ok(farmService.findAccessibleFarms(ownedOnly));
     }
 
     @PostMapping

@@ -6,6 +6,8 @@ import com.jpsoftware.farmapp.dashboard.dto.DashboardResponse;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.util.List;
@@ -75,6 +77,17 @@ public class DashboardService {
                 totalRevenue,
                 totalProfit,
                 animalCount);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDashboard(String farmId, boolean includeAcquisitionCost) {
+        DashboardResponse dashboard = getDashboard(farmId, includeAcquisitionCost);
+        return CsvExportUtils.write(List.of(dashboard), List.of(
+                new CsvColumn<>("totalProduction", DashboardResponse::getTotalProduction),
+                new CsvColumn<>("totalFeedingCost", DashboardResponse::getTotalFeedingCost),
+                new CsvColumn<>("totalRevenue", DashboardResponse::getTotalRevenue),
+                new CsvColumn<>("totalProfit", DashboardResponse::getTotalProfit),
+                new CsvColumn<>("animalCount", DashboardResponse::getAnimalCount)));
     }
 
     private Double sumMilkRevenue(String farmId, Double totalProduction) {

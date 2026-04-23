@@ -18,6 +18,8 @@ import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.LocalDate;
@@ -107,6 +109,18 @@ public class FeedingService {
     @Transactional(readOnly = true)
     public List<FeedingResponse> findAll(String animalId, LocalDate date, String farmId) {
         return getAllFeedings(animalId, date, farmId);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String animalId, LocalDate date, String farmId) {
+        return CsvExportUtils.write(findAll(animalId, date, farmId), List.of(
+                new CsvColumn<>("id", FeedingResponse::getId),
+                new CsvColumn<>("animalId", FeedingResponse::getAnimalId),
+                new CsvColumn<>("animalTag", feeding -> feeding.getAnimal() != null ? feeding.getAnimal().getTag() : null),
+                new CsvColumn<>("feedTypeId", FeedingResponse::getFeedTypeId),
+                new CsvColumn<>("feedTypeName", feeding -> feeding.getFeedType() != null ? feeding.getFeedType().getName() : null),
+                new CsvColumn<>("date", FeedingResponse::getDate),
+                new CsvColumn<>("quantity", FeedingResponse::getQuantity)));
     }
 
     @Transactional(readOnly = true)

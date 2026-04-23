@@ -10,6 +10,7 @@
 
 - Farms:
   - create and list farms accessible to the authenticated user
+  - farm access can come from ownership or explicit user assignment
   - farm is the operating boundary used by animals, feeding, production, feed types, dashboard, and analytics
 - Animals:
   - create, list, retrieve, update, and delete animal records
@@ -42,27 +43,44 @@
   - delete marks feed types inactive rather than physically deleting rows
 - Users:
   - create users
-  - list and retrieve users
+  - list, retrieve, update, activate, inactivate, and delete users
   - users are also the accountability reference for feeding and production records
   - current role values used by the frontend are `MANAGER` and `WORKER`
   - `MANAGER` is the privileged role for dashboard, analytics, and delete operations
+  - only authenticated `MANAGER` users can create, update, activate, inactivate, and delete users
+  - new users must be assigned to at least one farm owned by the creating manager
+  - user updates must also keep at least one farm owned by the authenticated manager
+  - users store an `active` login flag; inactive users cannot authenticate
+  - managers can reactivate inactive users through a dedicated activation action and may set a replacement password during reactivation
+  - inactivation sets `active = false` and blocks login plus JWT-authenticated access
+  - users who own farms cannot be inactivated or deleted, and farm owners must remain `MANAGER`
+  - user email is unique and enforced in service validation plus a database constraint
+  - users can store an optional `avatarUrl` image reference for list and form display
+  - user listing supports optional server-side filtering by search text, status, and role
+  - authenticated users can update only their own password through a dedicated self-service settings flow
 - Analytics:
   - dashboard aggregates total production, feeding cost, revenue, profit, and animal count
   - dashboard and analytics endpoints require role `MANAGER`
   - sold-animal revenue is included in dashboard and analytics revenue/profit calculations
   - profit-oriented endpoints support `includeAcquisitionCost` and default it to `true`
+  - CSV export is available for dashboard plus each analytics view using the currently applied filters
   - frontend includes analytics pages and charts
 - Milk prices:
   - milk price is managed per farm as a time-based history
   - each new price is stored as a new record with `price`, `effectiveDate`, `createdAt`, and `createdBy`
   - current price is the latest record whose `effectiveDate` is on or before today
   - if a farm has no effective milk price yet, reporting falls back to the legacy default price `2.0`
+- CSV export:
+  - CSV export is available per screen/context for animals, users, feedings, productions, feed types, milk price history, dashboard, and analytics views
+  - exports are generated on the backend and downloaded by the frontend through the service layer
+  - listing exports must respect the same farm and filter scope used by the active screen
 
 ### Current implementation note
 
 - Backend is active under `backend/farmapp`
 - Frontend web app is active under `frontend/web/farm_web`
 - A parallel `backend/farm_app` tree exists in the repository, but `backend/farmapp` is the more complete and current backend implementation
+- Local backend startup can use the `local` Spring profile to run against in-memory H2 when PostgreSQL is unavailable; the default runtime configuration remains PostgreSQL
 
 ## 2. Architecture
 
@@ -131,11 +149,13 @@ Frontend architectural rules already visible in code:
 - route-based page organization
 - translation support via language context and dictionaries
 - farm selection is handled centrally through `FarmContext`
+- reusable listing search/filter controls should be implemented as configurable shared components when multiple pages can adopt the same pattern
 
 Current frontend constraint:
 
-- the service layer exists, but the frontend does not currently attach JWT tokens to requests
-- backend security now requires JWT for almost all endpoints, so frontend work must account for that without broad refactoring
+- JWT attachment is centralized in the Axios service layer
+- invalid or expired JWT responses are handled centrally in the Axios response layer; the first `401` on an authenticated request clears stored auth state and forces frontend logout
+- backend security requires JWT for almost all endpoints, so frontend work should continue to centralize auth headers rather than scattering them across components
 
 ## 3. API Contract
 
@@ -179,7 +199,8 @@ Key validations and rules:
 - `name` must not be blank
 - authenticated user is required for farm creation
 - created farm is owned by the authenticated user
-- `GET /farms` returns farms accessible to the authenticated user
+- `GET /farms` returns farms accessible to the authenticated user, including farms explicitly assigned to that user
+- `GET /farms?ownedOnly=true` returns only farms owned by the authenticated user
 - frontend uses a dedicated farm creation flow before regular module access when no farm is selected
 
 ### `/animals`
@@ -188,6 +209,7 @@ Endpoints:
 
 - `POST /animals`
 - `GET /animals`
+- `GET /animals/export`
 - `GET /animals/{id}`
 - `PUT /animals/{id}`
 - `POST /animals/{id}/sell`
@@ -251,6 +273,7 @@ Animal response characteristics:
 Endpoints:
 
 - `GET /productions`
+- `GET /productions/export`
 - `GET /productions/{id}`
 - `GET /productions/summary/by-animal?animalId=...`
 - `GET /productions/summary/profit/by-animal?animalId=...&includeAcquisitionCost=true`
@@ -318,6 +341,7 @@ Endpoints:
 - `POST /milk-prices?farmId=...`
 - `GET /milk-prices/current?farmId=...`
 - `GET /milk-prices?farmId=...`
+- `GET /milk-prices/export?farmId=...`
 
 Create request:
 
@@ -354,6 +378,7 @@ Endpoints:
 
 - `POST /feedings`
 - `GET /feedings`
+- `GET /feedings/export`
 - `GET /feedings/{id}`
 - `PUT /feedings/{id}`
 - `DELETE /feedings/{id}`
@@ -408,6 +433,7 @@ Endpoints:
 
 - `POST /feed-types`
 - `GET /feed-types`
+- `GET /feed-types/export`
 - `GET /feed-types/{id}`
 - `PUT /feed-types/{id}`
 - `DELETE /feed-types/{id}`
@@ -443,7 +469,13 @@ Endpoints:
 
 - `POST /users`
 - `GET /users`
+- `GET /users/export`
 - `GET /users/{id}`
+- `PUT /users/{id}`
+- `PATCH /users/{id}/activate`
+- `PATCH /users/{id}/inactivate`
+- `DELETE /users/{id}`
+- `PUT /users/me/password`
 
 Create request:
 
@@ -452,7 +484,39 @@ Create request:
   "name": "Maria Silva",
   "email": "maria.silva@farmapp.com",
   "role": "MANAGER",
-  "password": "farmapp@123"
+  "password": "farmapp@123",
+  "active": true,
+  "avatarUrl": "https://example.com/avatar.png",
+  "farmIds": ["farm-001"]
+}
+```
+
+Update request:
+
+```json
+{
+  "name": "Maria Silva",
+  "email": "maria.silva@farmapp.com",
+  "role": "WORKER",
+  "avatarUrl": "https://example.com/avatar.png",
+  "farmIds": ["farm-001"]
+}
+```
+
+Activate request:
+
+```json
+{
+  "password": "farmapp@456"
+}
+```
+
+Update password request:
+
+```json
+{
+  "currentPassword": "farmapp@123",
+  "newPassword": "farmapp@456"
 }
 ```
 
@@ -461,29 +525,53 @@ Required fields:
 - `name`
 - `email`
 - `role`
+- `active`
+- `farmIds`
 
-Optional field:
+Conditional field:
 
 - `password`
 
 Key validations and rules:
 
 - `name`, `email`, and `role` must not be blank
+- `active` must not be null
+- `farmIds` must contain at least one value
 - `id` in read endpoints must be a valid UUID
-- if `password` is omitted, the backend generates a random password before hashing
-- `POST /users` is public
+- only authenticated `MANAGER` users can call `POST /users`, `PUT /users/{id}`, `PATCH /users/{id}/inactivate`, and `DELETE /users/{id}`
+- `email` must be unique
+- if `active = true`, `password` is required
+- if `active = false`, login is blocked even if a password hash is stored
+- every `farmId` must belong to the authenticated manager creating the user
+- `avatarUrl` is optional on create and update
+- update changes `name`, `email`, `role`, `avatarUrl`, and `farmIds`
+- `PATCH /users/{id}/activate` marks the user active again and may replace the password used for the next login
+- password changes do not go through the manager edit endpoint
+- `PUT /users/me/password` is self-service only for the authenticated user
+- `currentPassword` and `newPassword` must not be blank
+- `currentPassword` must match the stored password
+- `newPassword` must differ from `currentPassword`
+- `PATCH /users/{id}/activate` requires role `MANAGER`
+- `PATCH /users/{id}/inactivate` marks the user inactive instead of deleting the row
+- `DELETE /users/{id}` removes the user row and its farm assignments
+- users who own farms cannot be inactivated or deleted
+- users who own farms cannot be changed from `MANAGER` to another role
+- `GET /users` accepts optional `search`, `active`, and `role` filters
 - `GET /users` and `GET /users/{id}` require JWT authentication
-
-Important frontend mismatch:
-
-- frontend service code includes `updateUser` and `deleteUser`, but the current backend does not implement those endpoints
 
 ### Dashboard and analytics profit behavior
 
 - `GET /dashboard` requires role `MANAGER`
+- `GET /dashboard/export` requires role `MANAGER`
 - all `/analytics/**` endpoints require role `MANAGER`
 - `GET /dashboard` now accepts optional `includeAcquisitionCost` and defaults it to `true`
 - `GET /analytics/profit` now accepts optional `includeAcquisitionCost` and defaults it to `true`
+- analytics CSV exports are available at:
+  - `GET /analytics/production/export`
+  - `GET /analytics/feeding/export`
+  - `GET /analytics/profit/export`
+  - `GET /analytics/production/by-animal/export`
+- analytics CSV exports reuse the same query params as their corresponding JSON endpoints so filtered exports match the chart currently shown in the UI
 - dashboard revenue now includes milk revenue plus sold-animal revenue
 - dashboard total profit subtracts feeding cost and, when enabled, acquisition cost
 - analytics profit series applies acquisition cost once to the earliest returned period because the current animal model does not store a separate acquisition date
@@ -539,12 +627,13 @@ Response shape:
   - `/v3/api-docs/**`
   - `/swagger-ui/**`
   - `/swagger-ui.html`
-  - `POST /users`
 - All other endpoints require authentication
 - Role-based authorization:
   - `MANAGER` can access dashboard and analytics
+  - `MANAGER` can create, update, activate, inactivate, and delete users
   - `MANAGER` can perform `DELETE` requests
-  - non-manager authenticated users receive `403 Forbidden` for dashboard, analytics, and delete operations
+  - non-manager authenticated users receive `403 Forbidden` for user creation, dashboard, analytics, and delete operations
+  - any authenticated user can call `PUT /users/me/password` to update their own password
 
 ### Login flow
 
@@ -557,11 +646,19 @@ Response shape:
 Authorization: Bearer <jwt>
 ```
 
+### Frontend session invalidation behavior
+
+- the frontend registers a centralized unauthorized handler from the auth context into the Axios client
+- when a protected request returns `401 Invalid or expired token`, the client clears persisted auth data immediately, updates React auth state, and lets protected routing redirect the user to `/login`
+- login request failures on `/auth/login` do not trigger auto-logout behavior
+- duplicate logout handling is suppressed for the same invalid session to avoid repeated redirects or state churn
+
 ### Current implementation notes
 
 - JWT filter runs before `UsernamePasswordAuthenticationFilter`
 - sessions are stateless
 - passwords are hashed with BCrypt
+- inactive users are rejected by the login service and by JWT request authentication
 - a default admin is created on startup if the user table is empty
 - default admin credentials come from environment or fallback values:
   - `ADMIN_EMAIL`, default `admin@farmapp.com`
@@ -573,13 +670,16 @@ Authorization: Bearer <jwt>
 - Driver and dialect are PostgreSQL in `backend/farmapp/src/main/resources/application.properties`
 - Schema generation mode is currently `spring.jpa.hibernate.ddl-auto=create`
 - H2 is included for tests
+- `backend/farmapp/src/main/resources/application-local.properties` provides an explicit local-development profile backed by H2 for environments where PostgreSQL is not running or not reachable
 
 ### Main entities
 
 - User
-  - `id`, `name`, `email`, `role`, `password`
+  - `id`, `name`, `email`, `role`, `password`, `active`
 - Farm
   - `id`, `name`, `ownerId`
+- UserFarmAssignment
+  - `id`, `userId`, `farmId`
 - Animal
   - `id`, `tag`, `breed`, `birthDate`, `status`, `origin`, `acquisitionCost`, `salePrice`, `saleDate`, `farmId`
 - Production
@@ -594,8 +694,10 @@ Authorization: Bearer <jwt>
 ### Database constraints and behavior
 
 - `animals.tag` is unique
+- `users.email` is unique
 - many relational checks are enforced in services rather than via JPA relationships
 - operational tables use scalar IDs rather than object associations
+- user-to-farm access is persisted through a scalar-ID assignment table rather than relation-heavy JPA mappings
 - production and feeding delete behavior is implemented with `status = INACTIVE`
 - feed type delete behavior is implemented with `active = false`
 - feeding cost is derived from `feedings.quantity * feed_types.cost_per_kg`
@@ -609,6 +711,7 @@ Authorization: Bearer <jwt>
 - Do not mix domain logic directly into controllers
 - Controllers must remain thin and delegate to services
 - Services own business rules, validations, and orchestration
+- reusable CSV generation now lives in shared backend utilities and is consumed from services so controllers remain thin
 - Services use constructor injection; if a Spring service keeps multiple constructors for compatibility, explicitly annotate the full dependency constructor with `@Autowired`
 - Do not couple business logic to JPA annotations or entity graph behavior
 - Do not introduce rich JPA relation graphs unless explicitly required
@@ -628,6 +731,8 @@ Important interpretation:
 - Keep types in `src/types`
 - Preserve the current component/page/service separation
 - When adding auth-aware features, centralize token handling in the API/service layer rather than scattering headers across components
+- Prefer reusable search/filter components for listing screens instead of duplicating filter markup and query wiring
+- CSV downloads should be triggered from the service layer rather than building CSV content in UI components
 
 ## 7. Development Rules
 

@@ -1,9 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import axios from 'axios'
+import ExportCsvButton from '../../components/common/ExportCsvButton'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
   createMilkPrice,
+  exportMilkPriceHistoryCsv,
   getCurrentMilkPrice,
   getMilkPriceHistory,
 } from '../../services/milkPriceService'
@@ -44,6 +46,7 @@ function MilkPricePage() {
   const [formData, setFormData] = useState<CreateMilkPricePayload>(emptyForm)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
 
@@ -102,6 +105,23 @@ function MilkPricePage() {
       setFormErrorMessage(getErrorMessage(error, t('milkPrice.errors.create')))
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  async function handleExport() {
+    if (!selectedFarmId) {
+      return
+    }
+
+    setIsExporting(true)
+    setListErrorMessage('')
+
+    try {
+      await exportMilkPriceHistoryCsv(selectedFarmId)
+    } catch (error) {
+      setListErrorMessage(getErrorMessage(error, t('common.exportError')))
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -196,11 +216,18 @@ function MilkPricePage() {
         </article>
 
         <article className="animals-panel animals-panel--table">
-          <div className="animals-panel__header">
+          <div className="animals-panel__header animals-panel__header--actions">
             <div>
               <h2>{t('milkPrice.historyTitle')}</h2>
               <p>{t('milkPrice.historyDescription')}</p>
             </div>
+            <ExportCsvButton
+              onClick={() => void handleExport()}
+              label={t('common.exportCsv')}
+              loadingLabel={t('common.exportingCsv')}
+              isLoading={isExporting}
+              disabled={!selectedFarmId || isLoading || history.length === 0}
+            />
           </div>
 
           {isLoading && <p className="animals-page__status">{t('milkPrice.loading')}</p>}

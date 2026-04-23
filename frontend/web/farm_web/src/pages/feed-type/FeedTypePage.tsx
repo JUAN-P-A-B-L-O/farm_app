@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import ExportCsvButton from '../../components/common/ExportCsvButton'
 import FeedTypeForm from '../../components/feed-type/FeedTypeForm'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
@@ -7,6 +8,7 @@ import { useTranslation } from '../../hooks/useTranslation'
 import {
   createFeedType,
   deleteFeedType,
+  exportFeedTypesCsv,
   getAllFeedTypes,
   updateFeedType,
 } from '../../services/feedTypeService'
@@ -57,6 +59,7 @@ function FeedTypePage() {
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingFeedTypeId, setEditingFeedTypeId] = useState<string | null>(null)
   const [formInitialValues, setFormInitialValues] = useState<FeedTypeFormData>(emptyFeedTypeForm)
+  const [isExporting, setIsExporting] = useState(false)
 
   async function loadFeedTypes() {
     if (!selectedFarmId) {
@@ -150,6 +153,23 @@ function FeedTypePage() {
     }
   }
 
+  async function handleExport() {
+    if (!selectedFarmId) {
+      return
+    }
+
+    setIsExporting(true)
+    setListErrorMessage('')
+
+    try {
+      await exportFeedTypesCsv(selectedFarmId)
+    } catch (error) {
+      setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <main className="animals-page">
       <section className="animals-page__header">
@@ -184,11 +204,18 @@ function FeedTypePage() {
         </article>
 
         <article className="animals-panel animals-panel--table">
-          <div className="animals-panel__header">
+          <div className="animals-panel__header animals-panel__header--actions">
             <div>
               <h2>{t('feedType.listTitle')}</h2>
               <p>{t('feedType.listDescription')}</p>
             </div>
+            <ExportCsvButton
+              onClick={() => void handleExport()}
+              label={t('common.exportCsv')}
+              loadingLabel={t('common.exportingCsv')}
+              isLoading={isExporting}
+              disabled={!selectedFarmId || isLoading || feedTypes.length === 0}
+            />
           </div>
 
           {isLoading && <p className="animals-page__status">{t('feedType.loading')}</p>}

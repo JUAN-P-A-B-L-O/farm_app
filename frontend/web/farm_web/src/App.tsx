@@ -14,6 +14,7 @@ import LoginPage from './pages/login/LoginPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import ManagerRoute from './components/auth/ManagerRoute'
 import FarmCreatePage from './pages/farm/FarmCreatePage'
+import SettingsPage from './pages/settings/SettingsPage'
 import { useAuth } from './hooks/useAuth'
 import { isManager } from './utils/authorization'
 
@@ -57,7 +58,15 @@ function App() {
           <Route path="/milk-prices" element={<MilkPricePage />} />
           <Route path="/feeding" element={<FeedingPage />} />
           <Route path="/feed-types" element={<FeedTypePage />} />
-          <Route path="/users" element={<UsersPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route
+            path="/users"
+            element={(
+              <ManagerRoute>
+                <UsersPage />
+              </ManagerRoute>
+            )}
+          />
           <Route
             path="/analytics"
             element={(

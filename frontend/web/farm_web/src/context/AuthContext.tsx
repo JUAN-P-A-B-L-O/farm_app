@@ -1,4 +1,6 @@
 import {
+  useCallback,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -6,6 +8,7 @@ import {
 import {
   login as loginRequest,
 } from '../services/authService'
+import { registerUnauthorizedHandler, resetUnauthorizedHandling } from '../services/api'
 import { clearAuthSession, getStoredToken, getStoredUser, persistAuthSession } from '../services/authStorage'
 import { AuthContext } from './authContext'
 
@@ -31,23 +34,33 @@ function getInitialAuthState() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState(getInitialAuthState)
 
-  async function login(email: string, password: string) {
-    const response = await loginRequest(email, password)
-
-    persistAuthSession(response.accessToken, response.user)
-    setAuthState({
-      token: response.accessToken,
-      user: response.user,
-    })
-  }
-
-  function logout() {
+  const logout = useCallback(() => {
     clearAuthSession()
+    resetUnauthorizedHandling()
     setAuthState({
       token: null,
       user: null,
     })
-  }
+  }, [])
+
+  const login = useCallback(async (email: string, password: string) => {
+    const response = await loginRequest(email, password)
+
+    persistAuthSession(response.accessToken, response.user)
+    resetUnauthorizedHandling()
+    setAuthState({
+      token: response.accessToken,
+      user: response.user,
+    })
+  }, [])
+
+  useEffect(() => {
+    registerUnauthorizedHandler(logout)
+
+    return () => {
+      registerUnauthorizedHandler(null)
+    }
+  }, [logout])
 
   const value = useMemo(
     () => ({
@@ -57,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
     }),
-    [authState],
+    [authState, login, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

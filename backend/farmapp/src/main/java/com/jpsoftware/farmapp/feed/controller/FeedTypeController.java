@@ -4,6 +4,7 @@ import com.jpsoftware.farmapp.feed.dto.CreateFeedTypeRequest;
 import com.jpsoftware.farmapp.feed.dto.FeedTypeResponse;
 import com.jpsoftware.farmapp.feed.service.FeedTypeService;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -57,6 +58,12 @@ public class FeedTypeController {
     public ResponseEntity<List<FeedTypeResponse>> findAll(@RequestParam(required = false) String farmId) {
         List<FeedTypeResponse> response = feedTypeService.findAll(farmId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Export feed types", description = "Exports feed types as CSV using the current farm filter.")
+    public ResponseEntity<byte[]> export(@RequestParam(required = false) String farmId) {
+        return CsvResponseFactory.buildDownload("feed-types.csv", feedTypeService.exportAll(farmId));
     }
 
     @GetMapping("/{id}")

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AnimalForm from '../../components/animal/AnimalForm'
+import ExportCsvButton from '../../components/common/ExportCsvButton'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
   createAnimal,
   deleteAnimal,
+  exportAnimalsCsv,
   getAllAnimals,
   getAnimalById,
   sellAnimal,
@@ -65,6 +67,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const [sellErrorMessage, setSellErrorMessage] = useState('')
   const [editingAnimalId, setEditingAnimalId] = useState<string | null>(null)
   const [sellingAnimal, setSellingAnimal] = useState<Animal | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
   const [formInitialValues, setFormInitialValues] = useState<AnimalFormData>(emptyAnimalForm)
   const [salePrice, setSalePrice] = useState('')
   const [saleDate, setSaleDate] = useState(() => new Date().toISOString().slice(0, 10))
@@ -233,6 +236,22 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
     }
   }
 
+  async function handleExport() {
+    if (!selectedFarmId) {
+      return
+    }
+
+    setIsExporting(true)
+
+    try {
+      await exportAnimalsCsv(selectedFarmId)
+    } catch (error) {
+      setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <main className="animals-page">
       <section className="animals-page__header">
@@ -330,11 +349,18 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
         )}
 
         <article className="animals-panel animals-panel--table">
-          <div className="animals-panel__header">
+          <div className="animals-panel__header animals-panel__header--actions">
             <div>
               <h2>{t('animals.listTitle')}</h2>
               <p>{t('animals.listDescription')}</p>
             </div>
+            <ExportCsvButton
+              onClick={() => void handleExport()}
+              label={t('common.exportCsv')}
+              loadingLabel={t('common.exportingCsv')}
+              isLoading={isExporting}
+              disabled={!selectedFarmId || isLoading || animals.length === 0}
+            />
           </div>
 
           {isLoading && <p className="animals-page__status">{t('animals.loading')}</p>}
