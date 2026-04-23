@@ -148,6 +148,7 @@ Frontend architectural rules already visible in code:
 Current frontend constraint:
 
 - JWT attachment is centralized in the Axios service layer
+- invalid or expired JWT responses are handled centrally in the Axios response layer; the first `401` on an authenticated request clears stored auth state and forces frontend logout
 - backend security requires JWT for almost all endpoints, so frontend work should continue to centralize auth headers rather than scattering them across components
 
 ## 3. API Contract
@@ -625,6 +626,13 @@ Response shape:
 ```http
 Authorization: Bearer <jwt>
 ```
+
+### Frontend session invalidation behavior
+
+- the frontend registers a centralized unauthorized handler from the auth context into the Axios client
+- when a protected request returns `401 Invalid or expired token`, the client clears persisted auth data immediately, updates React auth state, and lets protected routing redirect the user to `/login`
+- login request failures on `/auth/login` do not trigger auto-logout behavior
+- duplicate logout handling is suppressed for the same invalid session to avoid repeated redirects or state churn
 
 ### Current implementation notes
 
