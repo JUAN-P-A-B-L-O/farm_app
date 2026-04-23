@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,6 +29,7 @@ import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.lang.reflect.Proxy;
 import java.time.LocalDate;
 import java.util.List;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -77,6 +80,20 @@ class ProductionControllerContractTest {
                 .andExpect(jsonPath("$[0].date[0]").value(2026))
                 .andExpect(jsonPath("$[0].date[1]").value(3))
                 .andExpect(jsonPath("$[0].date[2]").value(20));
+    }
+
+    @Test
+    void shouldExportProductions() throws Exception {
+        productionService.exportResponse = "id,animalId\nproduction-1,animal-1\n";
+
+        mockMvc.perform(get("/productions/export")
+                        .param("animalId", "animal-1")
+                        .param("date", "2026-03-20")
+                        .param("farmId", "farm-1"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("productions.csv")))
+                .andExpect(content().string("id,animalId\nproduction-1,animal-1\n"));
     }
 
     @Test
@@ -259,6 +276,7 @@ class ProductionControllerContractTest {
         private PaginatedResponse<ProductionResponse> paginatedResponse;
         private ProductionSummaryResponse summaryResponse;
         private ProductionProfitResponse profitResponse;
+        private String exportResponse = "";
         private ProductionResponse updateResponse;
         private RuntimeException summaryException;
         private RuntimeException profitException;
@@ -276,17 +294,22 @@ class ProductionControllerContractTest {
         }
 
         @Override
-        public List<ProductionResponse> findAll(String animalId, LocalDate date) {
+        public List<ProductionResponse> findAll(String animalId, LocalDate date, String farmId) {
             return findAllResponse;
         }
 
         @Override
-        public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
+        public String exportAll(String animalId, LocalDate date, String farmId) {
+            return exportResponse;
+        }
+
+        @Override
+        public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
             return paginatedResponse;
         }
 
         @Override
-        public ProductionSummaryResponse getSummaryByAnimal(String animalId) {
+        public ProductionSummaryResponse getSummaryByAnimal(String animalId, String farmId) {
             if (summaryException != null) {
                 throw summaryException;
             }
@@ -294,7 +317,7 @@ class ProductionControllerContractTest {
         }
 
         @Override
-        public ProductionProfitResponse getProfitByAnimal(String animalId) {
+        public ProductionProfitResponse getProfitByAnimal(String animalId, String farmId, boolean includeAcquisitionCost) {
             if (profitException != null) {
                 throw profitException;
             }
@@ -302,7 +325,7 @@ class ProductionControllerContractTest {
         }
 
         @Override
-        public ProductionResponse create(CreateProductionRequest request) {
+        public ProductionResponse create(CreateProductionRequest request, String farmId) {
             if (createException != null) {
                 throw createException;
             }
@@ -310,7 +333,7 @@ class ProductionControllerContractTest {
         }
 
         @Override
-        public ProductionResponse update(String id, UpdateProductionRequest request) {
+        public ProductionResponse update(String id, UpdateProductionRequest request, String farmId) {
             if (updateException != null) {
                 throw updateException;
             }
@@ -318,7 +341,7 @@ class ProductionControllerContractTest {
         }
 
         @Override
-        public void deleteProduction(String id) {
+        public void deleteProduction(String id, String farmId) {
             if (deleteException != null) {
                 throw deleteException;
             }

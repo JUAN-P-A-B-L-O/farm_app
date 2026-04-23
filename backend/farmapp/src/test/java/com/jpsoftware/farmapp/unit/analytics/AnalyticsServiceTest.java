@@ -76,4 +76,38 @@ class AnalyticsServiceTest {
         assertEquals(320.0, response.getFirst().getRevenue());
         assertEquals(270.0, response.getFirst().getProfit());
     }
+
+    @Test
+    void shouldExportProfitSeriesAsCsv() {
+        ProductionEntity production = new ProductionEntity(
+                "prod-1",
+                "animal-1",
+                LocalDate.of(2026, 4, 14),
+                10.0,
+                "user-1",
+                "farm-1",
+                ProductionEntity.STATUS_ACTIVE);
+        AnimalEntity animal = AnimalEntity.builder()
+                .id("animal-1")
+                .farmId("farm-1")
+                .acquisitionCost(50.0)
+                .salePrice(300.0)
+                .saleDate(LocalDate.of(2026, 4, 14))
+                .build();
+
+        when(productionRepository.findByFarmIdAndStatus("farm-1", ProductionEntity.STATUS_ACTIVE)).thenReturn(List.of(production));
+        when(feedingRepository.findByFarmIdAndStatus("farm-1", "ACTIVE")).thenReturn(List.of());
+        when(animalRepository.findByIdAndFarmId("animal-1", "farm-1")).thenReturn(Optional.of(animal));
+        when(animalRepository.existsById("animal-1")).thenReturn(true);
+        when(animalRepository.existsByIdAndFarmId("animal-1", "farm-1")).thenReturn(true);
+
+        String csv = analyticsService.exportProfitSeries(null, null, "animal-1", "day", "farm-1", true);
+
+        assertEquals(
+                """
+                        period,production,feedingCost,revenue,profit
+                        2026-04-14,10.0,50.0,320.0,270.0
+                        """,
+                csv);
+    }
 }

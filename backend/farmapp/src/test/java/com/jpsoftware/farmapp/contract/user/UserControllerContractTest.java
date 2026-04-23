@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,6 +29,7 @@ import com.jpsoftware.farmapp.user.service.UserService;
 import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.UUID;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -88,6 +91,20 @@ class UserControllerContractTest {
                 .andExpect(jsonPath("$[0].active").value(true))
                 .andExpect(jsonPath("$[0].avatarUrl").value("https://example.com/avatar.png"))
                 .andExpect(jsonPath("$[0].farmIds[0]").value("farm-1"));
+    }
+
+    @Test
+    void shouldExportUsers() throws Exception {
+        userService.exportResponse = "id,name\n11111111-1111-1111-1111-111111111111,Jane Doe\n";
+
+        mockMvc.perform(get("/users/export")
+                        .param("search", "Jane")
+                        .param("active", "true")
+                        .param("role", "MANAGER"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("users.csv")))
+                .andExpect(content().string("id,name\n11111111-1111-1111-1111-111111111111,Jane Doe\n"));
     }
 
     @Test
@@ -246,6 +263,7 @@ class UserControllerContractTest {
         private UserResponse updateResponse;
         private UserResponse inactivateResponse;
         private UserResponse activateResponse;
+        private String exportResponse = "";
         private RuntimeException findByIdException;
 
         TestUserService() {
@@ -266,6 +284,11 @@ class UserControllerContractTest {
         @Override
         public List<UserResponse> findAll(String search, Boolean active, String role) {
             return findAllResponse;
+        }
+
+        @Override
+        public String exportAll(String search, Boolean active, String role) {
+            return exportResponse;
         }
 
         @Override

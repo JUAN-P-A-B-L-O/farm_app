@@ -4,6 +4,8 @@ package com.jpsoftware.farmapp.contract.feed;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -18,6 +20,7 @@ import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import java.lang.reflect.Proxy;
 import java.util.List;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -72,6 +75,17 @@ class FeedTypeControllerContractTest {
     }
 
     @Test
+    void shouldExportFeedTypes() throws Exception {
+        feedTypeService.exportResponse = "id,name\nfeed-type-1,Corn Silage\n";
+
+        mockMvc.perform(get("/feed-types/export").queryParam("farmId", "farm-1"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("feed-types.csv")))
+                .andExpect(content().string("id,name\nfeed-type-1,Corn Silage\n"));
+    }
+
+    @Test
     void shouldReturnById() throws Exception {
         feedTypeService.findByIdResponse = buildResponse();
 
@@ -117,6 +131,7 @@ class FeedTypeControllerContractTest {
         private FeedTypeResponse createResponse;
         private List<FeedTypeResponse> findAllResponse = List.of();
         private FeedTypeResponse findByIdResponse;
+        private String exportResponse = "";
         private RuntimeException findByIdException;
 
         TestFeedTypeService() {
@@ -131,6 +146,11 @@ class FeedTypeControllerContractTest {
         @Override
         public List<FeedTypeResponse> findAll(String farmId) {
             return findAllResponse;
+        }
+
+        @Override
+        public String exportAll(String farmId) {
+            return exportResponse;
         }
 
         @Override

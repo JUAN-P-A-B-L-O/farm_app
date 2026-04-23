@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,6 +29,7 @@ import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.lang.reflect.Proxy;
 import java.time.LocalDate;
 import java.util.List;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -137,6 +140,20 @@ class FeedingControllerContractTest {
     }
 
     @Test
+    void shouldExportFeedings() throws Exception {
+        feedingService.exportResponse = "id,animalId\nfeeding-1,animal-1\n";
+
+        mockMvc.perform(get("/feedings/export")
+                        .param("animalId", "animal-1")
+                        .param("date", "2026-03-24")
+                        .param("farmId", "farm-1"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("feedings.csv")))
+                .andExpect(content().string("id,animalId\nfeeding-1,animal-1\n"));
+    }
+
+    @Test
     void shouldReturnEmptyWhenNoMatch() throws Exception {
         feedingService.findAllResponse = List.of();
 
@@ -205,6 +222,7 @@ class FeedingControllerContractTest {
         private List<FeedingResponse> findAllResponse = List.of();
         private PaginatedResponse<FeedingResponse> paginatedResponse;
         private FeedingResponse findByIdResponse;
+        private String exportResponse = "";
         private RuntimeException findByIdException;
         private FeedingResponse updateResponse;
         private RuntimeException updateException;
@@ -221,22 +239,27 @@ class FeedingControllerContractTest {
         }
 
         @Override
-        public FeedingResponse create(CreateFeedingRequest request) {
+        public FeedingResponse create(CreateFeedingRequest request, String farmId) {
             return createResponse;
         }
 
         @Override
-        public List<FeedingResponse> findAll(String animalId, LocalDate date) {
+        public List<FeedingResponse> findAll(String animalId, LocalDate date, String farmId) {
             return findAllResponse;
         }
 
         @Override
-        public PaginatedResponse<FeedingResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
+        public String exportAll(String animalId, LocalDate date, String farmId) {
+            return exportResponse;
+        }
+
+        @Override
+        public PaginatedResponse<FeedingResponse> findAllPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
             return paginatedResponse;
         }
 
         @Override
-        public FeedingResponse findById(String id) {
+        public FeedingResponse findById(String id, String farmId) {
             if (findByIdException != null) {
                 throw findByIdException;
             }
@@ -244,7 +267,7 @@ class FeedingControllerContractTest {
         }
 
         @Override
-        public FeedingResponse updateFeeding(String id, UpdateFeedingRequest request) {
+        public FeedingResponse updateFeeding(String id, UpdateFeedingRequest request, String farmId) {
             if (updateException != null) {
                 throw updateException;
             }
@@ -252,7 +275,7 @@ class FeedingControllerContractTest {
         }
 
         @Override
-        public void deleteFeeding(String id) {
+        public void deleteFeeding(String id, String farmId) {
             if (deleteException != null) {
                 throw deleteException;
             }
