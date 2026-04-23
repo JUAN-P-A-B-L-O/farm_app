@@ -1,4 +1,5 @@
 import api from './api'
+import { downloadCsv } from './csvExportService'
 import type { User, UserFormData, UserListFilters } from '../types/user'
 
 export async function getAllUsers(filters?: UserListFilters): Promise<User[]> {
@@ -66,4 +67,12 @@ export async function updateOwnPassword(currentPassword: string, newPassword: st
     currentPassword,
     newPassword,
   })
+}
+
+export async function exportUsersCsv(filters?: UserListFilters): Promise<void> {
+  await downloadCsv('/users/export', {
+    ...(filters?.search ? { search: filters.search } : {}),
+    ...(filters?.active ? { active: filters.active } : {}),
+    ...(filters?.role ? { role: filters.role } : {}),
+  }, 'users.csv')
 }

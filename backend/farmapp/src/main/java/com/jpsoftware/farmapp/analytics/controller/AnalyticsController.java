@@ -4,6 +4,7 @@ import com.jpsoftware.farmapp.analytics.dto.AnalyticsAnimalProductionPointRespon
 import com.jpsoftware.farmapp.analytics.dto.AnalyticsProfitPointResponse;
 import com.jpsoftware.farmapp.analytics.dto.AnalyticsTimeSeriesPointResponse;
 import com.jpsoftware.farmapp.analytics.service.AnalyticsService;
+import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -41,6 +42,19 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getProductionSeries(startDate, endDate, animalId, groupBy, farmId));
     }
 
+    @GetMapping("/production/export")
+    @Operation(summary = "Export production analytics", description = "Exports production analytics as CSV using the current filters.")
+    public ResponseEntity<byte[]> exportProductionAnalytics(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false, defaultValue = "day") String groupBy) {
+        return CsvResponseFactory.buildDownload(
+                "analytics-production.csv",
+                analyticsService.exportProductionSeries(startDate, endDate, animalId, groupBy, farmId));
+    }
+
     @GetMapping("/feeding")
     @Operation(summary = "Get feeding analytics", description = "Returns aggregated feeding cost over time.")
     @ApiResponses({
@@ -53,6 +67,19 @@ public class AnalyticsController {
             @RequestParam(required = false) String farmId,
             @RequestParam(required = false, defaultValue = "day") String groupBy) {
         return ResponseEntity.ok(analyticsService.getFeedingCostSeries(startDate, endDate, animalId, groupBy, farmId));
+    }
+
+    @GetMapping("/feeding/export")
+    @Operation(summary = "Export feeding analytics", description = "Exports feeding analytics as CSV using the current filters.")
+    public ResponseEntity<byte[]> exportFeedingAnalytics(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false, defaultValue = "day") String groupBy) {
+        return CsvResponseFactory.buildDownload(
+                "analytics-feeding.csv",
+                analyticsService.exportFeedingCostSeries(startDate, endDate, animalId, groupBy, farmId));
     }
 
     @GetMapping("/profit")
@@ -76,6 +103,26 @@ public class AnalyticsController {
                 includeAcquisitionCost));
     }
 
+    @GetMapping("/profit/export")
+    @Operation(summary = "Export profit analytics", description = "Exports profit analytics as CSV using the current filters.")
+    public ResponseEntity<byte[]> exportProfitAnalytics(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
+            @RequestParam(required = false, defaultValue = "day") String groupBy) {
+        return CsvResponseFactory.buildDownload(
+                "analytics-profit.csv",
+                analyticsService.exportProfitSeries(
+                        startDate,
+                        endDate,
+                        animalId,
+                        groupBy,
+                        farmId,
+                        includeAcquisitionCost));
+    }
+
     @GetMapping("/production/by-animal")
     @Operation(summary = "Get production by animal", description = "Returns aggregated production grouped by animal.")
     @ApiResponses({
@@ -87,5 +134,17 @@ public class AnalyticsController {
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String farmId) {
         return ResponseEntity.ok(analyticsService.getProductionByAnimal(startDate, endDate, animalId, farmId));
+    }
+
+    @GetMapping("/production/by-animal/export")
+    @Operation(summary = "Export production by animal", description = "Exports production grouped by animal as CSV using the current filters.")
+    public ResponseEntity<byte[]> exportProductionByAnimal(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String farmId) {
+        return CsvResponseFactory.buildDownload(
+                "analytics-production-by-animal.csv",
+                analyticsService.exportProductionByAnimal(startDate, endDate, animalId, farmId));
     }
 }

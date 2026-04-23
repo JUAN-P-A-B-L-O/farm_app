@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.user.controller;
 
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import com.jpsoftware.farmapp.user.dto.ActivateUserRequest;
 import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UpdatePasswordRequest;
@@ -62,6 +63,15 @@ public class UserController {
             @RequestParam(required = false) String role) {
         List<UserResponse> response = userService.findAll(search, active, role);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Export users", description = "Exports users as CSV using the current search and filters.")
+    public ResponseEntity<byte[]> export(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) String role) {
+        return CsvResponseFactory.buildDownload("users.csv", userService.exportAll(search, active, role));
     }
 
     @GetMapping("/{id}")

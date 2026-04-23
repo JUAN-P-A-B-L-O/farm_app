@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.integration.auth;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -88,9 +89,17 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/animals"))
                 .andExpect(status().isUnauthorized());
 
+        mockMvc.perform(get("/animals/export"))
+                .andExpect(status().isUnauthorized());
+
         mockMvc.perform(get("/animals")
                         .header("Authorization", bearerToken(user)))
                 .andExpect(status().isOk());
+
+        mockMvc.perform(get("/animals/export")
+                        .header("Authorization", bearerToken(user)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"));
     }
 
     @Test
@@ -106,6 +115,14 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                         .header("Authorization", bearerToken(worker)))
                 .andExpect(status().isForbidden());
 
+        mockMvc.perform(get("/dashboard/export")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/analytics/production/export")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden());
+
         mockMvc.perform(get("/dashboard")
                         .header("Authorization", bearerToken(manager)))
                 .andExpect(status().isOk());
@@ -113,6 +130,16 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/analytics/production")
                         .header("Authorization", bearerToken(manager)))
                 .andExpect(status().isOk());
+
+        mockMvc.perform(get("/dashboard/export")
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"));
+
+        mockMvc.perform(get("/analytics/production/export")
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"));
     }
 
     @Test

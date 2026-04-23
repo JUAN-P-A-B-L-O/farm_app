@@ -8,6 +8,7 @@ import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
 import com.jpsoftware.farmapp.production.service.ProductionService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -61,6 +62,15 @@ public class ProductionController {
 
         List<ProductionResponse> response = productionService.findAll(animalId, date, farmId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Export productions", description = "Exports production records as CSV using the current filters.")
+    public ResponseEntity<byte[]> export(
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(required = false) String farmId) {
+        return CsvResponseFactory.buildDownload("productions.csv", productionService.exportAll(animalId, date, farmId));
     }
 
     @GetMapping("/{id}")

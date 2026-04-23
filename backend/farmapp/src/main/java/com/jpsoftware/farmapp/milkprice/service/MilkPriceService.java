@@ -9,6 +9,8 @@ import com.jpsoftware.farmapp.milkprice.entity.MilkPriceEntity;
 import com.jpsoftware.farmapp.milkprice.repository.MilkPriceRepository;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -79,6 +81,18 @@ public class MilkPriceService {
         return milkPriceRepository.findByFarmIdOrderByEffectiveDateDescCreatedAtDesc(resolvedFarmId).stream()
                 .map(entity -> toResponse(entity, false))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public String exportHistory(String farmId) {
+        return CsvExportUtils.write(getHistory(farmId), List.of(
+                new CsvColumn<>("id", MilkPriceResponse::getId),
+                new CsvColumn<>("farmId", MilkPriceResponse::getFarmId),
+                new CsvColumn<>("price", MilkPriceResponse::getPrice),
+                new CsvColumn<>("effectiveDate", MilkPriceResponse::getEffectiveDate),
+                new CsvColumn<>("createdAt", MilkPriceResponse::getCreatedAt),
+                new CsvColumn<>("createdBy", MilkPriceResponse::getCreatedBy),
+                new CsvColumn<>("fallbackDefault", MilkPriceResponse::isFallbackDefault)));
     }
 
     @Transactional(readOnly = true)

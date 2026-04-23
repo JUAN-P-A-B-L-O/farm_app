@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import UserForm from '../../components/user/UserForm'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -8,6 +9,7 @@ import {
   activateUser,
   createUser,
   deleteUser,
+  exportUsersCsv,
   getAllUsers,
   inactivateUser,
   updateUser,
@@ -82,6 +84,7 @@ function UsersPage() {
   const [appliedFilters, setAppliedFilters] = useState<UserListFilters>(defaultFilters)
   const [activationUserId, setActivationUserId] = useState<string | null>(null)
   const [activationPassword, setActivationPassword] = useState('')
+  const [isExporting, setIsExporting] = useState(false)
 
   async function loadUsers(nextFilters: UserListFilters = appliedFilters) {
     setIsLoading(true)
@@ -264,6 +267,19 @@ function UsersPage() {
     void loadUsers(defaultFilters)
   }
 
+  async function handleExport() {
+    setIsExporting(true)
+    setListErrorMessage('')
+
+    try {
+      await exportUsersCsv(appliedFilters)
+    } catch (error) {
+      setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   function resolveFarmNames(farmIds: string[]) {
     return farmIds
       .map((farmId) => farms.find((farm) => farm.id === farmId)?.name ?? farmId)
@@ -307,11 +323,18 @@ function UsersPage() {
         </article>
 
         <article className="animals-panel animals-panel--table">
-          <div className="animals-panel__header">
+          <div className="animals-panel__header animals-panel__header--actions">
             <div>
               <h2>{t('accessControl.listTitle')}</h2>
               <p>{t('accessControl.listDescription')}</p>
             </div>
+            <ExportCsvButton
+              onClick={() => void handleExport()}
+              label={t('common.exportCsv')}
+              loadingLabel={t('common.exportingCsv')}
+              isLoading={isExporting}
+              disabled={isLoading || users.length === 0}
+            />
           </div>
 
           <ListingFiltersBar

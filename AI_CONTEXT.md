@@ -63,12 +63,17 @@
   - dashboard and analytics endpoints require role `MANAGER`
   - sold-animal revenue is included in dashboard and analytics revenue/profit calculations
   - profit-oriented endpoints support `includeAcquisitionCost` and default it to `true`
+  - CSV export is available for dashboard plus each analytics view using the currently applied filters
   - frontend includes analytics pages and charts
 - Milk prices:
   - milk price is managed per farm as a time-based history
   - each new price is stored as a new record with `price`, `effectiveDate`, `createdAt`, and `createdBy`
   - current price is the latest record whose `effectiveDate` is on or before today
   - if a farm has no effective milk price yet, reporting falls back to the legacy default price `2.0`
+- CSV export:
+  - CSV export is available per screen/context for animals, users, feedings, productions, feed types, milk price history, dashboard, and analytics views
+  - exports are generated on the backend and downloaded by the frontend through the service layer
+  - listing exports must respect the same farm and filter scope used by the active screen
 
 ### Current implementation note
 
@@ -204,6 +209,7 @@ Endpoints:
 
 - `POST /animals`
 - `GET /animals`
+- `GET /animals/export`
 - `GET /animals/{id}`
 - `PUT /animals/{id}`
 - `POST /animals/{id}/sell`
@@ -267,6 +273,7 @@ Animal response characteristics:
 Endpoints:
 
 - `GET /productions`
+- `GET /productions/export`
 - `GET /productions/{id}`
 - `GET /productions/summary/by-animal?animalId=...`
 - `GET /productions/summary/profit/by-animal?animalId=...&includeAcquisitionCost=true`
@@ -334,6 +341,7 @@ Endpoints:
 - `POST /milk-prices?farmId=...`
 - `GET /milk-prices/current?farmId=...`
 - `GET /milk-prices?farmId=...`
+- `GET /milk-prices/export?farmId=...`
 
 Create request:
 
@@ -370,6 +378,7 @@ Endpoints:
 
 - `POST /feedings`
 - `GET /feedings`
+- `GET /feedings/export`
 - `GET /feedings/{id}`
 - `PUT /feedings/{id}`
 - `DELETE /feedings/{id}`
@@ -424,6 +433,7 @@ Endpoints:
 
 - `POST /feed-types`
 - `GET /feed-types`
+- `GET /feed-types/export`
 - `GET /feed-types/{id}`
 - `PUT /feed-types/{id}`
 - `DELETE /feed-types/{id}`
@@ -459,6 +469,7 @@ Endpoints:
 
 - `POST /users`
 - `GET /users`
+- `GET /users/export`
 - `GET /users/{id}`
 - `PUT /users/{id}`
 - `PATCH /users/{id}/activate`
@@ -551,9 +562,16 @@ Key validations and rules:
 ### Dashboard and analytics profit behavior
 
 - `GET /dashboard` requires role `MANAGER`
+- `GET /dashboard/export` requires role `MANAGER`
 - all `/analytics/**` endpoints require role `MANAGER`
 - `GET /dashboard` now accepts optional `includeAcquisitionCost` and defaults it to `true`
 - `GET /analytics/profit` now accepts optional `includeAcquisitionCost` and defaults it to `true`
+- analytics CSV exports are available at:
+  - `GET /analytics/production/export`
+  - `GET /analytics/feeding/export`
+  - `GET /analytics/profit/export`
+  - `GET /analytics/production/by-animal/export`
+- analytics CSV exports reuse the same query params as their corresponding JSON endpoints so filtered exports match the chart currently shown in the UI
 - dashboard revenue now includes milk revenue plus sold-animal revenue
 - dashboard total profit subtracts feeding cost and, when enabled, acquisition cost
 - analytics profit series applies acquisition cost once to the earliest returned period because the current animal model does not store a separate acquisition date
@@ -693,6 +711,7 @@ Authorization: Bearer <jwt>
 - Do not mix domain logic directly into controllers
 - Controllers must remain thin and delegate to services
 - Services own business rules, validations, and orchestration
+- reusable CSV generation now lives in shared backend utilities and is consumed from services so controllers remain thin
 - Services use constructor injection; if a Spring service keeps multiple constructors for compatibility, explicitly annotate the full dependency constructor with `@Autowired`
 - Do not couple business logic to JPA annotations or entity graph behavior
 - Do not introduce rich JPA relation graphs unless explicitly required
@@ -713,6 +732,7 @@ Important interpretation:
 - Preserve the current component/page/service separation
 - When adding auth-aware features, centralize token handling in the API/service layer rather than scattering headers across components
 - Prefer reusable search/filter components for listing screens instead of duplicating filter markup and query wiring
+- CSV downloads should be triggered from the service layer rather than building CSV content in UI components
 
 ## 7. Development Rules
 

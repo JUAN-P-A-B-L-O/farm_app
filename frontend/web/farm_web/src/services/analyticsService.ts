@@ -1,4 +1,5 @@
 import api from './api'
+import { downloadCsv } from './csvExportService'
 import type {
   AnalyticsBarChartPoint,
   AnalyticsDataset,
@@ -25,6 +26,15 @@ function buildAnalyticsParams(filters: AnalyticsFilters, farmId?: string) {
     ...(filters.animalId ? { animalId: filters.animalId } : {}),
     groupBy: filters.groupBy,
     includeAcquisitionCost: filters.includeAcquisitionCost,
+  }
+}
+
+function buildProductionByAnimalParams(filters: AnalyticsFilters, farmId?: string) {
+  return {
+    ...(filters.startDate ? { startDate: filters.startDate } : {}),
+    ...(filters.endDate ? { endDate: filters.endDate } : {}),
+    ...(filters.animalId ? { animalId: filters.animalId } : {}),
+    ...(farmId ? { farmId } : {}),
   }
 }
 
@@ -69,12 +79,7 @@ export async function getAnalyticsDataset(filters: AnalyticsFilters, farmId?: st
     api.get<AnalyticsSeriesApiPoint[]>('/analytics/feeding', { params }),
     api.get<AnalyticsProfitApiPoint[]>('/analytics/profit', { params }),
     api.get<AnalyticsProductionByAnimalApiPoint[]>('/analytics/production/by-animal', {
-      params: {
-        ...(filters.startDate ? { startDate: filters.startDate } : {}),
-        ...(filters.endDate ? { endDate: filters.endDate } : {}),
-        ...(filters.animalId ? { animalId: filters.animalId } : {}),
-        ...(farmId ? { farmId } : {}),
-      },
+      params: buildProductionByAnimalParams(filters, farmId),
     }),
   ])
 
@@ -84,4 +89,27 @@ export async function getAnalyticsDataset(filters: AnalyticsFilters, farmId?: st
     profitSeries: mapProfitToLineChart(profitResponse.data),
     productionByAnimal: mapProductionByAnimal(productionByAnimalResponse.data),
   }
+}
+
+export async function exportAnalyticsProductionCsv(filters: AnalyticsFilters, farmId?: string): Promise<void> {
+  await downloadCsv('/analytics/production/export', buildAnalyticsParams(filters, farmId), 'analytics-production.csv')
+}
+
+export async function exportAnalyticsFeedingCsv(filters: AnalyticsFilters, farmId?: string): Promise<void> {
+  await downloadCsv('/analytics/feeding/export', buildAnalyticsParams(filters, farmId), 'analytics-feeding.csv')
+}
+
+export async function exportAnalyticsProfitCsv(filters: AnalyticsFilters, farmId?: string): Promise<void> {
+  await downloadCsv('/analytics/profit/export', buildAnalyticsParams(filters, farmId), 'analytics-profit.csv')
+}
+
+export async function exportAnalyticsProductionByAnimalCsv(
+  filters: AnalyticsFilters,
+  farmId?: string,
+): Promise<void> {
+  await downloadCsv(
+    '/analytics/production/by-animal/export',
+    buildProductionByAnimalParams(filters, farmId),
+    'analytics-production-by-animal.csv',
+  )
 }

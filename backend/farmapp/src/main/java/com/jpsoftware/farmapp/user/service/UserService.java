@@ -5,6 +5,8 @@ import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.user.dto.ActivateUserRequest;
 import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UpdatePasswordRequest;
@@ -90,6 +92,18 @@ public class UserService {
                 .filter(userEntity -> matchesRole(userEntity, normalizedRole))
                 .map(this::buildUserResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String search, Boolean active, String role) {
+        return CsvExportUtils.write(findAll(search, active, role), List.of(
+                new CsvColumn<>("id", user -> user.getId() != null ? user.getId().toString() : null),
+                new CsvColumn<>("name", UserResponse::getName),
+                new CsvColumn<>("email", UserResponse::getEmail),
+                new CsvColumn<>("role", UserResponse::getRole),
+                new CsvColumn<>("active", UserResponse::getActive),
+                new CsvColumn<>("avatarUrl", UserResponse::getAvatarUrl),
+                new CsvColumn<>("farmIds", user -> user.getFarmIds() != null ? String.join(";", user.getFarmIds()) : "")));
     }
 
     @Transactional(readOnly = true)

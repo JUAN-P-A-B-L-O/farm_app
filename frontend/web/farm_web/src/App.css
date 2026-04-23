@@ -248,6 +248,13 @@
   margin-bottom: 20px;
 }
 
+.animals-panel__header--actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
 .animals-panel__header h2 {
   margin: 0 0 8px;
   font-size: 1.35rem;
@@ -647,6 +654,18 @@
   align-content: start;
 }
 
+.dashboard-page__header-actions,
+.analytics-chart__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.analytics-chart__header-copy {
+  min-width: 0;
+}
+
 .analytics-chart__header h2 {
   margin: 0 0 8px;
   font-size: 1.35rem;
@@ -680,6 +699,12 @@
 
   .analytics-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-page__header-actions,
+  .animals-panel__header--actions,
+  .analytics-chart__header {
+    flex-direction: column;
   }
 }
 

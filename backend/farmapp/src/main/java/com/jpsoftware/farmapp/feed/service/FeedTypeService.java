@@ -8,6 +8,8 @@ import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -53,6 +55,15 @@ public class FeedTypeService {
         return feedTypes.stream()
                 .map(feedTypeMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId) {
+        return CsvExportUtils.write(findAll(farmId), List.of(
+                new CsvColumn<>("id", FeedTypeResponse::getId),
+                new CsvColumn<>("name", FeedTypeResponse::getName),
+                new CsvColumn<>("costPerKg", FeedTypeResponse::getCostPerKg),
+                new CsvColumn<>("active", FeedTypeResponse::getActive)));
     }
 
     @Transactional(readOnly = true)

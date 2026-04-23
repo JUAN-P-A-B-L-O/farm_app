@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import ExportCsvButton from '../../components/common/ExportCsvButton'
 import FeedingForm from '../../components/feeding/FeedingForm'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
@@ -8,6 +9,7 @@ import { getAllAnimals } from '../../services/animalService'
 import {
   createFeeding,
   deleteFeeding,
+  exportFeedingsCsv,
   getAllFeedings,
   getAllFeedTypes,
   getFeedingById,
@@ -79,6 +81,7 @@ function FeedingPage() {
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingFeedingId, setEditingFeedingId] = useState<string | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
 
   async function loadFeedings() {
     if (!selectedFarmId) {
@@ -212,6 +215,23 @@ function FeedingPage() {
     }
   }
 
+  async function handleExport() {
+    if (!selectedFarmId) {
+      return
+    }
+
+    setIsExporting(true)
+    setListErrorMessage('')
+
+    try {
+      await exportFeedingsCsv(selectedFarmId)
+    } catch (error) {
+      setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <main className="animals-page">
       <section className="animals-page__header">
@@ -262,11 +282,18 @@ function FeedingPage() {
         </article>
 
         <article className="animals-panel animals-panel--table">
-          <div className="animals-panel__header">
+          <div className="animals-panel__header animals-panel__header--actions">
             <div>
               <h2>{t('feeding.listTitle')}</h2>
               <p>{t('feeding.listDescription')}</p>
             </div>
+            <ExportCsvButton
+              onClick={() => void handleExport()}
+              label={t('common.exportCsv')}
+              loadingLabel={t('common.exportingCsv')}
+              isLoading={isExporting}
+              disabled={!selectedFarmId || isLoading || feedings.length === 0}
+            />
           </div>
 
           {isLoading && <p className="animals-page__status">{t('feeding.loadingRecords')}</p>}

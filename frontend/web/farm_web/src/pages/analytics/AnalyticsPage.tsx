@@ -2,11 +2,18 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import BarChart from '../../components/analytics/BarChart'
 import ChartErrorBoundary from '../../components/analytics/ChartErrorBoundary'
+import ExportCsvButton from '../../components/common/ExportCsvButton'
 import LineChart from '../../components/analytics/LineChart'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
-import { getAnalyticsDataset } from '../../services/analyticsService'
+import {
+  exportAnalyticsFeedingCsv,
+  exportAnalyticsProductionByAnimalCsv,
+  exportAnalyticsProductionCsv,
+  exportAnalyticsProfitCsv,
+  getAnalyticsDataset,
+} from '../../services/analyticsService'
 import type { Animal, ApiErrorResponse } from '../../types/animal'
 import type { AnalyticsDataset, AnalyticsFilters } from '../../types/analytics'
 import '../../App.css'
@@ -54,6 +61,7 @@ function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsDataset>(emptyDataset)
   const [isAnimalsLoading, setIsAnimalsLoading] = useState(true)
   const [isChartsLoading, setIsChartsLoading] = useState(false)
+  const [exportingKey, setExportingKey] = useState<string | null>(null)
   const [hasAppliedFilters, setHasAppliedFilters] = useState(false)
   const [animalsErrorMessage, setAnimalsErrorMessage] = useState('')
   const [chartsErrorMessage, setChartsErrorMessage] = useState('')
@@ -148,6 +156,33 @@ function AnalyticsPage() {
   function applyFilters() {
     setAppliedFilters(filters)
     setHasAppliedFilters(true)
+  }
+
+  async function handleExport(
+    key: 'production' | 'feeding' | 'profit' | 'productionByAnimal',
+  ) {
+    if (!selectedFarmId || !hasAppliedFilters) {
+      return
+    }
+
+    setExportingKey(key)
+    setChartsErrorMessage('')
+
+    try {
+      if (key === 'production') {
+        await exportAnalyticsProductionCsv(appliedFilters, selectedFarmId)
+      } else if (key === 'feeding') {
+        await exportAnalyticsFeedingCsv(appliedFilters, selectedFarmId)
+      } else if (key === 'profit') {
+        await exportAnalyticsProfitCsv(appliedFilters, selectedFarmId)
+      } else {
+        await exportAnalyticsProductionByAnimalCsv(appliedFilters, selectedFarmId)
+      }
+    } catch (error) {
+      setChartsErrorMessage(getErrorMessage(error, t('common.exportError')))
+    } finally {
+      setExportingKey(null)
+    }
   }
 
   return (
@@ -252,8 +287,17 @@ function AnalyticsPage() {
         <section className="analytics-grid">
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
-              <h2>{t('analytics.productionTitle')}</h2>
-              <p>{t('analytics.productionDescription')}</p>
+              <div className="analytics-chart__header-copy">
+                <h2>{t('analytics.productionTitle')}</h2>
+                <p>{t('analytics.productionDescription')}</p>
+              </div>
+              <ExportCsvButton
+                onClick={() => void handleExport('production')}
+                label={t('common.exportCsv')}
+                loadingLabel={t('common.exportingCsv')}
+                isLoading={exportingKey === 'production'}
+                disabled={!showCharts || analytics.productionSeries.length === 0}
+              />
             </div>
 
             {shouldShowInitialState && renderChartEmptyState()}
@@ -271,8 +315,17 @@ function AnalyticsPage() {
 
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
-              <h2>{t('analytics.feedingCostTitle')}</h2>
-              <p>{t('analytics.feedingCostDescription')}</p>
+              <div className="analytics-chart__header-copy">
+                <h2>{t('analytics.feedingCostTitle')}</h2>
+                <p>{t('analytics.feedingCostDescription')}</p>
+              </div>
+              <ExportCsvButton
+                onClick={() => void handleExport('feeding')}
+                label={t('common.exportCsv')}
+                loadingLabel={t('common.exportingCsv')}
+                isLoading={exportingKey === 'feeding'}
+                disabled={!showCharts || analytics.feedingCostSeries.length === 0}
+              />
             </div>
 
             {shouldShowInitialState && renderChartEmptyState()}
@@ -290,8 +343,17 @@ function AnalyticsPage() {
 
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
-              <h2>{t('analytics.profitTitle')}</h2>
-              <p>{t('analytics.profitDescription')}</p>
+              <div className="analytics-chart__header-copy">
+                <h2>{t('analytics.profitTitle')}</h2>
+                <p>{t('analytics.profitDescription')}</p>
+              </div>
+              <ExportCsvButton
+                onClick={() => void handleExport('profit')}
+                label={t('common.exportCsv')}
+                loadingLabel={t('common.exportingCsv')}
+                isLoading={exportingKey === 'profit'}
+                disabled={!showCharts || analytics.profitSeries.length === 0}
+              />
             </div>
 
             {shouldShowInitialState && renderChartEmptyState()}
@@ -309,8 +371,17 @@ function AnalyticsPage() {
 
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
-              <h2>{t('analytics.productionByAnimalTitle')}</h2>
-              <p>{t('analytics.productionByAnimalDescription')}</p>
+              <div className="analytics-chart__header-copy">
+                <h2>{t('analytics.productionByAnimalTitle')}</h2>
+                <p>{t('analytics.productionByAnimalDescription')}</p>
+              </div>
+              <ExportCsvButton
+                onClick={() => void handleExport('productionByAnimal')}
+                label={t('common.exportCsv')}
+                loadingLabel={t('common.exportingCsv')}
+                isLoading={exportingKey === 'productionByAnimal'}
+                disabled={!showCharts || analytics.productionByAnimal.length === 0}
+              />
             </div>
 
             {shouldShowInitialState && renderChartEmptyState()}

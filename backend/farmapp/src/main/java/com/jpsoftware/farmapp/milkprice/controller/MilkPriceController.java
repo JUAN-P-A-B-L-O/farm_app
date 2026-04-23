@@ -4,6 +4,7 @@ import com.jpsoftware.farmapp.milkprice.dto.CreateMilkPriceRequest;
 import com.jpsoftware.farmapp.milkprice.dto.MilkPriceResponse;
 import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -69,5 +70,11 @@ public class MilkPriceController {
     })
     public ResponseEntity<List<MilkPriceResponse>> getHistory(@RequestParam String farmId) {
         return ResponseEntity.ok(milkPriceService.getHistory(farmId));
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Export milk price history", description = "Exports milk price history as CSV for the selected farm.")
+    public ResponseEntity<byte[]> export(@RequestParam String farmId) {
+        return CsvResponseFactory.buildDownload("milk-prices.csv", milkPriceService.exportHistory(farmId));
     }
 }

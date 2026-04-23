@@ -20,6 +20,8 @@ import com.jpsoftware.farmapp.shared.exception.BusinessException;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.LocalDate;
@@ -113,6 +115,16 @@ public class ProductionService {
     @Transactional(readOnly = true)
     public List<ProductionResponse> findAll(String animalId, LocalDate date, String farmId) {
         return getAllProductions(animalId, date, farmId);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String animalId, LocalDate date, String farmId) {
+        return CsvExportUtils.write(findAll(animalId, date, farmId), List.of(
+                new CsvColumn<>("id", ProductionResponse::getId),
+                new CsvColumn<>("animalId", ProductionResponse::getAnimalId),
+                new CsvColumn<>("animalTag", production -> production.getAnimal() != null ? production.getAnimal().getTag() : null),
+                new CsvColumn<>("date", ProductionResponse::getDate),
+                new CsvColumn<>("quantity", ProductionResponse::getQuantity)));
     }
 
     @Transactional(readOnly = true)
