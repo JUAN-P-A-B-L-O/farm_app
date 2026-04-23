@@ -8,6 +8,13 @@ The backend uses Spring Data JPA with a relational schema generated from entity 
 - dialect: PostgreSQL
 - schema generation: `spring.jpa.hibernate.ddl-auto=create`
 
+For local development without PostgreSQL, the backend also provides a `local` Spring profile backed by in-memory H2:
+
+- activate with `SPRING_PROFILES_ACTIVE=local`
+- datasource URL: `jdbc:h2:mem:farmdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE`
+- dialect: H2
+- schema generation: `spring.jpa.hibernate.ddl-auto=create`
+
 Tests use H2 in PostgreSQL compatibility mode.
 
 Reference diagram: [database.mmd](./diagrams/database.mmd)

@@ -75,6 +75,7 @@
 - Backend is active under `backend/farmapp`
 - Frontend web app is active under `frontend/web/farm_web`
 - A parallel `backend/farm_app` tree exists in the repository, but `backend/farmapp` is the more complete and current backend implementation
+- Local backend startup can use the `local` Spring profile to run against in-memory H2 when PostgreSQL is unavailable; the default runtime configuration remains PostgreSQL
 
 ## 2. Architecture
 
@@ -651,6 +652,7 @@ Authorization: Bearer <jwt>
 - Driver and dialect are PostgreSQL in `backend/farmapp/src/main/resources/application.properties`
 - Schema generation mode is currently `spring.jpa.hibernate.ddl-auto=create`
 - H2 is included for tests
+- `backend/farmapp/src/main/resources/application-local.properties` provides an explicit local-development profile backed by H2 for environments where PostgreSQL is not running or not reachable
 
 ### Main entities
 
