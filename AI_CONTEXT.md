@@ -74,6 +74,8 @@
   - CSV export is available per screen/context for animals, users, feedings, productions, feed types, milk price history, dashboard, and analytics views
   - exports are generated on the backend and downloaded by the frontend through the service layer
   - listing exports must respect the same farm and filter scope used by the active screen
+  - frontend downloads are centralized in `frontend/web/farm_web/src/services/csvExportService.ts`
+  - service helpers should build export params from the same screen state used for the corresponding list or dashboard fetch call
 
 ### Current implementation note
 
@@ -128,6 +130,7 @@ Important constraint:
 - Financial values such as revenue and profit are calculated at read time
 - milk price resolution now lives in `milkprice.service.MilkPriceService`
 - production, dashboard, and analytics services use the current farm milk price by default for revenue/profit calculations
+- reusable CSV row generation is centralized in `shared.util.CsvExportUtils`, while response headers and attachment naming are centralized in `shared.util.CsvResponseFactory`
 
 ### Frontend
 
@@ -150,6 +153,7 @@ Frontend architectural rules already visible in code:
 - translation support via language context and dictionaries
 - farm selection is handled centrally through `FarmContext`
 - reusable listing search/filter controls should be implemented as configurable shared components when multiple pages can adopt the same pattern
+- screen-level CSV actions are rendered through the shared `ExportCsvButton` component and call backend downloads through service-layer helpers
 
 Current frontend constraint:
 
