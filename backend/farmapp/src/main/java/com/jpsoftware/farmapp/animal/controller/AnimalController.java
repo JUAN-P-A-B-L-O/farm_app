@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -62,8 +63,12 @@ public class AnimalController {
 
     @GetMapping("/export")
     @Operation(summary = "Export animals", description = "Exports animals as CSV using the current farm filter.")
-    public ResponseEntity<byte[]> export(@RequestParam(required = false) String farmId) {
-        return CsvResponseFactory.buildDownload("animals.csv", animalService.exportAll(farmId));
+    public ResponseEntity<byte[]> export(
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String currency) {
+        return CsvResponseFactory.buildDownload(
+                "animals.csv",
+                StringUtils.hasText(currency) ? animalService.exportAll(farmId, currency) : animalService.exportAll(farmId));
     }
 
     @GetMapping("/{id}")

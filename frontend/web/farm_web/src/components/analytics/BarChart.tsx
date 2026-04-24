@@ -16,9 +16,18 @@ export interface BarChartPoint {
 interface BarChartProps {
   data: BarChartPoint[]
   color?: string
+  valueFormatter?: (value: number) => string
 }
 
-function BarChart({ data, color = '#2e6a46' }: BarChartProps) {
+function formatTooltipValue(value: unknown, valueFormatter?: (value: number) => string): string | number {
+  if (typeof value !== 'number') {
+    return String(value ?? '')
+  }
+
+  return valueFormatter ? valueFormatter(value) : value
+}
+
+function BarChart({ data, color = '#2e6a46', valueFormatter }: BarChartProps) {
   if (!Array.isArray(data) || data.length === 0) {
     return null
   }
@@ -29,8 +38,8 @@ function BarChart({ data, color = '#2e6a46' }: BarChartProps) {
         <RechartsBarChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
           <CartesianGrid stroke="#e4eaef" strokeDasharray="3 3" />
           <XAxis dataKey="label" stroke="#627285" tickLine={false} axisLine={false} />
-          <YAxis stroke="#627285" tickLine={false} axisLine={false} allowDecimals={false} />
-          <Tooltip />
+          <YAxis stroke="#627285" tickLine={false} axisLine={false} tickFormatter={valueFormatter} />
+          <Tooltip formatter={(value) => formatTooltipValue(value, valueFormatter)} />
           <Bar dataKey="value" fill={color} radius={[8, 8, 0, 0]} />
         </RechartsBarChart>
       </ResponsiveContainer>

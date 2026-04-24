@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,8 +30,11 @@ public class DashboardController {
     })
     public ResponseEntity<DashboardResponse> getDashboard(
             @RequestParam(required = false) String farmId,
-            @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost) {
-        DashboardResponse response = dashboardService.getDashboard(farmId, includeAcquisitionCost);
+            @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
+            @RequestParam(required = false) String currency) {
+        DashboardResponse response = StringUtils.hasText(currency)
+                ? dashboardService.getDashboard(farmId, includeAcquisitionCost, currency)
+                : dashboardService.getDashboard(farmId, includeAcquisitionCost);
         return ResponseEntity.ok(response);
     }
 
@@ -38,9 +42,12 @@ public class DashboardController {
     @Operation(summary = "Export dashboard", description = "Exports dashboard metrics as CSV using the current farm and acquisition-cost settings.")
     public ResponseEntity<byte[]> exportDashboard(
             @RequestParam(required = false) String farmId,
-            @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost) {
+            @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
+            @RequestParam(required = false) String currency) {
         return CsvResponseFactory.buildDownload(
                 "dashboard-summary.csv",
-                dashboardService.exportDashboard(farmId, includeAcquisitionCost));
+                StringUtils.hasText(currency)
+                        ? dashboardService.exportDashboard(farmId, includeAcquisitionCost, currency)
+                        : dashboardService.exportDashboard(farmId, includeAcquisitionCost));
     }
 }

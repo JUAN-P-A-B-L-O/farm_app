@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
@@ -9,6 +10,7 @@ import {
   getCurrentMilkPrice,
   getMilkPriceHistory,
 } from '../../services/milkPriceService'
+import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
 import type {
   CreateMilkPricePayload,
   MilkPrice,
@@ -29,18 +31,10 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
   return fallbackMessage
 }
 
-function formatCurrency(value: number, language: string) {
-  return new Intl.NumberFormat(language === 'pt-BR' ? 'pt-BR' : 'en-US', {
-    style: 'currency',
-    currency: language === 'pt-BR' ? 'BRL' : 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)
-}
-
 function MilkPricePage() {
   const { selectedFarmId } = useFarm()
   const { t, language } = useTranslation()
+  const { currency } = useCurrency()
   const [currentPrice, setCurrentPrice] = useState<MilkPrice | null>(null)
   const [history, setHistory] = useState<MilkPrice[]>([])
   const [formData, setFormData] = useState<CreateMilkPricePayload>(emptyForm)
@@ -117,7 +111,7 @@ function MilkPricePage() {
     setListErrorMessage('')
 
     try {
-      await exportMilkPriceHistoryCsv(selectedFarmId)
+      await exportMilkPriceHistoryCsv(selectedFarmId, currency)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError')))
     } finally {
@@ -152,8 +146,8 @@ function MilkPricePage() {
             <>
               <dl className="animal-details-grid">
                 <div className="animal-details-grid__item">
-                  <dt>{t('milkPrice.summary.currentPrice')}</dt>
-                  <dd>{formatCurrency(currentPrice.price, language)}</dd>
+                  <dt>{appendCurrencyCode(t('milkPrice.summary.currentPrice'), currency)}</dt>
+                  <dd>{formatDisplayMoney(currentPrice.price, language, currency)}</dd>
                 </div>
                 <div className="animal-details-grid__item">
                   <dt>{t('milkPrice.summary.effectiveDate')}</dt>
@@ -241,7 +235,7 @@ function MilkPricePage() {
               <table className="animals-table">
                 <thead>
                   <tr>
-                    <th>{t('milkPrice.table.price')}</th>
+                    <th>{appendCurrencyCode(t('milkPrice.table.price'), currency)}</th>
                     <th>{t('milkPrice.table.effectiveDate')}</th>
                     <th>{t('milkPrice.table.createdAt')}</th>
                   </tr>
@@ -249,7 +243,7 @@ function MilkPricePage() {
                 <tbody>
                   {history.map((entry) => (
                     <tr key={entry.id ?? `${entry.effectiveDate}-${entry.price}`}>
-                      <td>{formatCurrency(entry.price, language)}</td>
+                      <td>{formatDisplayMoney(entry.price, language, currency)}</td>
                       <td>{entry.effectiveDate ?? '-'}</td>
                       <td>{entry.createdAt ? entry.createdAt.replace('T', ' ') : '-'}</td>
                     </tr>

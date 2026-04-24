@@ -63,6 +63,8 @@
   - dashboard and analytics endpoints require role `MANAGER`
   - sold-animal revenue is included in dashboard and analytics revenue/profit calculations
   - profit-oriented endpoints support `includeAcquisitionCost` and default it to `true`
+  - dashboard and monetary analytics/export endpoints accept an optional `currency` context; `BRL` is the default and `USD` is also supported
+  - monetary reporting values are still derived from stored base amounts and converted only at read/export time
   - CSV export is available for dashboard plus each analytics view using the currently applied filters
   - frontend includes analytics pages and charts
 - Milk prices:
@@ -74,6 +76,7 @@
   - CSV export is available per screen/context for animals, users, feedings, productions, feed types, milk price history, dashboard, and analytics views
   - exports are generated on the backend and downloaded by the frontend through the service layer
   - listing exports must respect the same farm and filter scope used by the active screen
+  - monetary exports also respect the active frontend currency context
   - frontend downloads are centralized in `frontend/web/farm_web/src/services/csvExportService.ts`
   - service helpers should build export params from the same screen state used for the corresponding list or dashboard fetch call
 
@@ -131,6 +134,7 @@ Important constraint:
 - milk price resolution now lives in `milkprice.service.MilkPriceService`
 - production, dashboard, and analytics services use the current farm milk price by default for revenue/profit calculations
 - reusable CSV row generation is centralized in `shared.util.CsvExportUtils`, while response headers and attachment naming are centralized in `shared.util.CsvResponseFactory`
+- backend currency conversion for reporting and export is centralized in `shared.currency` and currently supports `BRL` and `USD`
 
 ### Frontend
 
@@ -152,8 +156,10 @@ Frontend architectural rules already visible in code:
 - route-based page organization
 - translation support via language context and dictionaries
 - farm selection is handled centrally through `FarmContext`
+- display currency selection is handled centrally through `CurrencyContext`
 - reusable listing search/filter controls should be implemented as configurable shared components when multiple pages can adopt the same pattern
 - screen-level CSV actions are rendered through the shared `ExportCsvButton` component and call backend downloads through service-layer helpers
+- monetary labels and formatting should use shared currency helpers instead of hardcoded symbols or hardcoded `Intl` currency values in components
 
 Current frontend constraint:
 
@@ -569,6 +575,7 @@ Key validations and rules:
 - `GET /dashboard/export` requires role `MANAGER`
 - all `/analytics/**` endpoints require role `MANAGER`
 - `GET /dashboard` now accepts optional `includeAcquisitionCost` and defaults it to `true`
+- `GET /dashboard`, `GET /dashboard/export`, `GET /analytics/feeding`, `GET /analytics/feeding/export`, `GET /analytics/profit`, and `GET /analytics/profit/export` accept optional `currency`
 - `GET /analytics/profit` now accepts optional `includeAcquisitionCost` and defaults it to `true`
 - analytics CSV exports are available at:
   - `GET /analytics/production/export`

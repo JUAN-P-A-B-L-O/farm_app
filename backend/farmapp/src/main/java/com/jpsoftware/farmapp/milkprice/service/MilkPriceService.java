@@ -7,6 +7,7 @@ import com.jpsoftware.farmapp.milkprice.dto.CreateMilkPriceRequest;
 import com.jpsoftware.farmapp.milkprice.dto.MilkPriceResponse;
 import com.jpsoftware.farmapp.milkprice.entity.MilkPriceEntity;
 import com.jpsoftware.farmapp.milkprice.repository.MilkPriceRepository;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
@@ -85,7 +86,21 @@ public class MilkPriceService {
 
     @Transactional(readOnly = true)
     public String exportHistory(String farmId) {
-        return CsvExportUtils.write(getHistory(farmId), List.of(
+        return exportHistory(farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportHistory(String farmId, String currency) {
+        return CsvExportUtils.write(getHistory(farmId).stream()
+                .map(price -> new MilkPriceResponse(
+                        price.getId(),
+                        price.getFarmId(),
+                        CurrencyConversionUtils.convertMonetaryValue(price.getPrice(), currency),
+                        price.getEffectiveDate(),
+                        price.getCreatedAt(),
+                        price.getCreatedBy(),
+                        price.isFallbackDefault()))
+                .toList(), List.of(
                 new CsvColumn<>("id", MilkPriceResponse::getId),
                 new CsvColumn<>("farmId", MilkPriceResponse::getFarmId),
                 new CsvColumn<>("price", MilkPriceResponse::getPrice),

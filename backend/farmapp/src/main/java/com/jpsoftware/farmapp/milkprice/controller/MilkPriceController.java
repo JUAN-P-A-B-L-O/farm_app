@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -74,7 +75,11 @@ public class MilkPriceController {
 
     @GetMapping("/export")
     @Operation(summary = "Export milk price history", description = "Exports milk price history as CSV for the selected farm.")
-    public ResponseEntity<byte[]> export(@RequestParam String farmId) {
-        return CsvResponseFactory.buildDownload("milk-prices.csv", milkPriceService.exportHistory(farmId));
+    public ResponseEntity<byte[]> export(
+            @RequestParam String farmId,
+            @RequestParam(required = false) String currency) {
+        return CsvResponseFactory.buildDownload(
+                "milk-prices.csv",
+                StringUtils.hasText(currency) ? milkPriceService.exportHistory(farmId, currency) : milkPriceService.exportHistory(farmId));
     }
 }

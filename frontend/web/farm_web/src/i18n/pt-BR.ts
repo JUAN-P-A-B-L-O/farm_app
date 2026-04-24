@@ -7,6 +7,7 @@ const ptBR = {
     selectFarm: 'Selecione uma fazenda',
     loadingFarms: 'Carregando fazendas...',
     languageLabel: 'Idioma',
+    currencyLabel: 'Moeda exibida',
     logout: 'Sair',
     navigation: {
       dashboard: 'Dashboard',

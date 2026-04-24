@@ -6,6 +6,7 @@ import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import com.jpsoftware.farmapp.feed.mapper.FeedTypeMapper;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
@@ -59,7 +60,18 @@ public class FeedTypeService {
 
     @Transactional(readOnly = true)
     public String exportAll(String farmId) {
-        return CsvExportUtils.write(findAll(farmId), List.of(
+        return exportAll(farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String currency) {
+        return CsvExportUtils.write(findAll(farmId).stream()
+                .map(feedType -> new FeedTypeResponse(
+                        feedType.getId(),
+                        feedType.getName(),
+                        CurrencyConversionUtils.convertMonetaryValue(feedType.getCostPerKg(), currency),
+                        feedType.getActive()))
+                .toList(), List.of(
                 new CsvColumn<>("id", FeedTypeResponse::getId),
                 new CsvColumn<>("name", FeedTypeResponse::getName),
                 new CsvColumn<>("costPerKg", FeedTypeResponse::getCostPerKg),

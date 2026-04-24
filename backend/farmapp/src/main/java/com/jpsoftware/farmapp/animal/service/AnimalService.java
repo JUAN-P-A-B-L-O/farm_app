@@ -8,6 +8,7 @@ import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
 import com.jpsoftware.farmapp.animal.mapper.AnimalMapper;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
@@ -81,7 +82,25 @@ public class AnimalService {
 
     @Transactional(readOnly = true)
     public String exportAll(String farmId) {
-        return CsvExportUtils.write(findAll(farmId), List.of(
+        return exportAll(farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String currency) {
+        return CsvExportUtils.write(findAll(farmId).stream()
+                .map(animal -> AnimalResponse.builder()
+                        .id(animal.getId())
+                        .tag(animal.getTag())
+                        .breed(animal.getBreed())
+                        .birthDate(animal.getBirthDate())
+                        .origin(animal.getOrigin())
+                        .status(animal.getStatus())
+                        .acquisitionCost(CurrencyConversionUtils.convertMonetaryValue(animal.getAcquisitionCost(), currency))
+                        .salePrice(CurrencyConversionUtils.convertMonetaryValue(animal.getSalePrice(), currency))
+                        .saleDate(animal.getSaleDate())
+                        .farmId(animal.getFarmId())
+                        .build())
+                .toList(), List.of(
                 new CsvColumn<>("id", AnimalResponse::getId),
                 new CsvColumn<>("tag", AnimalResponse::getTag),
                 new CsvColumn<>("breed", AnimalResponse::getBreed),

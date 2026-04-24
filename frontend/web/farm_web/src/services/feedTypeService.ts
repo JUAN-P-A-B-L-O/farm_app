@@ -1,10 +1,14 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import type { CurrencyCode } from '../context/CurrencyContext'
 import type { FeedType, FeedTypeFormData } from '../types/feedType'
 import { normalizeToTwoDecimals } from '../utils/decimal'
 
-function buildFarmParams(farmId?: string) {
-  return farmId ? { farmId } : undefined
+function buildFarmParams(farmId?: string, currency?: CurrencyCode) {
+  return {
+    ...(farmId ? { farmId } : {}),
+    ...(currency ? { currency } : {}),
+  }
 }
 
 export async function getAllFeedTypes(farmId?: string): Promise<FeedType[]> {
@@ -43,6 +47,6 @@ export async function deleteFeedType(id: string, farmId?: string): Promise<void>
   })
 }
 
-export async function exportFeedTypesCsv(farmId?: string): Promise<void> {
-  await downloadCsv('/feed-types/export', buildFarmParams(farmId), 'feed-types.csv')
+export async function exportFeedTypesCsv(farmId?: string, currency?: CurrencyCode): Promise<void> {
+  await downloadCsv('/feed-types/export', buildFarmParams(farmId, currency), 'feed-types.csv')
 }

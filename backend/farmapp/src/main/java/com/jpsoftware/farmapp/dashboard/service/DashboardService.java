@@ -6,6 +6,7 @@ import com.jpsoftware.farmapp.dashboard.dto.DashboardResponse;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
 import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
@@ -49,6 +50,11 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboard(String farmId, boolean includeAcquisitionCost) {
+        return getDashboard(farmId, includeAcquisitionCost, null);
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardResponse getDashboard(String farmId, boolean includeAcquisitionCost, String currency) {
         if (farmAccessService != null) {
             farmAccessService.validateAccessibleFarmIfPresent(farmId);
         }
@@ -73,15 +79,20 @@ public class DashboardService {
 
         return new DashboardResponse(
                 totalProduction,
-                totalFeedingCost,
-                totalRevenue,
-                totalProfit,
+                CurrencyConversionUtils.convertMonetaryValue(totalFeedingCost, currency),
+                CurrencyConversionUtils.convertMonetaryValue(totalRevenue, currency),
+                CurrencyConversionUtils.convertMonetaryValue(totalProfit, currency),
                 animalCount);
     }
 
     @Transactional(readOnly = true)
     public String exportDashboard(String farmId, boolean includeAcquisitionCost) {
-        DashboardResponse dashboard = getDashboard(farmId, includeAcquisitionCost);
+        return exportDashboard(farmId, includeAcquisitionCost, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDashboard(String farmId, boolean includeAcquisitionCost, String currency) {
+        DashboardResponse dashboard = getDashboard(farmId, includeAcquisitionCost, currency);
         return CsvExportUtils.write(List.of(dashboard), List.of(
                 new CsvColumn<>("totalProduction", DashboardResponse::getTotalProduction),
                 new CsvColumn<>("totalFeedingCost", DashboardResponse::getTotalFeedingCost),

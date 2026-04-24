@@ -1,10 +1,14 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import type { CurrencyCode } from '../context/CurrencyContext'
 import { normalizeToTwoDecimals } from '../utils/decimal'
 import type { CreateMilkPricePayload, MilkPrice } from '../types/milkPrice'
 
-function buildFarmParams(farmId?: string) {
-  return farmId ? { farmId } : {}
+function buildFarmParams(farmId?: string, currency?: CurrencyCode) {
+  return {
+    ...(farmId ? { farmId } : {}),
+    ...(currency ? { currency } : {}),
+  }
 }
 
 export async function createMilkPrice(data: CreateMilkPricePayload, farmId?: string): Promise<MilkPrice> {
@@ -34,6 +38,6 @@ export async function getMilkPriceHistory(farmId?: string): Promise<MilkPrice[]>
   return response.data
 }
 
-export async function exportMilkPriceHistoryCsv(farmId?: string): Promise<void> {
-  await downloadCsv('/milk-prices/export', buildFarmParams(farmId), 'milk-prices.csv')
+export async function exportMilkPriceHistoryCsv(farmId?: string, currency?: CurrencyCode): Promise<void> {
+  await downloadCsv('/milk-prices/export', buildFarmParams(farmId, currency), 'milk-prices.csv')
 }

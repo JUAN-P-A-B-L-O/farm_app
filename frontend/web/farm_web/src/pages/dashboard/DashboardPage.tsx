@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import StatCard from '../../components/dashboard/StatCard'
+import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { exportDashboardCsv, fetchDashboard } from '../../services/dashboardService'
+import { appendCurrencyCode } from '../../utils/currency'
 import type { DashboardSummary } from '../../types/dashboard'
 import '../../App.css'
 
@@ -21,6 +23,7 @@ const dashboardStats: Array<{
 
 function DashboardPage() {
   const { t, language } = useTranslation()
+  const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [includeAcquisitionCost, setIncludeAcquisitionCost] = useState(true)
@@ -40,7 +43,7 @@ function DashboardPage() {
       }
 
       try {
-        const data = await fetchDashboard(selectedFarmId, includeAcquisitionCost)
+        const data = await fetchDashboard(selectedFarmId, includeAcquisitionCost, currency)
         setSummary(data)
       } catch {
         setErrorMessage(t('dashboard.error'))
@@ -50,7 +53,7 @@ function DashboardPage() {
     }
 
     void loadDashboard()
-  }, [includeAcquisitionCost, language, selectedFarmId])
+  }, [currency, includeAcquisitionCost, language, selectedFarmId, t])
 
   async function handleExport() {
     if (!selectedFarmId) {
@@ -61,7 +64,7 @@ function DashboardPage() {
     setErrorMessage('')
 
     try {
-      await exportDashboardCsv(selectedFarmId, includeAcquisitionCost)
+      await exportDashboardCsv(selectedFarmId, includeAcquisitionCost, currency)
     } catch {
       setErrorMessage(t('common.exportError'))
     } finally {
@@ -112,7 +115,9 @@ function DashboardPage() {
           {dashboardStats.map((stat) => (
             <StatCard
               key={stat.key}
-              title={t(stat.titleKey)}
+              title={stat.format === 'currency'
+                ? appendCurrencyCode(t(stat.titleKey), currency)
+                : t(stat.titleKey)}
               value={summary[stat.key] ?? 0}
               format={stat.format}
             />

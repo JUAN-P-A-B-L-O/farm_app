@@ -40,4 +40,16 @@ class DashboardControllerContractTest {
                 .andExpect(jsonPath("$.totalProfit").value(410.0))
                 .andExpect(jsonPath("$.animalCount").value(12));
     }
+
+    @Test
+    void shouldPassCurrencyContextWhenProvided() throws Exception {
+        when(dashboardService.getDashboard("farm-1", true, "USD"))
+                .thenReturn(new DashboardResponse(100.0, 8.0, 100.0, 82.0, 12L));
+
+        mockMvc.perform(get("/dashboard").param("farmId", "farm-1").param("currency", "USD"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalFeedingCost").value(8.0))
+                .andExpect(jsonPath("$.totalRevenue").value(100.0))
+                .andExpect(jsonPath("$.totalProfit").value(82.0));
+    }
 }

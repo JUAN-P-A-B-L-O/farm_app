@@ -16,9 +16,18 @@ export interface LineChartPoint {
 interface LineChartProps {
   data: LineChartPoint[]
   color?: string
+  valueFormatter?: (value: number) => string
 }
 
-function LineChart({ data, color = '#2e6a46' }: LineChartProps) {
+function formatTooltipValue(value: unknown, valueFormatter?: (value: number) => string): string | number {
+  if (typeof value !== 'number') {
+    return String(value ?? '')
+  }
+
+  return valueFormatter ? valueFormatter(value) : value
+}
+
+function LineChart({ data, color = '#2e6a46', valueFormatter }: LineChartProps) {
   if (!Array.isArray(data) || data.length === 0) {
     return null
   }
@@ -29,8 +38,8 @@ function LineChart({ data, color = '#2e6a46' }: LineChartProps) {
         <RechartsLineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
           <CartesianGrid stroke="#e4eaef" strokeDasharray="3 3" />
           <XAxis dataKey="label" stroke="#627285" tickLine={false} axisLine={false} />
-          <YAxis stroke="#627285" tickLine={false} axisLine={false} allowDecimals={false} />
-          <Tooltip />
+          <YAxis stroke="#627285" tickLine={false} axisLine={false} tickFormatter={valueFormatter} />
+          <Tooltip formatter={(value) => formatTooltipValue(value, valueFormatter)} />
           <Line
             type="monotone"
             dataKey="value"

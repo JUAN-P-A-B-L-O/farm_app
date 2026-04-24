@@ -3,6 +3,7 @@ import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import FeedTypeForm from '../../components/feed-type/FeedTypeForm'
 import { useAuth } from '../../hooks/useAuth'
+import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
@@ -13,6 +14,7 @@ import {
   updateFeedType,
 } from '../../services/feedTypeService'
 import type { FeedType, FeedTypeApiErrorResponse, FeedTypeFormData } from '../../types/feedType'
+import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
 import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
@@ -47,7 +49,8 @@ function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: strin
 }
 
 function FeedTypePage() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
+  const { currency } = useCurrency()
   const { user } = useAuth()
   const { selectedFarmId } = useFarm()
   const canDeleteResources = isManager(user)
@@ -162,7 +165,7 @@ function FeedTypePage() {
     setListErrorMessage('')
 
     try {
-      await exportFeedTypesCsv(selectedFarmId)
+      await exportFeedTypesCsv(selectedFarmId, currency)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
     } finally {
@@ -236,7 +239,7 @@ function FeedTypePage() {
                 <thead>
                   <tr>
                     <th>{t('feedType.table.name')}</th>
-                    <th>{t('feedType.table.costPerKg')}</th>
+                    <th>{appendCurrencyCode(t('feedType.table.costPerKg'), currency)}</th>
                     <th>{t('feedType.table.actions')}</th>
                   </tr>
                 </thead>
@@ -244,7 +247,7 @@ function FeedTypePage() {
                   {feedTypes.map((feedType) => (
                     <tr key={feedType.id}>
                       <td>{feedType.name}</td>
-                      <td>{feedType.costPerKg}</td>
+                      <td>{formatDisplayMoney(feedType.costPerKg, language, currency)}</td>
                       <td className="animals-table__actions">
                         <button
                           type="button"

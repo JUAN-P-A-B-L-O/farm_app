@@ -7,6 +7,7 @@ const en = {
     selectFarm: 'Select a farm',
     loadingFarms: 'Loading farms...',
     languageLabel: 'Language',
+    currencyLabel: 'Display currency',
     logout: 'Logout',
     navigation: {
       dashboard: 'Dashboard',

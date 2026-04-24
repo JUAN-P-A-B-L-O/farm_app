@@ -1,9 +1,13 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import type { CurrencyCode } from '../context/CurrencyContext'
 import type { Animal, AnimalFormData, SellAnimalData } from '../types/animal'
 
-function buildFarmParams(farmId?: string) {
-  return farmId ? { farmId } : undefined
+function buildFarmParams(farmId?: string, currency?: CurrencyCode) {
+  return {
+    ...(farmId ? { farmId } : {}),
+    ...(currency ? { currency } : {}),
+  }
 }
 
 export async function getAllAnimals(farmId?: string): Promise<Animal[]> {
@@ -50,6 +54,6 @@ export async function sellAnimal(id: string, data: SellAnimalData, farmId?: stri
   return response.data
 }
 
-export async function exportAnimalsCsv(farmId?: string): Promise<void> {
-  await downloadCsv('/animals/export', buildFarmParams(farmId), 'animals.csv')
+export async function exportAnimalsCsv(farmId?: string, currency?: CurrencyCode): Promise<void> {
+  await downloadCsv('/animals/export', buildFarmParams(farmId, currency), 'animals.csv')
 }

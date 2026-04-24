@@ -53,10 +53,11 @@ function compileServices() {
     [
       ["import api from './api'\n", "import api from './api.js'\n"],
       ["import { downloadCsv } from './csvExportService'\n", "import { downloadCsv } from './csvExportService.js'\n"],
+      ["import type { CurrencyCode } from '../context/CurrencyContext'\n", ''],
       ["import type { DashboardSummary } from '../types/dashboard'\n", ''],
-      [/function buildDashboardParams\(farmId\?: string, includeAcquisitionCost = true\) \{/g, 'function buildDashboardParams(farmId, includeAcquisitionCost = true) {'],
-      [/export async function fetchDashboard\(farmId\?: string, includeAcquisitionCost = true\): Promise<DashboardSummary> \{/g, 'export async function fetchDashboard(farmId, includeAcquisitionCost = true) {'],
-      [/export async function exportDashboardCsv\(farmId\?: string, includeAcquisitionCost = true\): Promise<void> \{/g, 'export async function exportDashboardCsv(farmId, includeAcquisitionCost = true) {'],
+      [/function buildDashboardParams\(farmId\?: string, includeAcquisitionCost = true, currency\?: CurrencyCode\) \{/g, 'function buildDashboardParams(farmId, includeAcquisitionCost = true, currency) {'],
+      [/export async function fetchDashboard\([\s\S]*?\): Promise<DashboardSummary> \{/g, 'export async function fetchDashboard(farmId, includeAcquisitionCost = true, currency) {'],
+      [/export async function exportDashboardCsv\([\s\S]*?\): Promise<void> \{/g, 'export async function exportDashboardCsv(farmId, includeAcquisitionCost = true, currency) {'],
       [/const response = await api.get<DashboardSummary>/g, 'const response = await api.get'],
     ],
   )
@@ -142,9 +143,29 @@ test('user export drops empty filter values the same way listing requests do', a
   ])
 })
 
-test('dashboard fetch and export share the same farm and acquisition-cost context', async () => {
-  await dashboardService.fetchDashboard('farm-1', false)
-  await dashboardService.exportDashboardCsv('farm-1', false)
+test('user listing and export preserve an inactive status filter', async () => {
+  const filters = {
+    search: '',
+    active: 'false',
+    role: '',
+  }
+
+  await userService.getAllUsers(filters)
+  await userService.exportUsersCsv(filters)
+
+  assert.deepEqual(apiStub.requests[0].config.params, {
+    active: 'false',
+  })
+  assert.deepEqual(downloadCsvCalls[0], [
+    '/users/export',
+    { active: 'false' },
+    'users.csv',
+  ])
+})
+
+test('dashboard fetch and export share the same farm, acquisition-cost, and currency context', async () => {
+  await dashboardService.fetchDashboard('farm-1', false, 'USD')
+  await dashboardService.exportDashboardCsv('farm-1', false, 'USD')
 
   assert.deepEqual(apiStub.requests[0], {
     url: '/dashboard',
@@ -152,6 +173,7 @@ test('dashboard fetch and export share the same farm and acquisition-cost contex
       params: {
         farmId: 'farm-1',
         includeAcquisitionCost: false,
+        currency: 'USD',
       },
     },
   })
@@ -160,6 +182,28 @@ test('dashboard fetch and export share the same farm and acquisition-cost contex
     {
       farmId: 'farm-1',
       includeAcquisitionCost: false,
+      currency: 'USD',
+    },
+    'dashboard-summary.csv',
+  ])
+})
+
+test('dashboard export keeps the default acquisition-cost context without a farm filter', async () => {
+  await dashboardService.fetchDashboard()
+  await dashboardService.exportDashboardCsv()
+
+  assert.deepEqual(apiStub.requests[0], {
+    url: '/dashboard',
+    config: {
+      params: {
+        includeAcquisitionCost: true,
+      },
+    },
+  })
+  assert.deepEqual(downloadCsvCalls[0], [
+    '/dashboard/export',
+    {
+      includeAcquisitionCost: true,
     },
     'dashboard-summary.csv',
   ])
