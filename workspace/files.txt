@@ -1,0 +1,4 @@
+AI_CONTEXT.md
+frontend/web/farm_web/src/services/dashboardService.ts
+frontend/web/farm_web/src/services/userService.ts
+frontend/web/farm_web/tests/export-context.service.test.mjs

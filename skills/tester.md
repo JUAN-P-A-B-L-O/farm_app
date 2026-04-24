@@ -45,6 +45,31 @@ For the changed code:
 
 ---
 
+## RUNTIME VALIDATION (IMPORTANT)
+
+In addition to test analysis, you MUST attempt to validate whether the application would still run correctly.
+
+- Consider how the system starts (e.g., Spring Boot main class, frontend app)
+- Detect potential runtime failures such as:
+  - missing dependencies
+  - broken bean injections
+  - invalid configurations
+  - compile-time errors
+  - startup failures
+
+You SHOULD:
+
+- Reason about whether the application would start successfully
+- Identify likely runtime or startup issues
+- Highlight risks that would break execution even if tests pass
+
+You MUST NOT:
+
+- Assume the system runs successfully without verification
+- Ignore integration or startup risks
+
+---
+
 ## TEST GENERATION RULES
 
 You MUST:
@@ -96,6 +121,12 @@ You MUST return your response in JSON format:
       "severity": "LOW | MEDIUM | HIGH"
     }
   ],
+  "runtime_risks": [
+    {
+      "description": "Potential runtime/startup issue",
+      "impact": "LOW | MEDIUM | HIGH"
+    }
+  ],
   "test_changes": [
     {
       "file": "relative/path/to/test",
@@ -126,6 +157,7 @@ You MUST return your response in JSON format:
 - Do NOT generate generic tests unrelated to changes
 
 ---
+
 ## EXECUTION MODE
 
 - Do NOT ask questions
@@ -137,4 +169,4 @@ You MUST return your response in JSON format:
 
 ## GOAL
 
-Ensure that recent changes are correctly validated through targeted, minimal, and high-quality tests based on the actual code differences.
+Ensure that recent changes are correctly validated through targeted, minimal, and high-quality tests based on the actual code differences, including detection of runtime and startup risks.
