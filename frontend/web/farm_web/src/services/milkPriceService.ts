@@ -3,6 +3,7 @@ import { downloadCsv } from './csvExportService'
 import type { CurrencyCode } from '../context/CurrencyContext'
 import { normalizeToTwoDecimals } from '../utils/decimal'
 import type { CreateMilkPricePayload, MilkPrice } from '../types/milkPrice'
+import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 
 function buildFarmParams(farmId?: string, currency?: CurrencyCode) {
   return {
@@ -33,6 +34,21 @@ export async function getCurrentMilkPrice(farmId?: string): Promise<MilkPrice> {
 export async function getMilkPriceHistory(farmId?: string): Promise<MilkPrice[]> {
   const response = await api.get<MilkPrice[]>('/milk-prices', {
     params: buildFarmParams(farmId),
+  })
+
+  return response.data
+}
+
+export async function getMilkPriceHistoryPage(
+  farmId: string | undefined,
+  pagination: PaginationParams,
+): Promise<PaginatedResponse<MilkPrice>> {
+  const response = await api.get<PaginatedResponse<MilkPrice>>('/milk-prices', {
+    params: {
+      ...buildFarmParams(farmId),
+      page: pagination.page,
+      size: pagination.size,
+    },
   })
 
   return response.data

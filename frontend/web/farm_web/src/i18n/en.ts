@@ -30,6 +30,13 @@ const en = {
     exportError: 'Unable to export CSV.',
     selectAnimal: 'Select an animal',
     selectUser: 'Select a user',
+    pagination: {
+      previous: 'Previous',
+      next: 'Next',
+      pageSize: 'Rows per page',
+      page: 'Page {page} of {totalPages}',
+      summary: 'Showing {from}-{to} of {total}',
+    },
   },
   auth: {
     eyebrow: 'Authentication',

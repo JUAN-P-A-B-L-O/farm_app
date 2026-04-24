@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.feed.controller;
 import com.jpsoftware.farmapp.feed.dto.CreateFeedTypeRequest;
 import com.jpsoftware.farmapp.feed.dto.FeedTypeResponse;
 import com.jpsoftware.farmapp.feed.service.FeedTypeService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -56,7 +57,15 @@ public class FeedTypeController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Feed types retrieved successfully")
     })
-    public ResponseEntity<List<FeedTypeResponse>> findAll(@RequestParam(required = false) String farmId) {
+    public ResponseEntity<?> findAll(
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            PaginatedResponse<FeedTypeResponse> response = feedTypeService.findAllPaginated(farmId, page, size);
+            return ResponseEntity.ok(response);
+        }
+
         List<FeedTypeResponse> response = feedTypeService.findAll(farmId);
         return ResponseEntity.ok(response);
     }

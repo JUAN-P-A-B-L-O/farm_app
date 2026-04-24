@@ -8,6 +8,7 @@ import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
 import com.jpsoftware.farmapp.animal.mapper.AnimalMapper;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
@@ -18,6 +19,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -78,6 +82,21 @@ public class AnimalService {
         return animals.stream()
                 .map(animalMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<AnimalResponse> findAllPaginated(String farmId, int page, int size) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        Page<AnimalEntity> animals = StringUtils.hasText(farmId)
+                ? animalRepository.findByFarmId(farmId, PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "tag")))
+                : animalRepository.findAll(PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "tag")));
+        Page<AnimalResponse> responses = animals.map(animalMapper::toResponse);
+        return new PaginatedResponse<>(
+                responses.getContent(),
+                responses.getNumber(),
+                responses.getSize(),
+                responses.getTotalElements(),
+                responses.getTotalPages());
     }
 
     @Transactional(readOnly = true)

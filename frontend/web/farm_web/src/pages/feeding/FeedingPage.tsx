@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import PaginationControls from '../../components/common/PaginationControls'
 import FeedingForm from '../../components/feeding/FeedingForm'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
@@ -10,7 +11,7 @@ import {
   createFeeding,
   deleteFeeding,
   exportFeedingsCsv,
-  getAllFeedings,
+  getFeedingsPage,
   getAllFeedTypes,
   getFeedingById,
   updateFeeding,
@@ -23,6 +24,7 @@ import type {
   FeedingFeedTypeOption,
   FeedingFormData,
 } from '../../types/feeding'
+import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
@@ -71,6 +73,9 @@ function FeedingPage() {
   const canSelectCreateDate = isManager(user)
   const canDeleteResources = isManager(user)
   const [feedings, setFeedings] = useState<Feeding[]>([])
+  const [pagination, setPagination] = useState(createEmptyPaginatedResponse<Feeding>())
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [animals, setAnimals] = useState<FeedingAnimalOption[]>([])
   const [feedTypes, setFeedTypes] = useState<FeedingFeedTypeOption[]>([])
   const [formInitialValues, setFormInitialValues] = useState<FeedingFormData>(emptyFeedingForm)
@@ -83,9 +88,11 @@ function FeedingPage() {
   const [editingFeedingId, setEditingFeedingId] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
 
-  async function loadFeedings() {
+  async function loadFeedings(targetPage = page, targetSize = pageSize) {
     if (!selectedFarmId) {
       setFeedings([])
+      setPagination(createEmptyPaginatedResponse<Feeding>(targetSize))
+      setPage(0)
       setListErrorMessage('')
       setIsLoading(false)
       return
@@ -95,8 +102,17 @@ function FeedingPage() {
     setListErrorMessage('')
 
     try {
-      const data = await getAllFeedings(selectedFarmId)
-      setFeedings(data)
+      const data = await getFeedingsPage(selectedFarmId, { page: targetPage, size: targetSize })
+
+      if (data.content.length === 0 && data.totalElements > 0 && data.totalPages > 0 && targetPage >= data.totalPages) {
+        await loadFeedings(data.totalPages - 1, targetSize)
+        return
+      }
+
+      setFeedings(data.content)
+      setPagination(data)
+      setPage(data.page)
+      setPageSize(data.size)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('feeding.errors.loadRecords'), t))
     } finally {
@@ -134,6 +150,20 @@ function FeedingPage() {
   useEffect(() => {
     void Promise.all([loadFeedings(), loadFormOptions()])
   }, [selectedFarmId])
+
+  function handlePageChange(nextPage: number) {
+    if (nextPage === page) {
+      return
+    }
+
+    void loadFeedings(nextPage, pageSize)
+  }
+
+  function handlePageSizeChange(nextSize: number) {
+    setPage(0)
+    setPageSize(nextSize)
+    void loadFeedings(0, nextSize)
+  }
 
   async function handleCreateOrUpdateFeeding(data: FeedingFormData) {
     setIsSubmitting(true)
@@ -309,7 +339,8 @@ function FeedingPage() {
           )}
 
           {!isLoading && !listErrorMessage && feedings.length > 0 && (
-            <div className="animals-table-wrapper">
+            <>
+              <div className="animals-table-wrapper">
               <table className="animals-table">
                 <thead>
                   <tr>
@@ -351,7 +382,15 @@ function FeedingPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+
+              <PaginationControls
+                pagination={pagination}
+                isLoading={isLoading}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </>
           )}
         </article>
       </section>

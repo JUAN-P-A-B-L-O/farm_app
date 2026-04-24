@@ -1,6 +1,7 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
 import { normalizeToTwoDecimals } from '../utils/decimal'
+import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 import type {
   CreateFeedingPayload,
   Feeding,
@@ -20,6 +21,21 @@ function buildFarmParams(farmId?: string, params: Record<string, string> = {}) {
 export async function getAllFeedings(farmId?: string): Promise<Feeding[]> {
   const response = await api.get<Feeding[]>('/feedings', {
     params: buildFarmParams(farmId),
+  })
+
+  return response.data
+}
+
+export async function getFeedingsPage(
+  farmId: string | undefined,
+  pagination: PaginationParams,
+): Promise<PaginatedResponse<Feeding>> {
+  const response = await api.get<PaginatedResponse<Feeding>>('/feedings', {
+    params: {
+      ...buildFarmParams(farmId),
+      page: pagination.page,
+      size: pagination.size,
+    },
   })
 
   return response.data

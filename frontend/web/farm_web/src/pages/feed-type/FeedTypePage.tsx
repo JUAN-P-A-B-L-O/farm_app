@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import FeedTypeForm from '../../components/feed-type/FeedTypeForm'
+import PaginationControls from '../../components/common/PaginationControls'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
@@ -10,10 +11,11 @@ import {
   createFeedType,
   deleteFeedType,
   exportFeedTypesCsv,
-  getAllFeedTypes,
+  getFeedTypesPage,
   updateFeedType,
 } from '../../services/feedTypeService'
 import type { FeedType, FeedTypeApiErrorResponse, FeedTypeFormData } from '../../types/feedType'
+import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
 import { isManager } from '../../utils/authorization'
 import '../../App.css'
@@ -55,6 +57,9 @@ function FeedTypePage() {
   const { selectedFarmId } = useFarm()
   const canDeleteResources = isManager(user)
   const [feedTypes, setFeedTypes] = useState<FeedType[]>([])
+  const [pagination, setPagination] = useState(createEmptyPaginatedResponse<FeedType>())
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
@@ -64,9 +69,11 @@ function FeedTypePage() {
   const [formInitialValues, setFormInitialValues] = useState<FeedTypeFormData>(emptyFeedTypeForm)
   const [isExporting, setIsExporting] = useState(false)
 
-  async function loadFeedTypes() {
+  async function loadFeedTypes(targetPage = page, targetSize = pageSize) {
     if (!selectedFarmId) {
       setFeedTypes([])
+      setPagination(createEmptyPaginatedResponse<FeedType>(targetSize))
+      setPage(0)
       setListErrorMessage('')
       setIsLoading(false)
       return
@@ -76,8 +83,17 @@ function FeedTypePage() {
     setListErrorMessage('')
 
     try {
-      const data = await getAllFeedTypes(selectedFarmId)
-      setFeedTypes(data)
+      const data = await getFeedTypesPage(selectedFarmId, { page: targetPage, size: targetSize })
+
+      if (data.content.length === 0 && data.totalElements > 0 && data.totalPages > 0 && targetPage >= data.totalPages) {
+        await loadFeedTypes(data.totalPages - 1, targetSize)
+        return
+      }
+
+      setFeedTypes(data.content)
+      setPagination(data)
+      setPage(data.page)
+      setPageSize(data.size)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('feedType.errors.loadList'), t))
     } finally {
@@ -86,8 +102,23 @@ function FeedTypePage() {
   }
 
   useEffect(() => {
-    void loadFeedTypes()
+    setPage(0)
+    void loadFeedTypes(0, pageSize)
   }, [selectedFarmId])
+
+  function handlePageChange(nextPage: number) {
+    if (nextPage === page) {
+      return
+    }
+
+    void loadFeedTypes(nextPage, pageSize)
+  }
+
+  function handlePageSizeChange(nextSize: number) {
+    setPage(0)
+    setPageSize(nextSize)
+    void loadFeedTypes(0, nextSize)
+  }
 
   async function handleCreateOrUpdate(data: FeedTypeFormData) {
     setIsSubmitting(true)
@@ -234,7 +265,8 @@ function FeedTypePage() {
           )}
 
           {!isLoading && !listErrorMessage && feedTypes.length > 0 && (
-            <div className="animals-table-wrapper">
+            <>
+              <div className="animals-table-wrapper">
               <table className="animals-table">
                 <thead>
                   <tr>
@@ -272,7 +304,15 @@ function FeedTypePage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+
+              <PaginationControls
+                pagination={pagination}
+                isLoading={isLoading}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </>
           )}
         </article>
       </section>

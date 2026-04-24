@@ -2,6 +2,7 @@ import api from './api'
 import { downloadCsv } from './csvExportService'
 import type { CurrencyCode } from '../context/CurrencyContext'
 import type { Animal, AnimalFormData, SellAnimalData } from '../types/animal'
+import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 
 function buildFarmParams(farmId?: string, currency?: CurrencyCode) {
   return {
@@ -13,6 +14,21 @@ function buildFarmParams(farmId?: string, currency?: CurrencyCode) {
 export async function getAllAnimals(farmId?: string): Promise<Animal[]> {
   const response = await api.get<Animal[]>('/animals', {
     params: buildFarmParams(farmId),
+  })
+
+  return response.data
+}
+
+export async function getAnimalsPage(
+  farmId: string | undefined,
+  pagination: PaginationParams,
+): Promise<PaginatedResponse<Animal>> {
+  const response = await api.get<PaginatedResponse<Animal>>('/animals', {
+    params: {
+      ...buildFarmParams(farmId),
+      page: pagination.page,
+      size: pagination.size,
+    },
   })
 
   return response.data

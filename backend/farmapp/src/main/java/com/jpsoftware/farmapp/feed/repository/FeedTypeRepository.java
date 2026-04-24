@@ -2,6 +2,8 @@ package com.jpsoftware.farmapp.feed.repository;
 
 import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FeedTypeRepository extends JpaRepository<FeedTypeEntity, String> {
@@ -9,6 +11,10 @@ public interface FeedTypeRepository extends JpaRepository<FeedTypeEntity, String
     List<FeedTypeEntity> findByActiveTrue();
 
     List<FeedTypeEntity> findByFarmIdAndActiveTrue(String farmId);
+
+    Page<FeedTypeEntity> findByActiveTrue(Pageable pageable);
+
+    Page<FeedTypeEntity> findByFarmIdAndActiveTrue(String farmId, Pageable pageable);
 
     java.util.Optional<FeedTypeEntity> findByIdAndActiveTrue(String id);
 

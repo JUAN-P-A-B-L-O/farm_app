@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jpsoftware.farmapp.user.controller.UserController;
 import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.farm.repository.FarmRepository;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.user.dto.ActivateUserRequest;
@@ -91,6 +92,26 @@ class UserControllerContractTest {
                 .andExpect(jsonPath("$[0].active").value(true))
                 .andExpect(jsonPath("$[0].avatarUrl").value("https://example.com/avatar.png"))
                 .andExpect(jsonPath("$[0].farmIds[0]").value("farm-1"));
+    }
+
+    @Test
+    void shouldReturnPaginatedUsers() throws Exception {
+        userService.paginatedResponse = new PaginatedResponse<>(
+                List.of(buildResponse()),
+                0,
+                10,
+                1,
+                1);
+
+        mockMvc.perform(get("/users")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value("11111111-1111-1111-1111-111111111111"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
     }
 
     @Test
@@ -259,6 +280,7 @@ class UserControllerContractTest {
 
         private UserResponse createResponse;
         private List<UserResponse> findAllResponse = List.of();
+        private PaginatedResponse<UserResponse> paginatedResponse = new PaginatedResponse<>(List.of(), 0, 10, 0, 0);
         private UserResponse findByIdResponse;
         private UserResponse updateResponse;
         private UserResponse inactivateResponse;
@@ -284,6 +306,11 @@ class UserControllerContractTest {
         @Override
         public List<UserResponse> findAll(String search, Boolean active, String role) {
             return findAllResponse;
+        }
+
+        @Override
+        public PaginatedResponse<UserResponse> findAllPaginated(String search, Boolean active, String role, int page, int size) {
+            return paginatedResponse;
         }
 
         @Override

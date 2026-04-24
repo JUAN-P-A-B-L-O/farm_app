@@ -16,12 +16,16 @@ import com.jpsoftware.farmapp.animal.mapper.AnimalMapper;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.animal.service.AnimalService;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 class AnimalServiceTest {
 
@@ -107,5 +111,28 @@ class AnimalServiceTest {
         assertEquals("Use the sell action to mark an animal as SOLD", exception.getMessage());
         verify(animalRepository, never()).save(any(AnimalEntity.class));
         verify(farmAccessService).validateAccessibleFarmIfPresent(eq("farm-1"));
+    }
+
+    @Test
+    void shouldReturnPaginatedAnimals() {
+        AnimalEntity animalEntity = AnimalEntity.builder()
+                .id("animal-1")
+                .tag("TAG-001")
+                .breed("Angus")
+                .birthDate(LocalDate.of(2022, 1, 10))
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(AnimalEntity.ORIGIN_BORN)
+                .farmId("farm-1")
+                .build();
+        when(animalRepository.findByFarmId(eq("farm-1"), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(animalEntity), PageRequest.of(0, 10), 1));
+
+        PaginatedResponse<AnimalResponse> response = animalService.findAllPaginated("farm-1", 0, 10);
+
+        assertEquals(1, response.getContent().size());
+        assertEquals(0, response.getPage());
+        assertEquals(10, response.getSize());
+        assertEquals(1, response.getTotalElements());
+        assertEquals(1, response.getTotalPages());
     }
 }

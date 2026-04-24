@@ -7,12 +7,16 @@ import com.jpsoftware.farmapp.feed.mapper.FeedTypeMapper;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
 import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -56,6 +60,23 @@ public class FeedTypeService {
         return feedTypes.stream()
                 .map(feedTypeMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<FeedTypeResponse> findAllPaginated(String farmId, int page, int size) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        Page<FeedTypeEntity> feedTypes = StringUtils.hasText(farmId)
+                ? feedTypeRepository.findByFarmIdAndActiveTrue(
+                        farmId,
+                        PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name")))
+                : feedTypeRepository.findByActiveTrue(PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name")));
+        Page<FeedTypeResponse> responses = feedTypes.map(feedTypeMapper::toResponse);
+        return new PaginatedResponse<>(
+                responses.getContent(),
+                responses.getNumber(),
+                responses.getSize(),
+                responses.getTotalElements(),
+                responses.getTotalPages());
     }
 
     @Transactional(readOnly = true)

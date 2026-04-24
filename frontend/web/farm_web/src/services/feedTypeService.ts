@@ -2,6 +2,7 @@ import api from './api'
 import { downloadCsv } from './csvExportService'
 import type { CurrencyCode } from '../context/CurrencyContext'
 import type { FeedType, FeedTypeFormData } from '../types/feedType'
+import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 import { normalizeToTwoDecimals } from '../utils/decimal'
 
 function buildFarmParams(farmId?: string, currency?: CurrencyCode) {
@@ -14,6 +15,21 @@ function buildFarmParams(farmId?: string, currency?: CurrencyCode) {
 export async function getAllFeedTypes(farmId?: string): Promise<FeedType[]> {
   const response = await api.get<FeedType[]>('/feed-types', {
     params: buildFarmParams(farmId),
+  })
+
+  return response.data
+}
+
+export async function getFeedTypesPage(
+  farmId: string | undefined,
+  pagination: PaginationParams,
+): Promise<PaginatedResponse<FeedType>> {
+  const response = await api.get<PaginatedResponse<FeedType>>('/feed-types', {
+    params: {
+      ...buildFarmParams(farmId),
+      page: pagination.page,
+      size: pagination.size,
+    },
   })
 
   return response.data

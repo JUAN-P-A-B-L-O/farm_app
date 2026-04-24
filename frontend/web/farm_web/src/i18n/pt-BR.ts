@@ -30,6 +30,13 @@ const ptBR = {
     exportError: 'Não foi possível exportar o CSV.',
     selectAnimal: 'Selecione um animal',
     selectUser: 'Selecione um usuário',
+    pagination: {
+      previous: 'Anterior',
+      next: 'Próxima',
+      pageSize: 'Itens por página',
+      page: 'Página {page} de {totalPages}',
+      summary: 'Exibindo {from}-{to} de {total}',
+    },
   },
   auth: {
     eyebrow: 'Autenticação',

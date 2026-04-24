@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AnimalForm from '../../components/animal/AnimalForm'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import PaginationControls from '../../components/common/PaginationControls'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -9,12 +10,13 @@ import {
   createAnimal,
   deleteAnimal,
   exportAnimalsCsv,
-  getAllAnimals,
+  getAnimalsPage,
   getAnimalById,
   sellAnimal,
   updateAnimal,
 } from '../../services/animalService'
 import type { Animal, AnimalFormData, ApiErrorResponse } from '../../types/animal'
+import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
@@ -58,6 +60,9 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const { selectedFarmId, selectedFarm } = useFarm()
   const canDeleteResources = isManager(user)
   const [animals, setAnimals] = useState<Animal[]>([])
+  const [pagination, setPagination] = useState(createEmptyPaginatedResponse<Animal>())
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
@@ -72,9 +77,11 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const [salePrice, setSalePrice] = useState('')
   const [saleDate, setSaleDate] = useState(() => new Date().toISOString().slice(0, 10))
 
-  async function loadAnimals() {
+  async function loadAnimals(targetPage = page, targetSize = pageSize) {
     if (!selectedFarmId) {
       setAnimals([])
+      setPagination(createEmptyPaginatedResponse<Animal>(targetSize))
+      setPage(0)
       setListErrorMessage('')
       setIsLoading(false)
       return
@@ -84,8 +91,17 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
     setListErrorMessage('')
 
     try {
-      const data = await getAllAnimals(selectedFarmId)
-      setAnimals(data)
+      const data = await getAnimalsPage(selectedFarmId, { page: targetPage, size: targetSize })
+
+      if (data.content.length === 0 && data.totalElements > 0 && data.totalPages > 0 && targetPage >= data.totalPages) {
+        await loadAnimals(data.totalPages - 1, targetSize)
+        return
+      }
+
+      setAnimals(data.content)
+      setPagination(data)
+      setPage(data.page)
+      setPageSize(data.size)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('animals.errors.loadList'), t))
     } finally {
@@ -94,8 +110,23 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   }
 
   useEffect(() => {
-    void loadAnimals()
+    setPage(0)
+    void loadAnimals(0, pageSize)
   }, [selectedFarmId])
+
+  function handlePageChange(nextPage: number) {
+    if (nextPage === page) {
+      return
+    }
+
+    void loadAnimals(nextPage, pageSize)
+  }
+
+  function handlePageSizeChange(nextSize: number) {
+    setPage(0)
+    setPageSize(nextSize)
+    void loadAnimals(0, nextSize)
+  }
 
   async function handleCreateOrUpdate(data: AnimalFormData) {
     const payload: AnimalFormData = {
@@ -376,7 +407,8 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
           )}
 
           {!isLoading && !listErrorMessage && animals.length > 0 && (
-            <div className="animals-table-wrapper">
+            <>
+              <div className="animals-table-wrapper">
               <table className="animals-table">
                 <thead>
                   <tr>
@@ -444,7 +476,15 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+
+              <PaginationControls
+                pagination={pagination}
+                isLoading={isLoading}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </>
           )}
         </article>
       </section>

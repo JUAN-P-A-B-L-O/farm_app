@@ -2,6 +2,7 @@ package com.jpsoftware.farmapp.user.service;
 
 import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.farm.repository.FarmRepository;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
@@ -21,7 +22,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,6 +96,20 @@ public class UserService {
                 .filter(userEntity -> matchesRole(userEntity, normalizedRole))
                 .map(this::buildUserResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<UserResponse> findAllPaginated(String search, Boolean active, String role, int page, int size) {
+        Page<UserEntity> users = userRepository.findAll(
+                buildUserSpecification(search, active, role),
+                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name", "email")));
+        Page<UserResponse> responses = users.map(this::buildUserResponse);
+        return new PaginatedResponse<>(
+                responses.getContent(),
+                responses.getNumber(),
+                responses.getSize(),
+                responses.getTotalElements(),
+                responses.getTotalPages());
     }
 
     @Transactional(readOnly = true)
@@ -324,6 +342,34 @@ public class UserService {
     private boolean matchesRole(UserEntity userEntity, String normalizedRole) {
         return !StringUtils.hasText(normalizedRole)
                 || normalizedRole.equalsIgnoreCase(userEntity.getRole());
+    }
+
+    private Specification<UserEntity> buildUserSpecification(String search, Boolean active, String role) {
+        String normalizedSearch = normalizeFilter(search);
+        String normalizedRole = normalizeFilterRole(role);
+
+        Specification<UserEntity> specification = Specification.where(null);
+
+        if (StringUtils.hasText(normalizedSearch)) {
+            specification = specification.and((root, query, criteriaBuilder) -> {
+                String searchPattern = "%" + normalizedSearch + "%";
+                return criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), searchPattern),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), searchPattern));
+            });
+        }
+
+        if (active != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("active"), active));
+        }
+
+        if (StringUtils.hasText(normalizedRole)) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(criteriaBuilder.upper(root.get("role")), normalizedRole));
+        }
+
+        return specification;
     }
 
     private String normalizeFilter(String value) {

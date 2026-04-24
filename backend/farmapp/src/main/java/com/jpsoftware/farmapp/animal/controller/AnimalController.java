@@ -5,6 +5,7 @@ import com.jpsoftware.farmapp.animal.dto.CreateAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.SellAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
 import com.jpsoftware.farmapp.animal.service.AnimalService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -56,7 +57,15 @@ public class AnimalController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Animals retrieved successfully")
     })
-    public ResponseEntity<List<AnimalResponse>> findAll(@RequestParam(required = false) String farmId) {
+    public ResponseEntity<?> findAll(
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            PaginatedResponse<AnimalResponse> response = animalService.findAllPaginated(farmId, page, size);
+            return ResponseEntity.ok(response);
+        }
+
         List<AnimalResponse> response = animalService.findAll(farmId);
         return ResponseEntity.ok(response);
     }

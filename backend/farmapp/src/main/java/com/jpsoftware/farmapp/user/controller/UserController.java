@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.user.controller;
 
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import com.jpsoftware.farmapp.user.dto.ActivateUserRequest;
@@ -57,10 +58,17 @@ public class UserController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Users retrieved successfully")
     })
-    public ResponseEntity<List<UserResponse>> findAll(
+    public ResponseEntity<?> findAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean active,
-            @RequestParam(required = false) String role) {
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            PaginatedResponse<UserResponse> response = userService.findAllPaginated(search, active, role, page, size);
+            return ResponseEntity.ok(response);
+        }
+
         List<UserResponse> response = userService.findAll(search, active, role);
         return ResponseEntity.ok(response);
     }

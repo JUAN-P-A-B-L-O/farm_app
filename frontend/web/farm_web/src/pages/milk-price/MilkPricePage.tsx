@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import PaginationControls from '../../components/common/PaginationControls'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -8,7 +9,7 @@ import {
   createMilkPrice,
   exportMilkPriceHistoryCsv,
   getCurrentMilkPrice,
-  getMilkPriceHistory,
+  getMilkPriceHistoryPage,
 } from '../../services/milkPriceService'
 import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
 import type {
@@ -16,6 +17,7 @@ import type {
   MilkPrice,
   MilkPriceApiErrorResponse,
 } from '../../types/milkPrice'
+import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import '../../App.css'
 
 const emptyForm: CreateMilkPricePayload = {
@@ -37,6 +39,9 @@ function MilkPricePage() {
   const { currency } = useCurrency()
   const [currentPrice, setCurrentPrice] = useState<MilkPrice | null>(null)
   const [history, setHistory] = useState<MilkPrice[]>([])
+  const [pagination, setPagination] = useState(createEmptyPaginatedResponse<MilkPrice>())
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [formData, setFormData] = useState<CreateMilkPricePayload>(emptyForm)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -44,10 +49,12 @@ function MilkPricePage() {
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
 
-  async function loadMilkPrices() {
+  async function loadMilkPrices(targetPage = page, targetSize = pageSize) {
     if (!selectedFarmId) {
       setCurrentPrice(null)
       setHistory([])
+      setPagination(createEmptyPaginatedResponse<MilkPrice>(targetSize))
+      setPage(0)
       setListErrorMessage('')
       setIsLoading(false)
       return
@@ -59,11 +66,24 @@ function MilkPricePage() {
     try {
       const [current, priceHistory] = await Promise.all([
         getCurrentMilkPrice(selectedFarmId),
-        getMilkPriceHistory(selectedFarmId),
+        getMilkPriceHistoryPage(selectedFarmId, { page: targetPage, size: targetSize }),
       ])
 
       setCurrentPrice(current)
-      setHistory(priceHistory)
+      if (
+        priceHistory.content.length === 0 &&
+        priceHistory.totalElements > 0 &&
+        priceHistory.totalPages > 0 &&
+        targetPage >= priceHistory.totalPages
+      ) {
+        await loadMilkPrices(priceHistory.totalPages - 1, targetSize)
+        return
+      }
+
+      setHistory(priceHistory.content)
+      setPagination(priceHistory)
+      setPage(priceHistory.page)
+      setPageSize(priceHistory.size)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('milkPrice.errors.load')))
     } finally {
@@ -72,8 +92,23 @@ function MilkPricePage() {
   }
 
   useEffect(() => {
-    void loadMilkPrices()
+    setPage(0)
+    void loadMilkPrices(0, pageSize)
   }, [selectedFarmId])
+
+  function handlePageChange(nextPage: number) {
+    if (nextPage === page) {
+      return
+    }
+
+    void loadMilkPrices(nextPage, pageSize)
+  }
+
+  function handlePageSizeChange(nextSize: number) {
+    setPage(0)
+    setPageSize(nextSize)
+    void loadMilkPrices(0, nextSize)
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -231,7 +266,8 @@ function MilkPricePage() {
           )}
 
           {!isLoading && !listErrorMessage && history.length > 0 && (
-            <div className="animals-table-wrapper">
+            <>
+              <div className="animals-table-wrapper">
               <table className="animals-table">
                 <thead>
                   <tr>
@@ -250,7 +286,15 @@ function MilkPricePage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+
+              <PaginationControls
+                pagination={pagination}
+                isLoading={isLoading}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </>
           )}
         </article>
       </section>

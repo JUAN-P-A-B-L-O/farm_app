@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.milkprice.controller;
 import com.jpsoftware.farmapp.milkprice.dto.CreateMilkPriceRequest;
 import com.jpsoftware.farmapp.milkprice.dto.MilkPriceResponse;
 import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -69,7 +70,15 @@ public class MilkPriceController {
             @ApiResponse(responseCode = "404", description = "Farm not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<List<MilkPriceResponse>> getHistory(@RequestParam String farmId) {
+    public ResponseEntity<?> getHistory(
+            @RequestParam String farmId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            PaginatedResponse<MilkPriceResponse> response = milkPriceService.getHistoryPaginated(farmId, page, size);
+            return ResponseEntity.ok(response);
+        }
+
         return ResponseEntity.ok(milkPriceService.getHistory(farmId));
     }
 

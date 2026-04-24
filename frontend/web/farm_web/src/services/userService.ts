@@ -1,5 +1,6 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 import type { User, UserFormData, UserListFilters } from '../types/user'
 
 function buildUserListParams(filters?: UserListFilters) {
@@ -13,6 +14,21 @@ function buildUserListParams(filters?: UserListFilters) {
 export async function getAllUsers(filters?: UserListFilters): Promise<User[]> {
   const response = await api.get<User[]>('/users', {
     params: buildUserListParams(filters),
+  })
+
+  return response.data
+}
+
+export async function getUsersPage(
+  filters: UserListFilters | undefined,
+  pagination: PaginationParams,
+): Promise<PaginatedResponse<User>> {
+  const response = await api.get<PaginatedResponse<User>>('/users', {
+    params: {
+      ...buildUserListParams(filters),
+      page: pagination.page,
+      size: pagination.size,
+    },
   })
 
   return response.data

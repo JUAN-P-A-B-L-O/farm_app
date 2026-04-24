@@ -8,6 +8,7 @@ import com.jpsoftware.farmapp.milkprice.dto.MilkPriceResponse;
 import com.jpsoftware.farmapp.milkprice.entity.MilkPriceEntity;
 import com.jpsoftware.farmapp.milkprice.repository.MilkPriceRepository;
 import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
@@ -16,6 +17,8 @@ import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -82,6 +85,21 @@ public class MilkPriceService {
         return milkPriceRepository.findByFarmIdOrderByEffectiveDateDescCreatedAtDesc(resolvedFarmId).stream()
                 .map(entity -> toResponse(entity, false))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<MilkPriceResponse> getHistoryPaginated(String farmId, int page, int size) {
+        String resolvedFarmId = validateAndResolveFarmId(farmId);
+        Page<MilkPriceEntity> history = milkPriceRepository.findByFarmIdOrderByEffectiveDateDescCreatedAtDesc(
+                resolvedFarmId,
+                PageRequest.of(page, size));
+        Page<MilkPriceResponse> responses = history.map(entity -> toResponse(entity, false));
+        return new PaginatedResponse<>(
+                responses.getContent(),
+                responses.getNumber(),
+                responses.getSize(),
+                responses.getTotalElements(),
+                responses.getTotalPages());
     }
 
     @Transactional(readOnly = true)

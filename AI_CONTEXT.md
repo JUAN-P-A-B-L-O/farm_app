@@ -39,6 +39,7 @@
 - Feed types:
   - create, list, retrieve, update, and soft-delete feed type records
   - feed types are scoped by farm
+  - listing supports optional backend pagination using `page` and `size`
   - new feed types default to `active = true`
   - delete marks feed types inactive rather than physically deleting rows
 - Users:
@@ -57,6 +58,7 @@
   - user email is unique and enforced in service validation plus a database constraint
   - users can store an optional `avatarUrl` image reference for list and form display
   - user listing supports optional server-side filtering by search text, status, and role
+  - user listing also supports optional backend pagination using `page` and `size`
   - authenticated users can update only their own password through a dedicated self-service settings flow
 - Analytics:
   - dashboard aggregates total production, feeding cost, revenue, profit, and animal count
@@ -71,6 +73,7 @@
   - milk price is managed per farm as a time-based history
   - each new price is stored as a new record with `price`, `effectiveDate`, `createdAt`, and `createdBy`
   - current price is the latest record whose `effectiveDate` is on or before today
+  - milk price history listing supports optional backend pagination using `page` and `size`
   - if a farm has no effective milk price yet, reporting falls back to the legacy default price `2.0`
 - CSV export:
   - CSV export is available per screen/context for animals, users, feedings, productions, feed types, milk price history, dashboard, and analytics views
@@ -158,6 +161,7 @@ Frontend architectural rules already visible in code:
 - farm selection is handled centrally through `FarmContext`
 - display currency selection is handled centrally through `CurrencyContext`
 - reusable listing search/filter controls should be implemented as configurable shared components when multiple pages can adopt the same pattern
+- reusable listing pagination controls should be implemented through a shared component and keep the current filter/farm context when changing pages
 - screen-level CSV actions are rendered through the shared `ExportCsvButton` component and call backend downloads through service-layer helpers
 - monetary labels and formatting should use shared currency helpers instead of hardcoded symbols or hardcoded `Intl` currency values in components
 
@@ -262,6 +266,7 @@ Key validations and rules:
 - `DELETE /animals/{id}` is now soft-delete behavior and marks the animal as `INACTIVE`
 - `DELETE /animals/{id}` requires role `MANAGER`
 - `GET /animals` optionally accepts `farmId`
+- `GET /animals` also accepts optional `page` and `size`; when both are provided it returns a paginated payload with `content`, `page`, `size`, `totalElements`, and `totalPages`
 - update is partial, but provided string fields must not be blank
 
 Sell request:
@@ -331,7 +336,7 @@ Key validations and rules:
 - when the authenticated user has role `WORKER`, create ignores the incoming `date` and stores the current server date
 - when the authenticated user has role `MANAGER`, create still requires an explicit date
 - list endpoint supports optional `animalId`, `date`, `farmId`, `page`, and `size`
-- pagination is only returned when both `page` and `size` are provided
+- pagination is only returned when both `page` and `size` are provided and uses the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
 - update can change `animalId`, `date`, and `quantity`
 - delete is soft-delete behavior and marks the record as `INACTIVE`
 - delete requires role `MANAGER`
@@ -377,6 +382,7 @@ Key validations and rules:
 - `GET /milk-prices/current` returns the latest price effective on or before today for the farm
 - when no effective price exists yet, `GET /milk-prices/current` returns the legacy default price `2.0` with `fallbackDefault = true`
 - `GET /milk-prices` returns full farm price history ordered from newest to oldest
+- `GET /milk-prices` also accepts optional `page` and `size`; when both are provided it returns the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
 
 Response characteristics:
 
@@ -469,6 +475,7 @@ Key validations and rules:
 - `costPerKg` must be greater than zero
 - created feed types default to `active = true`
 - list and read endpoints return active feed types
+- list endpoint also accepts optional `page` and `size`; when both are provided it returns the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
 - update changes `name` and `costPerKg`
 - delete is soft-delete behavior and marks the feed type inactive
 - delete requires role `MANAGER`
@@ -567,6 +574,7 @@ Key validations and rules:
 - users who own farms cannot be inactivated or deleted
 - users who own farms cannot be changed from `MANAGER` to another role
 - `GET /users` accepts optional `search`, `active`, and `role` filters
+- `GET /users` also accepts optional `page` and `size`; when both are provided it returns the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
 - `GET /users` and `GET /users/{id}` require JWT authentication
 
 ### Dashboard and analytics profit behavior

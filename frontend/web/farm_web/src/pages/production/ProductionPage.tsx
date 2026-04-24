@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import PaginationControls from '../../components/common/PaginationControls'
 import ProductionForm from '../../components/production/ProductionForm'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
@@ -10,7 +11,7 @@ import {
   createProduction,
   deleteProduction,
   exportProductionsCsv,
-  getAllProductions,
+  getProductionsPage,
   getProductionById,
   updateProduction,
 } from '../../services/productionService'
@@ -21,6 +22,7 @@ import type {
   ProductionAnimalOption,
   ProductionFormData,
 } from '../../types/production'
+import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
@@ -68,6 +70,9 @@ function ProductionPage() {
   const canSelectCreateDate = isManager(user)
   const canDeleteResources = isManager(user)
   const [productions, setProductions] = useState<Production[]>([])
+  const [pagination, setPagination] = useState(createEmptyPaginatedResponse<Production>())
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [animals, setAnimals] = useState<ProductionAnimalOption[]>([])
   const [formInitialValues, setFormInitialValues] = useState<ProductionFormData>(emptyProductionForm)
   const [isLoading, setIsLoading] = useState(true)
@@ -79,9 +84,11 @@ function ProductionPage() {
   const [editingProductionId, setEditingProductionId] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
 
-  async function loadProductions() {
+  async function loadProductions(targetPage = page, targetSize = pageSize) {
     if (!selectedFarmId) {
       setProductions([])
+      setPagination(createEmptyPaginatedResponse<Production>(targetSize))
+      setPage(0)
       setListErrorMessage('')
       setIsLoading(false)
       return
@@ -91,8 +98,17 @@ function ProductionPage() {
     setListErrorMessage('')
 
     try {
-      const data = await getAllProductions(selectedFarmId)
-      setProductions(data)
+      const data = await getProductionsPage(selectedFarmId, { page: targetPage, size: targetSize })
+
+      if (data.content.length === 0 && data.totalElements > 0 && data.totalPages > 0 && targetPage >= data.totalPages) {
+        await loadProductions(data.totalPages - 1, targetSize)
+        return
+      }
+
+      setProductions(data.content)
+      setPagination(data)
+      setPage(data.page)
+      setPageSize(data.size)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('production.errors.loadRecords'), t))
     } finally {
@@ -124,6 +140,20 @@ function ProductionPage() {
   useEffect(() => {
     void Promise.all([loadProductions(), loadAnimals()])
   }, [selectedFarmId])
+
+  function handlePageChange(nextPage: number) {
+    if (nextPage === page) {
+      return
+    }
+
+    void loadProductions(nextPage, pageSize)
+  }
+
+  function handlePageSizeChange(nextSize: number) {
+    setPage(0)
+    setPageSize(nextSize)
+    void loadProductions(0, nextSize)
+  }
 
   async function handleCreateOrUpdateProduction(data: ProductionFormData) {
     const requiresDate = editingProductionId !== null || canSelectCreateDate
@@ -312,7 +342,8 @@ function ProductionPage() {
           )}
 
           {!isLoading && !listErrorMessage && productions.length > 0 && (
-            <div className="animals-table-wrapper">
+            <>
+              <div className="animals-table-wrapper">
               <table className="animals-table">
                 <thead>
                   <tr>
@@ -354,7 +385,15 @@ function ProductionPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+
+              <PaginationControls
+                pagination={pagination}
+                isLoading={isLoading}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </>
           )}
         </article>
       </section>

@@ -16,6 +16,7 @@ import com.jpsoftware.farmapp.animal.dto.CreateAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.SellAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
 import com.jpsoftware.farmapp.animal.service.AnimalService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import java.time.LocalDate;
 import java.util.List;
@@ -65,6 +66,27 @@ class AnimalControllerContractTest {
         mockMvc.perform(get("/animals"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("animal-1"));
+    }
+
+    @Test
+    void shouldReturnPaginatedAnimals() throws Exception {
+        when(animalService.findAllPaginated("farm-1", 0, 10)).thenReturn(new PaginatedResponse<>(
+                List.of(buildResponse()),
+                0,
+                10,
+                1,
+                1));
+
+        mockMvc.perform(get("/animals")
+                        .param("farmId", "farm-1")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value("animal-1"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
     }
 
     @Test
