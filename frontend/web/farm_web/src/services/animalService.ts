@@ -1,19 +1,22 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
 import type { CurrencyCode } from '../context/CurrencyContext'
-import type { Animal, AnimalFormData, SellAnimalData } from '../types/animal'
+import type { Animal, AnimalFormData, AnimalListFilters, SellAnimalData } from '../types/animal'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 
-function buildFarmParams(farmId?: string, currency?: CurrencyCode) {
+function buildAnimalListParams(farmId?: string, filters?: AnimalListFilters, currency?: CurrencyCode) {
   return {
     ...(farmId ? { farmId } : {}),
+    ...(filters?.search ? { search: filters.search } : {}),
+    ...(filters?.status ? { status: filters.status } : {}),
+    ...(filters?.origin ? { origin: filters.origin } : {}),
     ...(currency ? { currency } : {}),
   }
 }
 
-export async function getAllAnimals(farmId?: string): Promise<Animal[]> {
+export async function getAllAnimals(farmId?: string, filters?: AnimalListFilters): Promise<Animal[]> {
   const response = await api.get<Animal[]>('/animals', {
-    params: buildFarmParams(farmId),
+    params: buildAnimalListParams(farmId, filters),
   })
 
   return response.data
@@ -22,10 +25,11 @@ export async function getAllAnimals(farmId?: string): Promise<Animal[]> {
 export async function getAnimalsPage(
   farmId: string | undefined,
   pagination: PaginationParams,
+  filters?: AnimalListFilters,
 ): Promise<PaginatedResponse<Animal>> {
   const response = await api.get<PaginatedResponse<Animal>>('/animals', {
     params: {
-      ...buildFarmParams(farmId),
+      ...buildAnimalListParams(farmId, filters),
       page: pagination.page,
       size: pagination.size,
     },
@@ -36,7 +40,7 @@ export async function getAnimalsPage(
 
 export async function getAnimalById(id: string, farmId?: string): Promise<Animal> {
   const response = await api.get<Animal>(`/animals/${id}`, {
-    params: buildFarmParams(farmId),
+    params: buildAnimalListParams(farmId),
   })
 
   return response.data
@@ -50,7 +54,7 @@ export async function createAnimal(data: AnimalFormData): Promise<Animal> {
 
 export async function updateAnimal(id: string, data: AnimalFormData, farmId?: string): Promise<Animal> {
   const response = await api.put<Animal>(`/animals/${id}`, data, {
-    params: buildFarmParams(farmId),
+    params: buildAnimalListParams(farmId),
   })
 
   return response.data
@@ -58,18 +62,22 @@ export async function updateAnimal(id: string, data: AnimalFormData, farmId?: st
 
 export async function deleteAnimal(id: string, farmId?: string): Promise<void> {
   await api.delete(`/animals/${id}`, {
-    params: buildFarmParams(farmId),
+    params: buildAnimalListParams(farmId),
   })
 }
 
 export async function sellAnimal(id: string, data: SellAnimalData, farmId?: string): Promise<Animal> {
   const response = await api.post<Animal>(`/animals/${id}/sell`, data, {
-    params: buildFarmParams(farmId),
+    params: buildAnimalListParams(farmId),
   })
 
   return response.data
 }
 
-export async function exportAnimalsCsv(farmId?: string, currency?: CurrencyCode): Promise<void> {
-  await downloadCsv('/animals/export', buildFarmParams(farmId, currency), 'animals.csv')
+export async function exportAnimalsCsv(
+  farmId?: string,
+  currency?: CurrencyCode,
+  filters?: AnimalListFilters,
+): Promise<void> {
+  await downloadCsv('/animals/export', buildAnimalListParams(farmId, filters, currency), 'animals.csv')
 }

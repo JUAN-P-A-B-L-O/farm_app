@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import PaginationControls from '../../components/common/PaginationControls'
 import ProductionForm from '../../components/production/ProductionForm'
 import { useAuth } from '../../hooks/useAuth'
@@ -21,6 +22,7 @@ import type {
   ProductionApiErrorResponse,
   ProductionAnimalOption,
   ProductionFormData,
+  ProductionListFilters,
 } from '../../types/production'
 import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { isManager } from '../../utils/authorization'
@@ -31,6 +33,12 @@ const emptyProductionForm: ProductionFormData = {
   date: '',
   quantity: 0,
   userId: '',
+}
+
+const defaultFilters: ProductionListFilters = {
+  search: '',
+  animalId: '',
+  date: '',
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
@@ -83,8 +91,14 @@ function ProductionPage() {
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingProductionId, setEditingProductionId] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
+  const [filters, setFilters] = useState<ProductionListFilters>(defaultFilters)
+  const [appliedFilters, setAppliedFilters] = useState<ProductionListFilters>(defaultFilters)
 
-  async function loadProductions(targetPage = page, targetSize = pageSize) {
+  async function loadProductions(
+    nextFilters: ProductionListFilters = appliedFilters,
+    targetPage = page,
+    targetSize = pageSize,
+  ) {
     if (!selectedFarmId) {
       setProductions([])
       setPagination(createEmptyPaginatedResponse<Production>(targetSize))
@@ -98,10 +112,10 @@ function ProductionPage() {
     setListErrorMessage('')
 
     try {
-      const data = await getProductionsPage(selectedFarmId, { page: targetPage, size: targetSize })
+      const data = await getProductionsPage(selectedFarmId, { page: targetPage, size: targetSize }, nextFilters)
 
       if (data.content.length === 0 && data.totalElements > 0 && data.totalPages > 0 && targetPage >= data.totalPages) {
-        await loadProductions(data.totalPages - 1, targetSize)
+        await loadProductions(nextFilters, data.totalPages - 1, targetSize)
         return
       }
 
@@ -138,7 +152,9 @@ function ProductionPage() {
   }
 
   useEffect(() => {
-    void Promise.all([loadProductions(), loadAnimals()])
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    void Promise.all([loadProductions(defaultFilters), loadAnimals()])
   }, [selectedFarmId])
 
   function handlePageChange(nextPage: number) {
@@ -146,13 +162,13 @@ function ProductionPage() {
       return
     }
 
-    void loadProductions(nextPage, pageSize)
+    void loadProductions(appliedFilters, nextPage, pageSize)
   }
 
   function handlePageSizeChange(nextSize: number) {
     setPage(0)
     setPageSize(nextSize)
-    void loadProductions(0, nextSize)
+    void loadProductions(appliedFilters, 0, nextSize)
   }
 
   async function handleCreateOrUpdateProduction(data: ProductionFormData) {
@@ -262,12 +278,25 @@ function ProductionPage() {
     setListErrorMessage('')
 
     try {
-      await exportProductionsCsv(selectedFarmId)
+      await exportProductionsCsv(selectedFarmId, appliedFilters)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
     } finally {
       setIsExporting(false)
     }
+  }
+
+  function applyFilters() {
+    setAppliedFilters(filters)
+    setPage(0)
+    void loadProductions(filters, 0, pageSize)
+  }
+
+  function clearFilters() {
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    setPage(0)
+    void loadProductions(defaultFilters, 0, pageSize)
   }
 
   return (
@@ -328,6 +357,37 @@ function ProductionPage() {
               disabled={!selectedFarmId || isLoading || productions.length === 0}
             />
           </div>
+
+          <ListingFiltersBar
+            searchId="production-search"
+            searchLabel={t('production.filters.searchLabel')}
+            searchPlaceholder={t('production.filters.searchPlaceholder')}
+            searchValue={filters.search}
+            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+            onApply={applyFilters}
+            onClear={clearFilters}
+            applyLabel={t('production.filters.apply')}
+            clearLabel={t('production.filters.clear')}
+            filters={[
+              {
+                id: 'production-animal-filter',
+                label: t('production.filters.animalLabel'),
+                value: filters.animalId,
+                onChange: (value) => setFilters((current) => ({ ...current, animalId: value })),
+                options: [
+                  { value: '', label: t('production.filters.allAnimals') },
+                  ...animals.map((animal) => ({ value: animal.id, label: animal.tag })),
+                ],
+              },
+              {
+                id: 'production-date-filter',
+                label: t('production.filters.dateLabel'),
+                value: filters.date,
+                onChange: (value) => setFilters((current) => ({ ...current, date: value })),
+                max: new Date().toISOString().slice(0, 10),
+              },
+            ]}
+          />
 
           {isLoading && <p className="animals-page__status">{t('production.loadingRecords')}</p>}
 

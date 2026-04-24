@@ -61,27 +61,32 @@ public class FeedingController {
             @ApiResponse(responseCode = "200", description = "Feedings retrieved successfully")
     })
     public ResponseEntity<?> findAll(
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String feedTypeId,
             @RequestParam(required = false) LocalDate date,
             @RequestParam(required = false) String farmId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         if (page != null && size != null) {
-            PaginatedResponse<FeedingResponse> response = feedingService.findAllPaginated(animalId, date, farmId, page, size);
+            PaginatedResponse<FeedingResponse> response =
+                    feedingService.findAllPaginated(search, animalId, feedTypeId, date, farmId, page, size);
             return ResponseEntity.ok(response);
         }
 
-        List<FeedingResponse> response = feedingService.findAll(animalId, date, farmId);
+        List<FeedingResponse> response = feedingService.findAll(search, animalId, feedTypeId, date, farmId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/export")
     @Operation(summary = "Export feedings", description = "Exports feeding records as CSV using the current filters.")
     public ResponseEntity<byte[]> export(
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String feedTypeId,
             @RequestParam(required = false) LocalDate date,
             @RequestParam(required = false) String farmId) {
-        return CsvResponseFactory.buildDownload("feedings.csv", feedingService.exportAll(animalId, date, farmId));
+        return CsvResponseFactory.buildDownload("feedings.csv", feedingService.exportAll(search, animalId, feedTypeId, date, farmId));
     }
 
     @GetMapping("/{id}")

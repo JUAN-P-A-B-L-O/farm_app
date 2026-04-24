@@ -16,3 +16,8 @@ export interface CreateMilkPricePayload {
 export interface MilkPriceApiErrorResponse {
   error?: string
 }
+
+export interface MilkPriceListFilters {
+  search: string
+  effectiveDate: string
+}

@@ -152,6 +152,16 @@ const en = {
       DEAD: 'Dead',
       INACTIVE: 'Inactive',
     },
+    filters: {
+      searchLabel: 'Search',
+      searchPlaceholder: 'Search by tag or breed',
+      statusLabel: 'Status',
+      originLabel: 'Origin',
+      allStatuses: 'All statuses',
+      allOrigins: 'All origins',
+      apply: 'Apply filters',
+      clear: 'Clear',
+    },
     noAcquisitionCost: 'Not applicable',
     noSaleData: 'Not sold',
     errors: {
@@ -201,6 +211,15 @@ const en = {
       selectUser: 'Select a user',
       loadingUsers: 'Loading users...',
     },
+    filters: {
+      searchLabel: 'Search',
+      searchPlaceholder: 'Search by animal tag',
+      animalLabel: 'Animal',
+      dateLabel: 'Date',
+      allAnimals: 'All animals',
+      apply: 'Apply filters',
+      clear: 'Clear',
+    },
     errors: {
       validationSave: 'Validation error while saving production.',
       animalNotFound: 'Animal not found.',
@@ -237,6 +256,13 @@ const en = {
     form: {
       price: 'Price per liter',
       effectiveDate: 'Effective date',
+    },
+    filters: {
+      searchLabel: 'Search',
+      searchPlaceholder: 'Search by price, effective date, or creator',
+      effectiveDateLabel: 'Effective date',
+      apply: 'Apply filters',
+      clear: 'Clear',
     },
     summary: {
       currentPrice: 'Current milk price',
@@ -294,6 +320,17 @@ const en = {
       selectUser: 'Select a user',
       loadingUsers: 'Loading users...',
     },
+    filters: {
+      searchLabel: 'Search',
+      searchPlaceholder: 'Search by animal tag or feed type',
+      animalLabel: 'Animal',
+      feedTypeLabel: 'Feed type',
+      dateLabel: 'Date',
+      allAnimals: 'All animals',
+      allFeedTypes: 'All feed types',
+      apply: 'Apply filters',
+      clear: 'Clear',
+    },
     errors: {
       validationSave: 'Validation error while saving feeding.',
       notFound: 'Animal or feed type not found.',
@@ -336,6 +373,12 @@ const en = {
     form: {
       name: 'Name',
       costPerKg: 'Cost per kg',
+    },
+    filters: {
+      searchLabel: 'Search',
+      searchPlaceholder: 'Search by name',
+      apply: 'Apply filters',
+      clear: 'Clear',
     },
     errors: {
       validationSave: 'Validation error while saving feed type.',

@@ -6,10 +6,11 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface FeedingRepository extends JpaRepository<FeedingEntity, String> {
+public interface FeedingRepository extends JpaRepository<FeedingEntity, String>, JpaSpecificationExecutor<FeedingEntity> {
 
     @Override
     @Query("SELECT f FROM FeedingEntity f WHERE f.status = 'ACTIVE'")

@@ -6,21 +6,25 @@ import type {
   CreateFeedingPayload,
   Feeding,
   FeedingFormData,
+  FeedingListFilters,
   FeedingTrendPoint,
   UpdateFeedingPayload,
 } from '../types/feeding'
 export { getAllFeedTypes } from './feedTypeService'
 
-function buildFarmParams(farmId?: string, params: Record<string, string> = {}) {
+function buildFeedingListParams(farmId?: string, filters?: FeedingListFilters) {
   return {
     ...(farmId ? { farmId } : {}),
-    ...params,
+    ...(filters?.search ? { search: filters.search } : {}),
+    ...(filters?.animalId ? { animalId: filters.animalId } : {}),
+    ...(filters?.feedTypeId ? { feedTypeId: filters.feedTypeId } : {}),
+    ...(filters?.date ? { date: filters.date } : {}),
   }
 }
 
 export async function getAllFeedings(farmId?: string): Promise<Feeding[]> {
   const response = await api.get<Feeding[]>('/feedings', {
-    params: buildFarmParams(farmId),
+    params: buildFeedingListParams(farmId),
   })
 
   return response.data
@@ -29,10 +33,11 @@ export async function getAllFeedings(farmId?: string): Promise<Feeding[]> {
 export async function getFeedingsPage(
   farmId: string | undefined,
   pagination: PaginationParams,
+  filters?: FeedingListFilters,
 ): Promise<PaginatedResponse<Feeding>> {
   const response = await api.get<PaginatedResponse<Feeding>>('/feedings', {
     params: {
-      ...buildFarmParams(farmId),
+      ...buildFeedingListParams(farmId, filters),
       page: pagination.page,
       size: pagination.size,
     },
@@ -43,7 +48,7 @@ export async function getFeedingsPage(
 
 export async function getFeedingsByAnimalId(animalId: string, farmId?: string): Promise<FeedingTrendPoint[]> {
   const response = await api.get<FeedingTrendPoint[]>('/feedings', {
-    params: buildFarmParams(farmId, { animalId }),
+    params: buildFeedingListParams(farmId, { search: '', animalId, feedTypeId: '', date: '' }),
   })
 
   return response.data
@@ -59,7 +64,7 @@ export async function createFeeding(data: FeedingFormData, farmId?: string): Pro
   }
 
   const response = await api.post<Feeding>('/feedings', payload, {
-    params: buildFarmParams(farmId),
+    params: buildFeedingListParams(farmId),
   })
 
   return response.data
@@ -67,7 +72,7 @@ export async function createFeeding(data: FeedingFormData, farmId?: string): Pro
 
 export async function getFeedingById(id: string, farmId?: string): Promise<Feeding> {
   const response = await api.get<Feeding>(`/feedings/${id}`, {
-    params: buildFarmParams(farmId),
+    params: buildFeedingListParams(farmId),
   })
 
   return response.data
@@ -82,7 +87,7 @@ export async function updateFeeding(id: string, data: FeedingFormData, farmId?: 
   }
 
   const response = await api.put<Feeding>(`/feedings/${id}`, payload, {
-    params: buildFarmParams(farmId),
+    params: buildFeedingListParams(farmId),
   })
 
   return response.data
@@ -90,10 +95,10 @@ export async function updateFeeding(id: string, data: FeedingFormData, farmId?: 
 
 export async function deleteFeeding(id: string, farmId?: string): Promise<void> {
   await api.delete(`/feedings/${id}`, {
-    params: buildFarmParams(farmId),
+    params: buildFeedingListParams(farmId),
   })
 }
 
-export async function exportFeedingsCsv(farmId?: string): Promise<void> {
-  await downloadCsv('/feedings/export', buildFarmParams(farmId), 'feedings.csv')
+export async function exportFeedingsCsv(farmId?: string, filters?: FeedingListFilters): Promise<void> {
+  await downloadCsv('/feedings/export', buildFeedingListParams(farmId, filters), 'feedings.csv')
 }

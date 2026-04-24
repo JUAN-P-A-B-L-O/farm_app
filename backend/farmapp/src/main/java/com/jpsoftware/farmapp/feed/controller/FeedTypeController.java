@@ -59,14 +59,15 @@ public class FeedTypeController {
     })
     public ResponseEntity<?> findAll(
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         if (page != null && size != null) {
-            PaginatedResponse<FeedTypeResponse> response = feedTypeService.findAllPaginated(farmId, page, size);
+            PaginatedResponse<FeedTypeResponse> response = feedTypeService.findAllPaginated(farmId, search, page, size);
             return ResponseEntity.ok(response);
         }
 
-        List<FeedTypeResponse> response = feedTypeService.findAll(farmId);
+        List<FeedTypeResponse> response = feedTypeService.findAll(farmId, search);
         return ResponseEntity.ok(response);
     }
 
@@ -74,10 +75,11 @@ public class FeedTypeController {
     @Operation(summary = "Export feed types", description = "Exports feed types as CSV using the current farm filter.")
     public ResponseEntity<byte[]> export(
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) String currency) {
         return CsvResponseFactory.buildDownload(
                 "feed-types.csv",
-                StringUtils.hasText(currency) ? feedTypeService.exportAll(farmId, currency) : feedTypeService.exportAll(farmId));
+                feedTypeService.exportAll(farmId, search, StringUtils.hasText(currency) ? currency : null));
     }
 
     @GetMapping("/{id}")

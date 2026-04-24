@@ -25,12 +25,14 @@ import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -107,13 +109,13 @@ public class FeedingService {
     }
 
     @Transactional(readOnly = true)
-    public List<FeedingResponse> findAll(String animalId, LocalDate date, String farmId) {
-        return getAllFeedings(animalId, date, farmId);
+    public List<FeedingResponse> findAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
+        return getAllFeedings(search, animalId, feedTypeId, date, farmId);
     }
 
     @Transactional(readOnly = true)
-    public String exportAll(String animalId, LocalDate date, String farmId) {
-        return CsvExportUtils.write(findAll(animalId, date, farmId), List.of(
+    public String exportAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
+        return CsvExportUtils.write(findAll(search, animalId, feedTypeId, date, farmId), List.of(
                 new CsvColumn<>("id", FeedingResponse::getId),
                 new CsvColumn<>("animalId", FeedingResponse::getAnimalId),
                 new CsvColumn<>("animalTag", feeding -> feeding.getAnimal() != null ? feeding.getAnimal().getTag() : null),
@@ -125,12 +127,12 @@ public class FeedingService {
 
     @Transactional(readOnly = true)
     public List<FeedingResponse> findAll(String animalId, LocalDate date) {
-        return findAll(animalId, date, null);
+        return findAll(null, animalId, null, date, null);
     }
 
     @Transactional(readOnly = true)
-    public List<FeedingResponse> getAllFeedings(String animalId, LocalDate date, String farmId) {
-        List<FeedingEntity> feedings = findFeedings(animalId, date, farmId);
+    public List<FeedingResponse> getAllFeedings(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
+        List<FeedingEntity> feedings = findFeedings(search, animalId, feedTypeId, date, farmId);
         Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(feedings);
         Map<String, FeedTypeSummaryResponse> feedTypesById = loadFeedTypeSummariesById(feedings);
         return feedings.stream()
@@ -142,18 +144,32 @@ public class FeedingService {
     }
 
     @Transactional(readOnly = true)
-    public PaginatedResponse<FeedingResponse> findAllPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
-        return getAllFeedingsPaginated(animalId, date, farmId, page, size);
+    public PaginatedResponse<FeedingResponse> findAllPaginated(
+            String search,
+            String animalId,
+            String feedTypeId,
+            LocalDate date,
+            String farmId,
+            int page,
+            int size) {
+        return getAllFeedingsPaginated(search, animalId, feedTypeId, date, farmId, page, size);
     }
 
     @Transactional(readOnly = true)
     public PaginatedResponse<FeedingResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
-        return findAllPaginated(animalId, date, null, page, size);
+        return findAllPaginated(null, animalId, null, date, null, page, size);
     }
 
     @Transactional(readOnly = true)
-    public PaginatedResponse<FeedingResponse> getAllFeedingsPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
-        Page<FeedingEntity> feedings = findFeedings(animalId, date, farmId, PageRequest.of(page, size));
+    public PaginatedResponse<FeedingResponse> getAllFeedingsPaginated(
+            String search,
+            String animalId,
+            String feedTypeId,
+            LocalDate date,
+            String farmId,
+            int page,
+            int size) {
+        Page<FeedingEntity> feedings = findFeedings(search, animalId, feedTypeId, date, farmId, PageRequest.of(page, size));
         Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(feedings.getContent());
         Map<String, FeedTypeSummaryResponse> feedTypesById = loadFeedTypeSummariesById(feedings.getContent());
         Page<FeedingResponse> responses = feedings.map(feeding -> feedingMapper.toResponse(
@@ -312,56 +328,70 @@ public class FeedingService {
         return id;
     }
 
-    private List<FeedingEntity> findFeedings(String animalId, LocalDate date, String farmId) {
+    private List<FeedingEntity> findFeedings(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
         validateAccessibleFarmIfPresent(farmId);
-        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId) && date != null) {
-            return feedingRepository.findByFarmIdAndAnimalIdAndDateAndStatus(farmId, animalId, date, FeedingEntity.STATUS_ACTIVE);
-        }
-        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId)) {
-            return feedingRepository.findByFarmIdAndAnimalIdAndStatus(farmId, animalId, FeedingEntity.STATUS_ACTIVE);
-        }
-        if (StringUtils.hasText(farmId) && date != null) {
-            return feedingRepository.findByFarmIdAndDateAndStatus(farmId, date, FeedingEntity.STATUS_ACTIVE);
-        }
-        if (StringUtils.hasText(farmId)) {
-            return feedingRepository.findByFarmIdAndStatus(farmId, FeedingEntity.STATUS_ACTIVE);
-        }
-        if (StringUtils.hasText(animalId) && date != null) {
-            return feedingRepository.findByAnimalIdAndDateAndStatus(animalId, date, FeedingEntity.STATUS_ACTIVE);
-        }
-        if (StringUtils.hasText(animalId)) {
-            return feedingRepository.findByAnimalIdAndStatus(animalId, FeedingEntity.STATUS_ACTIVE);
-        }
-        if (date != null) {
-            return feedingRepository.findByDateAndStatus(date, FeedingEntity.STATUS_ACTIVE);
-        }
-        return feedingRepository.findAll();
+        return feedingRepository.findAll(buildFeedingSpecification(search, animalId, feedTypeId, date, farmId));
     }
 
-    private Page<FeedingEntity> findFeedings(String animalId, LocalDate date, String farmId, org.springframework.data.domain.Pageable pageable) {
+    private Page<FeedingEntity> findFeedings(
+            String search,
+            String animalId,
+            String feedTypeId,
+            LocalDate date,
+            String farmId,
+            org.springframework.data.domain.Pageable pageable) {
         validateAccessibleFarmIfPresent(farmId);
-        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId) && date != null) {
-            return feedingRepository.findByFarmIdAndAnimalIdAndDateAndStatus(farmId, animalId, date, FeedingEntity.STATUS_ACTIVE, pageable);
-        }
-        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId)) {
-            return feedingRepository.findByFarmIdAndAnimalIdAndStatus(farmId, animalId, FeedingEntity.STATUS_ACTIVE, pageable);
-        }
-        if (StringUtils.hasText(farmId) && date != null) {
-            return feedingRepository.findByFarmIdAndDateAndStatus(farmId, date, FeedingEntity.STATUS_ACTIVE, pageable);
-        }
+        return feedingRepository.findAll(buildFeedingSpecification(search, animalId, feedTypeId, date, farmId), pageable);
+    }
+
+    private Specification<FeedingEntity> buildFeedingSpecification(
+            String search,
+            String animalId,
+            String feedTypeId,
+            LocalDate date,
+            String farmId) {
+        String normalizedSearch = normalizeFilter(search);
+        Specification<FeedingEntity> specification = Specification.where((root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("status"), FeedingEntity.STATUS_ACTIVE));
+
         if (StringUtils.hasText(farmId)) {
-            return feedingRepository.findByFarmIdAndStatus(farmId, FeedingEntity.STATUS_ACTIVE, pageable);
-        }
-        if (StringUtils.hasText(animalId) && date != null) {
-            return feedingRepository.findByAnimalIdAndDateAndStatus(animalId, date, FeedingEntity.STATUS_ACTIVE, pageable);
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("farmId"), farmId));
         }
         if (StringUtils.hasText(animalId)) {
-            return feedingRepository.findByAnimalIdAndStatus(animalId, FeedingEntity.STATUS_ACTIVE, pageable);
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("animalId"), animalId));
+        }
+        if (StringUtils.hasText(feedTypeId)) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("feedTypeId"), feedTypeId));
         }
         if (date != null) {
-            return feedingRepository.findByDateAndStatus(date, FeedingEntity.STATUS_ACTIVE, pageable);
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("date"), date));
         }
-        return feedingRepository.findAll(pageable);
+        if (normalizedSearch != null) {
+            String searchPattern = "%" + normalizedSearch + "%";
+            specification = specification.and((root, query, criteriaBuilder) -> {
+                var animalQuery = query.subquery(Integer.class);
+                var animalRoot = animalQuery.from(AnimalEntity.class);
+                animalQuery.select(criteriaBuilder.literal(1));
+                animalQuery.where(
+                        criteriaBuilder.equal(animalRoot.get("id"), root.get("animalId")),
+                        criteriaBuilder.like(criteriaBuilder.lower(animalRoot.get("tag")), searchPattern));
+
+                var feedTypeQuery = query.subquery(Integer.class);
+                var feedTypeRoot = feedTypeQuery.from(FeedTypeEntity.class);
+                feedTypeQuery.select(criteriaBuilder.literal(1));
+                feedTypeQuery.where(
+                        criteriaBuilder.equal(feedTypeRoot.get("id"), root.get("feedTypeId")),
+                        criteriaBuilder.like(criteriaBuilder.lower(feedTypeRoot.get("name")), searchPattern));
+
+                return criteriaBuilder.or(criteriaBuilder.exists(animalQuery), criteriaBuilder.exists(feedTypeQuery));
+            });
+        }
+
+        return specification;
     }
 
     private FeedingEntity getFeedingIncludingInactive(String id, String farmId) {
@@ -425,6 +455,13 @@ public class FeedingService {
         } catch (IllegalArgumentException exception) {
             throw new ValidationException("userId must be a valid UUID");
         }
+    }
+
+    private String normalizeFilter(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 
     private LocalDate resolveCreationDate(CreateFeedingRequest request) {

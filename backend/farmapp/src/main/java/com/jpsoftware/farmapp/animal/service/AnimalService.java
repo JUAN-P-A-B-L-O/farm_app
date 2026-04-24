@@ -17,11 +17,13 @@ import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -73,11 +75,11 @@ public class AnimalService {
     }
 
     @Transactional(readOnly = true)
-    public List<AnimalResponse> findAll(String farmId) {
+    public List<AnimalResponse> findAll(String farmId, String search, String status, String origin) {
         farmAccessService.validateAccessibleFarmIfPresent(farmId);
-        List<AnimalEntity> animals = StringUtils.hasText(farmId)
-                ? animalRepository.findByFarmId(farmId)
-                : animalRepository.findAll();
+        List<AnimalEntity> animals = animalRepository.findAll(
+                buildAnimalSpecification(farmId, search, status, origin),
+                Sort.by(Sort.Direction.ASC, "tag"));
 
         return animals.stream()
                 .map(animalMapper::toResponse)
@@ -85,11 +87,16 @@ public class AnimalService {
     }
 
     @Transactional(readOnly = true)
-    public PaginatedResponse<AnimalResponse> findAllPaginated(String farmId, int page, int size) {
+    public List<AnimalResponse> findAll(String farmId) {
+        return findAll(farmId, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<AnimalResponse> findAllPaginated(String farmId, String search, String status, String origin, int page, int size) {
         farmAccessService.validateAccessibleFarmIfPresent(farmId);
-        Page<AnimalEntity> animals = StringUtils.hasText(farmId)
-                ? animalRepository.findByFarmId(farmId, PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "tag")))
-                : animalRepository.findAll(PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "tag")));
+        Page<AnimalEntity> animals = animalRepository.findAll(
+                buildAnimalSpecification(farmId, search, status, origin),
+                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "tag")));
         Page<AnimalResponse> responses = animals.map(animalMapper::toResponse);
         return new PaginatedResponse<>(
                 responses.getContent(),
@@ -100,13 +107,18 @@ public class AnimalService {
     }
 
     @Transactional(readOnly = true)
-    public String exportAll(String farmId) {
-        return exportAll(farmId, null);
+    public PaginatedResponse<AnimalResponse> findAllPaginated(String farmId, int page, int size) {
+        return findAllPaginated(farmId, null, null, null, page, size);
     }
 
     @Transactional(readOnly = true)
-    public String exportAll(String farmId, String currency) {
-        return CsvExportUtils.write(findAll(farmId).stream()
+    public String exportAll(String farmId, String search, String status, String origin) {
+        return exportAll(farmId, search, status, origin, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String search, String status, String origin, String currency) {
+        return CsvExportUtils.write(findAll(farmId, search, status, origin).stream()
                 .map(animal -> AnimalResponse.builder()
                         .id(animal.getId())
                         .tag(animal.getTag())
@@ -130,6 +142,16 @@ public class AnimalService {
                 new CsvColumn<>("salePrice", AnimalResponse::getSalePrice),
                 new CsvColumn<>("saleDate", AnimalResponse::getSaleDate),
                 new CsvColumn<>("farmId", AnimalResponse::getFarmId)));
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId) {
+        return exportAll(farmId, null, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String currency) {
+        return exportAll(farmId, null, null, null, currency);
     }
 
     @Transactional
@@ -251,6 +273,56 @@ public class AnimalService {
                 ? animalRepository.findByIdAndFarmId(id, farmId)
                 : animalRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Animal not found"));
+    }
+
+    private Specification<AnimalEntity> buildAnimalSpecification(String farmId, String search, String status, String origin) {
+        String normalizedSearch = normalizeFilter(search);
+        String normalizedStatus = normalizeOptionalStatus(status);
+        String normalizedOrigin = normalizeOptionalOrigin(origin);
+
+        Specification<AnimalEntity> specification = Specification.where(null);
+
+        if (StringUtils.hasText(farmId)) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("farmId"), farmId));
+        }
+        if (normalizedStatus != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("status"), normalizedStatus));
+        }
+        if (normalizedOrigin != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("origin"), normalizedOrigin));
+        }
+        if (normalizedSearch != null) {
+            String searchPattern = "%" + normalizedSearch + "%";
+            specification = specification.and((root, query, criteriaBuilder) -> criteriaBuilder.or(
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("tag")), searchPattern),
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("breed")), searchPattern)));
+        }
+
+        return specification;
+    }
+
+    private String normalizeFilter(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeOptionalStatus(String status) {
+        if (!StringUtils.hasText(status)) {
+            return null;
+        }
+        return normalizeStatus(status);
+    }
+
+    private String normalizeOptionalOrigin(String origin) {
+        if (!StringUtils.hasText(origin)) {
+            return null;
+        }
+        return normalizeOrigin(origin);
     }
 
     private String normalizeStatus(String status) {

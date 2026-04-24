@@ -42,3 +42,9 @@ export interface ProductionApiErrorResponse {
   error: string
   path: string
 }
+
+export interface ProductionListFilters {
+  search: string
+  animalId: string
+  date: string
+}

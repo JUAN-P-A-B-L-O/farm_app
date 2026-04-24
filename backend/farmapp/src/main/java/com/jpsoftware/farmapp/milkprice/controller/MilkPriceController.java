@@ -72,23 +72,27 @@ public class MilkPriceController {
     })
     public ResponseEntity<?> getHistory(
             @RequestParam String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) java.time.LocalDate effectiveDate,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         if (page != null && size != null) {
-            PaginatedResponse<MilkPriceResponse> response = milkPriceService.getHistoryPaginated(farmId, page, size);
+            PaginatedResponse<MilkPriceResponse> response = milkPriceService.getHistoryPaginated(farmId, search, effectiveDate, page, size);
             return ResponseEntity.ok(response);
         }
 
-        return ResponseEntity.ok(milkPriceService.getHistory(farmId));
+        return ResponseEntity.ok(milkPriceService.getHistory(farmId, search, effectiveDate));
     }
 
     @GetMapping("/export")
     @Operation(summary = "Export milk price history", description = "Exports milk price history as CSV for the selected farm.")
     public ResponseEntity<byte[]> export(
             @RequestParam String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) java.time.LocalDate effectiveDate,
             @RequestParam(required = false) String currency) {
         return CsvResponseFactory.buildDownload(
                 "milk-prices.csv",
-                StringUtils.hasText(currency) ? milkPriceService.exportHistory(farmId, currency) : milkPriceService.exportHistory(farmId));
+                milkPriceService.exportHistory(farmId, search, effectiveDate, StringUtils.hasText(currency) ? currency : null));
     }
 }

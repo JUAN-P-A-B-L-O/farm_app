@@ -35,3 +35,9 @@ export interface SellAnimalData {
   salePrice: number
   saleDate?: string
 }
+
+export interface AnimalListFilters {
+  search: string
+  status: '' | AnimalStatus
+  origin: '' | AnimalOrigin
+}

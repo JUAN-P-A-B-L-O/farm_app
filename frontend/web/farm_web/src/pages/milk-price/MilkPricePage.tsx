@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import PaginationControls from '../../components/common/PaginationControls'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
@@ -16,12 +17,18 @@ import type {
   CreateMilkPricePayload,
   MilkPrice,
   MilkPriceApiErrorResponse,
+  MilkPriceListFilters,
 } from '../../types/milkPrice'
 import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import '../../App.css'
 
 const emptyForm: CreateMilkPricePayload = {
   price: 0,
+  effectiveDate: '',
+}
+
+const defaultFilters: MilkPriceListFilters = {
+  search: '',
   effectiveDate: '',
 }
 
@@ -48,8 +55,14 @@ function MilkPricePage() {
   const [isExporting, setIsExporting] = useState(false)
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
+  const [filters, setFilters] = useState<MilkPriceListFilters>(defaultFilters)
+  const [appliedFilters, setAppliedFilters] = useState<MilkPriceListFilters>(defaultFilters)
 
-  async function loadMilkPrices(targetPage = page, targetSize = pageSize) {
+  async function loadMilkPrices(
+    nextFilters: MilkPriceListFilters = appliedFilters,
+    targetPage = page,
+    targetSize = pageSize,
+  ) {
     if (!selectedFarmId) {
       setCurrentPrice(null)
       setHistory([])
@@ -66,7 +79,7 @@ function MilkPricePage() {
     try {
       const [current, priceHistory] = await Promise.all([
         getCurrentMilkPrice(selectedFarmId),
-        getMilkPriceHistoryPage(selectedFarmId, { page: targetPage, size: targetSize }),
+        getMilkPriceHistoryPage(selectedFarmId, { page: targetPage, size: targetSize }, nextFilters),
       ])
 
       setCurrentPrice(current)
@@ -76,7 +89,7 @@ function MilkPricePage() {
         priceHistory.totalPages > 0 &&
         targetPage >= priceHistory.totalPages
       ) {
-        await loadMilkPrices(priceHistory.totalPages - 1, targetSize)
+        await loadMilkPrices(nextFilters, priceHistory.totalPages - 1, targetSize)
         return
       }
 
@@ -93,7 +106,9 @@ function MilkPricePage() {
 
   useEffect(() => {
     setPage(0)
-    void loadMilkPrices(0, pageSize)
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    void loadMilkPrices(defaultFilters, 0, pageSize)
   }, [selectedFarmId])
 
   function handlePageChange(nextPage: number) {
@@ -101,13 +116,13 @@ function MilkPricePage() {
       return
     }
 
-    void loadMilkPrices(nextPage, pageSize)
+    void loadMilkPrices(appliedFilters, nextPage, pageSize)
   }
 
   function handlePageSizeChange(nextSize: number) {
     setPage(0)
     setPageSize(nextSize)
-    void loadMilkPrices(0, nextSize)
+    void loadMilkPrices(appliedFilters, 0, nextSize)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -146,12 +161,25 @@ function MilkPricePage() {
     setListErrorMessage('')
 
     try {
-      await exportMilkPriceHistoryCsv(selectedFarmId, currency)
+      await exportMilkPriceHistoryCsv(selectedFarmId, currency, appliedFilters)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError')))
     } finally {
       setIsExporting(false)
     }
+  }
+
+  function applyFilters() {
+    setAppliedFilters(filters)
+    setPage(0)
+    void loadMilkPrices(filters, 0, pageSize)
+  }
+
+  function clearFilters() {
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    setPage(0)
+    void loadMilkPrices(defaultFilters, 0, pageSize)
   }
 
   return (
@@ -170,6 +198,27 @@ function MilkPricePage() {
               <p>{t('milkPrice.currentDescription')}</p>
             </div>
           </div>
+
+          <ListingFiltersBar
+            searchId="milk-price-search"
+            searchLabel={t('milkPrice.filters.searchLabel')}
+            searchPlaceholder={t('milkPrice.filters.searchPlaceholder')}
+            searchValue={filters.search}
+            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+            onApply={applyFilters}
+            onClear={clearFilters}
+            applyLabel={t('milkPrice.filters.apply')}
+            clearLabel={t('milkPrice.filters.clear')}
+            filters={[
+              {
+                id: 'milk-price-effective-date-filter',
+                label: t('milkPrice.filters.effectiveDateLabel'),
+                value: filters.effectiveDate,
+                onChange: (value) => setFilters((current) => ({ ...current, effectiveDate: value })),
+                max: new Date().toISOString().slice(0, 10),
+              },
+            ]}
+          />
 
           {isLoading && <p className="animals-page__status">{t('milkPrice.loading')}</p>}
 

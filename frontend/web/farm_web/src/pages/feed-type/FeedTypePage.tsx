@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import FeedTypeForm from '../../components/feed-type/FeedTypeForm'
+import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import PaginationControls from '../../components/common/PaginationControls'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrency } from '../../hooks/useCurrency'
@@ -14,7 +15,7 @@ import {
   getFeedTypesPage,
   updateFeedType,
 } from '../../services/feedTypeService'
-import type { FeedType, FeedTypeApiErrorResponse, FeedTypeFormData } from '../../types/feedType'
+import type { FeedType, FeedTypeApiErrorResponse, FeedTypeFormData, FeedTypeListFilters } from '../../types/feedType'
 import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
 import { isManager } from '../../utils/authorization'
@@ -23,6 +24,10 @@ import '../../App.css'
 const emptyFeedTypeForm: FeedTypeFormData = {
   name: '',
   costPerKg: 0,
+}
+
+const defaultFilters: FeedTypeListFilters = {
+  search: '',
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
@@ -68,8 +73,14 @@ function FeedTypePage() {
   const [editingFeedTypeId, setEditingFeedTypeId] = useState<string | null>(null)
   const [formInitialValues, setFormInitialValues] = useState<FeedTypeFormData>(emptyFeedTypeForm)
   const [isExporting, setIsExporting] = useState(false)
+  const [filters, setFilters] = useState<FeedTypeListFilters>(defaultFilters)
+  const [appliedFilters, setAppliedFilters] = useState<FeedTypeListFilters>(defaultFilters)
 
-  async function loadFeedTypes(targetPage = page, targetSize = pageSize) {
+  async function loadFeedTypes(
+    nextFilters: FeedTypeListFilters = appliedFilters,
+    targetPage = page,
+    targetSize = pageSize,
+  ) {
     if (!selectedFarmId) {
       setFeedTypes([])
       setPagination(createEmptyPaginatedResponse<FeedType>(targetSize))
@@ -83,10 +94,10 @@ function FeedTypePage() {
     setListErrorMessage('')
 
     try {
-      const data = await getFeedTypesPage(selectedFarmId, { page: targetPage, size: targetSize })
+      const data = await getFeedTypesPage(selectedFarmId, { page: targetPage, size: targetSize }, nextFilters)
 
       if (data.content.length === 0 && data.totalElements > 0 && data.totalPages > 0 && targetPage >= data.totalPages) {
-        await loadFeedTypes(data.totalPages - 1, targetSize)
+        await loadFeedTypes(nextFilters, data.totalPages - 1, targetSize)
         return
       }
 
@@ -103,7 +114,9 @@ function FeedTypePage() {
 
   useEffect(() => {
     setPage(0)
-    void loadFeedTypes(0, pageSize)
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    void loadFeedTypes(defaultFilters, 0, pageSize)
   }, [selectedFarmId])
 
   function handlePageChange(nextPage: number) {
@@ -111,13 +124,13 @@ function FeedTypePage() {
       return
     }
 
-    void loadFeedTypes(nextPage, pageSize)
+    void loadFeedTypes(appliedFilters, nextPage, pageSize)
   }
 
   function handlePageSizeChange(nextSize: number) {
     setPage(0)
     setPageSize(nextSize)
-    void loadFeedTypes(0, nextSize)
+    void loadFeedTypes(appliedFilters, 0, nextSize)
   }
 
   async function handleCreateOrUpdate(data: FeedTypeFormData) {
@@ -196,12 +209,25 @@ function FeedTypePage() {
     setListErrorMessage('')
 
     try {
-      await exportFeedTypesCsv(selectedFarmId, currency)
+      await exportFeedTypesCsv(selectedFarmId, currency, appliedFilters)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
     } finally {
       setIsExporting(false)
     }
+  }
+
+  function applyFilters() {
+    setAppliedFilters(filters)
+    setPage(0)
+    void loadFeedTypes(filters, 0, pageSize)
+  }
+
+  function clearFilters() {
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    setPage(0)
+    void loadFeedTypes(defaultFilters, 0, pageSize)
   }
 
   return (
@@ -251,6 +277,18 @@ function FeedTypePage() {
               disabled={!selectedFarmId || isLoading || feedTypes.length === 0}
             />
           </div>
+
+          <ListingFiltersBar
+            searchId="feed-type-search"
+            searchLabel={t('feedType.filters.searchLabel')}
+            searchPlaceholder={t('feedType.filters.searchPlaceholder')}
+            searchValue={filters.search}
+            onSearchChange={(value) => setFilters({ search: value })}
+            onApply={applyFilters}
+            onClear={clearFilters}
+            applyLabel={t('feedType.filters.apply')}
+            clearLabel={t('feedType.filters.clear')}
+          />
 
           {isLoading && <p className="animals-page__status">{t('feedType.loading')}</p>}
 

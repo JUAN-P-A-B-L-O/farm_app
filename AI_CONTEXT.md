@@ -17,11 +17,11 @@
   - track origin (`BORN` or `PURCHASED`) and optional acquisition cost
   - support a dedicated sell action with persisted sale price and sale date
   - lifecycle is status-based (`ACTIVE`, `SOLD`, `DEAD`, `INACTIVE`)
-  - optional filtering by `farmId`
+  - listing supports optional server-side search by tag or breed plus optional filters by `farmId`, `status`, and `origin`
 - Feeding:
   - create, list, update, and soft-delete feeding records
   - retrieve individual feeding entries
-  - optional filtering by `animalId`, `date`, and `farmId`
+  - listing supports optional server-side search by animal tag or feed type name plus optional filters by `animalId`, `feedTypeId`, `date`, and `farmId`
   - optional pagination on listing endpoints
   - on create, `WORKER` users cannot choose the date; frontend hides the date field and backend uses the current server date, ignoring any incoming date
   - on create, `MANAGER` users can set the date manually
@@ -30,7 +30,7 @@
   - create, list, update, and soft-delete milk production records
   - retrieve individual production entries
   - update production animal, date, and quantity
-  - optional filtering by `animalId`, `date`, and `farmId`
+  - listing supports optional server-side search by animal tag plus optional filters by `animalId`, `date`, and `farmId`
   - optional pagination on listing endpoints
   - on create, `WORKER` users cannot choose the date; frontend hides the date field and backend uses the current server date, ignoring any incoming date
   - on create, `MANAGER` users can set the date manually
@@ -39,7 +39,7 @@
 - Feed types:
   - create, list, retrieve, update, and soft-delete feed type records
   - feed types are scoped by farm
-  - listing supports optional backend pagination using `page` and `size`
+  - listing supports optional server-side search by name plus optional backend pagination using `page` and `size`
   - new feed types default to `active = true`
   - delete marks feed types inactive rather than physically deleting rows
 - Users:
@@ -73,7 +73,7 @@
   - milk price is managed per farm as a time-based history
   - each new price is stored as a new record with `price`, `effectiveDate`, `createdAt`, and `createdBy`
   - current price is the latest record whose `effectiveDate` is on or before today
-  - milk price history listing supports optional backend pagination using `page` and `size`
+  - milk price history listing supports optional server-side search plus an optional `effectiveDate` filter, alongside optional backend pagination using `page` and `size`
   - if a farm has no effective milk price yet, reporting falls back to the legacy default price `2.0`
 - CSV export:
   - CSV export is available per screen/context for animals, users, feedings, productions, feed types, milk price history, dashboard, and analytics views
@@ -161,6 +161,8 @@ Frontend architectural rules already visible in code:
 - farm selection is handled centrally through `FarmContext`
 - display currency selection is handled centrally through `CurrencyContext`
 - reusable listing search/filter controls should be implemented as configurable shared components when multiple pages can adopt the same pattern
+- the shared listing filter pattern uses page-local draft filter state plus separately applied filter state so pagination, refresh, and CSV export all reuse the same backend query params
+- reusable listing filter controls live in `frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx` and currently support a shared search input plus configurable select and date fields
 - reusable listing pagination controls should be implemented through a shared component and keep the current filter/farm context when changing pages
 - screen-level CSV actions are rendered through the shared `ExportCsvButton` component and call backend downloads through service-layer helpers
 - monetary labels and formatting should use shared currency helpers instead of hardcoded symbols or hardcoded `Intl` currency values in components
@@ -265,7 +267,7 @@ Key validations and rules:
 - once sold, the animal cannot transition back to another status through generic update
 - `DELETE /animals/{id}` is now soft-delete behavior and marks the animal as `INACTIVE`
 - `DELETE /animals/{id}` requires role `MANAGER`
-- `GET /animals` optionally accepts `farmId`
+- `GET /animals` optionally accepts `farmId`, `search`, `status`, and `origin`
 - `GET /animals` also accepts optional `page` and `size`; when both are provided it returns a paginated payload with `content`, `page`, `size`, `totalElements`, and `totalPages`
 - update is partial, but provided string fields must not be blank
 
@@ -335,7 +337,7 @@ Key validations and rules:
 - authenticated user context can override/fill `createdBy`
 - when the authenticated user has role `WORKER`, create ignores the incoming `date` and stores the current server date
 - when the authenticated user has role `MANAGER`, create still requires an explicit date
-- list endpoint supports optional `animalId`, `date`, `farmId`, `page`, and `size`
+- list endpoint supports optional `search`, `animalId`, `date`, `farmId`, `page`, and `size`
 - pagination is only returned when both `page` and `size` are provided and uses the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
 - update can change `animalId`, `date`, and `quantity`
 - delete is soft-delete behavior and marks the record as `INACTIVE`
@@ -381,7 +383,7 @@ Key validations and rules:
 - creating a price always inserts a new history record; previous values are never overwritten
 - `GET /milk-prices/current` returns the latest price effective on or before today for the farm
 - when no effective price exists yet, `GET /milk-prices/current` returns the legacy default price `2.0` with `fallbackDefault = true`
-- `GET /milk-prices` returns full farm price history ordered from newest to oldest
+- `GET /milk-prices` returns full farm price history ordered from newest to oldest and also accepts optional `search` plus `effectiveDate`
 - `GET /milk-prices` also accepts optional `page` and `size`; when both are provided it returns the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
 
 Response characteristics:
@@ -430,7 +432,7 @@ Key validations and rules:
 - authenticated user context can override/fill `createdBy`
 - when the authenticated user has role `WORKER`, create ignores the incoming `date` and stores the current server date
 - when the authenticated user has role `MANAGER`, create still requires an explicit date
-- list endpoint supports optional `animalId`, `date`, `farmId`, `page`, and `size`
+- list endpoint supports optional `search`, `animalId`, `feedTypeId`, `date`, `farmId`, `page`, and `size`
 - pagination is only returned when both `page` and `size` are provided
 - update can change `animalId`, `feedTypeId`, `date`, and `quantity`
 - delete is soft-delete behavior and marks the record as `INACTIVE`
@@ -475,7 +477,7 @@ Key validations and rules:
 - `costPerKg` must be greater than zero
 - created feed types default to `active = true`
 - list and read endpoints return active feed types
-- list endpoint also accepts optional `page` and `size`; when both are provided it returns the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
+- list endpoint also accepts optional `search`, `page`, and `size`; when both pagination params are provided it returns the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
 - update changes `name` and `costPerKg`
 - delete is soft-delete behavior and marks the feed type inactive
 - delete requires role `MANAGER`

@@ -59,14 +59,17 @@ public class AnimalController {
     })
     public ResponseEntity<?> findAll(
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String origin,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         if (page != null && size != null) {
-            PaginatedResponse<AnimalResponse> response = animalService.findAllPaginated(farmId, page, size);
+            PaginatedResponse<AnimalResponse> response = animalService.findAllPaginated(farmId, search, status, origin, page, size);
             return ResponseEntity.ok(response);
         }
 
-        List<AnimalResponse> response = animalService.findAll(farmId);
+        List<AnimalResponse> response = animalService.findAll(farmId, search, status, origin);
         return ResponseEntity.ok(response);
     }
 
@@ -74,10 +77,13 @@ public class AnimalController {
     @Operation(summary = "Export animals", description = "Exports animals as CSV using the current farm filter.")
     public ResponseEntity<byte[]> export(
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String origin,
             @RequestParam(required = false) String currency) {
         return CsvResponseFactory.buildDownload(
                 "animals.csv",
-                StringUtils.hasText(currency) ? animalService.exportAll(farmId, currency) : animalService.exportAll(farmId));
+                animalService.exportAll(farmId, search, status, origin, StringUtils.hasText(currency) ? currency : null));
     }
 
     @GetMapping("/{id}")

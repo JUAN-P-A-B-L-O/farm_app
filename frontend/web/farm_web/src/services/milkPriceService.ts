@@ -2,12 +2,14 @@ import api from './api'
 import { downloadCsv } from './csvExportService'
 import type { CurrencyCode } from '../context/CurrencyContext'
 import { normalizeToTwoDecimals } from '../utils/decimal'
-import type { CreateMilkPricePayload, MilkPrice } from '../types/milkPrice'
+import type { CreateMilkPricePayload, MilkPrice, MilkPriceListFilters } from '../types/milkPrice'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 
-function buildFarmParams(farmId?: string, currency?: CurrencyCode) {
+function buildMilkPriceListParams(farmId?: string, filters?: MilkPriceListFilters, currency?: CurrencyCode) {
   return {
     ...(farmId ? { farmId } : {}),
+    ...(filters?.search ? { search: filters.search } : {}),
+    ...(filters?.effectiveDate ? { effectiveDate: filters.effectiveDate } : {}),
     ...(currency ? { currency } : {}),
   }
 }
@@ -17,7 +19,7 @@ export async function createMilkPrice(data: CreateMilkPricePayload, farmId?: str
     ...data,
     price: normalizeToTwoDecimals(data.price),
   }, {
-    params: buildFarmParams(farmId),
+    params: buildMilkPriceListParams(farmId),
   })
 
   return response.data
@@ -25,15 +27,15 @@ export async function createMilkPrice(data: CreateMilkPricePayload, farmId?: str
 
 export async function getCurrentMilkPrice(farmId?: string): Promise<MilkPrice> {
   const response = await api.get<MilkPrice>('/milk-prices/current', {
-    params: buildFarmParams(farmId),
+    params: buildMilkPriceListParams(farmId),
   })
 
   return response.data
 }
 
-export async function getMilkPriceHistory(farmId?: string): Promise<MilkPrice[]> {
+export async function getMilkPriceHistory(farmId?: string, filters?: MilkPriceListFilters): Promise<MilkPrice[]> {
   const response = await api.get<MilkPrice[]>('/milk-prices', {
-    params: buildFarmParams(farmId),
+    params: buildMilkPriceListParams(farmId, filters),
   })
 
   return response.data
@@ -42,10 +44,11 @@ export async function getMilkPriceHistory(farmId?: string): Promise<MilkPrice[]>
 export async function getMilkPriceHistoryPage(
   farmId: string | undefined,
   pagination: PaginationParams,
+  filters?: MilkPriceListFilters,
 ): Promise<PaginatedResponse<MilkPrice>> {
   const response = await api.get<PaginatedResponse<MilkPrice>>('/milk-prices', {
     params: {
-      ...buildFarmParams(farmId),
+      ...buildMilkPriceListParams(farmId, filters),
       page: pagination.page,
       size: pagination.size,
     },
@@ -54,6 +57,10 @@ export async function getMilkPriceHistoryPage(
   return response.data
 }
 
-export async function exportMilkPriceHistoryCsv(farmId?: string, currency?: CurrencyCode): Promise<void> {
-  await downloadCsv('/milk-prices/export', buildFarmParams(farmId, currency), 'milk-prices.csv')
+export async function exportMilkPriceHistoryCsv(
+  farmId?: string,
+  currency?: CurrencyCode,
+  filters?: MilkPriceListFilters,
+): Promise<void> {
+  await downloadCsv('/milk-prices/export', buildMilkPriceListParams(farmId, filters, currency), 'milk-prices.csv')
 }
