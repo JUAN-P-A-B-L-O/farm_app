@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import axios from 'axios'
 import BarChart from '../../components/analytics/BarChart'
 import ChartErrorBoundary from '../../components/analytics/ChartErrorBoundary'
@@ -68,6 +68,9 @@ function AnalyticsPage() {
   const [hasAppliedFilters, setHasAppliedFilters] = useState(false)
   const [animalsErrorMessage, setAnimalsErrorMessage] = useState('')
   const [chartsErrorMessage, setChartsErrorMessage] = useState('')
+  const resolveErrorMessage = useEffectEvent((error: unknown, fallbackKey: string) =>
+    getErrorMessage(error, t(fallbackKey)),
+  )
 
   const errorMessage = animalsErrorMessage || chartsErrorMessage
 
@@ -88,7 +91,7 @@ function AnalyticsPage() {
         }
       } catch (error) {
         if (isActive) {
-          setAnimalsErrorMessage(getErrorMessage(error, t('analytics.loadAnimalsError')))
+          setAnimalsErrorMessage(resolveErrorMessage(error, 'analytics.loadAnimalsError'))
         }
       } finally {
         if (isActive) {
@@ -102,7 +105,7 @@ function AnalyticsPage() {
     return () => {
       isActive = false
     }
-  }, [language, selectedFarmId])
+  }, [selectedFarmId])
 
   useEffect(() => {
     if (!hasAppliedFilters) {
@@ -112,6 +115,15 @@ function AnalyticsPage() {
     let isActive = true
 
     async function loadAnalytics() {
+      if (!selectedFarmId) {
+        if (isActive) {
+          setAnalytics(emptyDataset)
+          setChartsErrorMessage('')
+          setIsChartsLoading(false)
+        }
+        return
+      }
+
       if (isActive) {
         setIsChartsLoading(true)
         setChartsErrorMessage('')
@@ -125,7 +137,7 @@ function AnalyticsPage() {
         }
       } catch (error) {
         if (isActive) {
-          setChartsErrorMessage(getErrorMessage(error, t('analytics.loadChartsError')))
+          setChartsErrorMessage(resolveErrorMessage(error, 'analytics.loadChartsError'))
           setAnalytics(emptyDataset)
         }
       } finally {
@@ -140,7 +152,7 @@ function AnalyticsPage() {
     return () => {
       isActive = false
     }
-  }, [appliedFilters, currency, hasAppliedFilters, language, selectedFarmId, t])
+  }, [appliedFilters, currency, hasAppliedFilters, selectedFarmId])
 
   const showCharts = hasAppliedFilters && !isChartsLoading && !errorMessage
   const shouldShowInitialState = !hasAppliedFilters && !isChartsLoading && !errorMessage

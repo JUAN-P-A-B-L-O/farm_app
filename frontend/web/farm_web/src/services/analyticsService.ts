@@ -11,6 +11,8 @@ import type {
   AnalyticsSeriesApiPoint,
 } from '../types/analytics'
 
+const inFlightAnalyticsDatasetRequests = new Map<string, Promise<AnalyticsDataset>>()
+
 function isValidNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
@@ -80,22 +82,35 @@ export async function getAnalyticsDataset(
   currency?: CurrencyCode,
 ): Promise<AnalyticsDataset> {
   const params = buildAnalyticsParams(filters, farmId, currency)
+  const productionByAnimalParams = buildProductionByAnimalParams(filters, farmId, currency)
+  const requestKey = JSON.stringify({ params, productionByAnimalParams })
+  const existingRequest = inFlightAnalyticsDatasetRequests.get(requestKey)
 
-  const [productionResponse, feedingResponse, profitResponse, productionByAnimalResponse] = await Promise.all([
+  if (existingRequest) {
+    return existingRequest
+  }
+
+  const request = Promise.all([
     api.get<AnalyticsSeriesApiPoint[]>('/analytics/production', { params }),
     api.get<AnalyticsSeriesApiPoint[]>('/analytics/feeding', { params }),
     api.get<AnalyticsProfitApiPoint[]>('/analytics/profit', { params }),
     api.get<AnalyticsProductionByAnimalApiPoint[]>('/analytics/production/by-animal', {
-      params: buildProductionByAnimalParams(filters, farmId, currency),
+      params: productionByAnimalParams,
     }),
   ])
+    .then(([productionResponse, feedingResponse, profitResponse, productionByAnimalResponse]) => ({
+      productionSeries: mapSeriesToLineChart(productionResponse.data),
+      feedingCostSeries: mapSeriesToLineChart(feedingResponse.data),
+      profitSeries: mapProfitToLineChart(profitResponse.data),
+      productionByAnimal: mapProductionByAnimal(productionByAnimalResponse.data),
+    }))
+    .finally(() => {
+      inFlightAnalyticsDatasetRequests.delete(requestKey)
+    })
 
-  return {
-    productionSeries: mapSeriesToLineChart(productionResponse.data),
-    feedingCostSeries: mapSeriesToLineChart(feedingResponse.data),
-    profitSeries: mapProfitToLineChart(profitResponse.data),
-    productionByAnimal: mapProductionByAnimal(productionByAnimalResponse.data),
-  }
+  inFlightAnalyticsDatasetRequests.set(requestKey, request)
+
+  return request
 }
 
 export async function exportAnalyticsProductionCsv(

@@ -32,7 +32,7 @@ export function FarmProvider({ children }: { children: ReactNode }) {
   const refreshFarms = useCallback(async () => {
     if (!isAuthenticated) {
       setFarms([])
-      setSelectedFarmId('')
+      setSelectedFarmIdState('')
       setErrorMessage('')
       setIsLoading(false)
       clearStoredFarmId()
@@ -45,22 +45,32 @@ export function FarmProvider({ children }: { children: ReactNode }) {
     try {
       const data = await getAccessibleFarms()
       const storedFarmId = getStoredFarmId()
-      const nextSelectedFarmId = data.some((farm) => farm.id === selectedFarmId)
-        ? selectedFarmId
-        : data.some((farm) => farm.id === storedFarmId)
-          ? storedFarmId ?? ''
-          : data[0]?.id ?? ''
 
       setFarms(data)
-      setSelectedFarmId(nextSelectedFarmId)
+      setSelectedFarmIdState((currentSelectedFarmId) => {
+        const nextSelectedFarmId = data.some((farm) => farm.id === currentSelectedFarmId)
+          ? currentSelectedFarmId
+          : data.some((farm) => farm.id === storedFarmId)
+            ? storedFarmId ?? ''
+            : data[0]?.id ?? ''
+
+        if (nextSelectedFarmId) {
+          persistFarmId(nextSelectedFarmId)
+        } else {
+          clearStoredFarmId()
+        }
+
+        return nextSelectedFarmId
+      })
     } catch {
       setFarms([])
-      setSelectedFarmId('')
+      setSelectedFarmIdState('')
       setErrorMessage('Unable to load farms.')
+      clearStoredFarmId()
     } finally {
       setIsLoading(false)
     }
-  }, [isAuthenticated, selectedFarmId, setSelectedFarmId])
+  }, [isAuthenticated])
 
   useEffect(() => {
     void refreshFarms()

@@ -87,7 +87,7 @@
 
 - Backend is active under `backend/farmapp`
 - Frontend web app is active under `frontend/web/farm_web`
-- A parallel `backend/farm_app` tree exists in the repository, but `backend/farmapp` is the more complete and current backend implementation
+- There is no parallel active backend tree in this checkout; use `backend/farmapp` as the single backend source of truth
 - Local backend startup can use the `local` Spring profile to run against in-memory H2 when PostgreSQL is unavailable; the default runtime configuration remains PostgreSQL
 
 ## 2. Architecture
@@ -105,6 +105,8 @@ Current layers in code:
 - `entity` and `dto`: persistence and API models
 - `shared`: exception handling, config, reusable DTOs
 - `auth`: JWT security, login flow, authentication context
+  - `auth.service`: login/authentication context contracts and application services
+  - `auth.infrastructure`: JWT filter, token implementation, security configuration, authentication entry point
 
 ### Clean Architecture alignment
 

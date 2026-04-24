@@ -4,6 +4,8 @@ import type { CurrencyCode } from '../context/CurrencyContext'
 import type { Animal, AnimalFormData, AnimalListFilters, SellAnimalData } from '../types/animal'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 
+const inFlightAnimalListRequests = new Map<string, Promise<Animal[]>>()
+
 function buildAnimalListParams(farmId?: string, filters?: AnimalListFilters, currency?: CurrencyCode) {
   return {
     ...(farmId ? { farmId } : {}),
@@ -15,11 +17,23 @@ function buildAnimalListParams(farmId?: string, filters?: AnimalListFilters, cur
 }
 
 export async function getAllAnimals(farmId?: string, filters?: AnimalListFilters): Promise<Animal[]> {
-  const response = await api.get<Animal[]>('/animals', {
-    params: buildAnimalListParams(farmId, filters),
-  })
+  const params = buildAnimalListParams(farmId, filters)
+  const requestKey = JSON.stringify(params)
+  const existingRequest = inFlightAnimalListRequests.get(requestKey)
 
-  return response.data
+  if (existingRequest) {
+    return existingRequest
+  }
+
+  const request = api.get<Animal[]>('/animals', { params })
+    .then((response) => response.data)
+    .finally(() => {
+      inFlightAnimalListRequests.delete(requestKey)
+    })
+
+  inFlightAnimalListRequests.set(requestKey, request)
+
+  return request
 }
 
 export async function getAnimalsPage(
