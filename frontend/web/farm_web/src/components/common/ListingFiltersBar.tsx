@@ -3,12 +3,19 @@ interface FilterOption {
   label: string
 }
 
-interface SelectFilterConfig {
+interface BaseFilterConfig {
   id: string
   label: string
   value: string
-  options: FilterOption[]
   onChange: (value: string) => void
+}
+
+interface SelectFilterConfig extends BaseFilterConfig {
+  options: FilterOption[]
+}
+
+interface DateFilterConfig extends BaseFilterConfig {
+  max?: string
 }
 
 interface ListingFiltersBarProps {
@@ -21,7 +28,7 @@ interface ListingFiltersBarProps {
   onClear: () => void
   applyLabel: string
   clearLabel: string
-  filters?: SelectFilterConfig[]
+  filters?: Array<SelectFilterConfig | DateFilterConfig>
 }
 
 function ListingFiltersBar({
@@ -53,17 +60,27 @@ function ListingFiltersBar({
         {filters.map((filter) => (
           <label key={filter.id} htmlFor={filter.id}>
             {filter.label}
-            <select
-              id={filter.id}
-              value={filter.value}
-              onChange={(event) => filter.onChange(event.target.value)}
-            >
-              {filter.options.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            {'options' in filter ? (
+              <select
+                id={filter.id}
+                value={filter.value}
+                onChange={(event) => filter.onChange(event.target.value)}
+              >
+                {filter.options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id={filter.id}
+                type="date"
+                value={filter.value}
+                max={filter.max}
+                onChange={(event) => filter.onChange(event.target.value)}
+              />
+            )}
           </label>
         ))}
       </div>

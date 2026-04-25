@@ -1,23 +1,34 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import PaginationControls from '../../components/common/PaginationControls'
+import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
   createMilkPrice,
   exportMilkPriceHistoryCsv,
   getCurrentMilkPrice,
-  getMilkPriceHistory,
+  getMilkPriceHistoryPage,
 } from '../../services/milkPriceService'
+import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
 import type {
   CreateMilkPricePayload,
   MilkPrice,
   MilkPriceApiErrorResponse,
+  MilkPriceListFilters,
 } from '../../types/milkPrice'
+import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import '../../App.css'
 
 const emptyForm: CreateMilkPricePayload = {
   price: 0,
+  effectiveDate: '',
+}
+
+const defaultFilters: MilkPriceListFilters = {
+  search: '',
   effectiveDate: '',
 }
 
@@ -29,31 +40,34 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
   return fallbackMessage
 }
 
-function formatCurrency(value: number, language: string) {
-  return new Intl.NumberFormat(language === 'pt-BR' ? 'pt-BR' : 'en-US', {
-    style: 'currency',
-    currency: language === 'pt-BR' ? 'BRL' : 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)
-}
-
 function MilkPricePage() {
   const { selectedFarmId } = useFarm()
   const { t, language } = useTranslation()
+  const { currency } = useCurrency()
   const [currentPrice, setCurrentPrice] = useState<MilkPrice | null>(null)
   const [history, setHistory] = useState<MilkPrice[]>([])
+  const [pagination, setPagination] = useState(createEmptyPaginatedResponse<MilkPrice>())
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [formData, setFormData] = useState<CreateMilkPricePayload>(emptyForm)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
+  const [filters, setFilters] = useState<MilkPriceListFilters>(defaultFilters)
+  const [appliedFilters, setAppliedFilters] = useState<MilkPriceListFilters>(defaultFilters)
 
-  async function loadMilkPrices() {
+  async function loadMilkPrices(
+    nextFilters: MilkPriceListFilters = appliedFilters,
+    targetPage = page,
+    targetSize = pageSize,
+  ) {
     if (!selectedFarmId) {
       setCurrentPrice(null)
       setHistory([])
+      setPagination(createEmptyPaginatedResponse<MilkPrice>(targetSize))
+      setPage(0)
       setListErrorMessage('')
       setIsLoading(false)
       return
@@ -65,11 +79,24 @@ function MilkPricePage() {
     try {
       const [current, priceHistory] = await Promise.all([
         getCurrentMilkPrice(selectedFarmId),
-        getMilkPriceHistory(selectedFarmId),
+        getMilkPriceHistoryPage(selectedFarmId, { page: targetPage, size: targetSize }, nextFilters),
       ])
 
       setCurrentPrice(current)
-      setHistory(priceHistory)
+      if (
+        priceHistory.content.length === 0 &&
+        priceHistory.totalElements > 0 &&
+        priceHistory.totalPages > 0 &&
+        targetPage >= priceHistory.totalPages
+      ) {
+        await loadMilkPrices(nextFilters, priceHistory.totalPages - 1, targetSize)
+        return
+      }
+
+      setHistory(priceHistory.content)
+      setPagination(priceHistory)
+      setPage(priceHistory.page)
+      setPageSize(priceHistory.size)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('milkPrice.errors.load')))
     } finally {
@@ -78,8 +105,25 @@ function MilkPricePage() {
   }
 
   useEffect(() => {
-    void loadMilkPrices()
+    setPage(0)
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    void loadMilkPrices(defaultFilters, 0, pageSize)
   }, [selectedFarmId])
+
+  function handlePageChange(nextPage: number) {
+    if (nextPage === page) {
+      return
+    }
+
+    void loadMilkPrices(appliedFilters, nextPage, pageSize)
+  }
+
+  function handlePageSizeChange(nextSize: number) {
+    setPage(0)
+    setPageSize(nextSize)
+    void loadMilkPrices(appliedFilters, 0, nextSize)
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -117,12 +161,25 @@ function MilkPricePage() {
     setListErrorMessage('')
 
     try {
-      await exportMilkPriceHistoryCsv(selectedFarmId)
+      await exportMilkPriceHistoryCsv(selectedFarmId, currency, appliedFilters)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError')))
     } finally {
       setIsExporting(false)
     }
+  }
+
+  function applyFilters() {
+    setAppliedFilters(filters)
+    setPage(0)
+    void loadMilkPrices(filters, 0, pageSize)
+  }
+
+  function clearFilters() {
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    setPage(0)
+    void loadMilkPrices(defaultFilters, 0, pageSize)
   }
 
   return (
@@ -142,6 +199,27 @@ function MilkPricePage() {
             </div>
           </div>
 
+          <ListingFiltersBar
+            searchId="milk-price-search"
+            searchLabel={t('milkPrice.filters.searchLabel')}
+            searchPlaceholder={t('milkPrice.filters.searchPlaceholder')}
+            searchValue={filters.search}
+            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+            onApply={applyFilters}
+            onClear={clearFilters}
+            applyLabel={t('milkPrice.filters.apply')}
+            clearLabel={t('milkPrice.filters.clear')}
+            filters={[
+              {
+                id: 'milk-price-effective-date-filter',
+                label: t('milkPrice.filters.effectiveDateLabel'),
+                value: filters.effectiveDate,
+                onChange: (value) => setFilters((current) => ({ ...current, effectiveDate: value })),
+                max: new Date().toISOString().slice(0, 10),
+              },
+            ]}
+          />
+
           {isLoading && <p className="animals-page__status">{t('milkPrice.loading')}</p>}
 
           {listErrorMessage && (
@@ -152,8 +230,8 @@ function MilkPricePage() {
             <>
               <dl className="animal-details-grid">
                 <div className="animal-details-grid__item">
-                  <dt>{t('milkPrice.summary.currentPrice')}</dt>
-                  <dd>{formatCurrency(currentPrice.price, language)}</dd>
+                  <dt>{appendCurrencyCode(t('milkPrice.summary.currentPrice'), currency)}</dt>
+                  <dd>{formatDisplayMoney(currentPrice.price, language, currency)}</dd>
                 </div>
                 <div className="animal-details-grid__item">
                   <dt>{t('milkPrice.summary.effectiveDate')}</dt>
@@ -237,11 +315,12 @@ function MilkPricePage() {
           )}
 
           {!isLoading && !listErrorMessage && history.length > 0 && (
-            <div className="animals-table-wrapper">
+            <>
+              <div className="animals-table-wrapper">
               <table className="animals-table">
                 <thead>
                   <tr>
-                    <th>{t('milkPrice.table.price')}</th>
+                    <th>{appendCurrencyCode(t('milkPrice.table.price'), currency)}</th>
                     <th>{t('milkPrice.table.effectiveDate')}</th>
                     <th>{t('milkPrice.table.createdAt')}</th>
                   </tr>
@@ -249,14 +328,22 @@ function MilkPricePage() {
                 <tbody>
                   {history.map((entry) => (
                     <tr key={entry.id ?? `${entry.effectiveDate}-${entry.price}`}>
-                      <td>{formatCurrency(entry.price, language)}</td>
+                      <td>{formatDisplayMoney(entry.price, language, currency)}</td>
                       <td>{entry.effectiveDate ?? '-'}</td>
                       <td>{entry.createdAt ? entry.createdAt.replace('T', ' ') : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+
+              <PaginationControls
+                pagination={pagination}
+                isLoading={isLoading}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </>
           )}
         </article>
       </section>

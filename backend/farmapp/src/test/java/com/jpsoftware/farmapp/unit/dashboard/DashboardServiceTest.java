@@ -64,9 +64,27 @@ class DashboardServiceTest {
 
         assertEquals(
                 """
-                        totalProduction,totalFeedingCost,totalRevenue,totalProfit,animalCount
-                        100.0,40.0,500.0,410.0,2
-                        """,
+totalProduction,totalFeedingCost,totalRevenue,totalProfit,animalCount
+100.0,40.0,500.0,410.0,2
+""",
                 csv);
+    }
+
+    @Test
+    void shouldConvertDashboardMonetaryTotalsWhenCurrencyIsProvided() {
+        when(productionRepository.sumTotalProductionByFarmId("farm-1")).thenReturn(100.0);
+        when(feedingRepository.sumTotalFeedingCostByFarmId("farm-1")).thenReturn(40.0);
+        when(animalRepository.findByFarmId("farm-1")).thenReturn(List.of(
+                AnimalEntity.builder().id("animal-1").farmId("farm-1").acquisitionCost(50.0).salePrice(300.0).build(),
+                AnimalEntity.builder().id("animal-2").farmId("farm-1").acquisitionCost(null).salePrice(null).build()));
+        when(animalRepository.countByFarmId("farm-1")).thenReturn(2L);
+
+        DashboardResponse response = dashboardService.getDashboard("farm-1", true, "USD");
+
+        assertEquals(100.0, response.getTotalProduction());
+        assertEquals(8.0, response.getTotalFeedingCost());
+        assertEquals(100.0, response.getTotalRevenue());
+        assertEquals(82.0, response.getTotalProfit());
+        assertEquals(2L, response.getAnimalCount());
     }
 }

@@ -41,4 +41,17 @@ class AnimalExportControllerContractTest {
 
         verify(animalService).exportAll("farm-001");
     }
+
+    @Test
+    void shouldExportAnimalsAsCsvWithCurrencyContext() throws Exception {
+        when(animalService.exportAll("farm-001", "USD")).thenReturn("id,tag,salePrice\nanimal-1,TAG-001,64.0\n");
+
+        mockMvc.perform(get("/animals/export").param("farmId", "farm-001").param("currency", "USD"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("animals.csv")))
+                .andExpect(content().string("id,tag,salePrice\nanimal-1,TAG-001,64.0\n"));
+
+        verify(animalService).exportAll("farm-001", "USD");
+    }
 }

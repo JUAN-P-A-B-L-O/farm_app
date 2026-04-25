@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.milkprice.controller;
 import com.jpsoftware.farmapp.milkprice.dto.CreateMilkPriceRequest;
 import com.jpsoftware.farmapp.milkprice.dto.MilkPriceResponse;
 import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -68,13 +70,29 @@ public class MilkPriceController {
             @ApiResponse(responseCode = "404", description = "Farm not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<List<MilkPriceResponse>> getHistory(@RequestParam String farmId) {
-        return ResponseEntity.ok(milkPriceService.getHistory(farmId));
+    public ResponseEntity<?> getHistory(
+            @RequestParam String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) java.time.LocalDate effectiveDate,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            PaginatedResponse<MilkPriceResponse> response = milkPriceService.getHistoryPaginated(farmId, search, effectiveDate, page, size);
+            return ResponseEntity.ok(response);
+        }
+
+        return ResponseEntity.ok(milkPriceService.getHistory(farmId, search, effectiveDate));
     }
 
     @GetMapping("/export")
     @Operation(summary = "Export milk price history", description = "Exports milk price history as CSV for the selected farm.")
-    public ResponseEntity<byte[]> export(@RequestParam String farmId) {
-        return CsvResponseFactory.buildDownload("milk-prices.csv", milkPriceService.exportHistory(farmId));
+    public ResponseEntity<byte[]> export(
+            @RequestParam String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) java.time.LocalDate effectiveDate,
+            @RequestParam(required = false) String currency) {
+        return CsvResponseFactory.buildDownload(
+                "milk-prices.csv",
+                milkPriceService.exportHistory(farmId, search, effectiveDate, StringUtils.hasText(currency) ? currency : null));
     }
 }

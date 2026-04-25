@@ -63,6 +63,23 @@ class AnalyticsExportControllerContractTest {
     }
 
     @Test
+    void shouldExportFeedingAnalyticsAsCsvWithCurrencyContext() throws Exception {
+        when(analyticsService.exportFeedingCostSeries(null, null, "animal-1", "day", "farm-1", "USD"))
+                .thenReturn("period,value\n2026-04-14,4.0\n");
+
+        mockMvc.perform(get("/analytics/feeding/export")
+                        .param("animalId", "animal-1")
+                        .param("farmId", "farm-1")
+                        .param("currency", "USD"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("analytics-feeding.csv")))
+                .andExpect(content().string("period,value\n2026-04-14,4.0\n"));
+
+        verify(analyticsService).exportFeedingCostSeries(null, null, "animal-1", "day", "farm-1", "USD");
+    }
+
+    @Test
     void shouldExportProfitAnalyticsAsCsv() throws Exception {
         when(analyticsService.exportProfitSeries(null, null, "animal-1", "day", "farm-1", false))
                 .thenReturn("period,profit\n2026-04-14,270.0\n");
@@ -77,6 +94,24 @@ class AnalyticsExportControllerContractTest {
                 .andExpect(content().string("period,profit\n2026-04-14,270.0\n"));
 
         verify(analyticsService).exportProfitSeries(null, null, "animal-1", "day", "farm-1", false);
+    }
+
+    @Test
+    void shouldExportProfitAnalyticsAsCsvWithCurrencyContext() throws Exception {
+        when(analyticsService.exportProfitSeries(null, null, "animal-1", "day", "farm-1", false, "USD"))
+                .thenReturn("period,profit\n2026-04-14,54.0\n");
+
+        mockMvc.perform(get("/analytics/profit/export")
+                        .param("animalId", "animal-1")
+                        .param("farmId", "farm-1")
+                        .param("includeAcquisitionCost", "false")
+                        .param("currency", "USD"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("analytics-profit.csv")))
+                .andExpect(content().string("period,profit\n2026-04-14,54.0\n"));
+
+        verify(analyticsService).exportProfitSeries(null, null, "animal-1", "day", "farm-1", false, "USD");
     }
 
     @Test

@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.farm.entity.FarmEntity;
 import com.jpsoftware.farmapp.farm.repository.FarmRepository;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
@@ -31,9 +32,12 @@ import com.jpsoftware.farmapp.user.service.UserService;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -377,6 +381,26 @@ class UserServiceTest {
         assertEquals(worker.getId(), responses.get(0).getId());
         assertEquals("WORKER", responses.get(0).getRole());
         assertTrue(Boolean.FALSE.equals(responses.get(0).getActive()));
+    }
+
+    @Test
+    void shouldReturnPaginatedUsers() {
+        UUID userId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        when(userRepository.findAll(
+                org.mockito.ArgumentMatchers.<Specification<UserEntity>>any(),
+                any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(new UserEntity(userId, "Jane Doe", "jane@farm.com", "MANAGER")),
+                        PageRequest.of(0, 10),
+                        1));
+
+        PaginatedResponse<UserResponse> response = userService.findAllPaginated(null, null, null, 0, 10);
+
+        assertEquals(1, response.getContent().size());
+        assertEquals(0, response.getPage());
+        assertEquals(10, response.getSize());
+        assertEquals(1, response.getTotalElements());
+        assertEquals(1, response.getTotalPages());
     }
 
     @Test

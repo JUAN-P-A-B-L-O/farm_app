@@ -5,6 +5,7 @@ import com.jpsoftware.farmapp.animal.dto.CreateAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.SellAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
 import com.jpsoftware.farmapp.animal.service.AnimalService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +18,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,15 +57,33 @@ public class AnimalController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Animals retrieved successfully")
     })
-    public ResponseEntity<List<AnimalResponse>> findAll(@RequestParam(required = false) String farmId) {
-        List<AnimalResponse> response = animalService.findAll(farmId);
+    public ResponseEntity<?> findAll(
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String origin,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            PaginatedResponse<AnimalResponse> response = animalService.findAllPaginated(farmId, search, status, origin, page, size);
+            return ResponseEntity.ok(response);
+        }
+
+        List<AnimalResponse> response = animalService.findAll(farmId, search, status, origin);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/export")
     @Operation(summary = "Export animals", description = "Exports animals as CSV using the current farm filter.")
-    public ResponseEntity<byte[]> export(@RequestParam(required = false) String farmId) {
-        return CsvResponseFactory.buildDownload("animals.csv", animalService.exportAll(farmId));
+    public ResponseEntity<byte[]> export(
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String origin,
+            @RequestParam(required = false) String currency) {
+        return CsvResponseFactory.buildDownload(
+                "animals.csv",
+                animalService.exportAll(farmId, search, status, origin, StringUtils.hasText(currency) ? currency : null));
     }
 
     @GetMapping("/{id}")

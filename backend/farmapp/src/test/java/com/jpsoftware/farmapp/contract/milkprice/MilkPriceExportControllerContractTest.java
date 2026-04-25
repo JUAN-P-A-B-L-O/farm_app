@@ -42,4 +42,18 @@ class MilkPriceExportControllerContractTest {
 
         verify(milkPriceService).exportHistory("farm-1");
     }
+
+    @Test
+    void shouldExportMilkPriceHistoryAsCsvWithCurrencyContext() throws Exception {
+        when(milkPriceService.exportHistory("farm-1", "USD"))
+                .thenReturn("id,price\nprice-1,0.47\n");
+
+        mockMvc.perform(get("/milk-prices/export").param("farmId", "farm-1").param("currency", "USD"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("milk-prices.csv")))
+                .andExpect(content().string("id,price\nprice-1,0.47\n"));
+
+        verify(milkPriceService).exportHistory("farm-1", "USD");
+    }
 }

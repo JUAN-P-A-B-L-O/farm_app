@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import StatCard from '../../components/dashboard/StatCard'
+import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { exportDashboardCsv, fetchDashboard } from '../../services/dashboardService'
+import { appendCurrencyCode } from '../../utils/currency'
 import type { DashboardSummary } from '../../types/dashboard'
 import '../../App.css'
 
@@ -20,37 +22,56 @@ const dashboardStats: Array<{
 ]
 
 function DashboardPage() {
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
+  const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [includeAcquisitionCost, setIncludeAcquisitionCost] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const resolveDashboardErrorMessage = useEffectEvent(() => t('dashboard.error'))
 
   useEffect(() => {
+    let isActive = true
+
     async function loadDashboard() {
-      setIsLoading(true)
-      setErrorMessage('')
+      if (isActive) {
+        setIsLoading(true)
+        setErrorMessage('')
+      }
 
       if (!selectedFarmId) {
-        setSummary(null)
-        setIsLoading(false)
+        if (isActive) {
+          setSummary(null)
+          setIsLoading(false)
+        }
         return
       }
 
       try {
-        const data = await fetchDashboard(selectedFarmId, includeAcquisitionCost)
-        setSummary(data)
+        const data = await fetchDashboard(selectedFarmId, includeAcquisitionCost, currency)
+
+        if (isActive) {
+          setSummary(data)
+        }
       } catch {
-        setErrorMessage(t('dashboard.error'))
+        if (isActive) {
+          setErrorMessage(resolveDashboardErrorMessage())
+        }
       } finally {
-        setIsLoading(false)
+        if (isActive) {
+          setIsLoading(false)
+        }
       }
     }
 
     void loadDashboard()
-  }, [includeAcquisitionCost, language, selectedFarmId])
+
+    return () => {
+      isActive = false
+    }
+  }, [currency, includeAcquisitionCost, selectedFarmId])
 
   async function handleExport() {
     if (!selectedFarmId) {
@@ -61,7 +82,7 @@ function DashboardPage() {
     setErrorMessage('')
 
     try {
-      await exportDashboardCsv(selectedFarmId, includeAcquisitionCost)
+      await exportDashboardCsv(selectedFarmId, includeAcquisitionCost, currency)
     } catch {
       setErrorMessage(t('common.exportError'))
     } finally {
@@ -112,7 +133,9 @@ function DashboardPage() {
           {dashboardStats.map((stat) => (
             <StatCard
               key={stat.key}
-              title={t(stat.titleKey)}
+              title={stat.format === 'currency'
+                ? appendCurrencyCode(t(stat.titleKey), currency)
+                : t(stat.titleKey)}
               value={summary[stat.key] ?? 0}
               format={stat.format}
             />

@@ -27,12 +27,14 @@ import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -113,13 +115,13 @@ public class ProductionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductionResponse> findAll(String animalId, LocalDate date, String farmId) {
-        return getAllProductions(animalId, date, farmId);
+    public List<ProductionResponse> findAll(String search, String animalId, LocalDate date, String farmId) {
+        return getAllProductions(search, animalId, date, farmId);
     }
 
     @Transactional(readOnly = true)
-    public String exportAll(String animalId, LocalDate date, String farmId) {
-        return CsvExportUtils.write(findAll(animalId, date, farmId), List.of(
+    public String exportAll(String search, String animalId, LocalDate date, String farmId) {
+        return CsvExportUtils.write(findAll(search, animalId, date, farmId), List.of(
                 new CsvColumn<>("id", ProductionResponse::getId),
                 new CsvColumn<>("animalId", ProductionResponse::getAnimalId),
                 new CsvColumn<>("animalTag", production -> production.getAnimal() != null ? production.getAnimal().getTag() : null),
@@ -129,12 +131,12 @@ public class ProductionService {
 
     @Transactional(readOnly = true)
     public List<ProductionResponse> findAll(String animalId, LocalDate date) {
-        return findAll(animalId, date, null);
+        return findAll(null, animalId, date, null);
     }
 
     @Transactional(readOnly = true)
-    public List<ProductionResponse> getAllProductions(String animalId, LocalDate date, String farmId) {
-        List<ProductionEntity> productions = findProductions(animalId, date, farmId);
+    public List<ProductionResponse> getAllProductions(String search, String animalId, LocalDate date, String farmId) {
+        List<ProductionEntity> productions = findProductions(search, animalId, date, farmId);
         Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(productions);
         return productions.stream()
                 .map(production -> productionMapper.toResponse(production, animalsById.get(production.getAnimalId())))
@@ -142,18 +144,24 @@ public class ProductionService {
     }
 
     @Transactional(readOnly = true)
-    public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
-        return getAllProductionsPaginated(animalId, date, farmId, page, size);
+    public PaginatedResponse<ProductionResponse> findAllPaginated(String search, String animalId, LocalDate date, String farmId, int page, int size) {
+        return getAllProductionsPaginated(search, animalId, date, farmId, page, size);
     }
 
     @Transactional(readOnly = true)
     public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, int page, int size) {
-        return findAllPaginated(animalId, date, null, page, size);
+        return findAllPaginated(null, animalId, date, null, page, size);
     }
 
     @Transactional(readOnly = true)
-    public PaginatedResponse<ProductionResponse> getAllProductionsPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
-        Page<ProductionEntity> productions = findProductions(animalId, date, farmId, PageRequest.of(page, size));
+    public PaginatedResponse<ProductionResponse> getAllProductionsPaginated(
+            String search,
+            String animalId,
+            LocalDate date,
+            String farmId,
+            int page,
+            int size) {
+        Page<ProductionEntity> productions = findProductions(search, animalId, date, farmId, PageRequest.of(page, size));
         Map<String, AnimalSummaryResponse> animalsById = loadAnimalSummariesById(productions.getContent());
         Page<ProductionResponse> responses = productions.map(production ->
                 productionMapper.toResponse(production, animalsById.get(production.getAnimalId())));
@@ -351,56 +359,52 @@ public class ProductionService {
         return request != null ? request.getDate() : null;
     }
 
-    private List<ProductionEntity> findProductions(String animalId, LocalDate date, String farmId) {
+    private List<ProductionEntity> findProductions(String search, String animalId, LocalDate date, String farmId) {
         validateAccessibleFarmIfPresent(farmId);
-        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId) && date != null) {
-            return productionRepository.findByFarmIdAndAnimalIdAndDateAndStatus(farmId, animalId, date, ProductionEntity.STATUS_ACTIVE);
-        }
-        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId)) {
-            return productionRepository.findByFarmIdAndAnimalIdAndStatus(farmId, animalId, ProductionEntity.STATUS_ACTIVE);
-        }
-        if (StringUtils.hasText(farmId) && date != null) {
-            return productionRepository.findByFarmIdAndDateAndStatus(farmId, date, ProductionEntity.STATUS_ACTIVE);
-        }
-        if (StringUtils.hasText(farmId)) {
-            return productionRepository.findByFarmIdAndStatus(farmId, ProductionEntity.STATUS_ACTIVE);
-        }
-        if (StringUtils.hasText(animalId) && date != null) {
-            return productionRepository.findByAnimalIdAndDateAndStatus(animalId, date, ProductionEntity.STATUS_ACTIVE);
-        }
-        if (StringUtils.hasText(animalId)) {
-            return productionRepository.findByAnimalIdAndStatus(animalId, ProductionEntity.STATUS_ACTIVE);
-        }
-        if (date != null) {
-            return productionRepository.findByDateAndStatus(date, ProductionEntity.STATUS_ACTIVE);
-        }
-        return productionRepository.findAll();
+        return productionRepository.findAll(buildProductionSpecification(search, animalId, date, farmId));
     }
 
-    private Page<ProductionEntity> findProductions(String animalId, LocalDate date, String farmId, org.springframework.data.domain.Pageable pageable) {
+    private Page<ProductionEntity> findProductions(
+            String search,
+            String animalId,
+            LocalDate date,
+            String farmId,
+            org.springframework.data.domain.Pageable pageable) {
         validateAccessibleFarmIfPresent(farmId);
-        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId) && date != null) {
-            return productionRepository.findByFarmIdAndAnimalIdAndDateAndStatus(farmId, animalId, date, ProductionEntity.STATUS_ACTIVE, pageable);
-        }
-        if (StringUtils.hasText(farmId) && StringUtils.hasText(animalId)) {
-            return productionRepository.findByFarmIdAndAnimalIdAndStatus(farmId, animalId, ProductionEntity.STATUS_ACTIVE, pageable);
-        }
-        if (StringUtils.hasText(farmId) && date != null) {
-            return productionRepository.findByFarmIdAndDateAndStatus(farmId, date, ProductionEntity.STATUS_ACTIVE, pageable);
-        }
+        return productionRepository.findAll(buildProductionSpecification(search, animalId, date, farmId), pageable);
+    }
+
+    private Specification<ProductionEntity> buildProductionSpecification(String search, String animalId, LocalDate date, String farmId) {
+        String normalizedSearch = normalizeFilter(search);
+        Specification<ProductionEntity> specification = Specification.where((root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("status"), ProductionEntity.STATUS_ACTIVE));
+
         if (StringUtils.hasText(farmId)) {
-            return productionRepository.findByFarmIdAndStatus(farmId, ProductionEntity.STATUS_ACTIVE, pageable);
-        }
-        if (StringUtils.hasText(animalId) && date != null) {
-            return productionRepository.findByAnimalIdAndDateAndStatus(animalId, date, ProductionEntity.STATUS_ACTIVE, pageable);
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("farmId"), farmId));
         }
         if (StringUtils.hasText(animalId)) {
-            return productionRepository.findByAnimalIdAndStatus(animalId, ProductionEntity.STATUS_ACTIVE, pageable);
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("animalId"), animalId));
         }
         if (date != null) {
-            return productionRepository.findByDateAndStatus(date, ProductionEntity.STATUS_ACTIVE, pageable);
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("date"), date));
         }
-        return productionRepository.findAll(pageable);
+        if (normalizedSearch != null) {
+            String searchPattern = "%" + normalizedSearch + "%";
+            specification = specification.and((root, query, criteriaBuilder) -> {
+                var animalQuery = query.subquery(Integer.class);
+                var animalRoot = animalQuery.from(AnimalEntity.class);
+                animalQuery.select(criteriaBuilder.literal(1));
+                animalQuery.where(
+                        criteriaBuilder.equal(animalRoot.get("id"), root.get("animalId")),
+                        criteriaBuilder.like(criteriaBuilder.lower(animalRoot.get("tag")), searchPattern));
+                return criteriaBuilder.exists(animalQuery);
+            });
+        }
+
+        return specification;
     }
 
     private ProductionEntity getProductionIncludingInactive(String id, String farmId) {
@@ -480,6 +484,13 @@ public class ProductionService {
         if (farmAccessService != null) {
             farmAccessService.validateAccessibleFarmIfPresent(farmId);
         }
+    }
+
+    private String normalizeFilter(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 
 }

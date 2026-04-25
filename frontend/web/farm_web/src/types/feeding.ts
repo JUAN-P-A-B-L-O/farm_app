@@ -51,3 +51,10 @@ export interface FeedingApiErrorResponse {
   error: string
   path: string
 }
+
+export interface FeedingListFilters {
+  search: string
+  animalId: string
+  feedTypeId: string
+  date: string
+}

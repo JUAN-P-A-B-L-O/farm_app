@@ -14,6 +14,7 @@ import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
@@ -114,17 +115,30 @@ public class AnalyticsService {
             String animalId,
             String groupByParam,
             String farmId) {
+        return getFeedingCostSeries(startDate, endDate, animalId, groupByParam, farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnalyticsTimeSeriesPointResponse> getFeedingCostSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            String currency) {
         AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);
         List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId, farmId);
         Map<String, Double> feedCostsById = loadFeedCostsById(feedings);
 
-        return aggregateSeries(
+        return convertSeriesValues(
+                aggregateSeries(
                 feedings,
                 groupBy,
                 FeedingEntity::getDate,
                 feeding -> DecimalScaleUtils.multiply(
                         DecimalScaleUtils.zeroIfNull(feedCostsById.get(feeding.getFeedTypeId())),
-                        DecimalScaleUtils.zeroIfNull(feeding.getQuantity())));
+                        DecimalScaleUtils.zeroIfNull(feeding.getQuantity()))),
+                currency);
     }
 
     @Transactional(readOnly = true)
@@ -134,7 +148,18 @@ public class AnalyticsService {
             String animalId,
             String groupByParam,
             String farmId) {
-        return CsvExportUtils.write(getFeedingCostSeries(startDate, endDate, animalId, groupByParam, farmId), List.of(
+        return exportFeedingCostSeries(startDate, endDate, animalId, groupByParam, farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportFeedingCostSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            String currency) {
+        return CsvExportUtils.write(getFeedingCostSeries(startDate, endDate, animalId, groupByParam, farmId, currency), List.of(
                 new CsvColumn<>("period", AnalyticsTimeSeriesPointResponse::getPeriod),
                 new CsvColumn<>("value", AnalyticsTimeSeriesPointResponse::getValue)));
     }
@@ -147,6 +172,18 @@ public class AnalyticsService {
             String groupByParam,
             String farmId,
             boolean includeAcquisitionCost) {
+        return getProfitSeries(startDate, endDate, animalId, groupByParam, farmId, includeAcquisitionCost, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnalyticsProfitPointResponse> getProfitSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            boolean includeAcquisitionCost,
+            String currency) {
         AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);
         List<ProductionEntity> productions = filterProductions(startDate, endDate, animalId, farmId);
         List<FeedingEntity> feedings = filterFeedings(startDate, endDate, animalId, farmId);
@@ -195,7 +232,12 @@ public class AnalyticsService {
                     }
                     Double revenue = DecimalScaleUtils.normalize(milkRevenue + saleRevenue);
                     Double profit = DecimalScaleUtils.subtract(revenue, feedingCost);
-                    return new AnalyticsProfitPointResponse(period, production, feedingCost, revenue, profit);
+                    return new AnalyticsProfitPointResponse(
+                            period,
+                            production,
+                            CurrencyConversionUtils.convertMonetaryValue(feedingCost, currency),
+                            CurrencyConversionUtils.convertMonetaryValue(revenue, currency),
+                            CurrencyConversionUtils.convertMonetaryValue(profit, currency));
                 })
                 .toList();
     }
@@ -208,8 +250,20 @@ public class AnalyticsService {
             String groupByParam,
             String farmId,
             boolean includeAcquisitionCost) {
+        return exportProfitSeries(startDate, endDate, animalId, groupByParam, farmId, includeAcquisitionCost, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportProfitSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            boolean includeAcquisitionCost,
+            String currency) {
         return CsvExportUtils.write(
-                getProfitSeries(startDate, endDate, animalId, groupByParam, farmId, includeAcquisitionCost),
+                getProfitSeries(startDate, endDate, animalId, groupByParam, farmId, includeAcquisitionCost, currency),
                 List.of(
                         new CsvColumn<>("period", AnalyticsProfitPointResponse::getPeriod),
                         new CsvColumn<>("production", AnalyticsProfitPointResponse::getProduction),
@@ -408,6 +462,16 @@ public class AnalyticsService {
                         entry -> DecimalScaleUtils.normalize(entry.getValue()),
                         (left, right) -> left,
                         LinkedHashMap::new));
+    }
+
+    private List<AnalyticsTimeSeriesPointResponse> convertSeriesValues(
+            List<AnalyticsTimeSeriesPointResponse> series,
+            String currency) {
+        return series.stream()
+                .map(point -> new AnalyticsTimeSeriesPointResponse(
+                        point.getPeriod(),
+                        CurrencyConversionUtils.convertMonetaryValue(point.getValue(), currency)))
+                .toList();
     }
 
     private String toPeriodLabel(LocalDate date, AnalyticsGroupBy groupBy) {

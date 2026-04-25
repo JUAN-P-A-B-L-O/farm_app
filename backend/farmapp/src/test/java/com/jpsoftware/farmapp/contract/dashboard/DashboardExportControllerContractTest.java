@@ -44,4 +44,21 @@ class DashboardExportControllerContractTest {
 
         verify(dashboardService).exportDashboard("farm-001", true);
     }
+
+    @Test
+    void shouldExportDashboardAsCsvWithCurrencyContext() throws Exception {
+        when(dashboardService.exportDashboard("farm-001", true, "USD"))
+                .thenReturn("totalProduction,totalFeedingCost\n100.0,10.0\n");
+
+        mockMvc.perform(get("/dashboard/export")
+                        .param("farmId", "farm-001")
+                        .param("includeAcquisitionCost", "true")
+                        .param("currency", "USD"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("dashboard-summary.csv")))
+                .andExpect(content().string("totalProduction,totalFeedingCost\n100.0,10.0\n"));
+
+        verify(dashboardService).exportDashboard("farm-001", true, "USD");
+    }
 }

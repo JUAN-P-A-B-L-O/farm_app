@@ -15,3 +15,7 @@ export interface FeedTypeApiErrorResponse {
   error: string
   path: string
 }
+
+export interface FeedTypeListFilters {
+  search: string
+}

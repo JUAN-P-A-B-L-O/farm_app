@@ -16,6 +16,7 @@ import com.jpsoftware.farmapp.feed.mapper.FeedTypeMapper;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feed.service.FeedTypeService;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import java.lang.reflect.Proxy;
@@ -75,6 +76,27 @@ class FeedTypeControllerContractTest {
     }
 
     @Test
+    void shouldReturnPaginatedFeedTypes() throws Exception {
+        feedTypeService.paginatedResponse = new PaginatedResponse<>(
+                List.of(buildResponse()),
+                0,
+                10,
+                1,
+                1);
+
+        mockMvc.perform(get("/feed-types")
+                        .queryParam("farmId", "farm-1")
+                        .queryParam("page", "0")
+                        .queryParam("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value("feed-type-1"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
     void shouldExportFeedTypes() throws Exception {
         feedTypeService.exportResponse = "id,name\nfeed-type-1,Corn Silage\n";
 
@@ -130,6 +152,7 @@ class FeedTypeControllerContractTest {
 
         private FeedTypeResponse createResponse;
         private List<FeedTypeResponse> findAllResponse = List.of();
+        private PaginatedResponse<FeedTypeResponse> paginatedResponse = new PaginatedResponse<>(List.of(), 0, 10, 0, 0);
         private FeedTypeResponse findByIdResponse;
         private String exportResponse = "";
         private RuntimeException findByIdException;
@@ -146,6 +169,11 @@ class FeedTypeControllerContractTest {
         @Override
         public List<FeedTypeResponse> findAll(String farmId) {
             return findAllResponse;
+        }
+
+        @Override
+        public PaginatedResponse<FeedTypeResponse> findAllPaginated(String farmId, int page, int size) {
+            return paginatedResponse;
         }
 
         @Override

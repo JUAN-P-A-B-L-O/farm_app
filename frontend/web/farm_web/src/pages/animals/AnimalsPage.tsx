@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AnimalForm from '../../components/animal/AnimalForm'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import PaginationControls from '../../components/common/PaginationControls'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -9,12 +11,13 @@ import {
   createAnimal,
   deleteAnimal,
   exportAnimalsCsv,
-  getAllAnimals,
+  getAnimalsPage,
   getAnimalById,
   sellAnimal,
   updateAnimal,
 } from '../../services/animalService'
-import type { Animal, AnimalFormData, ApiErrorResponse } from '../../types/animal'
+import type { Animal, AnimalFormData, AnimalListFilters, ApiErrorResponse } from '../../types/animal'
+import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
@@ -29,6 +32,12 @@ const emptyAnimalForm: AnimalFormData = {
   origin: 'BORN',
   acquisitionCost: null,
   farmId: '',
+}
+
+const defaultFilters: AnimalListFilters = {
+  search: '',
+  status: '',
+  origin: '',
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
@@ -58,6 +67,9 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const { selectedFarmId, selectedFarm } = useFarm()
   const canDeleteResources = isManager(user)
   const [animals, setAnimals] = useState<Animal[]>([])
+  const [pagination, setPagination] = useState(createEmptyPaginatedResponse<Animal>())
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
@@ -71,10 +83,18 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const [formInitialValues, setFormInitialValues] = useState<AnimalFormData>(emptyAnimalForm)
   const [salePrice, setSalePrice] = useState('')
   const [saleDate, setSaleDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [filters, setFilters] = useState<AnimalListFilters>(defaultFilters)
+  const [appliedFilters, setAppliedFilters] = useState<AnimalListFilters>(defaultFilters)
 
-  async function loadAnimals() {
+  async function loadAnimals(
+    nextFilters: AnimalListFilters = appliedFilters,
+    targetPage = page,
+    targetSize = pageSize,
+  ) {
     if (!selectedFarmId) {
       setAnimals([])
+      setPagination(createEmptyPaginatedResponse<Animal>(targetSize))
+      setPage(0)
       setListErrorMessage('')
       setIsLoading(false)
       return
@@ -84,8 +104,17 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
     setListErrorMessage('')
 
     try {
-      const data = await getAllAnimals(selectedFarmId)
-      setAnimals(data)
+      const data = await getAnimalsPage(selectedFarmId, { page: targetPage, size: targetSize }, nextFilters)
+
+      if (data.content.length === 0 && data.totalElements > 0 && data.totalPages > 0 && targetPage >= data.totalPages) {
+        await loadAnimals(nextFilters, data.totalPages - 1, targetSize)
+        return
+      }
+
+      setAnimals(data.content)
+      setPagination(data)
+      setPage(data.page)
+      setPageSize(data.size)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('animals.errors.loadList'), t))
     } finally {
@@ -94,8 +123,25 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   }
 
   useEffect(() => {
-    void loadAnimals()
+    setPage(0)
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    void loadAnimals(defaultFilters, 0, pageSize)
   }, [selectedFarmId])
+
+  function handlePageChange(nextPage: number) {
+    if (nextPage === page) {
+      return
+    }
+
+    void loadAnimals(appliedFilters, nextPage, pageSize)
+  }
+
+  function handlePageSizeChange(nextSize: number) {
+    setPage(0)
+    setPageSize(nextSize)
+    void loadAnimals(appliedFilters, 0, nextSize)
+  }
 
   async function handleCreateOrUpdate(data: AnimalFormData) {
     const payload: AnimalFormData = {
@@ -244,12 +290,25 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
     setIsExporting(true)
 
     try {
-      await exportAnimalsCsv(selectedFarmId)
+      await exportAnimalsCsv(selectedFarmId, undefined, appliedFilters)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
     } finally {
       setIsExporting(false)
     }
+  }
+
+  function applyFilters() {
+    setAppliedFilters(filters)
+    setPage(0)
+    void loadAnimals(filters, 0, pageSize)
+  }
+
+  function clearFilters() {
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    setPage(0)
+    void loadAnimals(defaultFilters, 0, pageSize)
   }
 
   return (
@@ -363,6 +422,44 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
             />
           </div>
 
+          <ListingFiltersBar
+            searchId="animals-search"
+            searchLabel={t('animals.filters.searchLabel')}
+            searchPlaceholder={t('animals.filters.searchPlaceholder')}
+            searchValue={filters.search}
+            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+            onApply={applyFilters}
+            onClear={clearFilters}
+            applyLabel={t('animals.filters.apply')}
+            clearLabel={t('animals.filters.clear')}
+            filters={[
+              {
+                id: 'animals-status-filter',
+                label: t('animals.filters.statusLabel'),
+                value: filters.status,
+                onChange: (value) => setFilters((current) => ({ ...current, status: value as AnimalListFilters['status'] })),
+                options: [
+                  { value: '', label: t('animals.filters.allStatuses') },
+                  { value: 'ACTIVE', label: t('animals.statuses.ACTIVE') },
+                  { value: 'SOLD', label: t('animals.statuses.SOLD') },
+                  { value: 'DEAD', label: t('animals.statuses.DEAD') },
+                  { value: 'INACTIVE', label: t('animals.statuses.INACTIVE') },
+                ],
+              },
+              {
+                id: 'animals-origin-filter',
+                label: t('animals.filters.originLabel'),
+                value: filters.origin,
+                onChange: (value) => setFilters((current) => ({ ...current, origin: value as AnimalListFilters['origin'] })),
+                options: [
+                  { value: '', label: t('animals.filters.allOrigins') },
+                  { value: 'BORN', label: t('animals.origins.BORN') },
+                  { value: 'PURCHASED', label: t('animals.origins.PURCHASED') },
+                ],
+              },
+            ]}
+          />
+
           {isLoading && <p className="animals-page__status">{t('animals.loading')}</p>}
 
           {listErrorMessage && (
@@ -376,7 +473,8 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
           )}
 
           {!isLoading && !listErrorMessage && animals.length > 0 && (
-            <div className="animals-table-wrapper">
+            <>
+              <div className="animals-table-wrapper">
               <table className="animals-table">
                 <thead>
                   <tr>
@@ -444,7 +542,15 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+
+              <PaginationControls
+                pagination={pagination}
+                isLoading={isLoading}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </>
           )}
         </article>
       </section>

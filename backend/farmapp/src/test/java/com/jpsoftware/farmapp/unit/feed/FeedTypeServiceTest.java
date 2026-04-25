@@ -11,6 +11,7 @@ import com.jpsoftware.farmapp.feed.mapper.FeedTypeMapper;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feed.service.FeedTypeService;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import java.lang.reflect.Proxy;
@@ -21,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 class FeedTypeServiceTest {
 
@@ -87,6 +90,19 @@ class FeedTypeServiceTest {
     }
 
     @Test
+    void shouldReturnPaginatedFeedTypes() {
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
+
+        PaginatedResponse<FeedTypeResponse> response = feedTypeService.findAllPaginated("farm-1", 0, 10);
+
+        assertEquals(1, response.getContent().size());
+        assertEquals(0, response.getPage());
+        assertEquals(10, response.getSize());
+        assertEquals(1, response.getTotalElements());
+        assertEquals(1, response.getTotalPages());
+    }
+
+    @Test
     void shouldReturnFeedTypeById() {
         repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
 
@@ -132,12 +148,30 @@ class FeedTypeServiceTest {
                             return new ArrayList<>(data.values());
                         }
                         if ("findByFarmIdAndActiveTrue".equals(methodName)) {
+                            if (args.length == 2) {
+                                List<FeedTypeEntity> filtered = data.values().stream()
+                                        .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
+                                        .filter(entity -> args[0].equals(entity.getFarmId()))
+                                        .toList();
+                                org.springframework.data.domain.Pageable pageable =
+                                        (org.springframework.data.domain.Pageable) args[1];
+                                return paginate(filtered, pageable);
+                            }
                             return data.values().stream()
                                     .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
                                     .filter(entity -> args[0].equals(entity.getFarmId()))
                                     .toList();
                         }
                         if ("findByActiveTrue".equals(methodName)) {
+                            if (args != null && args.length == 1) {
+                                org.springframework.data.domain.Pageable pageable =
+                                        (org.springframework.data.domain.Pageable) args[0];
+                                return paginate(
+                                        data.values().stream()
+                                                .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
+                                                .toList(),
+                                        pageable);
+                            }
                             return data.values().stream()
                                     .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
                                     .toList();
@@ -176,6 +210,13 @@ class FeedTypeServiceTest {
 
         void store(FeedTypeEntity entity) {
             data.put(entity.getId(), entity);
+        }
+
+        private PageImpl<FeedTypeEntity> paginate(List<FeedTypeEntity> source, org.springframework.data.domain.Pageable pageable) {
+            int start = (int) pageable.getOffset();
+            int end = Math.min(start + pageable.getPageSize(), source.size());
+            List<FeedTypeEntity> content = start >= source.size() ? List.of() : source.subList(start, end);
+            return new PageImpl<>(content, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()), source.size());
         }
     }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAnimalById } from '../../services/animalService'
@@ -8,6 +9,7 @@ import { getProductionsByAnimalId } from '../../services/productionService'
 import type { Animal, ApiErrorResponse } from '../../types/animal'
 import type { FeedingTrendPoint } from '../../types/feeding'
 import type { ProductionTrendPoint } from '../../types/production'
+import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
 import '../../App.css'
 
 interface AnimalDetailsPageProps {
@@ -37,7 +39,8 @@ function sortByDateDescending<T extends { date: string }>(records: T[]): T[] {
 }
 
 function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps) {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
+  const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
   const [animal, setAnimal] = useState<Animal | null>(null)
   const [productions, setProductions] = useState<ProductionTrendPoint[]>([])
@@ -131,12 +134,12 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                 <dd>{t(`animals.origins.${animal.origin}`)}</dd>
               </div>
               <div className="animal-details-grid__item">
-                <dt>{t('animals.form.acquisitionCost')}</dt>
-                <dd>{animal.acquisitionCost ?? t('animals.noAcquisitionCost')}</dd>
+                <dt>{appendCurrencyCode(t('animals.form.acquisitionCost'), currency)}</dt>
+                <dd>{formatDisplayMoney(animal.acquisitionCost, language, currency) ?? t('animals.noAcquisitionCost')}</dd>
               </div>
               <div className="animal-details-grid__item">
-                <dt>{t('animals.form.salePrice')}</dt>
-                <dd>{animal.salePrice ?? t('animals.noSaleData')}</dd>
+                <dt>{appendCurrencyCode(t('animals.form.salePrice'), currency)}</dt>
+                <dd>{formatDisplayMoney(animal.salePrice, language, currency) ?? t('animals.noSaleData')}</dd>
               </div>
               <div className="animal-details-grid__item">
                 <dt>{t('animals.form.saleDate')}</dt>

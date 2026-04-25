@@ -7,6 +7,7 @@ const ptBR = {
     selectFarm: 'Selecione uma fazenda',
     loadingFarms: 'Carregando fazendas...',
     languageLabel: 'Idioma',
+    currencyLabel: 'Moeda exibida',
     logout: 'Sair',
     navigation: {
       dashboard: 'Dashboard',
@@ -29,6 +30,13 @@ const ptBR = {
     exportError: 'Não foi possível exportar o CSV.',
     selectAnimal: 'Selecione um animal',
     selectUser: 'Selecione um usuário',
+    pagination: {
+      previous: 'Anterior',
+      next: 'Próxima',
+      pageSize: 'Itens por página',
+      page: 'Página {page} de {totalPages}',
+      summary: 'Exibindo {from}-{to} de {total}',
+    },
   },
   auth: {
     eyebrow: 'Autenticação',
@@ -144,6 +152,16 @@ const ptBR = {
       DEAD: 'Morto',
       INACTIVE: 'Inativo',
     },
+    filters: {
+      searchLabel: 'Buscar',
+      searchPlaceholder: 'Buscar por tag ou raça',
+      statusLabel: 'Status',
+      originLabel: 'Origem',
+      allStatuses: 'Todos os status',
+      allOrigins: 'Todas as origens',
+      apply: 'Aplicar filtros',
+      clear: 'Limpar',
+    },
     noAcquisitionCost: 'Não se aplica',
     noSaleData: 'Não vendido',
     errors: {
@@ -193,6 +211,15 @@ const ptBR = {
       selectUser: 'Selecione um usuário',
       loadingUsers: 'Carregando usuários...',
     },
+    filters: {
+      searchLabel: 'Buscar',
+      searchPlaceholder: 'Buscar por tag do animal',
+      animalLabel: 'Animal',
+      dateLabel: 'Data',
+      allAnimals: 'Todos os animais',
+      apply: 'Aplicar filtros',
+      clear: 'Limpar',
+    },
     errors: {
       validationSave: 'Erro de validação ao salvar a produção.',
       animalNotFound: 'Animal não encontrado.',
@@ -229,6 +256,13 @@ const ptBR = {
     form: {
       price: 'Preço por litro',
       effectiveDate: 'Data de vigência',
+    },
+    filters: {
+      searchLabel: 'Buscar',
+      searchPlaceholder: 'Buscar por preço, vigência ou criador',
+      effectiveDateLabel: 'Data de vigência',
+      apply: 'Aplicar filtros',
+      clear: 'Limpar',
     },
     summary: {
       currentPrice: 'Preço atual do leite',
@@ -286,6 +320,17 @@ const ptBR = {
       selectUser: 'Selecione um usuário',
       loadingUsers: 'Carregando usuários...',
     },
+    filters: {
+      searchLabel: 'Buscar',
+      searchPlaceholder: 'Buscar por tag do animal ou tipo de ração',
+      animalLabel: 'Animal',
+      feedTypeLabel: 'Tipo de ração',
+      dateLabel: 'Data',
+      allAnimals: 'Todos os animais',
+      allFeedTypes: 'Todos os tipos de ração',
+      apply: 'Aplicar filtros',
+      clear: 'Limpar',
+    },
     errors: {
       validationSave: 'Erro de validação ao salvar a alimentação.',
       notFound: 'Animal ou tipo de ração não encontrado.',
@@ -328,6 +373,12 @@ const ptBR = {
     form: {
       name: 'Nome',
       costPerKg: 'Custo por kg',
+    },
+    filters: {
+      searchLabel: 'Buscar',
+      searchPlaceholder: 'Buscar por nome',
+      apply: 'Aplicar filtros',
+      clear: 'Limpar',
     },
     errors: {
       validationSave: 'Erro de validação ao salvar o tipo de alimento.',

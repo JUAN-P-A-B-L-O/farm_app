@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,6 +39,7 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String currency,
             @RequestParam(required = false, defaultValue = "day") String groupBy) {
         return ResponseEntity.ok(analyticsService.getProductionSeries(startDate, endDate, animalId, groupBy, farmId));
     }
@@ -49,6 +51,7 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String currency,
             @RequestParam(required = false, defaultValue = "day") String groupBy) {
         return CsvResponseFactory.buildDownload(
                 "analytics-production.csv",
@@ -65,8 +68,11 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String currency,
             @RequestParam(required = false, defaultValue = "day") String groupBy) {
-        return ResponseEntity.ok(analyticsService.getFeedingCostSeries(startDate, endDate, animalId, groupBy, farmId));
+        return ResponseEntity.ok(StringUtils.hasText(currency)
+                ? analyticsService.getFeedingCostSeries(startDate, endDate, animalId, groupBy, farmId, currency)
+                : analyticsService.getFeedingCostSeries(startDate, endDate, animalId, groupBy, farmId));
     }
 
     @GetMapping("/feeding/export")
@@ -76,10 +82,13 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String currency,
             @RequestParam(required = false, defaultValue = "day") String groupBy) {
         return CsvResponseFactory.buildDownload(
                 "analytics-feeding.csv",
-                analyticsService.exportFeedingCostSeries(startDate, endDate, animalId, groupBy, farmId));
+                StringUtils.hasText(currency)
+                        ? analyticsService.exportFeedingCostSeries(startDate, endDate, animalId, groupBy, farmId, currency)
+                        : analyticsService.exportFeedingCostSeries(startDate, endDate, animalId, groupBy, farmId));
     }
 
     @GetMapping("/profit")
@@ -92,15 +101,25 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String currency,
             @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
             @RequestParam(required = false, defaultValue = "day") String groupBy) {
-        return ResponseEntity.ok(analyticsService.getProfitSeries(
-                startDate,
-                endDate,
-                animalId,
-                groupBy,
-                farmId,
-                includeAcquisitionCost));
+        return ResponseEntity.ok(StringUtils.hasText(currency)
+                ? analyticsService.getProfitSeries(
+                        startDate,
+                        endDate,
+                        animalId,
+                        groupBy,
+                        farmId,
+                        includeAcquisitionCost,
+                        currency)
+                : analyticsService.getProfitSeries(
+                        startDate,
+                        endDate,
+                        animalId,
+                        groupBy,
+                        farmId,
+                        includeAcquisitionCost));
     }
 
     @GetMapping("/profit/export")
@@ -110,17 +129,27 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String currency,
             @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
             @RequestParam(required = false, defaultValue = "day") String groupBy) {
         return CsvResponseFactory.buildDownload(
                 "analytics-profit.csv",
-                analyticsService.exportProfitSeries(
-                        startDate,
-                        endDate,
-                        animalId,
-                        groupBy,
-                        farmId,
-                        includeAcquisitionCost));
+                StringUtils.hasText(currency)
+                        ? analyticsService.exportProfitSeries(
+                                startDate,
+                                endDate,
+                                animalId,
+                                groupBy,
+                                farmId,
+                                includeAcquisitionCost,
+                                currency)
+                        : analyticsService.exportProfitSeries(
+                                startDate,
+                                endDate,
+                                animalId,
+                                groupBy,
+                                farmId,
+                                includeAcquisitionCost));
     }
 
     @GetMapping("/production/by-animal")
@@ -132,7 +161,8 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
-            @RequestParam(required = false) String farmId) {
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String currency) {
         return ResponseEntity.ok(analyticsService.getProductionByAnimal(startDate, endDate, animalId, farmId));
     }
 
@@ -142,7 +172,8 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
-            @RequestParam(required = false) String farmId) {
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String currency) {
         return CsvResponseFactory.buildDownload(
                 "analytics-production-by-animal.csv",
                 analyticsService.exportProductionByAnimal(startDate, endDate, animalId, farmId));

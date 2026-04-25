@@ -6,12 +6,19 @@ import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import com.jpsoftware.farmapp.feed.mapper.FeedTypeMapper;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
 import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.util.List;
+import java.util.Locale;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -46,11 +53,11 @@ public class FeedTypeService {
     }
 
     @Transactional(readOnly = true)
-    public List<FeedTypeResponse> findAll(String farmId) {
+    public List<FeedTypeResponse> findAll(String farmId, String search) {
         farmAccessService.validateAccessibleFarmIfPresent(farmId);
-        List<FeedTypeEntity> feedTypes = StringUtils.hasText(farmId)
-                ? feedTypeRepository.findByFarmIdAndActiveTrue(farmId)
-                : feedTypeRepository.findByActiveTrue();
+        List<FeedTypeEntity> feedTypes = feedTypeRepository.findAll(
+                buildFeedTypeSpecification(farmId, search),
+                Sort.by(Sort.Direction.ASC, "name"));
 
         return feedTypes.stream()
                 .map(feedTypeMapper::toResponse)
@@ -58,12 +65,48 @@ public class FeedTypeService {
     }
 
     @Transactional(readOnly = true)
-    public String exportAll(String farmId) {
-        return CsvExportUtils.write(findAll(farmId), List.of(
+    public List<FeedTypeResponse> findAll(String farmId) {
+        return findAll(farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<FeedTypeResponse> findAllPaginated(String farmId, String search, int page, int size) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        Page<FeedTypeEntity> feedTypes = feedTypeRepository.findAll(
+                buildFeedTypeSpecification(farmId, search),
+                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name")));
+        Page<FeedTypeResponse> responses = feedTypes.map(feedTypeMapper::toResponse);
+        return new PaginatedResponse<>(
+                responses.getContent(),
+                responses.getNumber(),
+                responses.getSize(),
+                responses.getTotalElements(),
+                responses.getTotalPages());
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<FeedTypeResponse> findAllPaginated(String farmId, int page, int size) {
+        return findAllPaginated(farmId, null, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String search, String currency) {
+        return CsvExportUtils.write(findAll(farmId, search).stream()
+                .map(feedType -> new FeedTypeResponse(
+                        feedType.getId(),
+                        feedType.getName(),
+                        CurrencyConversionUtils.convertMonetaryValue(feedType.getCostPerKg(), currency),
+                        feedType.getActive()))
+                .toList(), List.of(
                 new CsvColumn<>("id", FeedTypeResponse::getId),
                 new CsvColumn<>("name", FeedTypeResponse::getName),
                 new CsvColumn<>("costPerKg", FeedTypeResponse::getCostPerKg),
                 new CsvColumn<>("active", FeedTypeResponse::getActive)));
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId) {
+        return exportAll(farmId, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -135,5 +178,30 @@ public class FeedTypeService {
                 ? feedTypeRepository.findByIdAndFarmId(id, farmId)
                 : feedTypeRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Feed type not found"));
+    }
+
+    private Specification<FeedTypeEntity> buildFeedTypeSpecification(String farmId, String search) {
+        String normalizedSearch = normalizeFilter(search);
+        Specification<FeedTypeEntity> specification = Specification.where((root, query, criteriaBuilder) ->
+                criteriaBuilder.isTrue(root.get("active")));
+
+        if (StringUtils.hasText(farmId)) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("farmId"), farmId));
+        }
+        if (normalizedSearch != null) {
+            String searchPattern = "%" + normalizedSearch + "%";
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), searchPattern));
+        }
+
+        return specification;
+    }
+
+    private String normalizeFilter(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 }

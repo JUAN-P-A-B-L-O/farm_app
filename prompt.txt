@@ -1,31 +1,69 @@
+You are a senior software engineer working on a fullstack project (React + Spring Boot).
+
 ====================================
 MANDATORY CONTEXT USAGE
 ====================================
 
 - BEFORE making any decision, you MUST read AI_CONTEXT.md
-- Do NOT assume roles, fields, or API behavior
-- Validate everything against the actual codebase
+- Use it as the single source of truth for:
+  - Domain entities
+  - API contracts
+  - Analytics and dashboard behavior
+  - Existing patterns for data retrieval and export (if any)
+
+- Do NOT assume structure
+- Do NOT guess fields or endpoints
+- Validate everything against the codebase
 
 ====================================
 TASK
 ====================================
 
-Restrict date selection in creation flows (e.g., production, feeding):
+Implement a feature to export data as CSV for:
 
-- MANAGER users can choose the date manually
-- WORKER users cannot choose the date
-- For WORKER, the system must automatically use the current timestamp
+- All resource listings (e.g., animals, users, feedings, productions, etc.)
+- Dashboard data
+- Analytics data (including filtered views)
+
+Exports must be available individually per screen/context.
+
+====================================
+GOAL
+====================================
+
+- Allow users to download CSV files for any listing or analysis view
+- Ensure exported data reflects the current filters/context
+- Keep implementation reusable and consistent across the system
+- Maintain performance and scalability
 
 ====================================
 CONSTRAINTS
 ====================================
 
-- Do NOT break existing endpoints
-- Keep changes minimal and isolated
-- Respect existing role/authorization patterns
+- Do NOT refactor unrelated parts of the system
+- Do NOT duplicate export logic across modules
+- Keep changes minimal and reusable
+- Respect existing architecture (domain/application/infra separation)
 - Controllers must remain thin
 - Business logic must stay in services
 - Frontend must use service layer
+
+====================================
+DESIGN GUIDELINES
+====================================
+
+- Export is a cross-cutting concern → must be reusable
+
+- CSV generation:
+  - Should be centralized (shared utility/service)
+  - Must respect current filters and data scope (e.g., farm, search, status)
+
+- Data consistency:
+  - Exported data must match what user sees on screen
+
+- Avoid:
+  - Hardcoded CSV logic per entity
+  - Generating CSV in frontend when backend already has structured data
 
 ====================================
 IMPLEMENTATION INSTRUCTIONS
@@ -33,41 +71,72 @@ IMPLEMENTATION INSTRUCTIONS
 
 1. Analyze:
    - Read AI_CONTEXT.md
-   - Identify where date is handled in relevant flows
-   - Identify how roles are determined
+   - Identify how listings, dashboard, and analytics data are fetched
+   - Identify filtering mechanisms
 
 2. Backend:
-   - Enforce rule in service layer:
-     - If WORKER → ignore incoming date and use current timestamp
-     - If MANAGER → allow provided date
-   - Do NOT rely only on frontend validation
+
+- Introduce reusable CSV export mechanism:
+  - Service or utility layer
+
+- For each resource:
+  - Provide export endpoint or reuse existing listing logic with export option
+
+- Ensure:
+  - Filters (farm, date range, search, etc.) are respected
+  - Output format is consistent
 
 3. Frontend:
-   - Hide or disable date input for WORKER users
-   - Allow date selection for MANAGER users
-   - Keep behavior consistent with backend
+
+- Add "Export CSV" action:
+  - For each listing screen
+  - For dashboard and analytics views
+
+- Behavior:
+  - Trigger export using service layer
+  - Download file with proper naming (context-based)
+
+- Ensure:
+  - No duplication of logic
+  - Reusable button/component if possible
 
 ====================================
 AI_CONTEXT.md MAINTENANCE (MANDATORY)
 ====================================
 
-- Update AI_CONTEXT.md to reflect this rule
-- Keep it concise and structured
+- Update AI_CONTEXT.md to reflect:
+  - CSV export capability
+  - How export integrates with filters and context
+  - Any shared utilities introduced
+
+- Keep updates concise and structured
 
 ====================================
 VALIDATION (MANDATORY)
 ====================================
 
-- MANAGER can set custom date
-- WORKER always uses current timestamp
-- Backend enforces rule regardless of frontend
-- No regression in existing flows
+- CSV export works for all resource listings
+- CSV export works for dashboard and analytics
+- Export respects applied filters
+- Exported data matches UI data
+- No regression in existing endpoints
+- Performance is acceptable for typical dataset sizes
+
+====================================
+ANTI-PATTERNS TO AVOID
+====================================
+
+- Duplicating CSV logic per entity
+- Ignoring filters in export
+- Generating CSV only in frontend without consistency
+- Creating tightly coupled export implementations
 
 ====================================
 OUTPUT REQUIREMENTS
 ====================================
 
 - Show only necessary changes
+- Keep explanation minimal
 - Always return a Conventional Commit message
 - Provide git commands if possible
 
@@ -75,4 +144,4 @@ OUTPUT REQUIREMENTS
 GOAL
 ====================================
 
-Enforce role-based control over date handling in a consistent and secure way.
+Deliver a reusable and consistent CSV export feature across listings, dashboard, and analytics, aligned with current system behavior and scalable for future use.

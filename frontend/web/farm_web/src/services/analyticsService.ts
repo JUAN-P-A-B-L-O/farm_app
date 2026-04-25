@@ -1,5 +1,6 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import type { CurrencyCode } from '../context/CurrencyContext'
 import type {
   AnalyticsBarChartPoint,
   AnalyticsDataset,
@@ -10,6 +11,8 @@ import type {
   AnalyticsSeriesApiPoint,
 } from '../types/analytics'
 
+const inFlightAnalyticsDatasetRequests = new Map<string, Promise<AnalyticsDataset>>()
+
 function isValidNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
@@ -18,7 +21,7 @@ function isValidLabel(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-function buildAnalyticsParams(filters: AnalyticsFilters, farmId?: string) {
+function buildAnalyticsParams(filters: AnalyticsFilters, farmId?: string, currency?: CurrencyCode) {
   return {
     ...(farmId ? { farmId } : {}),
     ...(filters.startDate ? { startDate: filters.startDate } : {}),
@@ -26,15 +29,17 @@ function buildAnalyticsParams(filters: AnalyticsFilters, farmId?: string) {
     ...(filters.animalId ? { animalId: filters.animalId } : {}),
     groupBy: filters.groupBy,
     includeAcquisitionCost: filters.includeAcquisitionCost,
+    ...(currency ? { currency } : {}),
   }
 }
 
-function buildProductionByAnimalParams(filters: AnalyticsFilters, farmId?: string) {
+function buildProductionByAnimalParams(filters: AnalyticsFilters, farmId?: string, currency?: CurrencyCode) {
   return {
     ...(filters.startDate ? { startDate: filters.startDate } : {}),
     ...(filters.endDate ? { endDate: filters.endDate } : {}),
     ...(filters.animalId ? { animalId: filters.animalId } : {}),
     ...(farmId ? { farmId } : {}),
+    ...(currency ? { currency } : {}),
   }
 }
 
@@ -71,45 +76,79 @@ function mapProductionByAnimal(points: AnalyticsProductionByAnimalApiPoint[]): A
     : []
 }
 
-export async function getAnalyticsDataset(filters: AnalyticsFilters, farmId?: string): Promise<AnalyticsDataset> {
-  const params = buildAnalyticsParams(filters, farmId)
+export async function getAnalyticsDataset(
+  filters: AnalyticsFilters,
+  farmId?: string,
+  currency?: CurrencyCode,
+): Promise<AnalyticsDataset> {
+  const params = buildAnalyticsParams(filters, farmId, currency)
+  const productionByAnimalParams = buildProductionByAnimalParams(filters, farmId, currency)
+  const requestKey = JSON.stringify({ params, productionByAnimalParams })
+  const existingRequest = inFlightAnalyticsDatasetRequests.get(requestKey)
 
-  const [productionResponse, feedingResponse, profitResponse, productionByAnimalResponse] = await Promise.all([
+  if (existingRequest) {
+    return existingRequest
+  }
+
+  const request = Promise.all([
     api.get<AnalyticsSeriesApiPoint[]>('/analytics/production', { params }),
     api.get<AnalyticsSeriesApiPoint[]>('/analytics/feeding', { params }),
     api.get<AnalyticsProfitApiPoint[]>('/analytics/profit', { params }),
     api.get<AnalyticsProductionByAnimalApiPoint[]>('/analytics/production/by-animal', {
-      params: buildProductionByAnimalParams(filters, farmId),
+      params: productionByAnimalParams,
     }),
   ])
+    .then(([productionResponse, feedingResponse, profitResponse, productionByAnimalResponse]) => ({
+      productionSeries: mapSeriesToLineChart(productionResponse.data),
+      feedingCostSeries: mapSeriesToLineChart(feedingResponse.data),
+      profitSeries: mapProfitToLineChart(profitResponse.data),
+      productionByAnimal: mapProductionByAnimal(productionByAnimalResponse.data),
+    }))
+    .finally(() => {
+      inFlightAnalyticsDatasetRequests.delete(requestKey)
+    })
 
-  return {
-    productionSeries: mapSeriesToLineChart(productionResponse.data),
-    feedingCostSeries: mapSeriesToLineChart(feedingResponse.data),
-    profitSeries: mapProfitToLineChart(profitResponse.data),
-    productionByAnimal: mapProductionByAnimal(productionByAnimalResponse.data),
-  }
+  inFlightAnalyticsDatasetRequests.set(requestKey, request)
+
+  return request
 }
 
-export async function exportAnalyticsProductionCsv(filters: AnalyticsFilters, farmId?: string): Promise<void> {
-  await downloadCsv('/analytics/production/export', buildAnalyticsParams(filters, farmId), 'analytics-production.csv')
+export async function exportAnalyticsProductionCsv(
+  filters: AnalyticsFilters,
+  farmId?: string,
+  currency?: CurrencyCode,
+): Promise<void> {
+  await downloadCsv(
+    '/analytics/production/export',
+    buildAnalyticsParams(filters, farmId, currency),
+    'analytics-production.csv',
+  )
 }
 
-export async function exportAnalyticsFeedingCsv(filters: AnalyticsFilters, farmId?: string): Promise<void> {
-  await downloadCsv('/analytics/feeding/export', buildAnalyticsParams(filters, farmId), 'analytics-feeding.csv')
+export async function exportAnalyticsFeedingCsv(
+  filters: AnalyticsFilters,
+  farmId?: string,
+  currency?: CurrencyCode,
+): Promise<void> {
+  await downloadCsv('/analytics/feeding/export', buildAnalyticsParams(filters, farmId, currency), 'analytics-feeding.csv')
 }
 
-export async function exportAnalyticsProfitCsv(filters: AnalyticsFilters, farmId?: string): Promise<void> {
-  await downloadCsv('/analytics/profit/export', buildAnalyticsParams(filters, farmId), 'analytics-profit.csv')
+export async function exportAnalyticsProfitCsv(
+  filters: AnalyticsFilters,
+  farmId?: string,
+  currency?: CurrencyCode,
+): Promise<void> {
+  await downloadCsv('/analytics/profit/export', buildAnalyticsParams(filters, farmId, currency), 'analytics-profit.csv')
 }
 
 export async function exportAnalyticsProductionByAnimalCsv(
   filters: AnalyticsFilters,
   farmId?: string,
+  currency?: CurrencyCode,
 ): Promise<void> {
   await downloadCsv(
     '/analytics/production/by-animal/export',
-    buildProductionByAnimalParams(filters, farmId),
+    buildProductionByAnimalParams(filters, farmId, currency),
     'analytics-production-by-animal.csv',
   )
 }

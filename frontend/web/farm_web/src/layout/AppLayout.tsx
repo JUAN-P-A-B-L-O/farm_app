@@ -1,5 +1,6 @@
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useCurrency } from '../hooks/useCurrency'
 import { useFarm } from '../hooks/useFarm'
 import { useLanguage, type Language } from '../context/LanguageContext'
 import { useTranslation } from '../hooks/useTranslation'
@@ -29,6 +30,7 @@ function AppLayout() {
     errorMessage: farmsErrorMessage,
     setSelectedFarmId,
   } = useFarm()
+  const { currency, setCurrency } = useCurrency()
   const { language, setLanguage } = useLanguage()
   const { t } = useTranslation()
   const canManageRestrictedFeatures = isManager(user)
@@ -119,6 +121,21 @@ function AppLayout() {
               EN
             </button>
           </div>
+        </div>
+
+        <div className="app-layout__farm-selector">
+          <label className="app-layout__language-label" htmlFor="currency-selector">
+            {t('layout.currencyLabel')}
+          </label>
+          <select
+            id="currency-selector"
+            className="app-layout__farm-select"
+            value={currency}
+            onChange={(event) => setCurrency(event.target.value as 'BRL' | 'USD')}
+          >
+            <option value="BRL">BRL</option>
+            <option value="USD">USD</option>
+          </select>
         </div>
 
         <div className="app-layout__session">

@@ -1,13 +1,33 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 import type { User, UserFormData, UserListFilters } from '../types/user'
+
+function buildUserListParams(filters?: UserListFilters) {
+  return {
+    ...(filters?.search ? { search: filters.search } : {}),
+    ...(filters?.active ? { active: filters.active } : {}),
+    ...(filters?.role ? { role: filters.role } : {}),
+  }
+}
 
 export async function getAllUsers(filters?: UserListFilters): Promise<User[]> {
   const response = await api.get<User[]>('/users', {
+    params: buildUserListParams(filters),
+  })
+
+  return response.data
+}
+
+export async function getUsersPage(
+  filters: UserListFilters | undefined,
+  pagination: PaginationParams,
+): Promise<PaginatedResponse<User>> {
+  const response = await api.get<PaginatedResponse<User>>('/users', {
     params: {
-      ...(filters?.search ? { search: filters.search } : {}),
-      ...(filters?.active ? { active: filters.active } : {}),
-      ...(filters?.role ? { role: filters.role } : {}),
+      ...buildUserListParams(filters),
+      page: pagination.page,
+      size: pagination.size,
     },
   })
 
@@ -70,9 +90,5 @@ export async function updateOwnPassword(currentPassword: string, newPassword: st
 }
 
 export async function exportUsersCsv(filters?: UserListFilters): Promise<void> {
-  await downloadCsv('/users/export', {
-    ...(filters?.search ? { search: filters.search } : {}),
-    ...(filters?.active ? { active: filters.active } : {}),
-    ...(filters?.role ? { role: filters.role } : {}),
-  }, 'users.csv')
+  await downloadCsv('/users/export', buildUserListParams(filters), 'users.csv')
 }

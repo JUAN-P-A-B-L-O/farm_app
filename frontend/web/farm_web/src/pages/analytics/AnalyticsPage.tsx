@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import axios from 'axios'
 import BarChart from '../../components/analytics/BarChart'
 import ChartErrorBoundary from '../../components/analytics/ChartErrorBoundary'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import LineChart from '../../components/analytics/LineChart'
+import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
@@ -16,6 +17,7 @@ import {
 } from '../../services/analyticsService'
 import type { Animal, ApiErrorResponse } from '../../types/animal'
 import type { AnalyticsDataset, AnalyticsFilters } from '../../types/analytics'
+import { appendCurrencyCode, formatCurrencyValue } from '../../utils/currency'
 import '../../App.css'
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -54,6 +56,7 @@ const emptyDataset: AnalyticsDataset = {
 
 function AnalyticsPage() {
   const { t, language } = useTranslation()
+  const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
   const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters)
@@ -65,6 +68,9 @@ function AnalyticsPage() {
   const [hasAppliedFilters, setHasAppliedFilters] = useState(false)
   const [animalsErrorMessage, setAnimalsErrorMessage] = useState('')
   const [chartsErrorMessage, setChartsErrorMessage] = useState('')
+  const resolveErrorMessage = useEffectEvent((error: unknown, fallbackKey: string) =>
+    getErrorMessage(error, t(fallbackKey)),
+  )
 
   const errorMessage = animalsErrorMessage || chartsErrorMessage
 
@@ -85,7 +91,7 @@ function AnalyticsPage() {
         }
       } catch (error) {
         if (isActive) {
-          setAnimalsErrorMessage(getErrorMessage(error, t('analytics.loadAnimalsError')))
+          setAnimalsErrorMessage(resolveErrorMessage(error, 'analytics.loadAnimalsError'))
         }
       } finally {
         if (isActive) {
@@ -99,7 +105,7 @@ function AnalyticsPage() {
     return () => {
       isActive = false
     }
-  }, [language, selectedFarmId])
+  }, [selectedFarmId])
 
   useEffect(() => {
     if (!hasAppliedFilters) {
@@ -109,20 +115,29 @@ function AnalyticsPage() {
     let isActive = true
 
     async function loadAnalytics() {
+      if (!selectedFarmId) {
+        if (isActive) {
+          setAnalytics(emptyDataset)
+          setChartsErrorMessage('')
+          setIsChartsLoading(false)
+        }
+        return
+      }
+
       if (isActive) {
         setIsChartsLoading(true)
         setChartsErrorMessage('')
       }
 
       try {
-        const dataset = await getAnalyticsDataset(appliedFilters, selectedFarmId)
+        const dataset = await getAnalyticsDataset(appliedFilters, selectedFarmId, currency)
 
         if (isActive) {
           setAnalytics(dataset)
         }
       } catch (error) {
         if (isActive) {
-          setChartsErrorMessage(getErrorMessage(error, t('analytics.loadChartsError')))
+          setChartsErrorMessage(resolveErrorMessage(error, 'analytics.loadChartsError'))
           setAnalytics(emptyDataset)
         }
       } finally {
@@ -137,10 +152,11 @@ function AnalyticsPage() {
     return () => {
       isActive = false
     }
-  }, [appliedFilters, hasAppliedFilters, language, selectedFarmId])
+  }, [appliedFilters, currency, hasAppliedFilters, selectedFarmId])
 
   const showCharts = hasAppliedFilters && !isChartsLoading && !errorMessage
   const shouldShowInitialState = !hasAppliedFilters && !isChartsLoading && !errorMessage
+  const formatChartCurrency = (value: number) => formatCurrencyValue(value, language, currency)
 
   function renderChartEmptyState() {
     return <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
@@ -170,13 +186,13 @@ function AnalyticsPage() {
 
     try {
       if (key === 'production') {
-        await exportAnalyticsProductionCsv(appliedFilters, selectedFarmId)
+        await exportAnalyticsProductionCsv(appliedFilters, selectedFarmId, currency)
       } else if (key === 'feeding') {
-        await exportAnalyticsFeedingCsv(appliedFilters, selectedFarmId)
+        await exportAnalyticsFeedingCsv(appliedFilters, selectedFarmId, currency)
       } else if (key === 'profit') {
-        await exportAnalyticsProfitCsv(appliedFilters, selectedFarmId)
+        await exportAnalyticsProfitCsv(appliedFilters, selectedFarmId, currency)
       } else {
-        await exportAnalyticsProductionByAnimalCsv(appliedFilters, selectedFarmId)
+        await exportAnalyticsProductionByAnimalCsv(appliedFilters, selectedFarmId, currency)
       }
     } catch (error) {
       setChartsErrorMessage(getErrorMessage(error, t('common.exportError')))
@@ -316,7 +332,7 @@ function AnalyticsPage() {
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
               <div className="analytics-chart__header-copy">
-                <h2>{t('analytics.feedingCostTitle')}</h2>
+                <h2>{appendCurrencyCode(t('analytics.feedingCostTitle'), currency)}</h2>
                 <p>{t('analytics.feedingCostDescription')}</p>
               </div>
               <ExportCsvButton
@@ -332,7 +348,11 @@ function AnalyticsPage() {
 
             {showCharts && analytics.feedingCostSeries.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
-                <LineChart data={analytics.feedingCostSeries} color="#c26b2c" />
+                <LineChart
+                  data={analytics.feedingCostSeries}
+                  color="#c26b2c"
+                  valueFormatter={formatChartCurrency}
+                />
               </ChartErrorBoundary>
             )}
 
@@ -344,7 +364,7 @@ function AnalyticsPage() {
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
               <div className="analytics-chart__header-copy">
-                <h2>{t('analytics.profitTitle')}</h2>
+                <h2>{appendCurrencyCode(t('analytics.profitTitle'), currency)}</h2>
                 <p>{t('analytics.profitDescription')}</p>
               </div>
               <ExportCsvButton
@@ -360,7 +380,11 @@ function AnalyticsPage() {
 
             {showCharts && analytics.profitSeries.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
-                <LineChart data={analytics.profitSeries} color="#2e5b9a" />
+                <LineChart
+                  data={analytics.profitSeries}
+                  color="#2e5b9a"
+                  valueFormatter={formatChartCurrency}
+                />
               </ChartErrorBoundary>
             )}
 

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import PaginationControls from '../../components/common/PaginationControls'
 import FeedingForm from '../../components/feeding/FeedingForm'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
@@ -10,7 +12,7 @@ import {
   createFeeding,
   deleteFeeding,
   exportFeedingsCsv,
-  getAllFeedings,
+  getFeedingsPage,
   getAllFeedTypes,
   getFeedingById,
   updateFeeding,
@@ -22,7 +24,9 @@ import type {
   FeedingApiErrorResponse,
   FeedingFeedTypeOption,
   FeedingFormData,
+  FeedingListFilters,
 } from '../../types/feeding'
+import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { isManager } from '../../utils/authorization'
 import '../../App.css'
 
@@ -32,6 +36,13 @@ const emptyFeedingForm: FeedingFormData = {
   date: '',
   quantity: 0,
   userId: '',
+}
+
+const defaultFilters: FeedingListFilters = {
+  search: '',
+  animalId: '',
+  feedTypeId: '',
+  date: '',
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
@@ -71,6 +82,9 @@ function FeedingPage() {
   const canSelectCreateDate = isManager(user)
   const canDeleteResources = isManager(user)
   const [feedings, setFeedings] = useState<Feeding[]>([])
+  const [pagination, setPagination] = useState(createEmptyPaginatedResponse<Feeding>())
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [animals, setAnimals] = useState<FeedingAnimalOption[]>([])
   const [feedTypes, setFeedTypes] = useState<FeedingFeedTypeOption[]>([])
   const [formInitialValues, setFormInitialValues] = useState<FeedingFormData>(emptyFeedingForm)
@@ -82,10 +96,18 @@ function FeedingPage() {
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingFeedingId, setEditingFeedingId] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
+  const [filters, setFilters] = useState<FeedingListFilters>(defaultFilters)
+  const [appliedFilters, setAppliedFilters] = useState<FeedingListFilters>(defaultFilters)
 
-  async function loadFeedings() {
+  async function loadFeedings(
+    nextFilters: FeedingListFilters = appliedFilters,
+    targetPage = page,
+    targetSize = pageSize,
+  ) {
     if (!selectedFarmId) {
       setFeedings([])
+      setPagination(createEmptyPaginatedResponse<Feeding>(targetSize))
+      setPage(0)
       setListErrorMessage('')
       setIsLoading(false)
       return
@@ -95,8 +117,17 @@ function FeedingPage() {
     setListErrorMessage('')
 
     try {
-      const data = await getAllFeedings(selectedFarmId)
-      setFeedings(data)
+      const data = await getFeedingsPage(selectedFarmId, { page: targetPage, size: targetSize }, nextFilters)
+
+      if (data.content.length === 0 && data.totalElements > 0 && data.totalPages > 0 && targetPage >= data.totalPages) {
+        await loadFeedings(nextFilters, data.totalPages - 1, targetSize)
+        return
+      }
+
+      setFeedings(data.content)
+      setPagination(data)
+      setPage(data.page)
+      setPageSize(data.size)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('feeding.errors.loadRecords'), t))
     } finally {
@@ -132,8 +163,24 @@ function FeedingPage() {
   }
 
   useEffect(() => {
-    void Promise.all([loadFeedings(), loadFormOptions()])
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    void Promise.all([loadFeedings(defaultFilters), loadFormOptions()])
   }, [selectedFarmId])
+
+  function handlePageChange(nextPage: number) {
+    if (nextPage === page) {
+      return
+    }
+
+    void loadFeedings(appliedFilters, nextPage, pageSize)
+  }
+
+  function handlePageSizeChange(nextSize: number) {
+    setPage(0)
+    setPageSize(nextSize)
+    void loadFeedings(appliedFilters, 0, nextSize)
+  }
 
   async function handleCreateOrUpdateFeeding(data: FeedingFormData) {
     setIsSubmitting(true)
@@ -224,12 +271,25 @@ function FeedingPage() {
     setListErrorMessage('')
 
     try {
-      await exportFeedingsCsv(selectedFarmId)
+      await exportFeedingsCsv(selectedFarmId, appliedFilters)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
     } finally {
       setIsExporting(false)
     }
+  }
+
+  function applyFilters() {
+    setAppliedFilters(filters)
+    setPage(0)
+    void loadFeedings(filters, 0, pageSize)
+  }
+
+  function clearFilters() {
+    setFilters(defaultFilters)
+    setAppliedFilters(defaultFilters)
+    setPage(0)
+    void loadFeedings(defaultFilters, 0, pageSize)
   }
 
   return (
@@ -296,6 +356,47 @@ function FeedingPage() {
             />
           </div>
 
+          <ListingFiltersBar
+            searchId="feeding-search"
+            searchLabel={t('feeding.filters.searchLabel')}
+            searchPlaceholder={t('feeding.filters.searchPlaceholder')}
+            searchValue={filters.search}
+            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+            onApply={applyFilters}
+            onClear={clearFilters}
+            applyLabel={t('feeding.filters.apply')}
+            clearLabel={t('feeding.filters.clear')}
+            filters={[
+              {
+                id: 'feeding-animal-filter',
+                label: t('feeding.filters.animalLabel'),
+                value: filters.animalId,
+                onChange: (value) => setFilters((current) => ({ ...current, animalId: value })),
+                options: [
+                  { value: '', label: t('feeding.filters.allAnimals') },
+                  ...animals.map((animal) => ({ value: animal.id, label: animal.tag })),
+                ],
+              },
+              {
+                id: 'feeding-feed-type-filter',
+                label: t('feeding.filters.feedTypeLabel'),
+                value: filters.feedTypeId,
+                onChange: (value) => setFilters((current) => ({ ...current, feedTypeId: value })),
+                options: [
+                  { value: '', label: t('feeding.filters.allFeedTypes') },
+                  ...feedTypes.map((feedType) => ({ value: feedType.id, label: feedType.name })),
+                ],
+              },
+              {
+                id: 'feeding-date-filter',
+                label: t('feeding.filters.dateLabel'),
+                value: filters.date,
+                onChange: (value) => setFilters((current) => ({ ...current, date: value })),
+                max: new Date().toISOString().slice(0, 10),
+              },
+            ]}
+          />
+
           {isLoading && <p className="animals-page__status">{t('feeding.loadingRecords')}</p>}
 
           {listErrorMessage && (
@@ -309,7 +410,8 @@ function FeedingPage() {
           )}
 
           {!isLoading && !listErrorMessage && feedings.length > 0 && (
-            <div className="animals-table-wrapper">
+            <>
+              <div className="animals-table-wrapper">
               <table className="animals-table">
                 <thead>
                   <tr>
@@ -351,7 +453,15 @@ function FeedingPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+
+              <PaginationControls
+                pagination={pagination}
+                isLoading={isLoading}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </>
           )}
         </article>
       </section>

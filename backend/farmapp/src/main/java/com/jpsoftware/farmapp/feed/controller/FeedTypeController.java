@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.feed.controller;
 import com.jpsoftware.farmapp.feed.dto.CreateFeedTypeRequest;
 import com.jpsoftware.farmapp.feed.dto.FeedTypeResponse;
 import com.jpsoftware.farmapp.feed.service.FeedTypeService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,15 +57,29 @@ public class FeedTypeController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Feed types retrieved successfully")
     })
-    public ResponseEntity<List<FeedTypeResponse>> findAll(@RequestParam(required = false) String farmId) {
-        List<FeedTypeResponse> response = feedTypeService.findAll(farmId);
+    public ResponseEntity<?> findAll(
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            PaginatedResponse<FeedTypeResponse> response = feedTypeService.findAllPaginated(farmId, search, page, size);
+            return ResponseEntity.ok(response);
+        }
+
+        List<FeedTypeResponse> response = feedTypeService.findAll(farmId, search);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/export")
     @Operation(summary = "Export feed types", description = "Exports feed types as CSV using the current farm filter.")
-    public ResponseEntity<byte[]> export(@RequestParam(required = false) String farmId) {
-        return CsvResponseFactory.buildDownload("feed-types.csv", feedTypeService.exportAll(farmId));
+    public ResponseEntity<byte[]> export(
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String currency) {
+        return CsvResponseFactory.buildDownload(
+                "feed-types.csv",
+                feedTypeService.exportAll(farmId, search, StringUtils.hasText(currency) ? currency : null));
     }
 
     @GetMapping("/{id}")

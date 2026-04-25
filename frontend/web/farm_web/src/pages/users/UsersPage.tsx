@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import PaginationControls from '../../components/common/PaginationControls'
 import UserForm from '../../components/user/UserForm'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAccessibleFarms } from '../../services/farmService'
@@ -10,12 +11,13 @@ import {
   createUser,
   deleteUser,
   exportUsersCsv,
-  getAllUsers,
+  getUsersPage,
   inactivateUser,
   updateUser,
 } from '../../services/userService'
 import type { Farm } from '../../types/farm'
 import type { User, UserApiErrorResponse, UserFormData, UserListFilters } from '../../types/user'
+import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import '../../App.css'
 
 const emptyUserForm: UserFormData = {
@@ -71,6 +73,9 @@ function getInitials(user: User) {
 function UsersPage() {
   const { t } = useTranslation()
   const [users, setUsers] = useState<User[]>([])
+  const [pagination, setPagination] = useState(createEmptyPaginatedResponse<User>())
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [farms, setFarms] = useState<Farm[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingFarms, setIsLoadingFarms] = useState(true)
@@ -86,13 +91,26 @@ function UsersPage() {
   const [activationPassword, setActivationPassword] = useState('')
   const [isExporting, setIsExporting] = useState(false)
 
-  async function loadUsers(nextFilters: UserListFilters = appliedFilters) {
+  async function loadUsers(
+    nextFilters: UserListFilters = appliedFilters,
+    targetPage = page,
+    targetSize = pageSize,
+  ) {
     setIsLoading(true)
     setListErrorMessage('')
 
     try {
-      const data = await getAllUsers(nextFilters)
-      setUsers(data)
+      const data = await getUsersPage(nextFilters, { page: targetPage, size: targetSize })
+
+      if (data.content.length === 0 && data.totalElements > 0 && data.totalPages > 0 && targetPage >= data.totalPages) {
+        await loadUsers(nextFilters, data.totalPages - 1, targetSize)
+        return
+      }
+
+      setUsers(data.content)
+      setPagination(data)
+      setPage(data.page)
+      setPageSize(data.size)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('accessControl.errors.loadList'), t))
     } finally {
@@ -114,9 +132,23 @@ function UsersPage() {
   }
 
   useEffect(() => {
-    void loadUsers(defaultFilters)
+    void loadUsers(defaultFilters, 0, pageSize)
     void loadFarms()
   }, [])
+
+  function handlePageChange(nextPage: number) {
+    if (nextPage === page) {
+      return
+    }
+
+    void loadUsers(appliedFilters, nextPage, pageSize)
+  }
+
+  function handlePageSizeChange(nextSize: number) {
+    setPage(0)
+    setPageSize(nextSize)
+    void loadUsers(appliedFilters, 0, nextSize)
+  }
 
   async function handleCreateOrUpdate(data: UserFormData) {
     setIsSubmitting(true)
@@ -258,13 +290,15 @@ function UsersPage() {
 
   function applyFilters() {
     setAppliedFilters(filters)
-    void loadUsers(filters)
+    setPage(0)
+    void loadUsers(filters, 0, pageSize)
   }
 
   function clearFilters() {
     setFilters(defaultFilters)
     setAppliedFilters(defaultFilters)
-    void loadUsers(defaultFilters)
+    setPage(0)
+    void loadUsers(defaultFilters, 0, pageSize)
   }
 
   async function handleExport() {
@@ -423,7 +457,8 @@ function UsersPage() {
           )}
 
           {!isLoading && !listErrorMessage && users.length > 0 && (
-            <div className="animals-table-wrapper">
+            <>
+              <div className="animals-table-wrapper">
               <table className="animals-table">
                 <thead>
                   <tr>
@@ -503,16 +538,15 @@ function UsersPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
+              </div>
 
-          {!isLoading && !listErrorMessage && users.length > 0 && (
-            <p className="users-page__results">
-              {t('accessControl.filters.results').replace('{count}', String(users.length))}
-              {appliedFilters.search || appliedFilters.active || appliedFilters.role
-                ? ` ${t('accessControl.filters.filteredSuffix')}`
-                : ''}
-            </p>
+              <PaginationControls
+                pagination={pagination}
+                isLoading={isLoading}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </>
           )}
         </article>
       </section>

@@ -50,27 +50,29 @@ public class ProductionController {
             @ApiResponse(responseCode = "200", description = "Production records retrieved successfully")
     })
     public ResponseEntity<?> findAll(
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) LocalDate date,
             @RequestParam(required = false) String farmId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         if (page != null && size != null) {
-            PaginatedResponse<ProductionResponse> response = productionService.findAllPaginated(animalId, date, farmId, page, size);
+            PaginatedResponse<ProductionResponse> response = productionService.findAllPaginated(search, animalId, date, farmId, page, size);
             return ResponseEntity.ok(response);
         }
 
-        List<ProductionResponse> response = productionService.findAll(animalId, date, farmId);
+        List<ProductionResponse> response = productionService.findAll(search, animalId, date, farmId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/export")
     @Operation(summary = "Export productions", description = "Exports production records as CSV using the current filters.")
     public ResponseEntity<byte[]> export(
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) LocalDate date,
             @RequestParam(required = false) String farmId) {
-        return CsvResponseFactory.buildDownload("productions.csv", productionService.exportAll(animalId, date, farmId));
+        return CsvResponseFactory.buildDownload("productions.csv", productionService.exportAll(search, animalId, date, farmId));
     }
 
     @GetMapping("/{id}")
