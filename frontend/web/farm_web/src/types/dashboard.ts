@@ -11,6 +11,6 @@ export interface DashboardSummary {
 export interface DashboardFilters {
   startDate: string
   endDate: string
-  animalId: string
+  animalIds: string[]
   status: '' | AnimalStatus
 }

@@ -69,6 +69,7 @@ const ptBR = {
       animalLabel: 'Animal',
       statusLabel: 'Status',
       allAnimals: 'Todos os animais',
+      allAnimalsHint: 'Deixe vazio para incluir todos os animais. A seleção múltipla é suportada.',
       allStatuses: 'Todos os status',
       apply: 'Aplicar filtros',
       clear: 'Limpar',

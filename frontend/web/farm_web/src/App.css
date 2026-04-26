@@ -678,6 +678,10 @@
   background: #fff;
 }
 
+.analytics-controls select[multiple] {
+  min-height: 156px;
+}
+
 .analytics-controls select:focus,
 .analytics-controls input:focus {
   outline: 2px solid #9fc5a1;

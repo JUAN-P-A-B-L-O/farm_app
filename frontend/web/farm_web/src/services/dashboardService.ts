@@ -11,11 +11,14 @@ function buildDashboardParams(
   currency?: CurrencyCode,
   filters?: DashboardFilters,
 ) {
+  const selectedAnimalIds = filters?.animalIds ?? []
+
   return {
     ...(farmId ? { farmId } : {}),
     ...(filters?.startDate ? { startDate: filters.startDate } : {}),
     ...(filters?.endDate ? { endDate: filters.endDate } : {}),
-    ...(filters?.animalId ? { animalId: filters.animalId } : {}),
+    ...(selectedAnimalIds.length === 1 ? { animalId: selectedAnimalIds[0] } : {}),
+    ...(selectedAnimalIds.length > 1 ? { animalIds: selectedAnimalIds.join(',') } : {}),
     ...(filters?.status ? { status: filters.status } : {}),
     includeAcquisitionCost,
     ...(currency ? { currency } : {}),

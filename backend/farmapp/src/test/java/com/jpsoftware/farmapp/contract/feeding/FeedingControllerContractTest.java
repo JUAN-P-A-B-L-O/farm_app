@@ -244,17 +244,24 @@ class FeedingControllerContractTest {
         }
 
         @Override
-        public List<FeedingResponse> findAll(String animalId, LocalDate date, String farmId) {
+        public List<FeedingResponse> findAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
             return findAllResponse;
         }
 
         @Override
-        public String exportAll(String animalId, LocalDate date, String farmId) {
+        public String exportAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
             return exportResponse;
         }
 
         @Override
-        public PaginatedResponse<FeedingResponse> findAllPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
+        public PaginatedResponse<FeedingResponse> findAllPaginated(
+                String search,
+                String animalId,
+                String feedTypeId,
+                LocalDate date,
+                String farmId,
+                int page,
+                int size) {
             return paginatedResponse;
         }
 

@@ -65,6 +65,7 @@
   Listing filters use page-local draft state and separate applied state so pagination/refresh/export reuse the same
   query params
   Dashboard filters follow the same draft/applied pattern so refresh and CSV export reuse the exact selected scope
+  Dashboard animal filtering supports a single animalId or a multi-select animalIds scope; the selected farm still comes from FarmContext
   Shared listing filter component: frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx
   CSV downloads are triggered from service layer; frontend helper is centralized in frontend/web/farm_web/src/services/
   csvExportService.ts
@@ -201,7 +202,7 @@
   GET /dashboard and GET /dashboard/export require MANAGER
   All /analytics/** endpoints require MANAGER
   GET /dashboard and GET /analytics/profit accept includeAcquisitionCost; default true
-  GET /dashboard and GET /dashboard/export support optional startDate, endDate, animalId, and status filters
+  GET /dashboard and GET /dashboard/export support optional startDate, endDate, animalId, animalIds, and status filters
   Dashboard default filter scope is all time, all animals, all statuses within the selected farm context
   Dashboard date range filters production, feeding cost, milk revenue, and sale revenue; animal count and acquisition
   cost remain scoped by farm/animal/status because acquisition date is not modeled

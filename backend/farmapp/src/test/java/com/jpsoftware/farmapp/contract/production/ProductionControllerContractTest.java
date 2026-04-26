@@ -294,17 +294,23 @@ class ProductionControllerContractTest {
         }
 
         @Override
-        public List<ProductionResponse> findAll(String animalId, LocalDate date, String farmId) {
+        public List<ProductionResponse> findAll(String search, String animalId, LocalDate date, String farmId) {
             return findAllResponse;
         }
 
         @Override
-        public String exportAll(String animalId, LocalDate date, String farmId) {
+        public String exportAll(String search, String animalId, LocalDate date, String farmId) {
             return exportResponse;
         }
 
         @Override
-        public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
+        public PaginatedResponse<ProductionResponse> findAllPaginated(
+                String search,
+                String animalId,
+                LocalDate date,
+                String farmId,
+                int page,
+                int size) {
             return paginatedResponse;
         }
 

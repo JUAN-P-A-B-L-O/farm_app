@@ -69,6 +69,7 @@ const en = {
       animalLabel: 'Animal',
       statusLabel: 'Status',
       allAnimals: 'All animals',
+      allAnimalsHint: 'Leave empty to include every animal. Multiple selection is supported.',
       allStatuses: 'All statuses',
       apply: 'Apply filters',
       clear: 'Clear',

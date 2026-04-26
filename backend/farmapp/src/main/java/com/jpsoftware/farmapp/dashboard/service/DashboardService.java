@@ -19,6 +19,7 @@ import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -100,9 +101,40 @@ public class DashboardService {
             String status,
             boolean includeAcquisitionCost,
             String currency) {
-        validateFilters(farmId, startDate, endDate, animalId, status);
+        return getDashboardByAnimals(
+                farmId,
+                startDate,
+                endDate,
+                toAnimalFilterList(animalId),
+                status,
+                includeAcquisitionCost,
+                currency);
+    }
 
-        List<AnimalEntity> animals = filterAnimals(animalId, farmId, status);
+    @Transactional(readOnly = true)
+    public DashboardResponse getDashboardByAnimals(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Collection<String> animalIds,
+            String status,
+            boolean includeAcquisitionCost) {
+        return getDashboardByAnimals(farmId, startDate, endDate, animalIds, status, includeAcquisitionCost, null);
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardResponse getDashboardByAnimals(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Collection<String> animalIds,
+            String status,
+            boolean includeAcquisitionCost,
+            String currency) {
+        List<String> normalizedAnimalIds = normalizeAnimalIds(animalIds);
+        validateFilters(farmId, startDate, endDate, normalizedAnimalIds, status);
+
+        List<AnimalEntity> animals = filterAnimals(normalizedAnimalIds, farmId, status);
         Set<String> scopedAnimalIds = animals.stream()
                 .map(AnimalEntity::getId)
                 .collect(Collectors.toSet());
@@ -159,6 +191,17 @@ public class DashboardService {
     }
 
     @Transactional(readOnly = true)
+    public String exportDashboardByAnimals(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Collection<String> animalIds,
+            String status,
+            boolean includeAcquisitionCost) {
+        return exportDashboardByAnimals(farmId, startDate, endDate, animalIds, status, includeAcquisitionCost, null);
+    }
+
+    @Transactional(readOnly = true)
     public String exportDashboard(
             String farmId,
             LocalDate startDate,
@@ -167,7 +210,39 @@ public class DashboardService {
             String status,
             boolean includeAcquisitionCost,
             String currency) {
-        DashboardResponse dashboard = getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency);
+        DashboardResponse dashboard = getDashboard(
+                farmId,
+                startDate,
+                endDate,
+                animalId,
+                status,
+                includeAcquisitionCost,
+                currency);
+        return CsvExportUtils.write(List.of(dashboard), List.of(
+                new CsvColumn<>("totalProduction", DashboardResponse::getTotalProduction),
+                new CsvColumn<>("totalFeedingCost", DashboardResponse::getTotalFeedingCost),
+                new CsvColumn<>("totalRevenue", DashboardResponse::getTotalRevenue),
+                new CsvColumn<>("totalProfit", DashboardResponse::getTotalProfit),
+                new CsvColumn<>("animalCount", DashboardResponse::getAnimalCount)));
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDashboardByAnimals(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Collection<String> animalIds,
+            String status,
+            boolean includeAcquisitionCost,
+            String currency) {
+        DashboardResponse dashboard = getDashboardByAnimals(
+                farmId,
+                startDate,
+                endDate,
+                animalIds,
+                status,
+                includeAcquisitionCost,
+                currency);
         return CsvExportUtils.write(List.of(dashboard), List.of(
                 new CsvColumn<>("totalProduction", DashboardResponse::getTotalProduction),
                 new CsvColumn<>("totalFeedingCost", DashboardResponse::getTotalFeedingCost),
@@ -180,7 +255,7 @@ public class DashboardService {
             String farmId,
             LocalDate startDate,
             LocalDate endDate,
-            String animalId,
+            Collection<String> animalIds,
             String status) {
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
             throw new ValidationException("startDate must be before or equal to endDate");
@@ -190,12 +265,14 @@ public class DashboardService {
             farmAccessService.validateAccessibleFarmIfPresent(farmId);
         }
 
-        if (StringUtils.hasText(animalId) && !animalRepository.existsById(animalId)) {
-            throw new ResourceNotFoundException("Animal not found");
-        }
+        for (String animalId : animalIds) {
+            if (!animalRepository.existsById(animalId)) {
+                throw new ResourceNotFoundException("Animal not found");
+            }
 
-        if (StringUtils.hasText(animalId) && StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId)) {
-            throw new ResourceNotFoundException("Animal not found");
+            if (StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId)) {
+                throw new ResourceNotFoundException("Animal not found");
+            }
         }
 
         if (StringUtils.hasText(status) && !SUPPORTED_ANIMAL_STATUSES.contains(status)) {
@@ -203,13 +280,13 @@ public class DashboardService {
         }
     }
 
-    private List<AnimalEntity> filterAnimals(String animalId, String farmId, String status) {
+    private List<AnimalEntity> filterAnimals(Collection<String> animalIds, String farmId, String status) {
         List<AnimalEntity> animals;
-        if (StringUtils.hasText(animalId)) {
-            AnimalEntity animal = StringUtils.hasText(farmId)
-                    ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)
-                    : animalRepository.findById(animalId).orElse(null);
-            animals = animal != null ? List.of(animal) : List.of();
+        if (!animalIds.isEmpty()) {
+            LinkedHashSet<String> requestedAnimalIds = new LinkedHashSet<>(animalIds);
+            animals = animalRepository.findAllById(requestedAnimalIds).stream()
+                    .filter(animal -> !StringUtils.hasText(farmId) || Objects.equals(animal.getFarmId(), farmId))
+                    .toList();
         } else if (StringUtils.hasText(farmId)) {
             animals = animalRepository.findByFarmId(farmId);
         } else {
@@ -311,5 +388,24 @@ public class DashboardService {
 
     private boolean matchesStatus(String animalStatus, String requestedStatus) {
         return !StringUtils.hasText(requestedStatus) || Objects.equals(animalStatus, requestedStatus);
+    }
+
+    private List<String> toAnimalFilterList(String animalId) {
+        if (!StringUtils.hasText(animalId)) {
+            return List.of();
+        }
+        return List.of(animalId.trim());
+    }
+
+    private List<String> normalizeAnimalIds(Collection<String> animalIds) {
+        if (animalIds == null || animalIds.isEmpty()) {
+            return List.of();
+        }
+
+        return animalIds.stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .toList();
     }
 }

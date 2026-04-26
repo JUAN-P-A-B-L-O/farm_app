@@ -30,9 +30,11 @@ function compileServices() {
     [
       ["import api from './api'\n", "import api from './api.js'\n"],
       ["import { downloadCsv } from './csvExportService'\n", "import { downloadCsv } from './csvExportService.js'\n"],
+      ["import type { PaginatedResponse, PaginationParams } from '../types/pagination'\n", ''],
       ["import type { User, UserFormData, UserListFilters } from '../types/user'\n", ''],
       [/function buildUserListParams\(filters\?: UserListFilters\) \{/g, 'function buildUserListParams(filters) {'],
       [/export async function getAllUsers\(filters\?: UserListFilters\): Promise<User\[]> \{/g, 'export async function getAllUsers(filters) {'],
+      [/export async function getUsersPage\([\s\S]*?\): Promise<PaginatedResponse<User>> \{/g, 'export async function getUsersPage(filters, pagination) {'],
       [/export async function createUser\(data: UserFormData\): Promise<User> \{/g, 'export async function createUser(data) {'],
       [/export async function updateUser\(id: string, data: UserFormData\): Promise<User> \{/g, 'export async function updateUser(id, data) {'],
       [/export async function inactivateUser\(id: string\): Promise<User> \{/g, 'export async function inactivateUser(id) {'],
@@ -41,6 +43,7 @@ function compileServices() {
       [/export async function updateOwnPassword\(currentPassword: string, newPassword: string\): Promise<void> \{/g, 'export async function updateOwnPassword(currentPassword, newPassword) {'],
       [/export async function exportUsersCsv\(filters\?: UserListFilters\): Promise<void> \{/g, 'export async function exportUsersCsv(filters) {'],
       [/const response = await api.get<User\[]>/g, 'const response = await api.get'],
+      [/const response = await api.get<PaginatedResponse<User>>/g, 'const response = await api.get'],
       [/const response = await api.post<User>/g, 'const response = await api.post'],
       [/const response = await api.put<User>/g, 'const response = await api.put'],
       [/const response = await api.patch<User>/g, 'const response = await api.patch'],
@@ -54,11 +57,12 @@ function compileServices() {
       ["import api from './api'\n", "import api from './api.js'\n"],
       ["import { downloadCsv } from './csvExportService'\n", "import { downloadCsv } from './csvExportService.js'\n"],
       ["import type { CurrencyCode } from '../context/CurrencyContext'\n", ''],
-      ["import type { DashboardSummary } from '../types/dashboard'\n", ''],
-      [/function buildDashboardParams\(farmId\?: string, includeAcquisitionCost = true, currency\?: CurrencyCode\) \{/g, 'function buildDashboardParams(farmId, includeAcquisitionCost = true, currency) {'],
-      [/export async function fetchDashboard\([\s\S]*?\): Promise<DashboardSummary> \{/g, 'export async function fetchDashboard(farmId, includeAcquisitionCost = true, currency) {'],
-      [/export async function exportDashboardCsv\([\s\S]*?\): Promise<void> \{/g, 'export async function exportDashboardCsv(farmId, includeAcquisitionCost = true, currency) {'],
-      [/const response = await api.get<DashboardSummary>/g, 'const response = await api.get'],
+      ["import type { DashboardFilters, DashboardSummary } from '../types/dashboard'\n", ''],
+      ["const inFlightDashboardRequests = new Map<string, Promise<DashboardSummary>>()\n", 'const inFlightDashboardRequests = new Map()\n'],
+      [/function buildDashboardParams\([\s\S]*?\) \{/g, 'function buildDashboardParams(farmId, includeAcquisitionCost = true, currency, filters) {'],
+      [/export async function fetchDashboard\([\s\S]*?\): Promise<DashboardSummary> \{/g, 'export async function fetchDashboard(farmId, includeAcquisitionCost = true, currency, filters) {'],
+      [/export async function exportDashboardCsv\([\s\S]*?\): Promise<void> \{/g, 'export async function exportDashboardCsv(farmId, includeAcquisitionCost = true, currency, filters) {'],
+      [/api.get<DashboardSummary>/g, 'api.get'],
     ],
   )
 
@@ -204,6 +208,46 @@ test('dashboard export keeps the default acquisition-cost context without a farm
     '/dashboard/export',
     {
       includeAcquisitionCost: true,
+    },
+    'dashboard-summary.csv',
+  ])
+})
+
+test('dashboard fetch and export preserve multi-animal, date, and status filters', async () => {
+  const filters = {
+    startDate: '2026-01-01',
+    endDate: '2026-01-31',
+    animalIds: ['animal-1', 'animal-2'],
+    status: 'ACTIVE',
+  }
+
+  await dashboardService.fetchDashboard('farm-1', true, 'USD', filters)
+  await dashboardService.exportDashboardCsv('farm-1', true, 'USD', filters)
+
+  assert.deepEqual(apiStub.requests[0], {
+    url: '/dashboard',
+    config: {
+      params: {
+        farmId: 'farm-1',
+        startDate: '2026-01-01',
+        endDate: '2026-01-31',
+        animalIds: 'animal-1,animal-2',
+        status: 'ACTIVE',
+        includeAcquisitionCost: true,
+        currency: 'USD',
+      },
+    },
+  })
+  assert.deepEqual(downloadCsvCalls[0], [
+    '/dashboard/export',
+    {
+      farmId: 'farm-1',
+      startDate: '2026-01-01',
+      endDate: '2026-01-31',
+      animalIds: 'animal-1,animal-2',
+      status: 'ACTIVE',
+      includeAcquisitionCost: true,
+      currency: 'USD',
     },
     'dashboard-summary.csv',
   ])

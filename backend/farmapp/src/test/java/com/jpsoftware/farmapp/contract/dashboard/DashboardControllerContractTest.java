@@ -10,6 +10,7 @@ import com.jpsoftware.farmapp.dashboard.dto.DashboardResponse;
 import com.jpsoftware.farmapp.dashboard.service.DashboardService;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -65,5 +66,29 @@ class DashboardControllerContractTest {
                 .andExpect(jsonPath("$.totalFeedingCost").value(8.0))
                 .andExpect(jsonPath("$.totalRevenue").value(100.0))
                 .andExpect(jsonPath("$.totalProfit").value(82.0));
+    }
+
+    @Test
+    void shouldPassMultiAnimalFiltersWhenProvided() throws Exception {
+        when(dashboardService.getDashboardByAnimals(
+                "farm-1",
+                LocalDate.parse("2026-01-01"),
+                LocalDate.parse("2026-01-31"),
+                List.of("animal-1", "animal-2"),
+                "ACTIVE",
+                true,
+                "USD"))
+                .thenReturn(new DashboardResponse(140.0, 16.0, 140.0, 124.0, 2L));
+
+        mockMvc.perform(get("/dashboard")
+                        .param("farmId", "farm-1")
+                        .param("startDate", "2026-01-01")
+                        .param("endDate", "2026-01-31")
+                        .param("animalIds", "animal-1,animal-2")
+                        .param("status", "ACTIVE")
+                        .param("currency", "USD"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalProduction").value(140.0))
+                .andExpect(jsonPath("$.animalCount").value(2));
     }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useEffectEvent, useState, type ChangeEvent } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import StatCard from '../../components/dashboard/StatCard'
@@ -24,11 +24,13 @@ const dashboardStats: Array<{
   { key: 'animalCount', titleKey: 'dashboard.stats.animalCount', format: 'number' },
 ]
 
-const initialFilters: DashboardFilters = {
-  startDate: '',
-  endDate: '',
-  animalId: '',
-  status: '',
+function createInitialFilters(): DashboardFilters {
+  return {
+    startDate: '',
+    endDate: '',
+    animalIds: [],
+    status: '',
+  }
 }
 
 const animalStatusOptions: AnimalStatus[] = ['ACTIVE', 'SOLD', 'DEAD', 'INACTIVE']
@@ -52,13 +54,25 @@ function mapAnimalsToOptions(animals: Animal[]) {
   }))
 }
 
+function filterAvailableAnimalIds(
+  currentAnimalIds: string[],
+  nextAnimals: Array<{ id: string; tag: string }>,
+) {
+  if (currentAnimalIds.length === 0) {
+    return currentAnimalIds
+  }
+
+  const availableAnimalIds = new Set(nextAnimals.map((animal) => animal.id))
+  return currentAnimalIds.filter((animalId) => availableAnimalIds.has(animalId))
+}
+
 function DashboardPage() {
   const { t } = useTranslation()
   const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
-  const [filters, setFilters] = useState<DashboardFilters>(initialFilters)
-  const [appliedFilters, setAppliedFilters] = useState<DashboardFilters>(initialFilters)
+  const [filters, setFilters] = useState<DashboardFilters>(createInitialFilters)
+  const [appliedFilters, setAppliedFilters] = useState<DashboardFilters>(createInitialFilters)
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [includeAcquisitionCost, setIncludeAcquisitionCost] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
@@ -86,13 +100,13 @@ function DashboardPage() {
           const nextAnimals = mapAnimalsToOptions(data)
           setAnimals(nextAnimals)
           setAppliedFilters((current) => (
-            current.animalId && !nextAnimals.some((animal) => animal.id === current.animalId)
-              ? { ...current, animalId: '' }
+            current.animalIds.length > 0
+              ? { ...current, animalIds: filterAvailableAnimalIds(current.animalIds, nextAnimals) }
               : current
           ))
           setFilters((current) => (
-            current.animalId && !nextAnimals.some((animal) => animal.id === current.animalId)
-              ? { ...current, animalId: '' }
+            current.animalIds.length > 0
+              ? { ...current, animalIds: filterAvailableAnimalIds(current.animalIds, nextAnimals) }
               : current
           ))
         }
@@ -162,13 +176,20 @@ function DashboardPage() {
     }))
   }
 
+  function updateSelectedAnimals(event: ChangeEvent<HTMLSelectElement>) {
+    updateFilter('animalIds', Array.from(event.target.selectedOptions, (option) => option.value))
+  }
+
   function applyFilters() {
-    setAppliedFilters(filters)
+    setAppliedFilters({
+      ...filters,
+      animalIds: [...filters.animalIds],
+    })
   }
 
   function clearFilters() {
-    setFilters(initialFilters)
-    setAppliedFilters(initialFilters)
+    setFilters(createInitialFilters())
+    setAppliedFilters(createInitialFilters())
   }
 
   async function handleExport() {
@@ -232,17 +253,19 @@ function DashboardPage() {
             {t('dashboard.filters.animalLabel')}
             <select
               id="dashboard-animal-select"
-              value={filters.animalId}
-              onChange={(event) => updateFilter('animalId', event.target.value)}
-              disabled={isAnimalsLoading}
+              value={filters.animalIds}
+              onChange={updateSelectedAnimals}
+              disabled={isAnimalsLoading || animals.length === 0}
+              multiple
+              size={Math.min(Math.max(animals.length, 2), 6)}
             >
-              <option value="">{t('dashboard.filters.allAnimals')}</option>
               {animals.map((animal) => (
                 <option key={animal.id} value={animal.id}>
                   {animal.tag}
                 </option>
               ))}
             </select>
+            <small>{t('dashboard.filters.allAnimalsHint')}</small>
           </label>
 
           <label htmlFor="dashboard-status-select">

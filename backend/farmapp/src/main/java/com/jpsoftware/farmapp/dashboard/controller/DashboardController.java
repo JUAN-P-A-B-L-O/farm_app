@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,12 +36,31 @@ public class DashboardController {
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) List<String> animalIds,
             @RequestParam(required = false) String status,
             @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
             @RequestParam(required = false) String currency) {
+        boolean hasMultiAnimalFilter = hasAnimalIds(animalIds);
         DashboardResponse response = StringUtils.hasText(currency)
-                ? dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)
-                : dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost);
+                ? hasMultiAnimalFilter
+                        ? dashboardService.getDashboardByAnimals(
+                                farmId,
+                                startDate,
+                                endDate,
+                                mergeAnimalFilters(animalId, animalIds),
+                                status,
+                                includeAcquisitionCost,
+                                currency)
+                        : dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)
+                : hasMultiAnimalFilter
+                        ? dashboardService.getDashboardByAnimals(
+                                farmId,
+                                startDate,
+                                endDate,
+                                mergeAnimalFilters(animalId, animalIds),
+                                status,
+                                includeAcquisitionCost)
+                        : dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost);
         return ResponseEntity.ok(response);
     }
 
@@ -50,13 +71,50 @@ public class DashboardController {
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) List<String> animalIds,
             @RequestParam(required = false) String status,
             @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
             @RequestParam(required = false) String currency) {
+        boolean hasMultiAnimalFilter = hasAnimalIds(animalIds);
         return CsvResponseFactory.buildDownload(
                 "dashboard-summary.csv",
                 StringUtils.hasText(currency)
-                        ? dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)
-                        : dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost));
+                        ? hasMultiAnimalFilter
+                                ? dashboardService.exportDashboardByAnimals(
+                                        farmId,
+                                        startDate,
+                                        endDate,
+                                        mergeAnimalFilters(animalId, animalIds),
+                                        status,
+                                        includeAcquisitionCost,
+                                        currency)
+                                : dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)
+                        : hasMultiAnimalFilter
+                                ? dashboardService.exportDashboardByAnimals(
+                                        farmId,
+                                        startDate,
+                                        endDate,
+                                        mergeAnimalFilters(animalId, animalIds),
+                                        status,
+                                        includeAcquisitionCost)
+                                : dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost));
+    }
+
+    private boolean hasAnimalIds(List<String> animalIds) {
+        return animalIds != null && animalIds.stream().anyMatch(StringUtils::hasText);
+    }
+
+    private List<String> mergeAnimalFilters(String animalId, List<String> animalIds) {
+        LinkedHashSet<String> mergedAnimalIds = new LinkedHashSet<>();
+        if (StringUtils.hasText(animalId)) {
+            mergedAnimalIds.add(animalId.trim());
+        }
+        if (animalIds != null) {
+            animalIds.stream()
+                    .filter(StringUtils::hasText)
+                    .map(String::trim)
+                    .forEach(mergedAnimalIds::add);
+        }
+        return List.copyOf(mergedAnimalIds);
     }
 }

@@ -16,6 +16,7 @@ import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import java.time.LocalDate;
 import java.util.List;
@@ -110,7 +111,7 @@ totalProduction,totalFeedingCost,totalRevenue,totalProfit,animalCount
     void shouldFilterDashboardByDateAnimalAndStatus() {
         when(animalRepository.existsById("animal-1")).thenReturn(true);
         when(animalRepository.existsByIdAndFarmId("animal-1", "farm-1")).thenReturn(true);
-        when(animalRepository.findByIdAndFarmId("animal-1", "farm-1")).thenReturn(java.util.Optional.of(
+        when(animalRepository.findAllById(java.util.Set.of("animal-1"))).thenReturn(List.of(
                 AnimalEntity.builder()
                         .id("animal-1")
                         .farmId("farm-1")
@@ -144,11 +145,92 @@ totalProduction,totalFeedingCost,totalRevenue,totalProfit,animalCount
     }
 
     @Test
+    void shouldFilterDashboardByMultipleAnimals() {
+        when(animalRepository.existsById("animal-1")).thenReturn(true);
+        when(animalRepository.existsById("animal-2")).thenReturn(true);
+        when(animalRepository.existsByIdAndFarmId("animal-1", "farm-1")).thenReturn(true);
+        when(animalRepository.existsByIdAndFarmId("animal-2", "farm-1")).thenReturn(true);
+        when(animalRepository.findAllById(java.util.Set.of("animal-1", "animal-2"))).thenReturn(List.of(
+                AnimalEntity.builder()
+                        .id("animal-1")
+                        .farmId("farm-1")
+                        .status(AnimalEntity.STATUS_ACTIVE)
+                        .acquisitionCost(60.0)
+                        .salePrice(null)
+                        .build(),
+                AnimalEntity.builder()
+                        .id("animal-2")
+                        .farmId("farm-1")
+                        .status(AnimalEntity.STATUS_ACTIVE)
+                        .acquisitionCost(40.0)
+                        .salePrice(180.0)
+                        .saleDate(LocalDate.parse("2026-01-18"))
+                        .build()));
+        when(productionRepository.findByFarmIdAndStatus("farm-1", ProductionEntity.STATUS_ACTIVE)).thenReturn(List.of(
+                new ProductionEntity("production-1", "animal-1", LocalDate.parse("2026-01-12"), 50.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE),
+                new ProductionEntity("production-2", "animal-2", LocalDate.parse("2026-01-15"), 30.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE),
+                new ProductionEntity("production-3", "animal-3", LocalDate.parse("2026-01-16"), 70.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE)));
+        when(feedingRepository.findByFarmIdAndStatus("farm-1", FeedingEntity.STATUS_ACTIVE)).thenReturn(List.of(
+                new FeedingEntity("feeding-1", "animal-1", "feed-type-1", LocalDate.parse("2026-01-13"), 5.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE),
+                new FeedingEntity("feeding-2", "animal-2", "feed-type-1", LocalDate.parse("2026-01-14"), 3.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE),
+                new FeedingEntity("feeding-3", "animal-3", "feed-type-1", LocalDate.parse("2026-01-14"), 4.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE)));
+        when(feedTypeRepository.findAllById(java.util.Set.of("feed-type-1"))).thenReturn(List.of(
+                new FeedTypeEntity("feed-type-1", "Silage", 4.0, true, "farm-1")));
+
+        DashboardResponse response = dashboardService.getDashboardByAnimals(
+                "farm-1",
+                LocalDate.parse("2026-01-01"),
+                LocalDate.parse("2026-01-31"),
+                List.of("animal-1", "animal-2"),
+                AnimalEntity.STATUS_ACTIVE,
+                true);
+
+        assertEquals(80.0, response.getTotalProduction());
+        assertEquals(32.0, response.getTotalFeedingCost());
+        assertEquals(340.0, response.getTotalRevenue());
+        assertEquals(208.0, response.getTotalProfit());
+        assertEquals(2L, response.getAnimalCount());
+    }
+
+    @Test
     void shouldRejectInvalidStatusFilter() {
         ValidationException exception = assertThrows(
                 ValidationException.class,
                 () -> dashboardService.getDashboard("farm-1", null, null, null, "UNKNOWN", true));
 
         assertEquals("status must be ACTIVE, INACTIVE, SOLD, or DEAD", exception.getMessage());
+    }
+
+    @Test
+    void shouldRejectStartDateAfterEndDate() {
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> dashboardService.getDashboard(
+                        "farm-1",
+                        LocalDate.parse("2026-02-01"),
+                        LocalDate.parse("2026-01-31"),
+                        null,
+                        null,
+                        true));
+
+        assertEquals("startDate must be before or equal to endDate", exception.getMessage());
+    }
+
+    @Test
+    void shouldRejectAnimalThatDoesNotBelongToRequestedFarm() {
+        when(animalRepository.existsById("animal-1")).thenReturn(true);
+        when(animalRepository.existsByIdAndFarmId("animal-1", "farm-1")).thenReturn(false);
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> dashboardService.getDashboard(
+                        "farm-1",
+                        null,
+                        null,
+                        "animal-1",
+                        null,
+                        true));
+
+        assertEquals("Animal not found", exception.getMessage());
     }
 }
