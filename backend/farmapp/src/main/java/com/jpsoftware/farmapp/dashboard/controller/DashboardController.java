@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,11 +31,15 @@ public class DashboardController {
     })
     public ResponseEntity<DashboardResponse> getDashboard(
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
             @RequestParam(required = false) String currency) {
         DashboardResponse response = StringUtils.hasText(currency)
-                ? dashboardService.getDashboard(farmId, includeAcquisitionCost, currency)
-                : dashboardService.getDashboard(farmId, includeAcquisitionCost);
+                ? dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)
+                : dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost);
         return ResponseEntity.ok(response);
     }
 
@@ -42,12 +47,16 @@ public class DashboardController {
     @Operation(summary = "Export dashboard", description = "Exports dashboard metrics as CSV using the current farm and acquisition-cost settings.")
     public ResponseEntity<byte[]> exportDashboard(
             @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
             @RequestParam(required = false) String currency) {
         return CsvResponseFactory.buildDownload(
                 "dashboard-summary.csv",
                 StringUtils.hasText(currency)
-                        ? dashboardService.exportDashboard(farmId, includeAcquisitionCost, currency)
-                        : dashboardService.exportDashboard(farmId, includeAcquisitionCost));
+                        ? dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)
+                        : dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost));
     }
 }

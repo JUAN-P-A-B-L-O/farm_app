@@ -1,13 +1,22 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
 import type { CurrencyCode } from '../context/CurrencyContext'
-import type { DashboardSummary } from '../types/dashboard'
+import type { DashboardFilters, DashboardSummary } from '../types/dashboard'
 
 const inFlightDashboardRequests = new Map<string, Promise<DashboardSummary>>()
 
-function buildDashboardParams(farmId?: string, includeAcquisitionCost = true, currency?: CurrencyCode) {
+function buildDashboardParams(
+  farmId?: string,
+  includeAcquisitionCost = true,
+  currency?: CurrencyCode,
+  filters?: DashboardFilters,
+) {
   return {
     ...(farmId ? { farmId } : {}),
+    ...(filters?.startDate ? { startDate: filters.startDate } : {}),
+    ...(filters?.endDate ? { endDate: filters.endDate } : {}),
+    ...(filters?.animalId ? { animalId: filters.animalId } : {}),
+    ...(filters?.status ? { status: filters.status } : {}),
     includeAcquisitionCost,
     ...(currency ? { currency } : {}),
   }
@@ -17,8 +26,9 @@ export async function fetchDashboard(
   farmId?: string,
   includeAcquisitionCost = true,
   currency?: CurrencyCode,
+  filters?: DashboardFilters,
 ): Promise<DashboardSummary> {
-  const params = buildDashboardParams(farmId, includeAcquisitionCost, currency)
+  const params = buildDashboardParams(farmId, includeAcquisitionCost, currency, filters)
   const requestKey = JSON.stringify(params)
   const existingRequest = inFlightDashboardRequests.get(requestKey)
 
@@ -41,10 +51,11 @@ export async function exportDashboardCsv(
   farmId?: string,
   includeAcquisitionCost = true,
   currency?: CurrencyCode,
+  filters?: DashboardFilters,
 ): Promise<void> {
   await downloadCsv(
     '/dashboard/export',
-    buildDashboardParams(farmId, includeAcquisitionCost, currency),
+    buildDashboardParams(farmId, includeAcquisitionCost, currency, filters),
     'dashboard-summary.csv',
   )
 }

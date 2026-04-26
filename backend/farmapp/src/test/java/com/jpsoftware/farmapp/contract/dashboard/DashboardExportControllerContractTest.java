@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jpsoftware.farmapp.dashboard.controller.DashboardController;
 import com.jpsoftware.farmapp.dashboard.service.DashboardService;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
+import java.time.LocalDate;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +32,7 @@ class DashboardExportControllerContractTest {
 
     @Test
     void shouldExportDashboardAsCsv() throws Exception {
-        when(dashboardService.exportDashboard("farm-001", true))
+        when(dashboardService.exportDashboard("farm-001", null, null, null, null, true))
                 .thenReturn("totalProduction,totalFeedingCost\n100.0,50.0\n");
 
         mockMvc.perform(get("/dashboard/export")
@@ -42,16 +43,27 @@ class DashboardExportControllerContractTest {
                 .andExpect(header().string("Content-Disposition", Matchers.containsString("dashboard-summary.csv")))
                 .andExpect(content().string("totalProduction,totalFeedingCost\n100.0,50.0\n"));
 
-        verify(dashboardService).exportDashboard("farm-001", true);
+        verify(dashboardService).exportDashboard("farm-001", null, null, null, null, true);
     }
 
     @Test
     void shouldExportDashboardAsCsvWithCurrencyContext() throws Exception {
-        when(dashboardService.exportDashboard("farm-001", true, "USD"))
+        when(dashboardService.exportDashboard(
+                "farm-001",
+                LocalDate.parse("2026-02-01"),
+                LocalDate.parse("2026-02-28"),
+                "animal-9",
+                "SOLD",
+                true,
+                "USD"))
                 .thenReturn("totalProduction,totalFeedingCost\n100.0,10.0\n");
 
         mockMvc.perform(get("/dashboard/export")
                         .param("farmId", "farm-001")
+                        .param("startDate", "2026-02-01")
+                        .param("endDate", "2026-02-28")
+                        .param("animalId", "animal-9")
+                        .param("status", "SOLD")
                         .param("includeAcquisitionCost", "true")
                         .param("currency", "USD"))
                 .andExpect(status().isOk())
@@ -59,6 +71,13 @@ class DashboardExportControllerContractTest {
                 .andExpect(header().string("Content-Disposition", Matchers.containsString("dashboard-summary.csv")))
                 .andExpect(content().string("totalProduction,totalFeedingCost\n100.0,10.0\n"));
 
-        verify(dashboardService).exportDashboard("farm-001", true, "USD");
+        verify(dashboardService).exportDashboard(
+                "farm-001",
+                LocalDate.parse("2026-02-01"),
+                LocalDate.parse("2026-02-28"),
+                "animal-9",
+                "SOLD",
+                true,
+                "USD");
     }
 }
