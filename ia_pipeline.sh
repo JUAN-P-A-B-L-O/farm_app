@@ -9,11 +9,14 @@ echo "🚀 AI PIPELINE START"
 echo "===================================="
 
 # =====================
-# 🔹 CONTEXT LOAD (1x só)
+# 🔹 CONTEXT LOAD (1x)
 # =====================
 AI_CONTEXT=$(cat AI_CONTEXT.md)
 DEV_SKILL=$(cat skills/dev.md)
 TESTER_SKILL=$(cat skills/tester.md)
+FIXER_SKILL=$(cat skills/fixer.md)
+
+MAX_FIX_ATTEMPTS=3
 
 # =====================
 # 🔁 LOOP DE FEATURES
@@ -25,92 +28,118 @@ for FILE in workspace/features/*.md; do
   echo "===================================="
 
   FEATURE=$(cat "$FILE")
-
   BASE_COMMIT=$(git rev-parse HEAD)
 
   # =====================
-  # 👨‍💻 DEV (contexto completo)
+  # 👨‍💻 DEV
   # =====================
   echo "👨‍💻 Running DEV..."
 
   DEV_SYSTEM="$AI_CONTEXT"$'\n\n'"$DEV_SKILL"
   DEV_PROMPT="$DEV_SYSTEM"$'\n\n'"$FEATURE"
 
-  echo "$DEV_PROMPT"
-
   codex exec "$DEV_PROMPT"
 
-  # =====================
-  # 💾 COMMIT (isolamento)
-  # =====================
   git add .
   git commit -m "feat(ai): $(basename "$FILE")" || echo "⚠️ Nothing to commit"
 
   # =====================
-  # 📂 DIFF INTELIGENTE
+  # 📂 DIFF
   # =====================
   echo "📂 Generating diff..."
 
   git diff $BASE_COMMIT HEAD > workspace/diff_full.txt
   git diff --name-only $BASE_COMMIT HEAD > workspace/files.txt
 
-  # 🔥 pega só linhas relevantes (melhor custo/benefício)
+  # diff reduzido (economia de token)
   git diff $BASE_COMMIT HEAD | grep -E "^[+-]" | head -n 300 > workspace/diff.txt || true
 
-  echo "📄 Changed files:"
-  cat workspace/files.txt || true
-
-  # valida se tem mudança
   if [ ! -s workspace/files.txt ]; then
-    echo "⚠️ No relevant changes detected, skipping tester"
+    echo "⚠️ No changes detected, skipping..."
     continue
   fi
 
   # =====================
-  # 🧪 TESTER (contexto reduzido)
+  # 🧪 TESTER (atualiza testes)
   # =====================
   echo "🧪 Running TESTER..."
 
-  TESTER_SYSTEM="$TESTER_SKILL
+  TESTER_SYSTEM="$TESTER_SKILL"
 
-Key rules:
-- Controllers are thin
-- Business logic is in services
-- JWT is required for protected endpoints
-- Do not assume missing endpoints exist
-"
-
-  TESTER_INPUT="Analyze the following changes.
+  TESTER_INPUT="Analyze the following changes and UPDATE tests accordingly.
 
 Changed files:
 $(cat workspace/files.txt)
 
-Relevant diff (partial):
+Relevant diff:
 $(cat workspace/diff.txt)
 
-Focus ONLY on what changed. Validate behavior, detect risks, and update or create tests."
+Ensure tests reflect the new behavior and remain aligned with the current implementation."
 
   TESTER_PROMPT="$TESTER_SYSTEM"$'\n\n'"$TESTER_INPUT"
 
   codex exec "$TESTER_PROMPT"
 
-  # =====================
-  # 🧪 VALIDAÇÃO REAL (opcional mas recomendado)
-  # =====================
-  echo "🧪 Running local tests..."
+  git add .
+  git commit -m "test(ai): update tests for $(basename "$FILE")" || echo "⚠️ No test changes"
 
-  if [ -f "backend/farmapp/pom.xml" ]; then
-    (cd backend/farmapp && mvn -q test) || {
-      echo "❌ Backend tests failed"
-      exit 1
-    }
-  fi
+  # =====================
+  # 🔁 LOOP DE VALIDAÇÃO + FIX
+  # =====================
+  echo "🧪 Running tests with auto-fix..."
 
-  if [ -f "frontend/web/farm_web/package.json" ]; then
-    (cd frontend/web/farm_web && npm run build --silent) || {
-      echo "❌ Frontend build failed"
-      exit 1
-    }
+  ATTEMPT=1
+  SUCCESS=false
+
+  while [ $ATTEMPT -le $MAX_FIX_ATTEMPTS ]; do
+
+    echo "➡️ Attempt $ATTEMPT..."
+
+    # roda testes e captura log
+    (cd backend/farmapp && mvn -q test) > workspace/mvn.log 2>&1 || true
+
+    if grep -q "BUILD SUCCESS" workspace/mvn.log; then
+      echo "✅ Tests passed"
+      SUCCESS=true
+      break
+    fi
+
+    echo "❌ Tests failed"
+
+    # =====================
+    # 🛠 FIXER
+    # =====================
+    echo "🛠 Running FIXER..."
+
+    FIXER_SYSTEM="$FIXER_SKILL"
+
+    FIXER_INPUT="Fix the issues causing test or compilation failures.
+
+Recent error log:
+$(tail -n 80 workspace/mvn.log)
+
+Focus on:
+- Updating tests if they are outdated
+- Fixing incorrect @Override usage
+- Fixing method signature mismatches
+- Ensuring compatibility with current implementation
+
+Only modify what is necessary."
+
+    FIXER_PROMPT="$FIXER_SYSTEM"$'\n\n'"$FIXER_INPUT"
+
+    codex exec "$FIXER_PROMPT"
+
+    git add .
+    git commit -m "fix(ai): auto-fix after test failure (attempt $ATTEMPT)" || echo "⚠️ No fix changes"
+
+    ATTEMPT=$((ATTEMPT + 1))
+
+  done
+
+  if [ "$SUCCESS" = false ]; then
+    echo "❌ Failed after $MAX_FIX_ATTEMPTS attempts"
+    exit 1
   fi
 
   echo "✅ Feature completed successfully"
