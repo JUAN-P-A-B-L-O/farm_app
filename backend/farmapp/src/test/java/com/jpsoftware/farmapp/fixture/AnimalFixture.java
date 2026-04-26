@@ -25,30 +25,41 @@ public final class AnimalFixture {
                 .breed(breed)
                 .birthDate(birthDate)
                 .status(status)
+                .origin(AnimalEntity.ORIGIN_BORN)
                 .farmId(farmId)
                 .build();
     }
 
     public static String createRequestJson() {
+        return createRequestJson("FARM-001");
+    }
+
+    public static String createRequestJson(String farmId) {
         return """
                 {
                   "tag": "TAG-001",
                   "breed": "Angus",
                   "birthDate": "2022-01-10",
-                  "farmId": "FARM-001"
+                  "origin": "BORN",
+                  "farmId": "%s"
                 }
-                """;
+                """.formatted(farmId);
     }
 
     public static String updateRequestJson() {
+        return updateRequestJson("FARM-002");
+    }
+
+    public static String updateRequestJson(String farmId) {
         return """
                 {
                   "tag": "TAG-002",
                   "breed": "Nelore",
                   "birthDate": "2021-05-20",
                   "status": "INACTIVE",
-                  "farmId": "FARM-002"
+                  "origin": "BORN",
+                  "farmId": "%s"
                 }
-                """;
+                """.formatted(farmId);
     }
 }

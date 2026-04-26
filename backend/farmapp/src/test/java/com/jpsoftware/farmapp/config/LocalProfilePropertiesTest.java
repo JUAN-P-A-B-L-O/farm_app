@@ -24,15 +24,9 @@ class LocalProfilePropertiesTest {
     }
 
     @Test
-    void localProfileOverridesJpaDialectForH2() throws IOException {
-        Properties defaultProperties = loadMainResourceProperties("application.properties");
+    void localProfileLeavesJpaDialectUnsetForAutoDetection() throws IOException {
         Properties localProperties = loadMainResourceProperties("application-local.properties");
-
-        String effectiveDatabasePlatform = localProperties.getProperty(
-                "spring.jpa.database-platform",
-                defaultProperties.getProperty("spring.jpa.database-platform"));
-
-        assertThat(effectiveDatabasePlatform).isEqualTo("org.hibernate.dialect.H2Dialect");
+        assertThat(localProperties.getProperty("spring.jpa.database-platform")).isNull();
     }
 
     private Properties loadMainResourceProperties(String fileName) throws IOException {

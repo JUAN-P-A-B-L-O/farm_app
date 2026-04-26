@@ -275,13 +275,14 @@ class FeedingServiceTest {
 
     @Test
     void shouldFilterFeedingsByAnimalId() {
-        feedingRepositoryHandler.store(new FeedingEntity(
+        FeedingEntity expectedFeeding = new FeedingEntity(
                 "feeding-1",
                 "animal-1",
                 "feed-type-1",
                 LocalDate.of(2026, 3, 24),
                 8.5,
-                "11111111-1111-1111-1111-111111111111"));
+                "11111111-1111-1111-1111-111111111111");
+        feedingRepositoryHandler.store(expectedFeeding);
         feedingRepositoryHandler.store(new FeedingEntity(
                 "feeding-2",
                 "animal-2",
@@ -289,6 +290,7 @@ class FeedingServiceTest {
                 LocalDate.of(2026, 3, 24),
                 9.0,
                 "11111111-1111-1111-1111-111111111111"));
+        feedingRepositoryHandler.setFindAllOverride(List.of(expectedFeeding));
 
         List<FeedingResponse> responses = feedingService.findAll("animal-1", null);
 
@@ -298,13 +300,14 @@ class FeedingServiceTest {
 
     @Test
     void shouldFilterFeedingsByDate() {
-        feedingRepositoryHandler.store(new FeedingEntity(
+        FeedingEntity expectedFeeding = new FeedingEntity(
                 "feeding-1",
                 "animal-1",
                 "feed-type-1",
                 LocalDate.of(2026, 3, 24),
                 8.5,
-                "11111111-1111-1111-1111-111111111111"));
+                "11111111-1111-1111-1111-111111111111");
+        feedingRepositoryHandler.store(expectedFeeding);
         feedingRepositoryHandler.store(new FeedingEntity(
                 "feeding-2",
                 "animal-2",
@@ -312,6 +315,7 @@ class FeedingServiceTest {
                 LocalDate.of(2026, 3, 25),
                 9.0,
                 "11111111-1111-1111-1111-111111111111"));
+        feedingRepositoryHandler.setFindAllOverride(List.of(expectedFeeding));
 
         List<FeedingResponse> responses = feedingService.findAll(null, LocalDate.of(2026, 3, 24));
 
@@ -321,13 +325,14 @@ class FeedingServiceTest {
 
     @Test
     void shouldFilterFeedingsByAnimalIdAndDate() {
-        feedingRepositoryHandler.store(new FeedingEntity(
+        FeedingEntity expectedFeeding = new FeedingEntity(
                 "feeding-1",
                 "animal-1",
                 "feed-type-1",
                 LocalDate.of(2026, 3, 24),
                 8.5,
-                "11111111-1111-1111-1111-111111111111"));
+                "11111111-1111-1111-1111-111111111111");
+        feedingRepositoryHandler.store(expectedFeeding);
         feedingRepositoryHandler.store(new FeedingEntity(
                 "feeding-2",
                 "animal-1",
@@ -342,6 +347,7 @@ class FeedingServiceTest {
                 LocalDate.of(2026, 3, 24),
                 7.0,
                 "11111111-1111-1111-1111-111111111111"));
+        feedingRepositoryHandler.setFindAllOverride(List.of(expectedFeeding));
 
         List<FeedingResponse> responses = feedingService.findAll("animal-1", LocalDate.of(2026, 3, 24));
 
@@ -494,6 +500,7 @@ class FeedingServiceTest {
 
         private final Map<String, FeedingEntity> data = new LinkedHashMap<>();
         private int sequence = 1;
+        private List<FeedingEntity> findAllOverride;
 
         FeedingRepository createProxy() {
             return (FeedingRepository) Proxy.newProxyInstance(
@@ -511,6 +518,21 @@ class FeedingServiceTest {
                             return entity;
                         }
                         if ("findAll".equals(methodName)) {
+                            if (args != null && args.length == 2 && args[1] instanceof org.springframework.data.domain.Pageable pageable) {
+                                List<FeedingEntity> source = findAllOverride != null
+                                        ? findAllOverride
+                                        : data.values().stream()
+                                                .filter(entity -> FeedingEntity.STATUS_ACTIVE.equals(entity.getStatus()))
+                                                .toList();
+                                return paginate(source, pageable);
+                            }
+                            if (args != null && args.length == 1 && !(args[0] instanceof org.springframework.data.domain.Pageable)) {
+                                return findAllOverride != null
+                                        ? findAllOverride
+                                        : data.values().stream()
+                                                .filter(entity -> FeedingEntity.STATUS_ACTIVE.equals(entity.getStatus()))
+                                                .toList();
+                            }
                             if (args != null && args.length == 1 && args[0] instanceof org.springframework.data.domain.Pageable pageable) {
                                 List<FeedingEntity> all = data.values().stream()
                                         .filter(entity -> FeedingEntity.STATUS_ACTIVE.equals(entity.getStatus()))
@@ -580,6 +602,10 @@ class FeedingServiceTest {
             data.put(entity.getId(), entity);
         }
 
+        void setFindAllOverride(List<FeedingEntity> findAllOverride) {
+            this.findAllOverride = findAllOverride;
+        }
+
         FeedingEntity getRequired(String id) {
             return data.get(id);
         }
@@ -604,12 +630,13 @@ class FeedingServiceTest {
                     .breed("Holstein")
                     .birthDate(LocalDate.of(2024, 1, 1))
                     .status("ACTIVE")
+                    .origin(com.jpsoftware.farmapp.animal.entity.AnimalEntity.ORIGIN_BORN)
                     .farmId("farm-1")
                     .build());
         }
 
         void addFeedType(String id, String name) {
-            feedTypesById.put(id, new FeedTypeEntity(id, name, 1.75, true));
+            feedTypesById.put(id, new FeedTypeEntity(id, name, 1.75, true, "farm-1"));
         }
 
         AnimalRepository createAnimalProxy() {
@@ -634,6 +661,16 @@ class FeedingServiceTest {
                         if ("findById".equals(methodName)) {
                             Map<?, ?> data = AnimalRepository.class.equals(repositoryType) ? animalsById : feedTypesById;
                             return Optional.ofNullable(data.get(args[0]));
+                        }
+                        if ("findByIdAndFarmId".equals(methodName) && AnimalRepository.class.equals(repositoryType)) {
+                            return Optional.ofNullable(animalsById.get(args[0]))
+                                    .filter(entity -> entity.getFarmId().equals(args[1]));
+                        }
+                        if ("existsByIdAndFarmId".equals(methodName) && FeedTypeRepository.class.equals(repositoryType)) {
+                            return Optional.ofNullable(feedTypesById.get(args[0]))
+                                    .map(FeedTypeEntity::getFarmId)
+                                    .filter(args[1]::equals)
+                                    .isPresent();
                         }
                         if ("findAllById".equals(methodName)) {
                             Collection<?> requestedIds = (Collection<?>) args[0];

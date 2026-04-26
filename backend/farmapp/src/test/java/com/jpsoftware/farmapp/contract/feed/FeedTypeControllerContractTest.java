@@ -167,17 +167,17 @@ class FeedTypeControllerContractTest {
         }
 
         @Override
-        public List<FeedTypeResponse> findAll(String farmId) {
+        public List<FeedTypeResponse> findAll(String farmId, String search) {
             return findAllResponse;
         }
 
         @Override
-        public PaginatedResponse<FeedTypeResponse> findAllPaginated(String farmId, int page, int size) {
+        public PaginatedResponse<FeedTypeResponse> findAllPaginated(String farmId, String search, int page, int size) {
             return paginatedResponse;
         }
 
         @Override
-        public String exportAll(String farmId) {
+        public String exportAll(String farmId, String search, String currency) {
             return exportResponse;
         }
 

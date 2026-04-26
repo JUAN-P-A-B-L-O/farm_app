@@ -31,7 +31,7 @@ class AnimalExportControllerContractTest {
 
     @Test
     void shouldExportAnimalsAsCsv() throws Exception {
-        when(animalService.exportAll("farm-001")).thenReturn("id,tag\nanimal-1,TAG-001\n");
+        when(animalService.exportAll("farm-001", null, null, null, null)).thenReturn("id,tag\nanimal-1,TAG-001\n");
 
         mockMvc.perform(get("/animals/export").param("farmId", "farm-001"))
                 .andExpect(status().isOk())
@@ -39,12 +39,13 @@ class AnimalExportControllerContractTest {
                 .andExpect(header().string("Content-Disposition", Matchers.containsString("animals.csv")))
                 .andExpect(content().string("id,tag\nanimal-1,TAG-001\n"));
 
-        verify(animalService).exportAll("farm-001");
+        verify(animalService).exportAll("farm-001", null, null, null, null);
     }
 
     @Test
     void shouldExportAnimalsAsCsvWithCurrencyContext() throws Exception {
-        when(animalService.exportAll("farm-001", "USD")).thenReturn("id,tag,salePrice\nanimal-1,TAG-001,64.0\n");
+        when(animalService.exportAll("farm-001", null, null, null, "USD"))
+                .thenReturn("id,tag,salePrice\nanimal-1,TAG-001,64.0\n");
 
         mockMvc.perform(get("/animals/export").param("farmId", "farm-001").param("currency", "USD"))
                 .andExpect(status().isOk())
@@ -52,6 +53,6 @@ class AnimalExportControllerContractTest {
                 .andExpect(header().string("Content-Disposition", Matchers.containsString("animals.csv")))
                 .andExpect(content().string("id,tag,salePrice\nanimal-1,TAG-001,64.0\n"));
 
-        verify(animalService).exportAll("farm-001", "USD");
+        verify(animalService).exportAll("farm-001", null, null, null, "USD");
     }
 }

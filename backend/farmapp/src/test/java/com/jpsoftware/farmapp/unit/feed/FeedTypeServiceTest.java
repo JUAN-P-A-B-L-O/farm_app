@@ -145,7 +145,13 @@ class FeedTypeServiceTest {
                             return entity;
                         }
                         if ("findAll".equals(methodName)) {
-                            return new ArrayList<>(data.values());
+                            List<FeedTypeEntity> activeFeedTypes = data.values().stream()
+                                    .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
+                                    .toList();
+                            if (args != null && args.length == 2 && args[1] instanceof org.springframework.data.domain.Pageable pageable) {
+                                return paginate(activeFeedTypes, pageable);
+                            }
+                            return new ArrayList<>(activeFeedTypes);
                         }
                         if ("findByFarmIdAndActiveTrue".equals(methodName)) {
                             if (args.length == 2) {

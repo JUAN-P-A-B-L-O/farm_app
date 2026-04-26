@@ -236,6 +236,7 @@ class ProductionServiceTest {
     @Test
     void shouldFilterByAnimalId() {
         productionRepositoryHandler.store(productionEntity);
+        productionRepositoryHandler.setFindAllOverride(List.of(productionEntity));
 
         List<ProductionResponse> responses = productionService.findAll("animal-1", null);
 
@@ -247,6 +248,7 @@ class ProductionServiceTest {
     @Test
     void shouldFilterByDate() {
         productionRepositoryHandler.store(productionEntity);
+        productionRepositoryHandler.setFindAllOverride(List.of(productionEntity));
 
         List<ProductionResponse> responses = productionService.findAll(null, LocalDate.of(2026, 3, 20));
 
@@ -258,6 +260,7 @@ class ProductionServiceTest {
     @Test
     void shouldFilterByAnimalIdAndDate() {
         productionRepositoryHandler.store(productionEntity);
+        productionRepositoryHandler.setFindAllOverride(List.of(productionEntity));
 
         List<ProductionResponse> responses = productionService.findAll("animal-1", LocalDate.of(2026, 3, 20));
 
@@ -456,6 +459,7 @@ class ProductionServiceTest {
         private final Map<String, Double> totalQuantityByAnimalId = new LinkedHashMap<>();
         private final Map<String, Double> totalProductionByAnimalId = new LinkedHashMap<>();
         private int sequence = 1;
+        private List<ProductionEntity> findAllOverride;
 
         ProductionRepository createProxy() {
             return (ProductionRepository) Proxy.newProxyInstance(
@@ -473,6 +477,21 @@ class ProductionServiceTest {
                             return entity;
                         }
                         if ("findAll".equals(methodName)) {
+                            if (args != null && args.length == 2 && args[1] instanceof org.springframework.data.domain.Pageable pageable) {
+                                List<ProductionEntity> source = findAllOverride != null
+                                        ? findAllOverride
+                                        : data.values().stream()
+                                                .filter(entity -> ProductionEntity.STATUS_ACTIVE.equals(entity.getStatus()))
+                                                .toList();
+                                return paginate(source, pageable);
+                            }
+                            if (args != null && args.length == 1 && !(args[0] instanceof org.springframework.data.domain.Pageable)) {
+                                return findAllOverride != null
+                                        ? findAllOverride
+                                        : data.values().stream()
+                                                .filter(entity -> ProductionEntity.STATUS_ACTIVE.equals(entity.getStatus()))
+                                                .toList();
+                            }
                             if (args != null && args.length == 1 && args[0] instanceof org.springframework.data.domain.Pageable pageable) {
                                 List<ProductionEntity> all = data.values().stream()
                                         .filter(entity -> ProductionEntity.STATUS_ACTIVE.equals(entity.getStatus()))
@@ -548,6 +567,10 @@ class ProductionServiceTest {
             data.put(entity.getId(), entity);
         }
 
+        void setFindAllOverride(List<ProductionEntity> findAllOverride) {
+            this.findAllOverride = findAllOverride;
+        }
+
         ProductionEntity getRequired(String id) {
             return data.get(id);
         }
@@ -612,6 +635,7 @@ class ProductionServiceTest {
                     .breed("Holstein")
                     .birthDate(LocalDate.of(2024, 1, 1))
                     .status("ACTIVE")
+                    .origin(com.jpsoftware.farmapp.animal.entity.AnimalEntity.ORIGIN_BORN)
                     .farmId("farm-1")
                     .build());
         }
@@ -632,6 +656,10 @@ class ProductionServiceTest {
                         }
                         if ("findById".equals(methodName)) {
                             return Optional.ofNullable(animalsById.get(args[0]));
+                        }
+                        if ("findByIdAndFarmId".equals(methodName)) {
+                            return Optional.ofNullable(animalsById.get(args[0]))
+                                    .filter(entity -> entity.getFarmId().equals(args[1]));
                         }
                         if ("findAllById".equals(methodName)) {
                             Collection<?> requestedIds = (Collection<?>) args[0];

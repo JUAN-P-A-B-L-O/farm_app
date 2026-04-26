@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jpsoftware.farmapp.base.BaseIntegrationTest;
 import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
+import com.jpsoftware.farmapp.farm.entity.FarmEntity;
 import com.jpsoftware.farmapp.fixture.AnimalFixture;
 import com.jpsoftware.farmapp.fixture.FeedingFixture;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
@@ -21,9 +22,10 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldReturnFeedingWithAnimalAndFeedTypeSummary() throws Exception {
         UserEntity savedUser = createAuthenticatedUser();
+        FarmEntity farm = createFarmOwnedBy(savedUser, "North Dairy");
         String authorization = bearerToken(savedUser);
-        animalRepository.save(AnimalFixture.animalEntity());
-        FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 1.75, true));
+        animalRepository.save(AnimalFixture.animalEntity("animal-1", "TAG-001", "Angus", java.time.LocalDate.of(2022, 1, 10), "ACTIVE", farm.getId()));
+        FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 1.75, true, farm.getId()));
 
         MvcResult createdResult = mockMvc.perform(post("/feedings")
                         .header("Authorization", authorization)
@@ -56,9 +58,10 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldCreateFetchAndListFeedingThroughRealSpringContext() throws Exception {
         UserEntity savedUser = createAuthenticatedUser();
+        FarmEntity farm = createFarmOwnedBy(savedUser, "North Dairy");
         String authorization = bearerToken(savedUser);
-        animalRepository.save(AnimalFixture.animalEntity());
-        FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 1.75, true));
+        animalRepository.save(AnimalFixture.animalEntity("animal-1", "TAG-001", "Angus", java.time.LocalDate.of(2022, 1, 10), "ACTIVE", farm.getId()));
+        FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 1.75, true, farm.getId()));
 
         MvcResult createdResult = mockMvc.perform(post("/feedings")
                         .header("Authorization", authorization)
@@ -97,11 +100,12 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldUpdateAndSoftDeleteFeedingThroughRealSpringContext() throws Exception {
         UserEntity savedUser = createAuthenticatedUser();
+        FarmEntity farm = createFarmOwnedBy(savedUser, "North Dairy");
         String authorization = bearerToken(savedUser);
-        animalRepository.save(AnimalFixture.animalEntity());
-        animalRepository.save(AnimalFixture.animalEntity("animal-2", "TAG-002", "Holstein", java.time.LocalDate.of(2024, 1, 1), "ACTIVE", "farm-1"));
-        FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 1.75, true));
-        FeedTypeEntity secondFeedType = feedTypeRepository.save(new FeedTypeEntity(null, "Hay", 2.0, true));
+        animalRepository.save(AnimalFixture.animalEntity("animal-1", "TAG-001", "Angus", java.time.LocalDate.of(2022, 1, 10), "ACTIVE", farm.getId()));
+        animalRepository.save(AnimalFixture.animalEntity("animal-2", "TAG-002", "Holstein", java.time.LocalDate.of(2024, 1, 1), "ACTIVE", farm.getId()));
+        FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 1.75, true, farm.getId()));
+        FeedTypeEntity secondFeedType = feedTypeRepository.save(new FeedTypeEntity(null, "Hay", 2.0, true, farm.getId()));
 
         MvcResult createdResult = mockMvc.perform(post("/feedings")
                         .header("Authorization", authorization)
@@ -139,9 +143,10 @@ class FeedingIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldIgnoreProvidedCreateDateForWorker() throws Exception {
         UserEntity worker = createAuthenticatedUser("WORKER");
+        FarmEntity farm = createFarmOwnedBy(worker, "North Dairy");
         String authorization = bearerToken(worker);
-        animalRepository.save(AnimalFixture.animalEntity());
-        FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 1.75, true));
+        animalRepository.save(AnimalFixture.animalEntity("animal-1", "TAG-001", "Angus", java.time.LocalDate.of(2022, 1, 10), "ACTIVE", farm.getId()));
+        FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 1.75, true, farm.getId()));
 
         mockMvc.perform(post("/feedings")
                         .header("Authorization", authorization)
