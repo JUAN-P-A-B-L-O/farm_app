@@ -252,3 +252,43 @@ test('dashboard fetch and export preserve multi-animal, date, and status filters
     'dashboard-summary.csv',
   ])
 })
+
+test('dashboard fetch and export use the singular animalId parameter for a single selected animal', async () => {
+  const filters = {
+    startDate: '2026-01-01',
+    endDate: '2026-01-31',
+    animalIds: ['animal-1'],
+    status: 'ACTIVE',
+  }
+
+  await dashboardService.fetchDashboard('farm-1', true, 'USD', filters)
+  await dashboardService.exportDashboardCsv('farm-1', true, 'USD', filters)
+
+  assert.deepEqual(apiStub.requests[0], {
+    url: '/dashboard',
+    config: {
+      params: {
+        farmId: 'farm-1',
+        startDate: '2026-01-01',
+        endDate: '2026-01-31',
+        animalId: 'animal-1',
+        status: 'ACTIVE',
+        includeAcquisitionCost: true,
+        currency: 'USD',
+      },
+    },
+  })
+  assert.deepEqual(downloadCsvCalls[0], [
+    '/dashboard/export',
+    {
+      farmId: 'farm-1',
+      startDate: '2026-01-01',
+      endDate: '2026-01-31',
+      animalId: 'animal-1',
+      status: 'ACTIVE',
+      includeAcquisitionCost: true,
+      currency: 'USD',
+    },
+    'dashboard-summary.csv',
+  ])
+})

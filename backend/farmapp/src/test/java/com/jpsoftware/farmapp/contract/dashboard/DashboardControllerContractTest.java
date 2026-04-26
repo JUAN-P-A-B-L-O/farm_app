@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.contract.dashboard;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -90,5 +91,33 @@ class DashboardControllerContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalProduction").value(140.0))
                 .andExpect(jsonPath("$.animalCount").value(2));
+    }
+
+    @Test
+    void shouldMergeSingleAndMultiAnimalFiltersWithoutDuplicates() throws Exception {
+        when(dashboardService.getDashboardByAnimals(
+                "farm-1",
+                null,
+                null,
+                List.of("animal-1", "animal-2"),
+                "ACTIVE",
+                true))
+                .thenReturn(new DashboardResponse(140.0, 16.0, 140.0, 124.0, 2L));
+
+        mockMvc.perform(get("/dashboard")
+                        .param("farmId", "farm-1")
+                        .param("animalId", " animal-1 ")
+                        .param("animalIds", "animal-1", " animal-2 ", " ")
+                        .param("status", "ACTIVE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.animalCount").value(2));
+
+        verify(dashboardService).getDashboardByAnimals(
+                "farm-1",
+                null,
+                null,
+                List.of("animal-1", "animal-2"),
+                "ACTIVE",
+                true);
     }
 }

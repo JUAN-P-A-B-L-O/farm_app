@@ -1,300 +1,300 @@
 --- a/AI_CONTEXT.md
 +++ b/AI_CONTEXT.md
--# AI Context
--
--## 1. Project Overview
--
--### What the system does
--
--`farm_app` is a farm management system focused on cattle operations. The current implementation covers authentication, farms, operational records for animals, feeding, milk production, feed types, milk prices, users, and analytics/dashboard reporting.
--
--### Core features
--
--- Farms:
--  - create and list farms accessible to the authenticated user
--  - farm access can come from ownership or explicit user assignment
--  - farm is the operating boundary used by animals, feeding, production, feed types, dashboard, and analytics
--- Animals:
--  - create, list, retrieve, update, and delete animal records
--  - track origin (`BORN` or `PURCHASED`) and optional acquisition cost
--  - support a dedicated sell action with persisted sale price and sale date
--  - lifecycle is status-based (`ACTIVE`, `SOLD`, `DEAD`, `INACTIVE`)
--  - listing supports optional server-side search by tag or breed plus optional filters by `farmId`, `status`, and `origin`
--- Feeding:
--  - create, list, update, and soft-delete feeding records
--  - retrieve individual feeding entries
--  - listing supports optional server-side search by animal tag or feed type name plus optional filters by `animalId`, `feedTypeId`, `date`, and `farmId`
--  - optional pagination on listing endpoints
--  - on create, `WORKER` users cannot choose the date; frontend hides the date field and backend uses the current server date, ignoring any incoming date
--  - on create, `MANAGER` users can set the date manually
--  - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
--- Production:
--  - create, list, update, and soft-delete milk production records
--  - retrieve individual production entries
--  - update production animal, date, and quantity
--  - listing supports optional server-side search by animal tag plus optional filters by `animalId`, `date`, and `farmId`
--  - optional pagination on listing endpoints
--  - on create, `WORKER` users cannot choose the date; frontend hides the date field and backend uses the current server date, ignoring any incoming date
--  - on create, `MANAGER` users can set the date manually
--  - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
--  - summary and profit views by animal
--- Feed types:
--  - create, list, retrieve, update, and soft-delete feed type records
--  - feed types are scoped by farm
--  - listing supports optional server-side search by name plus optional backend pagination using `page` and `size`
--  - new feed types default to `active = true`
--  - delete marks feed types inactive rather than physically deleting rows
--- Users:
--  - create users
--  - list, retrieve, update, activate, inactivate, and delete users
--  - users are also the accountability reference for feeding and production records
--  - current role values used by the frontend are `MANAGER` and `WORKER`
--  - `MANAGER` is the privileged role for dashboard, analytics, and delete operations
--  - only authenticated `MANAGER` users can create, update, activate, inactivate, and delete users
--  - new users must be assigned to at least one farm owned by the creating manager
--  - user updates must also keep at least one farm owned by the authenticated manager
--  - users store an `active` login flag; inactive users cannot authenticate
--  - managers can reactivate inactive users through a dedicated activation action and may set a replacement password during reactivation
--  - inactivation sets `active = false` and blocks login plus JWT-authenticated access
--  - users who own farms cannot be inactivated or deleted, and farm owners must remain `MANAGER`
--  - user email is unique and enforced in service validation plus a database constraint
--  - users can store an optional `avatarUrl` image reference for list and form display
--  - user listing supports optional server-side filtering by search text, status, and role
--  - user listing also supports optional backend pagination using `page` and `size`
--  - authenticated users can update only their own password through a dedicated self-service settings flow
--- Analytics:
--  - dashboard aggregates total production, feeding cost, revenue, profit, and animal count
--  - dashboard and analytics endpoints require role `MANAGER`
--  - sold-animal revenue is included in dashboard and analytics revenue/profit calculations
--  - profit-oriented endpoints support `includeAcquisitionCost` and default it to `true`
--  - dashboard and monetary analytics/export endpoints accept an optional `currency` context; `BRL` is the default and `USD` is also supported
--  - monetary reporting values are still derived from stored base amounts and converted only at read/export time
--  - CSV export is available for dashboard plus each analytics view using the currently applied filters
--  - frontend includes analytics pages and charts
--- Milk prices:
--  - milk price is managed per farm as a time-based history
--  - each new price is stored as a new record with `price`, `effectiveDate`, `createdAt`, and `createdBy`
--  - current price is the latest record whose `effectiveDate` is on or before today
--  - milk price history listing supports optional server-side search plus an optional `effectiveDate` filter, alongside optional backend pagination using `page` and `size`
--  - if a farm has no effective milk price yet, reporting falls back to the legacy default price `2.0`
--- CSV export:
--  - CSV export is available per screen/context for animals, users, feedings, productions, feed types, milk price history, dashboard, and analytics views
--  - exports are generated on the backend and downloaded by the frontend through the service layer
--  - listing exports must respect the same farm and filter scope used by the active screen
--  - monetary exports also respect the active frontend currency context
--  - frontend downloads are centralized in `frontend/web/farm_web/src/services/csvExportService.ts`
--  - service helpers should build export params from the same screen state used for the corresponding list or dashboard fetch call
--
--### Current implementation note
--
--- Backend is active under `backend/farmapp`
--- Frontend web app is active under `frontend/web/farm_web`
--- There is no parallel active backend tree in this checkout; use `backend/farmapp` as the single backend source of truth
--- Local backend startup can use the `local` Spring profile to run against in-memory H2 when PostgreSQL is unavailable; the default runtime configuration remains PostgreSQL
--
--## 2. Architecture
--
--### Backend
--
--The backend is a Spring Boot 3.4.x modular monolith with a layered structure per business module.
--
--Current layers in code:
--
--- `controller`: HTTP endpoints, request binding, status codes, `@Valid` entry points
--- `service`: business rules, validations, orchestration, transaction boundaries
--- `repository`: Spring Data JPA persistence and aggregate queries
--- `mapper`: DTO/entity transformations
--- `entity` and `dto`: persistence and API models
--- `shared`: exception handling, config, reusable DTOs
--- `auth`: JWT security, login flow, authentication context
--  - `auth.service`: login/authentication context contracts and application services
--  - `auth.infrastructure`: JWT filter, token implementation, security configuration, authentication entry point
--
--### Clean Architecture alignment
--
--The codebase is aligned with Clean Architecture principles, but it is not a strict four-ring implementation yet.
--
--Practical mapping today:
--
--- Domain:
--  - business concepts live mostly in entities, DTOs, and service rules
--  - there is no isolated pure domain layer with rich aggregates
--- Application:
--  - service classes act as application services/use-case orchestration
--- Infrastructure:
--  - repositories, security filters, JWT token service, Spring configuration, JPA entities
--- Controller:
--  - REST controllers in each module
--
--Important constraint:
--
--- Do not assume a fully separated `domain/application/infrastructure/controller` package structure already exists
--- Future work should preserve current layering and move incrementally if stronger separation is introduced
--
--### Backend design characteristics
--
--- Controllers are intentionally thin
--- Services own business validation and referential checks
--- Persistence is ID-based rather than relation-heavy
--- JPA entities mostly store scalar foreign keys such as `animalId`, `feedTypeId`, and `createdBy`
--- Financial values such as revenue and profit are calculated at read time
--- milk price resolution now lives in `milkprice.service.MilkPriceService`
--- production, dashboard, and analytics services use the current farm milk price by default for revenue/profit calculations
--- reusable CSV row generation is centralized in `shared.util.CsvExportUtils`, while response headers and attachment naming are centralized in `shared.util.CsvResponseFactory`
--- backend currency conversion for reporting and export is centralized in `shared.currency` and currently supports `BRL` and `USD`
--
--### Frontend
--
--The frontend is a React + TypeScript + Vite application.
--
--Current structure:
--
--- `src/pages`: route-level screens
--- `src/components`: reusable UI by domain area
--- `src/services`: API access layer using Axios
--- `src/types`: typed frontend contracts
--- `src/layout`: application shell and navigation
--- `src/context` and `src/hooks`: shared state and helpers
--
--Frontend architectural rules already visible in code:
--
--- component-based composition
--- typed service functions wrapping HTTP calls
--- route-based page organization
--- translation support via language context and dictionaries
--- farm selection is handled centrally through `FarmContext`
--- display currency selection is handled centrally through `CurrencyContext`
--- reusable listing search/filter controls should be implemented as configurable shared components when multiple pages can adopt the same pattern
--- the shared listing filter pattern uses page-local draft filter state plus separately applied filter state so pagination, refresh, and CSV export all reuse the same backend query params
--- reusable listing filter controls live in `frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx` and currently support a shared search input plus configurable select and date fields
--- reusable listing pagination controls should be implemented through a shared component and keep the current filter/farm context when changing pages
--- screen-level CSV actions are rendered through the shared `ExportCsvButton` component and call backend downloads through service-layer helpers
--- monetary labels and formatting should use shared currency helpers instead of hardcoded symbols or hardcoded `Intl` currency values in components
--
--Current frontend constraint:
--
--- JWT attachment is centralized in the Axios service layer
--- invalid or expired JWT responses are handled centrally in the Axios response layer; the first `401` on an authenticated request clears stored auth state and forces frontend logout
--- backend security requires JWT for almost all endpoints, so frontend work should continue to centralize auth headers rather than scattering them across components
--
--## 3. API Contract
--
--## Base behavior
--
--- Base URL in frontend service config: `http://localhost:8080`
--- Content type: JSON
--- Protected endpoints require `Authorization: Bearer <jwt>`
--- Error envelope is standardized:
--
--```json
--{
--  "timestamp": "2026-04-07T10:00:00",
--  "status": 400,
--  "error": "validation message",
--  "path": "/animals"
--}
--```
--
--### `/farms`
--
--Endpoints:
--
--- `GET /farms`
--- `POST /farms`
--
--Create request:
--
--```json
--{
--  "name": "North Dairy"
--}
--```
--
--Required fields:
--
--- `name`
--
--Key validations and rules:
--
--- `name` must not be blank
--- authenticated user is required for farm creation
--- created farm is owned by the authenticated user
--- `GET /farms` returns farms accessible to the authenticated user, including farms explicitly assigned to that user
--- `GET /farms?ownedOnly=true` returns only farms owned by the authenticated user
--- frontend uses a dedicated farm creation flow before regular module access when no farm is selected
--
--### `/animals`
--
--Endpoints:
--
--- `POST /animals`
--- `GET /animals`
--- `GET /animals/export`
--- `GET /animals/{id}`
--- `PUT /animals/{id}`
--- `POST /animals/{id}/sell`
--- `DELETE /animals/{id}`
--
--Create request:
--
--```json
--{
--  "tag": "COW-101",
--  "breed": "Holstein",
--  "birthDate": "2022-01-15",
--  "origin": "PURCHASED",
--  "acquisitionCost": 1250.50,
--  "farmId": "farm-001"
--}
--```
--
--Required fields:
--
--- `tag`
--- `breed`
--- `birthDate`
--- `origin`
--- `farmId`
--
--Key validations and rules:
--
--- `tag`, `breed`, and `farmId` must not be blank
--- `birthDate` must not be null
--- `origin` must be `PURCHASED` or `BORN`
--- `acquisitionCost` is required and must be greater than zero when `origin = PURCHASED`
--- `acquisitionCost` is cleared when `origin = BORN`
--- `tag` must be unique
--- new animals default to status `ACTIVE`
--- `PUT /animals/{id}` can update lifecycle status except that selling must use the dedicated sell action
--- `POST /animals/{id}/sell` stores `salePrice`, optional `saleDate` (defaults to current date), and changes status to `SOLD`
--- only `ACTIVE` animals can be sold
--- once sold, the animal cannot transition back to another status through generic update
--- `DELETE /animals/{id}` is now soft-delete behavior and marks the animal as `INACTIVE`
--- `DELETE /animals/{id}` requires role `MANAGER`
--- `GET /animals` optionally accepts `farmId`, `search`, `status`, and `origin`
--- `GET /animals` also accepts optional `page` and `size`; when both are provided it returns a paginated payload with `content`, `page`, `size`, `totalElements`, and `totalPages`
--- update is partial, but provided string fields must not be blank
--
--Sell request:
--
--```json
--{
--  "salePrice": 3200.0,
--  "saleDate": "2026-04-14"
--}
--```
--
--Animal response characteristics:
--
--- includes optional `salePrice`
--- includes optional `saleDate`
--
--### `/productions`
--
--Endpoints:
--
--- `GET /productions`
--- `GET /productions/export`
--- `GET /productions/{id}`
--- `GET /productions/summary/by-animal?animalId=...`
--- `GET /productions/summary/profit/by-animal?animalId=...&includeAcquisitionCost=true`
++  Dashboard animal filtering supports a single animalId or a multi-select animalIds scope; the selected farm still comes from FarmContext
+-  GET /dashboard and GET /dashboard/export support optional startDate, endDate, animalId, and status filters
++  GET /dashboard and GET /dashboard/export support optional startDate, endDate, animalId, animalIds, and status filters
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/controller/DashboardController.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/controller/DashboardController.java
++import java.util.LinkedHashSet;
++import java.util.List;
++            @RequestParam(required = false) List<String> animalIds,
++        boolean hasMultiAnimalFilter = hasAnimalIds(animalIds);
+-                ? dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)
+-                : dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost);
++                ? hasMultiAnimalFilter
++                        ? dashboardService.getDashboardByAnimals(
++                                farmId,
++                                startDate,
++                                endDate,
++                                mergeAnimalFilters(animalId, animalIds),
++                                status,
++                                includeAcquisitionCost,
++                                currency)
++                        : dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)
++                : hasMultiAnimalFilter
++                        ? dashboardService.getDashboardByAnimals(
++                                farmId,
++                                startDate,
++                                endDate,
++                                mergeAnimalFilters(animalId, animalIds),
++                                status,
++                                includeAcquisitionCost)
++                        : dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost);
++            @RequestParam(required = false) List<String> animalIds,
++        boolean hasMultiAnimalFilter = hasAnimalIds(animalIds);
+-                        ? dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)
+-                        : dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost));
++                        ? hasMultiAnimalFilter
++                                ? dashboardService.exportDashboardByAnimals(
++                                        farmId,
++                                        startDate,
++                                        endDate,
++                                        mergeAnimalFilters(animalId, animalIds),
++                                        status,
++                                        includeAcquisitionCost,
++                                        currency)
++                                : dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)
++                        : hasMultiAnimalFilter
++                                ? dashboardService.exportDashboardByAnimals(
++                                        farmId,
++                                        startDate,
++                                        endDate,
++                                        mergeAnimalFilters(animalId, animalIds),
++                                        status,
++                                        includeAcquisitionCost)
++                                : dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost));
++    }
++
++    private boolean hasAnimalIds(List<String> animalIds) {
++        return animalIds != null && animalIds.stream().anyMatch(StringUtils::hasText);
++    }
++
++    private List<String> mergeAnimalFilters(String animalId, List<String> animalIds) {
++        LinkedHashSet<String> mergedAnimalIds = new LinkedHashSet<>();
++        if (StringUtils.hasText(animalId)) {
++            mergedAnimalIds.add(animalId.trim());
++        }
++        if (animalIds != null) {
++            animalIds.stream()
++                    .filter(StringUtils::hasText)
++                    .map(String::trim)
++                    .forEach(mergedAnimalIds::add);
++        }
++        return List.copyOf(mergedAnimalIds);
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java
++import java.util.LinkedHashSet;
+-        validateFilters(farmId, startDate, endDate, animalId, status);
++        return getDashboardByAnimals(
++                farmId,
++                startDate,
++                endDate,
++                toAnimalFilterList(animalId),
++                status,
++                includeAcquisitionCost,
++                currency);
++    }
++
++    @Transactional(readOnly = true)
++    public DashboardResponse getDashboardByAnimals(
++            String farmId,
++            LocalDate startDate,
++            LocalDate endDate,
++            Collection<String> animalIds,
++            String status,
++            boolean includeAcquisitionCost) {
++        return getDashboardByAnimals(farmId, startDate, endDate, animalIds, status, includeAcquisitionCost, null);
++    }
+-        List<AnimalEntity> animals = filterAnimals(animalId, farmId, status);
++    @Transactional(readOnly = true)
++    public DashboardResponse getDashboardByAnimals(
++            String farmId,
++            LocalDate startDate,
++            LocalDate endDate,
++            Collection<String> animalIds,
++            String status,
++            boolean includeAcquisitionCost,
++            String currency) {
++        List<String> normalizedAnimalIds = normalizeAnimalIds(animalIds);
++        validateFilters(farmId, startDate, endDate, normalizedAnimalIds, status);
++
++        List<AnimalEntity> animals = filterAnimals(normalizedAnimalIds, farmId, status);
++    @Transactional(readOnly = true)
++    public String exportDashboardByAnimals(
++            String farmId,
++            LocalDate startDate,
++            LocalDate endDate,
++            Collection<String> animalIds,
++            String status,
++            boolean includeAcquisitionCost) {
++        return exportDashboardByAnimals(farmId, startDate, endDate, animalIds, status, includeAcquisitionCost, null);
++    }
++
+-        DashboardResponse dashboard = getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency);
++        DashboardResponse dashboard = getDashboard(
++                farmId,
++                startDate,
++                endDate,
++                animalId,
++                status,
++                includeAcquisitionCost,
++                currency);
++        return CsvExportUtils.write(List.of(dashboard), List.of(
++                new CsvColumn<>("totalProduction", DashboardResponse::getTotalProduction),
++                new CsvColumn<>("totalFeedingCost", DashboardResponse::getTotalFeedingCost),
++                new CsvColumn<>("totalRevenue", DashboardResponse::getTotalRevenue),
++                new CsvColumn<>("totalProfit", DashboardResponse::getTotalProfit),
++                new CsvColumn<>("animalCount", DashboardResponse::getAnimalCount)));
++    }
++
++    @Transactional(readOnly = true)
++    public String exportDashboardByAnimals(
++            String farmId,
++            LocalDate startDate,
++            LocalDate endDate,
++            Collection<String> animalIds,
++            String status,
++            boolean includeAcquisitionCost,
++            String currency) {
++        DashboardResponse dashboard = getDashboardByAnimals(
++                farmId,
++                startDate,
++                endDate,
++                animalIds,
++                status,
++                includeAcquisitionCost,
++                currency);
+-            String animalId,
++            Collection<String> animalIds,
+-        if (StringUtils.hasText(animalId) && !animalRepository.existsById(animalId)) {
+-            throw new ResourceNotFoundException("Animal not found");
+-        }
++        for (String animalId : animalIds) {
++            if (!animalRepository.existsById(animalId)) {
++                throw new ResourceNotFoundException("Animal not found");
++            }
+-        if (StringUtils.hasText(animalId) && StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId)) {
+-            throw new ResourceNotFoundException("Animal not found");
++            if (StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId)) {
++                throw new ResourceNotFoundException("Animal not found");
++            }
+-    private List<AnimalEntity> filterAnimals(String animalId, String farmId, String status) {
++    private List<AnimalEntity> filterAnimals(Collection<String> animalIds, String farmId, String status) {
+-        if (StringUtils.hasText(animalId)) {
+-            AnimalEntity animal = StringUtils.hasText(farmId)
+-                    ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)
+-                    : animalRepository.findById(animalId).orElse(null);
+-            animals = animal != null ? List.of(animal) : List.of();
++        if (!animalIds.isEmpty()) {
++            LinkedHashSet<String> requestedAnimalIds = new LinkedHashSet<>(animalIds);
++            animals = animalRepository.findAllById(requestedAnimalIds).stream()
++                    .filter(animal -> !StringUtils.hasText(farmId) || Objects.equals(animal.getFarmId(), farmId))
++                    .toList();
++
++    private List<String> toAnimalFilterList(String animalId) {
++        if (!StringUtils.hasText(animalId)) {
++            return List.of();
++        }
++        return List.of(animalId.trim());
++    }
++
++    private List<String> normalizeAnimalIds(Collection<String> animalIds) {
++        if (animalIds == null || animalIds.isEmpty()) {
++            return List.of();
++        }
++
++        return animalIds.stream()
++                .filter(StringUtils::hasText)
++                .map(String::trim)
++                .distinct()
++                .toList();
++    }
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardControllerContractTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardControllerContractTest.java
++import java.util.List;
++
++    @Test
++    void shouldPassMultiAnimalFiltersWhenProvided() throws Exception {
++        when(dashboardService.getDashboardByAnimals(
++                "farm-1",
++                LocalDate.parse("2026-01-01"),
++                LocalDate.parse("2026-01-31"),
++                List.of("animal-1", "animal-2"),
++                "ACTIVE",
++                true,
++                "USD"))
++                .thenReturn(new DashboardResponse(140.0, 16.0, 140.0, 124.0, 2L));
++
++        mockMvc.perform(get("/dashboard")
++                        .param("farmId", "farm-1")
++                        .param("startDate", "2026-01-01")
++                        .param("endDate", "2026-01-31")
++                        .param("animalIds", "animal-1,animal-2")
++                        .param("status", "ACTIVE")
++                        .param("currency", "USD"))
++                .andExpect(status().isOk())
++                .andExpect(jsonPath("$.totalProduction").value(140.0))
++                .andExpect(jsonPath("$.animalCount").value(2));
++    }
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java
++import java.util.List;
++
++    @Test
++    void shouldExportDashboardAsCsvWithMultiAnimalFilters() throws Exception {
++        when(dashboardService.exportDashboardByAnimals(
++                "farm-001",
++                LocalDate.parse("2026-02-01"),
++                LocalDate.parse("2026-02-28"),
++                List.of("animal-9", "animal-10"),
++                "SOLD",
++                true,
++                "USD"))
++                .thenReturn("totalProduction,totalFeedingCost\n140.0,12.0\n");
++
++        mockMvc.perform(get("/dashboard/export")
++                        .param("farmId", "farm-001")
++                        .param("startDate", "2026-02-01")
++                        .param("endDate", "2026-02-28")
++                        .param("animalIds", "animal-9,animal-10")
++                        .param("status", "SOLD")
++                        .param("includeAcquisitionCost", "true")
++                        .param("currency", "USD"))
++                .andExpect(status().isOk())
++                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
++                .andExpect(header().string("Content-Disposition", Matchers.containsString("dashboard-summary.csv")))
++                .andExpect(content().string("totalProduction,totalFeedingCost\n140.0,12.0\n"));
++
++        verify(dashboardService).exportDashboardByAnimals(
++                "farm-001",
++                LocalDate.parse("2026-02-01"),
++                LocalDate.parse("2026-02-28"),
++                List.of("animal-9", "animal-10"),
++                "SOLD",
++                true,
++                "USD");
++    }
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java
+-        public List<FeedingResponse> findAll(String animalId, LocalDate date, String farmId) {
++        public List<FeedingResponse> findAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
+-        public String exportAll(String animalId, LocalDate date, String farmId) {
++        public String exportAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
+-        public PaginatedResponse<FeedingResponse> findAllPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
++        public PaginatedResponse<FeedingResponse> findAllPaginated(
++                String search,
++                String animalId,
++                String feedTypeId,
++                LocalDate date,
++                String farmId,
++                int page,
++                int size) {
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java
+-        public List<ProductionResponse> findAll(String animalId, LocalDate date, String farmId) {
++        public List<ProductionResponse> findAll(String search, String animalId, LocalDate date, String farmId) {
+-        public String exportAll(String animalId, LocalDate date, String farmId) {
++        public String exportAll(String search, String animalId, LocalDate date, String farmId) {
+-        public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
++        public PaginatedResponse<ProductionResponse> findAllPaginated(
++                String search,
++                String animalId,
++                LocalDate date,
++                String farmId,
++                int page,
++                int size) {
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java
++import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+-        when(animalRepository.findByIdAndFarmId("animal-1", "farm-1")).thenReturn(java.util.Optional.of(
++        when(animalRepository.findAllById(java.util.Set.of("animal-1"))).thenReturn(List.of(

@@ -116,4 +116,33 @@ class DashboardExportControllerContractTest {
                 true,
                 "USD");
     }
+
+    @Test
+    void shouldMergeSingleAndMultiAnimalFiltersWhenExportingCsv() throws Exception {
+        when(dashboardService.exportDashboardByAnimals(
+                "farm-001",
+                null,
+                null,
+                List.of("animal-9", "animal-10"),
+                "SOLD",
+                true))
+                .thenReturn("totalProduction,totalFeedingCost\n140.0,12.0\n");
+
+        mockMvc.perform(get("/dashboard/export")
+                        .param("farmId", "farm-001")
+                        .param("animalId", " animal-9 ")
+                        .param("animalIds", "animal-9", " animal-10 ", " ")
+                        .param("status", "SOLD")
+                        .param("includeAcquisitionCost", "true"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("totalProduction,totalFeedingCost\n140.0,12.0\n"));
+
+        verify(dashboardService).exportDashboardByAnimals(
+                "farm-001",
+                null,
+                null,
+                List.of("animal-9", "animal-10"),
+                "SOLD",
+                true);
+    }
 }

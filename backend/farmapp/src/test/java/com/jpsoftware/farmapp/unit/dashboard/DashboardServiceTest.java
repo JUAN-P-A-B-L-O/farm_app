@@ -20,6 +20,7 @@ import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -190,6 +191,40 @@ totalProduction,totalFeedingCost,totalRevenue,totalProfit,animalCount
         assertEquals(340.0, response.getTotalRevenue());
         assertEquals(208.0, response.getTotalProfit());
         assertEquals(2L, response.getAnimalCount());
+    }
+
+    @Test
+    void shouldNormalizeDuplicateAndBlankAnimalIdsBeforeFiltering() {
+        when(animalRepository.existsById("animal-1")).thenReturn(true);
+        when(animalRepository.existsByIdAndFarmId("animal-1", "farm-1")).thenReturn(true);
+        when(animalRepository.findAllById(Set.of("animal-1"))).thenReturn(List.of(
+                AnimalEntity.builder()
+                        .id("animal-1")
+                        .farmId("farm-1")
+                        .status(AnimalEntity.STATUS_ACTIVE)
+                        .acquisitionCost(25.0)
+                        .build()));
+        when(productionRepository.findByFarmIdAndStatus("farm-1", ProductionEntity.STATUS_ACTIVE)).thenReturn(List.of(
+                new ProductionEntity("production-1", "animal-1", LocalDate.parse("2026-01-12"), 50.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE)));
+        when(feedingRepository.findByFarmIdAndStatus("farm-1", FeedingEntity.STATUS_ACTIVE)).thenReturn(List.of(
+                new FeedingEntity("feeding-1", "animal-1", "feed-type-1", LocalDate.parse("2026-01-13"), 5.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE)));
+        when(feedTypeRepository.findAllById(Set.of("feed-type-1"))).thenReturn(List.of(
+                new FeedTypeEntity("feed-type-1", "Silage", 4.0, true, "farm-1")));
+
+        DashboardResponse response = dashboardService.getDashboardByAnimals(
+                "farm-1",
+                LocalDate.parse("2026-01-01"),
+                LocalDate.parse("2026-01-31"),
+                List.of(" animal-1 ", "", "animal-1", " "),
+                AnimalEntity.STATUS_ACTIVE,
+                true);
+
+        assertEquals(50.0, response.getTotalProduction());
+        assertEquals(20.0, response.getTotalFeedingCost());
+        assertEquals(100.0, response.getTotalRevenue());
+        assertEquals(55.0, response.getTotalProfit());
+        assertEquals(1L, response.getAnimalCount());
+        verify(animalRepository).findAllById(Set.of("animal-1"));
     }
 
     @Test
