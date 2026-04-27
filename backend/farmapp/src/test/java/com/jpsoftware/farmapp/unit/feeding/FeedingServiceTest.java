@@ -356,6 +356,37 @@ class FeedingServiceTest {
     }
 
     @Test
+    void shouldExportFeedingsWithConvertedMeasurementUnit() {
+        animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
+        feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");
+        feedingRepositoryHandler.store(new FeedingEntity(
+                "feeding-1",
+                "animal-1",
+                "feed-type-1",
+                LocalDate.of(2026, 3, 24),
+                8.5,
+                "11111111-1111-1111-1111-111111111111"));
+
+        String csv = feedingService.exportAll(null, null, null, null, null, "GRAM");
+
+        assertEquals(
+                """
+id,animalId,animalTag,feedTypeId,feedTypeName,date,quantity,quantityUnit
+feeding-1,animal-1,TAG-001,feed-type-1,Corn Silage,2026-03-24,8500.0,g
+""",
+                csv);
+    }
+
+    @Test
+    void shouldRejectInvalidMeasurementUnitWhenExportingFeedings() {
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> feedingService.exportAll(null, null, null, null, null, "LITER"));
+
+        assertEquals("measurementUnit must be KILOGRAM or GRAM", exception.getMessage());
+    }
+
+    @Test
     void shouldReturnFeedingById() {
         animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
         feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");

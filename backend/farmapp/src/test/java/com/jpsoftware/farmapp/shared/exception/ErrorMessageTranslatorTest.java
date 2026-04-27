@@ -42,6 +42,19 @@ class ErrorMessageTranslatorTest {
     }
 
     @Test
+    void shouldTranslateMeasurementUnitValidationMessages() {
+        assertEquals(
+                "A unidade deve ser LITER ou MILLILITER.",
+                ErrorMessageTranslator.translate("measurementUnit must be LITER or MILLILITER"));
+        assertEquals(
+                "A unidade deve ser KILOGRAM ou GRAM.",
+                ErrorMessageTranslator.translate("measurementUnit must be KILOGRAM or GRAM"));
+        assertEquals(
+                "A unidade de produção deve ser LITER ou MILLILITER.",
+                ErrorMessageTranslator.translate("productionUnit must be LITER or MILLILITER"));
+    }
+
+    @Test
     void shouldReturnValidationFallbackForBlankMessages() {
         assertEquals("Falha de validação.", ErrorMessageTranslator.translate("  "));
     }

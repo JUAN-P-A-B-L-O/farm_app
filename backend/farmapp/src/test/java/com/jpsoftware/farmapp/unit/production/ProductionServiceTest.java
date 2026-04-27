@@ -287,6 +287,30 @@ class ProductionServiceTest {
     }
 
     @Test
+    void shouldExportProductionsWithConvertedMeasurementUnit() {
+        animalRepositoryHandler.add("animal-1", "TAG-001");
+        productionRepositoryHandler.store(productionEntity);
+
+        String csv = productionService.exportAll(null, null, null, null, "MILLILITER");
+
+        assertEquals(
+                """
+id,animalId,animalTag,date,quantity,quantityUnit
+production-1,animal-1,TAG-001,2026-03-20,12500.0,mL
+""",
+                csv);
+    }
+
+    @Test
+    void shouldRejectInvalidMeasurementUnitWhenExportingProductions() {
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> productionService.exportAll(null, null, null, null, "GRAM"));
+
+        assertEquals("measurementUnit must be LITER or MILLILITER", exception.getMessage());
+    }
+
+    @Test
     void shouldHideInactiveProductionsFromDefaultQueries() {
         productionRepositoryHandler.store(new ProductionEntity(
                 "production-1",

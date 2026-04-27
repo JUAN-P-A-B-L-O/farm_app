@@ -88,6 +88,28 @@ totalProduction,totalFeedingCost,totalRevenue,totalProfit,animalCount
     }
 
     @Test
+    void shouldExportDashboardWithConvertedProductionUnit() {
+        when(productionRepository.findByFarmIdAndStatus("farm-1", ProductionEntity.STATUS_ACTIVE)).thenReturn(List.of(
+                new ProductionEntity("production-1", "animal-1", LocalDate.parse("2026-01-10"), 100.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE)));
+        when(feedingRepository.findByFarmIdAndStatus("farm-1", FeedingEntity.STATUS_ACTIVE)).thenReturn(List.of(
+                new FeedingEntity("feeding-1", "animal-1", "feed-type-1", LocalDate.parse("2026-01-11"), 10.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE)));
+        when(feedTypeRepository.findAllById(java.util.Set.of("feed-type-1"))).thenReturn(List.of(
+                new FeedTypeEntity("feed-type-1", "Silage", 4.0, true, "farm-1")));
+        when(animalRepository.findByFarmId("farm-1")).thenReturn(List.of(
+                AnimalEntity.builder().id("animal-1").farmId("farm-1").status(AnimalEntity.STATUS_ACTIVE).acquisitionCost(50.0).salePrice(300.0).saleDate(LocalDate.parse("2026-01-15")).build(),
+                AnimalEntity.builder().id("animal-2").farmId("farm-1").status(AnimalEntity.STATUS_ACTIVE).acquisitionCost(null).salePrice(null).build()));
+
+        String csv = dashboardService.exportDashboard("farm-1", null, null, null, null, true, null, "MILLILITER");
+
+        assertEquals(
+                """
+totalProduction,totalProductionUnit,totalFeedingCost,totalRevenue,totalProfit,animalCount
+100000.0,mL,40.0,500.0,410.0,2
+""",
+                csv);
+    }
+
+    @Test
     void shouldConvertDashboardMonetaryTotalsWhenCurrencyIsProvided() {
         when(productionRepository.findByFarmIdAndStatus("farm-1", ProductionEntity.STATUS_ACTIVE)).thenReturn(List.of(
                 new ProductionEntity("production-1", "animal-1", LocalDate.parse("2026-01-10"), 100.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE)));
