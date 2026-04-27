@@ -9,7 +9,7 @@ echo "🚀 AI PIPELINE START"
 echo "===================================="
 
 # =====================
-# 🔹 CONTEXT LOAD (1x)
+# 🔹 CONTEXT LOAD
 # =====================
 AI_CONTEXT=$(cat AI_CONTEXT.md)
 DEV_SKILL=$(cat skills/dev.md)
@@ -35,9 +35,7 @@ for FILE in workspace/features/*.md; do
   # =====================
   echo "👨‍💻 Running DEV..."
 
-  DEV_SYSTEM="$AI_CONTEXT"$'\n\n'"$DEV_SKILL"
-  DEV_PROMPT="$DEV_SYSTEM"$'\n\n'"$FEATURE"
-
+  DEV_PROMPT="$AI_CONTEXT"$'\n\n'"$DEV_SKILL"$'\n\n'"$FEATURE"
   codex exec "$DEV_PROMPT"
 
   git add .
@@ -46,12 +44,8 @@ for FILE in workspace/features/*.md; do
   # =====================
   # 📂 DIFF
   # =====================
-  echo "📂 Generating diff..."
-
   git diff $BASE_COMMIT HEAD > workspace/diff_full.txt
   git diff --name-only $BASE_COMMIT HEAD > workspace/files.txt
-
-  # diff reduzido (economia de token)
   git diff $BASE_COMMIT HEAD | grep -E "^[+-]" | head -n 300 > workspace/diff.txt || true
 
   if [ ! -s workspace/files.txt ]; then
@@ -64,30 +58,24 @@ for FILE in workspace/features/*.md; do
   # =====================
   echo "🧪 Running TESTER..."
 
-  TESTER_SYSTEM="$TESTER_SKILL"
+  TESTER_INPUT="Analyze changes and update tests.
 
-  TESTER_INPUT="Analyze the following changes and UPDATE tests accordingly.
-
-Changed files:
+Files:
 $(cat workspace/files.txt)
 
-Relevant diff:
+Diff:
 $(cat workspace/diff.txt)
+"
 
-Ensure tests reflect the new behavior and remain aligned with the implementation."
-
-  TESTER_PROMPT="$TESTER_SYSTEM"$'\n\n'"$TESTER_INPUT"
-
+  TESTER_PROMPT="$TESTER_SKILL"$'\n\n'"$TESTER_INPUT"
   codex exec "$TESTER_PROMPT"
 
   git add .
-  git commit -m "test(ai): update tests for $(basename "$FILE")" || echo "⚠️ No test changes"
+  git commit -m "test(ai): update tests for $(basename "$FILE")" || true
 
   # =====================
-  # 🔁 LOOP DE TESTE + FIX
+  # 🔁 TEST + CLASSIFY + FIX
   # =====================
-  echo "🧪 Running tests with auto-fix..."
-
   ATTEMPT=1
   SUCCESS=false
 
@@ -95,9 +83,6 @@ Ensure tests reflect the new behavior and remain aligned with the implementation
 
     echo "➡️ Attempt $ATTEMPT..."
 
-    # =====================
-    # 🧪 EXECUÇÃO REAL (CORRETO)
-    # =====================
     if (cd backend/farmapp && mvn test > ../../workspace/mvn.log 2>&1); then
       echo "✅ Tests passed"
       SUCCESS=true
@@ -107,48 +92,94 @@ Ensure tests reflect the new behavior and remain aligned with the implementation
     echo "❌ Tests failed"
 
     # =====================
-    # 🔎 CAPTURA DE ERRO MELHOR
+    # 🔎 ERROR CLASSIFIER
     # =====================
+    ERROR_TYPE="unknown"
+
+    if grep -q "expected:<.*> but was:<.*>" workspace/mvn.log; then
+      ERROR_TYPE="contract"
+    elif grep -q "method does not override" workspace/mvn.log; then
+      ERROR_TYPE="signature"
+    elif grep -q "NullPointerException" workspace/mvn.log; then
+      ERROR_TYPE="runtime"
+    fi
+
+    echo "🔍 Error type: $ERROR_TYPE"
+
     grep -A 5 -B 5 "ERROR" workspace/mvn.log > workspace/error_focus.txt || true
 
     # =====================
-    # 🛠 FIXER
+    # 🛠 FIXER INPUT DINÂMICO
     # =====================
-    echo "🛠 Running FIXER..."
+    case $ERROR_TYPE in
 
-    FIXER_SYSTEM="$FIXER_SKILL"
+      contract)
+        FIXER_INPUT="Fix contract mismatch.
 
-    FIXER_INPUT="Fix the issues causing test or compilation failures.
+Tests and implementation disagree.
 
-Relevant error:
+Example:
 $(cat workspace/error_focus.txt)
 
-Full tail:
+Rules:
+- Prefer aligning backend responses
+- Do NOT refactor unrelated code
+- Minimal fix only
+"
+        ;;
+
+      signature)
+        FIXER_INPUT="Fix method signature mismatch.
+
+$(cat workspace/error_focus.txt)
+
+Rules:
+- Align tests and implementation
+- Fix @Override issues
+- Do NOT refactor unrelated code
+"
+        ;;
+
+      runtime)
+        FIXER_INPUT="Fix runtime error.
+
+$(cat workspace/error_focus.txt)
+
+Rules:
+- Identify root cause
+- Fix minimal logic
+"
+        ;;
+
+      *)
+        FIXER_INPUT="Fix failure based on error:
+
 $(tail -n 50 workspace/mvn.log)
 
 Rules:
-- Do NOT delete or disable tests
-- Fix root cause, not symptoms
-- Keep changes minimal
-- Do NOT refactor unrelated code
+- Minimal fix
+- No large refactors
 "
+        ;;
+    esac
 
-    FIXER_PROMPT="$FIXER_SYSTEM"$'\n\n'"$FIXER_INPUT"
+    echo "🛠 Running FIXER..."
 
+    FIXER_PROMPT="$FIXER_SKILL"$'\n\n'"$FIXER_INPUT"
     codex exec "$FIXER_PROMPT"
 
     # =====================
-    # 🔒 PROTEÇÃO CONTRA FIXES GRANDES
+    # 🔒 PROTEÇÃO
     # =====================
     CHANGED_LINES=$(git diff --stat | grep -Eo '[0-9]+ insertions' | grep -Eo '[0-9]+' || echo 0)
 
     if [ "$CHANGED_LINES" -gt 200 ]; then
-      echo "⚠️ Fix too large ($CHANGED_LINES lines). Aborting to avoid damage."
+      echo "⚠️ Fix too large ($CHANGED_LINES lines). Aborting."
       exit 1
     fi
 
     git add .
-    git commit -m "fix(ai): auto-fix after test failure (attempt $ATTEMPT)" || echo "⚠️ No fix changes"
+    git commit -m "fix(ai): attempt $ATTEMPT ($ERROR_TYPE)" || true
 
     ATTEMPT=$((ATTEMPT + 1))
 
@@ -159,7 +190,7 @@ Rules:
     exit 1
   fi
 
-  echo "✅ Feature completed successfully"
+  echo "✅ Feature completed"
 
 done
 

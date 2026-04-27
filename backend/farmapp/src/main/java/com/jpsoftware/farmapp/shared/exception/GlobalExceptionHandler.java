@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -117,6 +118,13 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 resolveDataIntegrityMessage(exception),
                 request.getRequestURI());
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFoundException(
+            NoResourceFoundException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "Not Found", request.getRequestURI());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
