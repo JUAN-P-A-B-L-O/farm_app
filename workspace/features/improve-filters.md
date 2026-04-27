@@ -1,148 +1,41 @@
-You are a senior software engineer working on a fullstack project (React + Spring Boot).
+# Feature: Standardize Filter Components
 
-====================================
-MANDATORY CONTEXT USAGE
-====================================
+## Goal
+Unify all filter components across the application to provide a consistent, reusable, and clean user experience.
 
-- BEFORE making any decision, you MUST read AI_CONTEXT.md
-- Use it as the single source of truth for:
-  - UI patterns and components
-  - Existing filter/search implementations
-  - Design conventions
-  - State management approach
+## Scope
+- All frontend filter components
+- Listing pages (animals, users, feedings, productions, etc.)
+- Dashboard and analytics filters
 
-- Do NOT assume how filters are currently implemented
-- Do NOT guess UI patterns
-- Validate everything against the codebase
+## Requirements
+- Multi-selection filters must use a standardized dropdown with multi-select
+- Single selection filters must use a consistent dropdown component
+- Boolean filters must use a standardized checkbox or toggle
+- Date filters must use a consistent date picker component
+- Filters must support clear/reset behavior
+- Filters must maintain current integration with backend APIs
 
-====================================
-TASK
-====================================
-
-Standardize all filter components across the application.
-
-This includes:
-- Multi-selection filters
-- Single selection filters
-- Checkboxes
-- Dropdowns
-- Date filters
-- Any other filtering UI elements
-
-====================================
-GOAL
-====================================
-
-- Provide a consistent and clean UX for all filters
-- Improve usability and visual coherence
-- Ensure filters are reusable and scalable
-- Reduce duplication and inconsistencies
-
-====================================
-CONSTRAINTS
-====================================
-
-- Do NOT refactor unrelated business logic
+## Constraints
 - Do NOT break existing filtering behavior
-- Keep changes incremental and isolated
-- Respect existing frontend architecture
-- All API interactions must continue via service layer
-
-====================================
-DESIGN GUIDELINES
-====================================
-
-- Standardization:
-
-  - Multi-select → use dropdown (select component with multi-selection)
-  - Single select → use dropdown
-  - Boolean filters → use styled toggle or checkbox
-  - Date filters → use consistent date picker
-
-- Visual consistency:
-  - Same spacing, sizing, and interaction pattern
-  - Same labeling style across all filters
-
-- Reusability:
-  - Create reusable filter components
-  - Components must be configurable and decoupled
-
-- UX:
-  - Clear labels and placeholders
-  - Easy to reset/clear filters
-  - Consistent behavior across all screens
-
-====================================
-IMPLEMENTATION INSTRUCTIONS
-====================================
-
-1. Analyze:
-   - Read AI_CONTEXT.md
-   - Identify all filter implementations across the app
-   - Map inconsistencies (UI, behavior, structure)
-
-2. Frontend:
-
-- Create reusable components:
-  - Dropdown (single/multi)
-  - Checkbox/toggle
-  - Date filter
-  - Filter container/layout
-
-- Replace existing implementations:
-  - Gradually migrate screens to standardized components
-  - Keep behavior intact
-
-- Ensure:
-  - Filters integrate with existing API calls
-  - No duplication of logic
-
-3. Backend:
-
-- Ensure filter parameters remain consistent
 - Do NOT change API contracts unless strictly necessary
+- Keep changes incremental and localized
+- Follow existing architecture and patterns from AI_CONTEXT
 
-====================================
-AI_CONTEXT.md MAINTENANCE (MANDATORY)
-====================================
+## Implementation Notes
+- Identify all current filter implementations across the application
+- Create reusable filter components (dropdown, multi-select, checkbox, date picker)
+- Replace existing implementations progressively
+- Ensure compatibility with existing service layer and API calls
+- Avoid duplicating filter logic across screens
 
-- Update AI_CONTEXT.md to reflect:
-  - Standard filter patterns
-  - Component usage guidelines
-  - Naming conventions
+## Validation
+- Filters behave consistently across all screens
+- No regression in filtering functionality
+- UI is visually consistent and predictable
+- Filters integrate correctly with backend data
 
-- Keep updates concise and structured
-
-====================================
-VALIDATION (MANDATORY)
-====================================
-
-- All filters follow the same visual and interaction pattern
-- Filtering behavior remains correct
-- No regression in search/filter functionality
+## Done Criteria
+- All filters follow the same UI and behavior pattern
 - Components are reusable and configurable
-- UI is consistent across all listing and dashboard screens
-
-====================================
-ANTI-PATTERNS TO AVOID
-====================================
-
-- Duplicating filter logic per screen
-- Mixing different UI patterns for same type of filter
-- Hardcoding filter behavior
-- Breaking existing API integration
-
-====================================
-OUTPUT REQUIREMENTS
-====================================
-
-- Show only necessary changes
-- Keep explanation minimal
-- Always return a Conventional Commit message
-- Provide git commands if possible
-
-====================================
-GOAL
-====================================
-
-Deliver a unified, reusable, and scalable filtering system with consistent UX across the entire application.
+- No duplicated filter implementations remain
