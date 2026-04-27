@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DashboardController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.dashboard.controller</a> &gt; <span class="el_source">DashboardController.java</span></div><h1>DashboardController.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.dashboard.controller;
+
+import com.jpsoftware.farmapp.dashboard.dto.DashboardResponse;
+import com.jpsoftware.farmapp.dashboard.service.DashboardService;
+import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.List;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@Tag(name = &quot;Dashboard&quot;, description = &quot;Operations for retrieving aggregated dashboard metrics.&quot;)
+public class DashboardController {
+
+    private final DashboardService dashboardService;
+
+<span class="fc" id="L25">    public DashboardController(DashboardService dashboardService) {</span>
+<span class="fc" id="L26">        this.dashboardService = dashboardService;</span>
+<span class="fc" id="L27">    }</span>
+
+    @GetMapping(&quot;/dashboard&quot;)
+    @Operation(summary = &quot;Get dashboard&quot;, description = &quot;Returns aggregated production, feeding cost, revenue, profit, and animal count metrics.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Dashboard data retrieved successfully&quot;)
+    })
+    public ResponseEntity&lt;DashboardResponse&gt; getDashboard(
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) List&lt;String&gt; animalIds,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false, defaultValue = &quot;true&quot;) boolean includeAcquisitionCost,
+            @RequestParam(required = false) String currency) {
+<span class="fc" id="L43">        boolean hasMultiAnimalFilter = hasAnimalIds(animalIds);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        DashboardResponse response = StringUtils.hasText(currency)</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">                ? hasMultiAnimalFilter</span>
+<span class="fc" id="L46">                        ? dashboardService.getDashboardByAnimals(</span>
+                                farmId,
+                                startDate,
+                                endDate,
+<span class="fc" id="L50">                                mergeAnimalFilters(animalId, animalIds),</span>
+                                status,
+                                includeAcquisitionCost,
+                                currency)
+<span class="fc" id="L54">                        : dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">                : hasMultiAnimalFilter</span>
+<span class="fc" id="L56">                        ? dashboardService.getDashboardByAnimals(</span>
+                                farmId,
+                                startDate,
+                                endDate,
+<span class="fc" id="L60">                                mergeAnimalFilters(animalId, animalIds),</span>
+                                status,
+                                includeAcquisitionCost)
+<span class="fc" id="L63">                        : dashboardService.getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost);</span>
+<span class="fc" id="L64">        return ResponseEntity.ok(response);</span>
+    }
+
+    @GetMapping(&quot;/dashboard/export&quot;)
+    @Operation(summary = &quot;Export dashboard&quot;, description = &quot;Exports dashboard metrics as CSV using the current farm and acquisition-cost settings.&quot;)
+    public ResponseEntity&lt;byte[]&gt; exportDashboard(
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String animalId,
+            @RequestParam(required = false) List&lt;String&gt; animalIds,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false, defaultValue = &quot;true&quot;) boolean includeAcquisitionCost,
+            @RequestParam(required = false) String currency) {
+<span class="fc" id="L78">        boolean hasMultiAnimalFilter = hasAnimalIds(animalIds);</span>
+<span class="fc" id="L79">        return CsvResponseFactory.buildDownload(</span>
+                &quot;dashboard-summary.csv&quot;,
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                StringUtils.hasText(currency)</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">                        ? hasMultiAnimalFilter</span>
+<span class="fc" id="L83">                                ? dashboardService.exportDashboardByAnimals(</span>
+                                        farmId,
+                                        startDate,
+                                        endDate,
+<span class="fc" id="L87">                                        mergeAnimalFilters(animalId, animalIds),</span>
+                                        status,
+                                        includeAcquisitionCost,
+                                        currency)
+<span class="fc" id="L91">                                : dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency)</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">                        : hasMultiAnimalFilter</span>
+<span class="fc" id="L93">                                ? dashboardService.exportDashboardByAnimals(</span>
+                                        farmId,
+                                        startDate,
+                                        endDate,
+<span class="fc" id="L97">                                        mergeAnimalFilters(animalId, animalIds),</span>
+                                        status,
+                                        includeAcquisitionCost)
+<span class="fc" id="L100">                                : dashboardService.exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost));</span>
+    }
+
+    private boolean hasAnimalIds(List&lt;String&gt; animalIds) {
+<span class="pc bpc" id="L104" title="1 of 4 branches missed.">        return animalIds != null &amp;&amp; animalIds.stream().anyMatch(StringUtils::hasText);</span>
+    }
+
+    private List&lt;String&gt; mergeAnimalFilters(String animalId, List&lt;String&gt; animalIds) {
+<span class="fc" id="L108">        LinkedHashSet&lt;String&gt; mergedAnimalIds = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (StringUtils.hasText(animalId)) {</span>
+<span class="fc" id="L110">            mergedAnimalIds.add(animalId.trim());</span>
+        }
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        if (animalIds != null) {</span>
+<span class="fc" id="L113">            animalIds.stream()</span>
+<span class="fc" id="L114">                    .filter(StringUtils::hasText)</span>
+<span class="fc" id="L115">                    .map(String::trim)</span>
+<span class="fc" id="L116">                    .forEach(mergedAnimalIds::add);</span>
+        }
+<span class="fc" id="L118">        return List.copyOf(mergedAnimalIds);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

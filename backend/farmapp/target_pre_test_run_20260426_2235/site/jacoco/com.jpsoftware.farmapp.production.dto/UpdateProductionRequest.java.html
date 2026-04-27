@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UpdateProductionRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.production.dto</a> &gt; <span class="el_source">UpdateProductionRequest.java</span></div><h1>UpdateProductionRequest.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.production.dto;
+
+import com.fasterxml.jackson.annotation.JsonAlias;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Positive;
+import java.time.LocalDate;
+
+@Schema(description = &quot;Request payload for updating a production record.&quot;)
+public class UpdateProductionRequest {
+
+    @JsonAlias(&quot;animal&quot;)
+    @Schema(description = &quot;Animal identifier.&quot;, example = &quot;animal-001&quot;)
+    private String animalId;
+
+    @Schema(description = &quot;Production date.&quot;, example = &quot;2026-03-21&quot;)
+    private LocalDate date;
+
+    @Positive
+    @Digits(integer = 10, fraction = 2, message = &quot;quantity must have at most 2 decimal places&quot;)
+    @Schema(description = &quot;Produced quantity in liters.&quot;, example = &quot;34.2&quot;)
+    private Double quantity;
+
+<span class="fc" id="L24">    public UpdateProductionRequest() {</span>
+<span class="fc" id="L25">    }</span>
+
+    public UpdateProductionRequest(LocalDate date, Double quantity) {
+<span class="fc" id="L28">        this(null, date, quantity);</span>
+<span class="fc" id="L29">    }</span>
+
+<span class="fc" id="L31">    public UpdateProductionRequest(String animalId, LocalDate date, Double quantity) {</span>
+<span class="fc" id="L32">        this.animalId = animalId;</span>
+<span class="fc" id="L33">        this.date = date;</span>
+<span class="fc" id="L34">        this.quantity = quantity;</span>
+<span class="fc" id="L35">    }</span>
+
+    public String getAnimalId() {
+<span class="fc" id="L38">        return animalId;</span>
+    }
+
+    public void setAnimalId(String animalId) {
+<span class="nc" id="L42">        this.animalId = animalId;</span>
+<span class="nc" id="L43">    }</span>
+
+    public LocalDate getDate() {
+<span class="fc" id="L46">        return date;</span>
+    }
+
+    public void setDate(LocalDate date) {
+<span class="fc" id="L50">        this.date = date;</span>
+<span class="fc" id="L51">    }</span>
+
+    public Double getQuantity() {
+<span class="fc" id="L54">        return quantity;</span>
+    }
+
+    public void setQuantity(Double quantity) {
+<span class="fc" id="L58">        this.quantity = quantity;</span>
+<span class="fc" id="L59">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

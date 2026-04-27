@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CreateUserRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.user.dto</a> &gt; <span class="el_source">CreateUserRequest.java</span></div><h1>CreateUserRequest.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.user.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.util.List;
+
+@Schema(description = &quot;Request payload for creating a user.&quot;)
+public class CreateUserRequest {
+
+    @NotBlank(message = &quot;name must not be blank&quot;)
+    @Schema(description = &quot;User full name.&quot;, example = &quot;Maria Silva&quot;)
+    private String name;
+
+    @NotBlank(message = &quot;email must not be blank&quot;)
+    @Schema(description = &quot;User email address.&quot;, example = &quot;maria.silva@farmapp.com&quot;)
+    private String email;
+
+    @NotBlank(message = &quot;role must not be blank&quot;)
+    @Schema(description = &quot;User role in the system.&quot;, example = &quot;MANAGER&quot;)
+    private String role;
+
+    @Schema(description = &quot;User password for authentication.&quot;, example = &quot;farmapp@123&quot;)
+    private String password;
+
+    @NotNull(message = &quot;active must not be null&quot;)
+    @Schema(description = &quot;Whether the user can authenticate.&quot;, example = &quot;true&quot;)
+    private Boolean active;
+
+    @Schema(
+            description = &quot;User avatar image as a URL or data URL.&quot;,
+            example = &quot;https://example.com/avatar.png&quot;)
+    private String avatarUrl;
+
+    @NotEmpty(message = &quot;farmIds must not be empty&quot;)
+    @Schema(description = &quot;Farm identifiers assigned to the user.&quot;, example = &quot;[\&quot;farm-001\&quot;]&quot;)
+    private List&lt;String&gt; farmIds;
+
+<span class="fc" id="L40">    public CreateUserRequest() {</span>
+<span class="fc" id="L41">    }</span>
+
+    public CreateUserRequest(String name, String email, String role) {
+<span class="nc" id="L44">        this(name, email, role, null, true, null, List.of());</span>
+<span class="nc" id="L45">    }</span>
+
+    public CreateUserRequest(String name, String email, String role, String password) {
+<span class="nc" id="L48">        this(name, email, role, password, true, null, List.of());</span>
+<span class="nc" id="L49">    }</span>
+
+    public CreateUserRequest(
+            String name,
+            String email,
+            String role,
+            String password,
+            Boolean active,
+            String avatarUrl,
+<span class="fc" id="L58">            List&lt;String&gt; farmIds) {</span>
+<span class="fc" id="L59">        this.name = name;</span>
+<span class="fc" id="L60">        this.email = email;</span>
+<span class="fc" id="L61">        this.role = role;</span>
+<span class="fc" id="L62">        this.password = password;</span>
+<span class="fc" id="L63">        this.active = active;</span>
+<span class="fc" id="L64">        this.avatarUrl = avatarUrl;</span>
+<span class="fc" id="L65">        this.farmIds = farmIds;</span>
+<span class="fc" id="L66">    }</span>
+
+    public String getName() {
+<span class="fc" id="L69">        return name;</span>
+    }
+
+    public void setName(String name) {
+<span class="fc" id="L73">        this.name = name;</span>
+<span class="fc" id="L74">    }</span>
+
+    public String getEmail() {
+<span class="fc" id="L77">        return email;</span>
+    }
+
+    public void setEmail(String email) {
+<span class="fc" id="L81">        this.email = email;</span>
+<span class="fc" id="L82">    }</span>
+
+    public String getRole() {
+<span class="fc" id="L85">        return role;</span>
+    }
+
+    public void setRole(String role) {
+<span class="fc" id="L89">        this.role = role;</span>
+<span class="fc" id="L90">    }</span>
+
+    public String getPassword() {
+<span class="fc" id="L93">        return password;</span>
+    }
+
+    public void setPassword(String password) {
+<span class="fc" id="L97">        this.password = password;</span>
+<span class="fc" id="L98">    }</span>
+
+    public Boolean getActive() {
+<span class="fc" id="L101">        return active;</span>
+    }
+
+    public void setActive(Boolean active) {
+<span class="fc" id="L105">        this.active = active;</span>
+<span class="fc" id="L106">    }</span>
+
+    public String getAvatarUrl() {
+<span class="fc" id="L109">        return avatarUrl;</span>
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+<span class="fc" id="L113">        this.avatarUrl = avatarUrl;</span>
+<span class="fc" id="L114">    }</span>
+
+    public List&lt;String&gt; getFarmIds() {
+<span class="fc" id="L117">        return farmIds;</span>
+    }
+
+    public void setFarmIds(List&lt;String&gt; farmIds) {
+<span class="fc" id="L121">        this.farmIds = farmIds;</span>
+<span class="fc" id="L122">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

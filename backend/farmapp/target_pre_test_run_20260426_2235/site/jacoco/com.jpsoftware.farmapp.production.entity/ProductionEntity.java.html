@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProductionEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.production.entity</a> &gt; <span class="el_source">ProductionEntity.java</span></div><h1>ProductionEntity.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.production.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDate;
+
+@Entity
+@Table(name = &quot;productions&quot;)
+public class ProductionEntity {
+
+    public static final String STATUS_ACTIVE = &quot;ACTIVE&quot;;
+    public static final String STATUS_INACTIVE = &quot;INACTIVE&quot;;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private String id;
+
+    @Column(name = &quot;animal_id&quot;, nullable = false)
+    private String animalId;
+
+    @Column(nullable = false)
+    private LocalDate date;
+
+    @Column(nullable = false)
+    private Double quantity;
+
+    @Column(name = &quot;created_by&quot;, nullable = false)
+    private String createdBy;
+
+    @Column(name = &quot;farm_id&quot;)
+    private String farmId;
+
+    @Column(nullable = false)
+    private String status;
+
+<span class="fc" id="L41">    public ProductionEntity() {</span>
+<span class="fc" id="L42">        this.status = STATUS_ACTIVE;</span>
+<span class="fc" id="L43">    }</span>
+
+    public ProductionEntity(String id, String animalId, LocalDate date, Double quantity, String createdBy) {
+<span class="nc" id="L46">        this(id, animalId, date, quantity, createdBy, STATUS_ACTIVE);</span>
+<span class="nc" id="L47">    }</span>
+
+    public ProductionEntity(String id, String animalId, LocalDate date, Double quantity, String createdBy, String status) {
+<span class="fc" id="L50">        this(id, animalId, date, quantity, createdBy, null, status);</span>
+<span class="fc" id="L51">    }</span>
+
+<span class="fc" id="L53">    public ProductionEntity(String id, String animalId, LocalDate date, Double quantity, String createdBy, String farmId, String status) {</span>
+<span class="fc" id="L54">        this.id = id;</span>
+<span class="fc" id="L55">        this.animalId = animalId;</span>
+<span class="fc" id="L56">        this.date = date;</span>
+<span class="fc" id="L57">        this.quantity = quantity;</span>
+<span class="fc" id="L58">        this.createdBy = createdBy;</span>
+<span class="fc" id="L59">        this.farmId = farmId;</span>
+<span class="fc" id="L60">        this.status = status;</span>
+<span class="fc" id="L61">    }</span>
+
+    public String getId() {
+<span class="fc" id="L64">        return id;</span>
+    }
+
+    public void setId(String id) {
+<span class="fc" id="L68">        this.id = id;</span>
+<span class="fc" id="L69">    }</span>
+
+    public String getAnimalId() {
+<span class="fc" id="L72">        return animalId;</span>
+    }
+
+    public void setAnimalId(String animalId) {
+<span class="fc" id="L76">        this.animalId = animalId;</span>
+<span class="fc" id="L77">    }</span>
+
+    public LocalDate getDate() {
+<span class="fc" id="L80">        return date;</span>
+    }
+
+    public void setDate(LocalDate date) {
+<span class="fc" id="L84">        this.date = date;</span>
+<span class="fc" id="L85">    }</span>
+
+    public Double getQuantity() {
+<span class="fc" id="L88">        return quantity;</span>
+    }
+
+    public void setQuantity(Double quantity) {
+<span class="fc" id="L92">        this.quantity = quantity;</span>
+<span class="fc" id="L93">    }</span>
+
+    public String getCreatedBy() {
+<span class="nc" id="L96">        return createdBy;</span>
+    }
+
+    public void setCreatedBy(String createdBy) {
+<span class="fc" id="L100">        this.createdBy = createdBy;</span>
+<span class="fc" id="L101">    }</span>
+
+    public String getFarmId() {
+<span class="nc" id="L104">        return farmId;</span>
+    }
+
+    public void setFarmId(String farmId) {
+<span class="fc" id="L108">        this.farmId = farmId;</span>
+<span class="fc" id="L109">    }</span>
+
+    public String getStatus() {
+<span class="fc" id="L112">        return status;</span>
+    }
+
+    public void setStatus(String status) {
+<span class="fc" id="L116">        this.status = status;</span>
+<span class="fc" id="L117">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

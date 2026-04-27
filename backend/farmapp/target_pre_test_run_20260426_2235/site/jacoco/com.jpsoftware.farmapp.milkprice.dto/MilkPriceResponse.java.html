@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MilkPriceResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.milkprice.dto</a> &gt; <span class="el_source">MilkPriceResponse.java</span></div><h1>MilkPriceResponse.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.milkprice.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Schema(description = &quot;Milk price entry or the currently resolved default milk price.&quot;)
+public class MilkPriceResponse {
+
+    @Schema(description = &quot;Milk price identifier.&quot;, example = &quot;price-001&quot;)
+    private String id;
+
+    @Schema(description = &quot;Farm identifier.&quot;, example = &quot;farm-001&quot;)
+    private String farmId;
+
+    @Schema(description = &quot;Milk price per liter.&quot;, example = &quot;2.35&quot;)
+    private Double price;
+
+    @Schema(description = &quot;Date from which the price is effective.&quot;, example = &quot;2026-04-14&quot;, nullable = true)
+    private LocalDate effectiveDate;
+
+    @Schema(description = &quot;Timestamp when the record was created.&quot;, example = &quot;2026-04-14T09:30:00&quot;, nullable = true)
+    private LocalDateTime createdAt;
+
+    @Schema(description = &quot;User identifier that registered the price.&quot;, example = &quot;550e8400-e29b-41d4-a716-446655440000&quot;, nullable = true)
+    private String createdBy;
+
+    @Schema(description = &quot;Indicates whether the response is using the legacy fallback price.&quot;, example = &quot;false&quot;)
+    private boolean fallbackDefault;
+
+<span class="nc" id="L31">    public MilkPriceResponse() {</span>
+<span class="nc" id="L32">    }</span>
+
+    public MilkPriceResponse(
+            String id,
+            String farmId,
+            Double price,
+            LocalDate effectiveDate,
+            LocalDateTime createdAt,
+            String createdBy,
+<span class="fc" id="L41">            boolean fallbackDefault) {</span>
+<span class="fc" id="L42">        this.id = id;</span>
+<span class="fc" id="L43">        this.farmId = farmId;</span>
+<span class="fc" id="L44">        this.price = price;</span>
+<span class="fc" id="L45">        this.effectiveDate = effectiveDate;</span>
+<span class="fc" id="L46">        this.createdAt = createdAt;</span>
+<span class="fc" id="L47">        this.createdBy = createdBy;</span>
+<span class="fc" id="L48">        this.fallbackDefault = fallbackDefault;</span>
+<span class="fc" id="L49">    }</span>
+
+    public String getId() {
+<span class="fc" id="L52">        return id;</span>
+    }
+
+    public void setId(String id) {
+<span class="nc" id="L56">        this.id = id;</span>
+<span class="nc" id="L57">    }</span>
+
+    public String getFarmId() {
+<span class="fc" id="L60">        return farmId;</span>
+    }
+
+    public void setFarmId(String farmId) {
+<span class="nc" id="L64">        this.farmId = farmId;</span>
+<span class="nc" id="L65">    }</span>
+
+    public Double getPrice() {
+<span class="fc" id="L68">        return price;</span>
+    }
+
+    public void setPrice(Double price) {
+<span class="nc" id="L72">        this.price = price;</span>
+<span class="nc" id="L73">    }</span>
+
+    public LocalDate getEffectiveDate() {
+<span class="fc" id="L76">        return effectiveDate;</span>
+    }
+
+    public void setEffectiveDate(LocalDate effectiveDate) {
+<span class="nc" id="L80">        this.effectiveDate = effectiveDate;</span>
+<span class="nc" id="L81">    }</span>
+
+    public LocalDateTime getCreatedAt() {
+<span class="fc" id="L84">        return createdAt;</span>
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+<span class="nc" id="L88">        this.createdAt = createdAt;</span>
+<span class="nc" id="L89">    }</span>
+
+    public String getCreatedBy() {
+<span class="fc" id="L92">        return createdBy;</span>
+    }
+
+    public void setCreatedBy(String createdBy) {
+<span class="nc" id="L96">        this.createdBy = createdBy;</span>
+<span class="nc" id="L97">    }</span>
+
+    public boolean isFallbackDefault() {
+<span class="fc" id="L100">        return fallbackDefault;</span>
+    }
+
+    public void setFallbackDefault(boolean fallbackDefault) {
+<span class="nc" id="L104">        this.fallbackDefault = fallbackDefault;</span>
+<span class="nc" id="L105">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

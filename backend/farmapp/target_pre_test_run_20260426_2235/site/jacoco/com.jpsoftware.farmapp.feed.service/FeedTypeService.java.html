@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FeedTypeService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.feed.service</a> &gt; <span class="el_source">FeedTypeService.java</span></div><h1>FeedTypeService.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.feed.service;
+
+import com.jpsoftware.farmapp.feed.dto.CreateFeedTypeRequest;
+import com.jpsoftware.farmapp.feed.dto.FeedTypeResponse;
+import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
+import com.jpsoftware.farmapp.feed.mapper.FeedTypeMapper;
+import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
+import java.util.List;
+import java.util.Locale;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class FeedTypeService {
+
+    private final FeedTypeRepository feedTypeRepository;
+    private final FeedTypeMapper feedTypeMapper;
+    private final FarmAccessService farmAccessService;
+
+    public FeedTypeService(
+            FeedTypeRepository feedTypeRepository,
+            FeedTypeMapper feedTypeMapper,
+<span class="fc" id="L36">            FarmAccessService farmAccessService) {</span>
+<span class="fc" id="L37">        this.feedTypeRepository = feedTypeRepository;</span>
+<span class="fc" id="L38">        this.feedTypeMapper = feedTypeMapper;</span>
+<span class="fc" id="L39">        this.farmAccessService = farmAccessService;</span>
+<span class="fc" id="L40">    }</span>
+
+    @Transactional
+    public FeedTypeResponse create(CreateFeedTypeRequest request, String farmId) {
+<span class="fc" id="L44">        validateInput(request);</span>
+<span class="fc" id="L45">        String validatedFarmId = farmAccessService.validateAccessibleFarm(farmId);</span>
+
+<span class="fc" id="L47">        FeedTypeEntity feedTypeEntity = feedTypeMapper.toEntity(request);</span>
+<span class="fc" id="L48">        feedTypeEntity.setCostPerKg(DecimalScaleUtils.normalize(feedTypeEntity.getCostPerKg()));</span>
+<span class="fc" id="L49">        feedTypeEntity.setFarmId(validatedFarmId);</span>
+<span class="fc" id="L50">        FeedTypeEntity savedFeedType = feedTypeRepository.save(feedTypeEntity);</span>
+
+<span class="fc" id="L52">        return feedTypeMapper.toResponse(savedFeedType);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;FeedTypeResponse&gt; findAll(String farmId, String search) {
+<span class="fc" id="L57">        farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+<span class="fc" id="L58">        List&lt;FeedTypeEntity&gt; feedTypes = feedTypeRepository.findAll(</span>
+<span class="fc" id="L59">                buildFeedTypeSpecification(farmId, search),</span>
+<span class="fc" id="L60">                Sort.by(Sort.Direction.ASC, &quot;name&quot;));</span>
+
+<span class="fc" id="L62">        return feedTypes.stream()</span>
+<span class="fc" id="L63">                .map(feedTypeMapper::toResponse)</span>
+<span class="fc" id="L64">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;FeedTypeResponse&gt; findAll(String farmId) {
+<span class="fc" id="L69">        return findAll(farmId, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse&lt;FeedTypeResponse&gt; findAllPaginated(String farmId, String search, int page, int size) {
+<span class="fc" id="L74">        farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+<span class="fc" id="L75">        Page&lt;FeedTypeEntity&gt; feedTypes = feedTypeRepository.findAll(</span>
+<span class="fc" id="L76">                buildFeedTypeSpecification(farmId, search),</span>
+<span class="fc" id="L77">                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, &quot;name&quot;)));</span>
+<span class="fc" id="L78">        Page&lt;FeedTypeResponse&gt; responses = feedTypes.map(feedTypeMapper::toResponse);</span>
+<span class="fc" id="L79">        return new PaginatedResponse&lt;&gt;(</span>
+<span class="fc" id="L80">                responses.getContent(),</span>
+<span class="fc" id="L81">                responses.getNumber(),</span>
+<span class="fc" id="L82">                responses.getSize(),</span>
+<span class="fc" id="L83">                responses.getTotalElements(),</span>
+<span class="fc" id="L84">                responses.getTotalPages());</span>
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse&lt;FeedTypeResponse&gt; findAllPaginated(String farmId, int page, int size) {
+<span class="fc" id="L89">        return findAllPaginated(farmId, null, page, size);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String search, String currency) {
+<span class="nc" id="L94">        return CsvExportUtils.write(findAll(farmId, search).stream()</span>
+<span class="nc" id="L95">                .map(feedType -&gt; new FeedTypeResponse(</span>
+<span class="nc" id="L96">                        feedType.getId(),</span>
+<span class="nc" id="L97">                        feedType.getName(),</span>
+<span class="nc" id="L98">                        CurrencyConversionUtils.convertMonetaryValue(feedType.getCostPerKg(), currency),</span>
+<span class="nc" id="L99">                        feedType.getActive()))</span>
+<span class="nc" id="L100">                .toList(), List.of(</span>
+                new CsvColumn&lt;&gt;(&quot;id&quot;, FeedTypeResponse::getId),
+                new CsvColumn&lt;&gt;(&quot;name&quot;, FeedTypeResponse::getName),
+                new CsvColumn&lt;&gt;(&quot;costPerKg&quot;, FeedTypeResponse::getCostPerKg),
+                new CsvColumn&lt;&gt;(&quot;active&quot;, FeedTypeResponse::getActive)));
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId) {
+<span class="nc" id="L109">        return exportAll(farmId, null, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public FeedTypeResponse findById(String id, String farmId) {
+<span class="fc" id="L114">        farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        FeedTypeEntity feedTypeEntity = (StringUtils.hasText(farmId)</span>
+<span class="fc" id="L116">                ? feedTypeRepository.findByIdAndFarmIdAndActiveTrue(validateId(id), farmId)</span>
+<span class="pc" id="L117">                : feedTypeRepository.findByIdAndActiveTrue(validateId(id)))</span>
+<span class="fc" id="L118">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Feed type not found&quot;));</span>
+
+<span class="fc" id="L120">        return feedTypeMapper.toResponse(feedTypeEntity);</span>
+    }
+
+    @Transactional
+    public FeedTypeResponse update(String id, CreateFeedTypeRequest request, String farmId) {
+<span class="nc" id="L125">        validateInput(request);</span>
+<span class="nc" id="L126">        FeedTypeEntity feedTypeEntity = findActiveFeedType(validateId(id), farmId);</span>
+<span class="nc" id="L127">        feedTypeEntity.setName(request.getName());</span>
+<span class="nc" id="L128">        feedTypeEntity.setCostPerKg(DecimalScaleUtils.normalize(request.getCostPerKg()));</span>
+
+<span class="nc" id="L130">        return feedTypeMapper.toResponse(feedTypeRepository.save(feedTypeEntity));</span>
+    }
+
+    @Transactional
+    public void delete(String id, String farmId) {
+<span class="nc" id="L135">        FeedTypeEntity feedTypeEntity = findAnyFeedType(validateId(id), farmId);</span>
+
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (!Boolean.TRUE.equals(feedTypeEntity.getActive())) {</span>
+<span class="nc" id="L138">            return;</span>
+        }
+
+<span class="nc" id="L141">        feedTypeEntity.setActive(Boolean.FALSE);</span>
+<span class="nc" id="L142">        feedTypeRepository.save(feedTypeEntity);</span>
+<span class="nc" id="L143">    }</span>
+
+    private void validateInput(CreateFeedTypeRequest request) {
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L147">            throw new ValidationException(&quot;request must not be null&quot;);</span>
+        }
+<span class="fc bfc" id="L149" title="All 2 branches covered.">        if (!StringUtils.hasText(request.getName())) {</span>
+<span class="fc" id="L150">            throw new ValidationException(&quot;name must not be blank&quot;);</span>
+        }
+<span class="pc bpc" id="L152" title="1 of 4 branches missed.">        if (request.getCostPerKg() == null || request.getCostPerKg() &lt;= 0) {</span>
+<span class="fc" id="L153">            throw new ValidationException(&quot;costPerKg must be greater than zero&quot;);</span>
+        }
+<span class="fc" id="L155">        DecimalScaleUtils.requireMaxScale(request.getCostPerKg(), &quot;costPerKg&quot;);</span>
+<span class="fc" id="L156">    }</span>
+
+    private String validateId(String id) {
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">        if (!StringUtils.hasText(id)) {</span>
+<span class="nc" id="L160">            throw new ValidationException(&quot;id must not be blank&quot;);</span>
+        }
+<span class="fc" id="L162">        return id;</span>
+    }
+
+    private FeedTypeEntity findActiveFeedType(String id, String farmId) {
+<span class="nc" id="L166">        farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+
+<span class="nc bnc" id="L168" title="All 2 branches missed.">        return (StringUtils.hasText(farmId)</span>
+<span class="nc" id="L169">                ? feedTypeRepository.findByIdAndFarmIdAndActiveTrue(id, farmId)</span>
+<span class="nc" id="L170">                : feedTypeRepository.findByIdAndActiveTrue(id))</span>
+<span class="nc" id="L171">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Feed type not found&quot;));</span>
+    }
+
+    private FeedTypeEntity findAnyFeedType(String id, String farmId) {
+<span class="nc" id="L175">        farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        return (StringUtils.hasText(farmId)</span>
+<span class="nc" id="L178">                ? feedTypeRepository.findByIdAndFarmId(id, farmId)</span>
+<span class="nc" id="L179">                : feedTypeRepository.findById(id))</span>
+<span class="nc" id="L180">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Feed type not found&quot;));</span>
+    }
+
+    private Specification&lt;FeedTypeEntity&gt; buildFeedTypeSpecification(String farmId, String search) {
+<span class="fc" id="L184">        String normalizedSearch = normalizeFilter(search);</span>
+<span class="fc" id="L185">        Specification&lt;FeedTypeEntity&gt; specification = Specification.where((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L186">                criteriaBuilder.isTrue(root.get(&quot;active&quot;)));</span>
+
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (StringUtils.hasText(farmId)) {</span>
+<span class="fc" id="L189">            specification = specification.and((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L190">                    criteriaBuilder.equal(root.get(&quot;farmId&quot;), farmId));</span>
+        }
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        if (normalizedSearch != null) {</span>
+<span class="nc" id="L193">            String searchPattern = &quot;%&quot; + normalizedSearch + &quot;%&quot;;</span>
+<span class="nc" id="L194">            specification = specification.and((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L195">                    criteriaBuilder.like(criteriaBuilder.lower(root.get(&quot;name&quot;)), searchPattern));</span>
+        }
+
+<span class="fc" id="L198">        return specification;</span>
+    }
+
+    private String normalizeFilter(String value) {
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (!StringUtils.hasText(value)) {</span>
+<span class="fc" id="L203">            return null;</span>
+        }
+<span class="nc" id="L205">        return value.trim().toLowerCase(Locale.ROOT);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

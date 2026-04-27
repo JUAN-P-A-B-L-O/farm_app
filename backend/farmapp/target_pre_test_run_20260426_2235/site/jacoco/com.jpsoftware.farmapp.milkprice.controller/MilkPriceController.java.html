@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MilkPriceController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.milkprice.controller</a> &gt; <span class="el_source">MilkPriceController.java</span></div><h1>MilkPriceController.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.milkprice.controller;
+
+import com.jpsoftware.farmapp.milkprice.dto.CreateMilkPriceRequest;
+import com.jpsoftware.farmapp.milkprice.dto.MilkPriceResponse;
+import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@Validated
+@RequestMapping(&quot;/milk-prices&quot;)
+@Tag(name = &quot;Milk Prices&quot;, description = &quot;Operations for managing milk price history.&quot;)
+public class MilkPriceController {
+
+    private final MilkPriceService milkPriceService;
+
+<span class="fc" id="L36">    public MilkPriceController(MilkPriceService milkPriceService) {</span>
+<span class="fc" id="L37">        this.milkPriceService = milkPriceService;</span>
+<span class="fc" id="L38">    }</span>
+
+    @PostMapping
+    @Operation(summary = &quot;Register milk price&quot;, description = &quot;Stores a new milk price record without overwriting previous values.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;201&quot;, description = &quot;Milk price registered successfully&quot;),
+            @ApiResponse(responseCode = &quot;400&quot;, description = &quot;Invalid request data&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Farm not found&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity&lt;MilkPriceResponse&gt; create(
+            @Valid @RequestBody CreateMilkPriceRequest request,
+            @RequestParam String farmId) {
+<span class="nc" id="L52">        return ResponseEntity.status(HttpStatus.CREATED).body(milkPriceService.create(request, farmId));</span>
+    }
+
+    @GetMapping(&quot;/current&quot;)
+    @Operation(summary = &quot;Get current milk price&quot;, description = &quot;Returns the active milk price for the farm based on the latest effective date up to today.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Current milk price retrieved successfully&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Farm not found&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity&lt;MilkPriceResponse&gt; getCurrent(@RequestParam String farmId) {
+<span class="nc" id="L63">        return ResponseEntity.ok(milkPriceService.getCurrent(farmId));</span>
+    }
+
+    @GetMapping
+    @Operation(summary = &quot;List milk price history&quot;, description = &quot;Returns all registered milk prices for the farm ordered from newest to oldest.&quot;)
+    @ApiResponses({
+            @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Milk price history retrieved successfully&quot;),
+            @ApiResponse(responseCode = &quot;404&quot;, description = &quot;Farm not found&quot;,
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity&lt;?&gt; getHistory(
+            @RequestParam String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) java.time.LocalDate effectiveDate,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+<span class="pc bpc" id="L79" title="2 of 4 branches missed.">        if (page != null &amp;&amp; size != null) {</span>
+<span class="fc" id="L80">            PaginatedResponse&lt;MilkPriceResponse&gt; response = milkPriceService.getHistoryPaginated(farmId, search, effectiveDate, page, size);</span>
+<span class="fc" id="L81">            return ResponseEntity.ok(response);</span>
+        }
+
+<span class="nc" id="L84">        return ResponseEntity.ok(milkPriceService.getHistory(farmId, search, effectiveDate));</span>
+    }
+
+    @GetMapping(&quot;/export&quot;)
+    @Operation(summary = &quot;Export milk price history&quot;, description = &quot;Exports milk price history as CSV for the selected farm.&quot;)
+    public ResponseEntity&lt;byte[]&gt; export(
+            @RequestParam String farmId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) java.time.LocalDate effectiveDate,
+            @RequestParam(required = false) String currency) {
+<span class="fc" id="L94">        return CsvResponseFactory.buildDownload(</span>
+                &quot;milk-prices.csv&quot;,
+<span class="fc bfc" id="L96" title="All 2 branches covered.">                milkPriceService.exportHistory(farmId, search, effectiveDate, StringUtils.hasText(currency) ? currency : null));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

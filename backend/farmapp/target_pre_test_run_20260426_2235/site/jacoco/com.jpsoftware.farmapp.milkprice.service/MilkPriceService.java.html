@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MilkPriceService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.milkprice.service</a> &gt; <span class="el_source">MilkPriceService.java</span></div><h1>MilkPriceService.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.milkprice.service;
+
+import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
+import com.jpsoftware.farmapp.farm.repository.FarmRepository;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.milkprice.dto.CreateMilkPriceRequest;
+import com.jpsoftware.farmapp.milkprice.dto.MilkPriceResponse;
+import com.jpsoftware.farmapp.milkprice.entity.MilkPriceEntity;
+import com.jpsoftware.farmapp.milkprice.repository.MilkPriceRepository;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class MilkPriceService {
+
+<span class="fc" id="L31">    public static final Double DEFAULT_MILK_PRICE = 2.0;</span>
+
+    private final MilkPriceRepository milkPriceRepository;
+    private final FarmRepository farmRepository;
+    private final FarmAccessService farmAccessService;
+    private final AuthenticationContextService authenticationContextService;
+
+    public MilkPriceService(
+            MilkPriceRepository milkPriceRepository,
+            FarmRepository farmRepository,
+            FarmAccessService farmAccessService,
+<span class="fc" id="L42">            AuthenticationContextService authenticationContextService) {</span>
+<span class="fc" id="L43">        this.milkPriceRepository = milkPriceRepository;</span>
+<span class="fc" id="L44">        this.farmRepository = farmRepository;</span>
+<span class="fc" id="L45">        this.farmAccessService = farmAccessService;</span>
+<span class="fc" id="L46">        this.authenticationContextService = authenticationContextService;</span>
+<span class="fc" id="L47">    }</span>
+
+    @Transactional
+    public MilkPriceResponse create(CreateMilkPriceRequest request, String farmId) {
+<span class="nc" id="L51">        String resolvedFarmId = validateAndResolveFarmId(farmId);</span>
+<span class="nc" id="L52">        validateRequest(request);</span>
+
+<span class="nc" id="L54">        String createdBy = authenticationContextService.resolveUserId(null);</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (!StringUtils.hasText(createdBy)) {</span>
+<span class="nc" id="L56">            throw new ValidationException(&quot;Authenticated user is required to register milk price&quot;);</span>
+        }
+
+<span class="nc" id="L59">        MilkPriceEntity entity = new MilkPriceEntity();</span>
+<span class="nc" id="L60">        entity.setFarmId(resolvedFarmId);</span>
+<span class="nc" id="L61">        entity.setPrice(DecimalScaleUtils.normalize(request.getPrice()));</span>
+<span class="nc" id="L62">        entity.setEffectiveDate(request.getEffectiveDate());</span>
+<span class="nc" id="L63">        entity.setCreatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L64">        entity.setCreatedBy(createdBy);</span>
+
+<span class="nc" id="L66">        return toResponse(milkPriceRepository.save(entity), false);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public MilkPriceResponse getCurrent(String farmId) {
+<span class="fc" id="L71">        String resolvedFarmId = validateAndResolveFarmId(farmId);</span>
+<span class="fc" id="L72">        return findCurrentEntity(resolvedFarmId)</span>
+<span class="pc" id="L73">                .map(entity -&gt; toResponse(entity, false))</span>
+<span class="fc" id="L74">                .orElseGet(() -&gt; new MilkPriceResponse(</span>
+                        null,
+                        resolvedFarmId,
+                        DEFAULT_MILK_PRICE,
+                        null,
+                        null,
+                        null,
+                        true));
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;MilkPriceResponse&gt; getHistory(String farmId, String search, LocalDate effectiveDate) {
+<span class="nc" id="L86">        String resolvedFarmId = validateAndResolveFarmId(farmId);</span>
+<span class="nc" id="L87">        return milkPriceRepository.findAll(</span>
+<span class="nc" id="L88">                buildHistorySpecification(resolvedFarmId, search, effectiveDate),</span>
+<span class="nc" id="L89">                Sort.by(Sort.Order.desc(&quot;effectiveDate&quot;), Sort.Order.desc(&quot;createdAt&quot;))).stream()</span>
+<span class="nc" id="L90">                .map(entity -&gt; toResponse(entity, false))</span>
+<span class="nc" id="L91">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;MilkPriceResponse&gt; getHistory(String farmId) {
+<span class="nc" id="L96">        return getHistory(farmId, null, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse&lt;MilkPriceResponse&gt; getHistoryPaginated(String farmId, String search, LocalDate effectiveDate, int page, int size) {
+<span class="nc" id="L101">        String resolvedFarmId = validateAndResolveFarmId(farmId);</span>
+<span class="nc" id="L102">        Page&lt;MilkPriceEntity&gt; history = milkPriceRepository.findAll(</span>
+<span class="nc" id="L103">                buildHistorySpecification(resolvedFarmId, search, effectiveDate),</span>
+<span class="nc" id="L104">                PageRequest.of(page, size, Sort.by(Sort.Order.desc(&quot;effectiveDate&quot;), Sort.Order.desc(&quot;createdAt&quot;))));</span>
+<span class="nc" id="L105">        Page&lt;MilkPriceResponse&gt; responses = history.map(entity -&gt; toResponse(entity, false));</span>
+<span class="nc" id="L106">        return new PaginatedResponse&lt;&gt;(</span>
+<span class="nc" id="L107">                responses.getContent(),</span>
+<span class="nc" id="L108">                responses.getNumber(),</span>
+<span class="nc" id="L109">                responses.getSize(),</span>
+<span class="nc" id="L110">                responses.getTotalElements(),</span>
+<span class="nc" id="L111">                responses.getTotalPages());</span>
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse&lt;MilkPriceResponse&gt; getHistoryPaginated(String farmId, int page, int size) {
+<span class="nc" id="L116">        return getHistoryPaginated(farmId, null, null, page, size);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportHistory(String farmId, String search, LocalDate effectiveDate) {
+<span class="nc" id="L121">        return exportHistory(farmId, search, effectiveDate, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportHistory(String farmId, String search, LocalDate effectiveDate, String currency) {
+<span class="nc" id="L126">        return CsvExportUtils.write(getHistory(farmId, search, effectiveDate).stream()</span>
+<span class="nc" id="L127">                .map(price -&gt; new MilkPriceResponse(</span>
+<span class="nc" id="L128">                        price.getId(),</span>
+<span class="nc" id="L129">                        price.getFarmId(),</span>
+<span class="nc" id="L130">                        CurrencyConversionUtils.convertMonetaryValue(price.getPrice(), currency),</span>
+<span class="nc" id="L131">                        price.getEffectiveDate(),</span>
+<span class="nc" id="L132">                        price.getCreatedAt(),</span>
+<span class="nc" id="L133">                        price.getCreatedBy(),</span>
+<span class="nc" id="L134">                        price.isFallbackDefault()))</span>
+<span class="nc" id="L135">                .toList(), List.of(</span>
+                new CsvColumn&lt;&gt;(&quot;id&quot;, MilkPriceResponse::getId),
+                new CsvColumn&lt;&gt;(&quot;farmId&quot;, MilkPriceResponse::getFarmId),
+                new CsvColumn&lt;&gt;(&quot;price&quot;, MilkPriceResponse::getPrice),
+                new CsvColumn&lt;&gt;(&quot;effectiveDate&quot;, MilkPriceResponse::getEffectiveDate),
+                new CsvColumn&lt;&gt;(&quot;createdAt&quot;, MilkPriceResponse::getCreatedAt),
+                new CsvColumn&lt;&gt;(&quot;createdBy&quot;, MilkPriceResponse::getCreatedBy),
+                new CsvColumn&lt;&gt;(&quot;fallbackDefault&quot;, MilkPriceResponse::isFallbackDefault)));
+    }
+
+    @Transactional(readOnly = true)
+    public String exportHistory(String farmId) {
+<span class="nc" id="L147">        return exportHistory(farmId, null, null, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportHistory(String farmId, String currency) {
+<span class="nc" id="L152">        return exportHistory(farmId, null, null, currency);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Double resolveCurrentPriceValue(String farmId) {
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (!StringUtils.hasText(farmId)) {</span>
+<span class="nc" id="L158">            return DEFAULT_MILK_PRICE;</span>
+        }
+<span class="fc" id="L160">        return getCurrent(farmId).getPrice();</span>
+    }
+
+    private java.util.Optional&lt;MilkPriceEntity&gt; findCurrentEntity(String farmId) {
+<span class="fc" id="L164">        return milkPriceRepository.findTopByFarmIdAndEffectiveDateLessThanEqualOrderByEffectiveDateDescCreatedAtDesc(</span>
+                farmId,
+<span class="fc" id="L166">                LocalDate.now());</span>
+    }
+
+    private String validateAndResolveFarmId(String farmId) {
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (!StringUtils.hasText(farmId)) {</span>
+<span class="nc" id="L171">            throw new ValidationException(&quot;farmId must not be blank&quot;);</span>
+        }
+
+<span class="fc" id="L174">        farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (!farmRepository.existsById(farmId)) {</span>
+<span class="nc" id="L176">            throw new ResourceNotFoundException(&quot;Farm not found&quot;);</span>
+        }
+<span class="fc" id="L178">        return farmId;</span>
+    }
+
+    private void validateRequest(CreateMilkPriceRequest request) {
+<span class="nc bnc" id="L182" title="All 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L183">            throw new ValidationException(&quot;request must not be null&quot;);</span>
+        }
+<span class="nc bnc" id="L185" title="All 4 branches missed.">        if (request.getPrice() == null || request.getPrice() &lt;= 0) {</span>
+<span class="nc" id="L186">            throw new ValidationException(&quot;price must be greater than zero&quot;);</span>
+        }
+<span class="nc" id="L188">        DecimalScaleUtils.requireMaxScale(request.getPrice(), &quot;price&quot;);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        if (request.getEffectiveDate() == null) {</span>
+<span class="nc" id="L190">            throw new ValidationException(&quot;effectiveDate must not be null&quot;);</span>
+        }
+<span class="nc" id="L192">    }</span>
+
+    private MilkPriceResponse toResponse(MilkPriceEntity entity, boolean fallbackDefault) {
+<span class="nc" id="L195">        return new MilkPriceResponse(</span>
+<span class="nc" id="L196">                entity.getId(),</span>
+<span class="nc" id="L197">                entity.getFarmId(),</span>
+<span class="nc" id="L198">                DecimalScaleUtils.normalize(entity.getPrice()),</span>
+<span class="nc" id="L199">                entity.getEffectiveDate(),</span>
+<span class="nc" id="L200">                entity.getCreatedAt(),</span>
+<span class="nc" id="L201">                entity.getCreatedBy(),</span>
+                fallbackDefault);
+    }
+
+    private Specification&lt;MilkPriceEntity&gt; buildHistorySpecification(String farmId, String search, LocalDate effectiveDate) {
+<span class="nc" id="L206">        Specification&lt;MilkPriceEntity&gt; specification = Specification.where((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L207">                criteriaBuilder.equal(root.get(&quot;farmId&quot;), farmId));</span>
+
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        if (effectiveDate != null) {</span>
+<span class="nc" id="L210">            specification = specification.and((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L211">                    criteriaBuilder.equal(root.get(&quot;effectiveDate&quot;), effectiveDate));</span>
+        }
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (!StringUtils.hasText(search)) {</span>
+<span class="nc" id="L214">            return specification;</span>
+        }
+
+<span class="nc" id="L217">        String trimmedSearch = search.trim();</span>
+<span class="nc" id="L218">        specification = specification.and((root, query, criteriaBuilder) -&gt; {</span>
+<span class="nc" id="L219">            var predicates = new java.util.ArrayList&lt;jakarta.persistence.criteria.Predicate&gt;();</span>
+<span class="nc" id="L220">            predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get(&quot;createdBy&quot;)), &quot;%&quot; + trimmedSearch.toLowerCase() + &quot;%&quot;));</span>
+
+<span class="nc" id="L222">            LocalDate parsedDate = parseDateSearch(trimmedSearch);</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">            if (parsedDate != null) {</span>
+<span class="nc" id="L224">                predicates.add(criteriaBuilder.equal(root.get(&quot;effectiveDate&quot;), parsedDate));</span>
+            }
+
+<span class="nc" id="L227">            Double parsedPrice = parsePriceSearch(trimmedSearch);</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            if (parsedPrice != null) {</span>
+<span class="nc" id="L229">                predicates.add(criteriaBuilder.equal(root.get(&quot;price&quot;), parsedPrice));</span>
+            }
+
+<span class="nc" id="L232">            return criteriaBuilder.or(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));</span>
+        });
+
+<span class="nc" id="L235">        return specification;</span>
+    }
+
+    private LocalDate parseDateSearch(String search) {
+        try {
+<span class="nc" id="L240">            return LocalDate.parse(search);</span>
+<span class="nc" id="L241">        } catch (RuntimeException exception) {</span>
+<span class="nc" id="L242">            return null;</span>
+        }
+    }
+
+    private Double parsePriceSearch(String search) {
+        try {
+<span class="nc" id="L248">            return DecimalScaleUtils.normalize(Double.parseDouble(search));</span>
+<span class="nc" id="L249">        } catch (RuntimeException exception) {</span>
+<span class="nc" id="L250">            return null;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

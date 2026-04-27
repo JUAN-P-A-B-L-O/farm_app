@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FarmService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.farm.service</a> &gt; <span class="el_source">FarmService.java</span></div><h1>FarmService.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.farm.service;
+
+import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
+import com.jpsoftware.farmapp.farm.dto.CreateFarmRequest;
+import com.jpsoftware.farmapp.farm.dto.FarmResponse;
+import com.jpsoftware.farmapp.farm.entity.FarmEntity;
+import com.jpsoftware.farmapp.farm.repository.FarmRepository;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.user.repository.UserFarmAssignmentRepository;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class FarmService {
+
+    private final FarmRepository farmRepository;
+    private final UserFarmAssignmentRepository userFarmAssignmentRepository;
+    private final AuthenticationContextService authenticationContextService;
+
+    public FarmService(
+            FarmRepository farmRepository,
+            UserFarmAssignmentRepository userFarmAssignmentRepository,
+<span class="fc" id="L27">            AuthenticationContextService authenticationContextService) {</span>
+<span class="fc" id="L28">        this.farmRepository = farmRepository;</span>
+<span class="fc" id="L29">        this.userFarmAssignmentRepository = userFarmAssignmentRepository;</span>
+<span class="fc" id="L30">        this.authenticationContextService = authenticationContextService;</span>
+<span class="fc" id="L31">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;FarmResponse&gt; findAccessibleFarms(boolean ownedOnly) {
+<span class="fc" id="L35">        return authenticationContextService.getAuthenticatedUserId()</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">                .map(userId -&gt; ownedOnly ? farmRepository.findByOwnerId(userId) : findAccessibleFarmEntities(userId))</span>
+<span class="fc" id="L37">                .orElseGet(farmRepository::findAll)</span>
+<span class="fc" id="L38">                .stream()</span>
+<span class="fc" id="L39">                .map(this::toResponse)</span>
+<span class="fc" id="L40">                .toList();</span>
+    }
+
+    @Transactional
+    public FarmResponse create(CreateFarmRequest request) {
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L46">            throw new ValidationException(&quot;request must not be null&quot;);</span>
+        }
+<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (!StringUtils.hasText(request.getName())) {</span>
+<span class="nc" id="L49">            throw new ValidationException(&quot;name must not be blank&quot;);</span>
+        }
+
+<span class="nc" id="L52">        FarmEntity farmEntity = new FarmEntity();</span>
+<span class="nc" id="L53">        farmEntity.setName(request.getName());</span>
+<span class="nc" id="L54">        farmEntity.setOwnerId(authenticationContextService.getAuthenticatedUserId()</span>
+<span class="nc" id="L55">                .orElseThrow(() -&gt; new ValidationException(&quot;Authenticated user is required&quot;)));</span>
+
+<span class="nc" id="L57">        return toResponse(farmRepository.save(farmEntity));</span>
+    }
+
+    private FarmResponse toResponse(FarmEntity farmEntity) {
+<span class="fc" id="L61">        return new FarmResponse(farmEntity.getId(), farmEntity.getName());</span>
+    }
+
+    private List&lt;FarmEntity&gt; findAccessibleFarmEntities(UUID userId) {
+<span class="fc" id="L65">        LinkedHashMap&lt;String, FarmEntity&gt; accessibleFarms = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="pc" id="L67">        farmRepository.findByOwnerId(userId).forEach(farm -&gt; accessibleFarms.put(farm.getId(), farm));</span>
+<span class="fc" id="L68">        userFarmAssignmentRepository.findByUserId(userId).stream()</span>
+<span class="fc" id="L69">                .map(assignment -&gt; assignment.getFarmId())</span>
+<span class="fc" id="L70">                .distinct()</span>
+<span class="fc" id="L71">                .forEach(farmId -&gt; farmRepository.findById(farmId)</span>
+<span class="fc" id="L72">                        .ifPresent(farm -&gt; accessibleFarms.putIfAbsent(farm.getId(), farm)));</span>
+
+<span class="fc" id="L74">        return List.copyOf(accessibleFarms.values());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

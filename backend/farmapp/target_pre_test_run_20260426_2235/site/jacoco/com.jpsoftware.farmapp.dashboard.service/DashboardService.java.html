@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DashboardService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.dashboard.service</a> &gt; <span class="el_source">DashboardService.java</span></div><h1>DashboardService.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.dashboard.service;
+
+import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
+import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.dashboard.dto.DashboardResponse;
+import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
+import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
+import com.jpsoftware.farmapp.feeding.entity.FeedingEntity;
+import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
+import com.jpsoftware.farmapp.production.entity.ProductionEntity;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
+import com.jpsoftware.farmapp.production.repository.ProductionRepository;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class DashboardService {
+
+<span class="fc" id="L36">    private static final Set&lt;String&gt; SUPPORTED_ANIMAL_STATUSES = Set.of(</span>
+            AnimalEntity.STATUS_ACTIVE,
+            AnimalEntity.STATUS_INACTIVE,
+            AnimalEntity.STATUS_SOLD,
+            AnimalEntity.STATUS_DEAD);
+
+    private final ProductionRepository productionRepository;
+    private final FeedingRepository feedingRepository;
+    private final AnimalRepository animalRepository;
+    private final FeedTypeRepository feedTypeRepository;
+    private final FarmAccessService farmAccessService;
+    private final MilkPriceService milkPriceService;
+
+    @Autowired
+    public DashboardService(
+            ProductionRepository productionRepository,
+            FeedingRepository feedingRepository,
+            AnimalRepository animalRepository,
+            FeedTypeRepository feedTypeRepository,
+            FarmAccessService farmAccessService,
+<span class="fc" id="L56">            MilkPriceService milkPriceService) {</span>
+<span class="fc" id="L57">        this.productionRepository = productionRepository;</span>
+<span class="fc" id="L58">        this.feedingRepository = feedingRepository;</span>
+<span class="fc" id="L59">        this.animalRepository = animalRepository;</span>
+<span class="fc" id="L60">        this.feedTypeRepository = feedTypeRepository;</span>
+<span class="fc" id="L61">        this.farmAccessService = farmAccessService;</span>
+<span class="fc" id="L62">        this.milkPriceService = milkPriceService;</span>
+<span class="fc" id="L63">    }</span>
+
+    public DashboardService(
+            ProductionRepository productionRepository,
+            FeedingRepository feedingRepository,
+            AnimalRepository animalRepository,
+            FeedTypeRepository feedTypeRepository,
+            FarmAccessService farmAccessService) {
+<span class="fc" id="L71">        this(productionRepository, feedingRepository, animalRepository, feedTypeRepository, farmAccessService, null);</span>
+<span class="fc" id="L72">    }</span>
+
+    @Transactional(readOnly = true)
+    public DashboardResponse getDashboard(String farmId, boolean includeAcquisitionCost) {
+<span class="fc" id="L76">        return getDashboard(farmId, null, null, null, null, includeAcquisitionCost, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardResponse getDashboard(String farmId, boolean includeAcquisitionCost, String currency) {
+<span class="fc" id="L81">        return getDashboard(farmId, null, null, null, null, includeAcquisitionCost, currency);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardResponse getDashboard(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String status,
+            boolean includeAcquisitionCost) {
+<span class="fc" id="L92">        return getDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardResponse getDashboard(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String status,
+            boolean includeAcquisitionCost,
+            String currency) {
+<span class="fc" id="L104">        return getDashboardByAnimals(</span>
+                farmId,
+                startDate,
+                endDate,
+<span class="fc" id="L108">                toAnimalFilterList(animalId),</span>
+                status,
+                includeAcquisitionCost,
+                currency);
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardResponse getDashboardByAnimals(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Collection&lt;String&gt; animalIds,
+            String status,
+            boolean includeAcquisitionCost) {
+<span class="fc" id="L122">        return getDashboardByAnimals(farmId, startDate, endDate, animalIds, status, includeAcquisitionCost, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardResponse getDashboardByAnimals(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Collection&lt;String&gt; animalIds,
+            String status,
+            boolean includeAcquisitionCost,
+            String currency) {
+<span class="fc" id="L134">        List&lt;String&gt; normalizedAnimalIds = normalizeAnimalIds(animalIds);</span>
+<span class="fc" id="L135">        validateFilters(farmId, startDate, endDate, normalizedAnimalIds, status);</span>
+
+<span class="fc" id="L137">        List&lt;AnimalEntity&gt; animals = filterAnimals(normalizedAnimalIds, farmId, status);</span>
+<span class="fc" id="L138">        Set&lt;String&gt; scopedAnimalIds = animals.stream()</span>
+<span class="fc" id="L139">                .map(AnimalEntity::getId)</span>
+<span class="fc" id="L140">                .collect(Collectors.toSet());</span>
+<span class="fc" id="L141">        List&lt;ProductionEntity&gt; productions = filterProductions(startDate, endDate, farmId, scopedAnimalIds);</span>
+<span class="fc" id="L142">        List&lt;FeedingEntity&gt; feedings = filterFeedings(startDate, endDate, farmId, scopedAnimalIds);</span>
+<span class="fc" id="L143">        Map&lt;String, Double&gt; feedCostsById = loadFeedCostsById(feedings);</span>
+
+<span class="fc" id="L145">        Double totalProduction = productions.stream()</span>
+<span class="fc" id="L146">                .map(ProductionEntity::getQuantity)</span>
+<span class="fc" id="L147">                .map(DecimalScaleUtils::zeroIfNull)</span>
+<span class="fc" id="L148">                .reduce(0.0, (left, right) -&gt; DecimalScaleUtils.normalize(left + right));</span>
+<span class="fc" id="L149">        Double totalFeedingCost = feedings.stream()</span>
+<span class="fc" id="L150">                .map(feeding -&gt; DecimalScaleUtils.multiply(</span>
+<span class="fc" id="L151">                        DecimalScaleUtils.zeroIfNull(feedCostsById.get(feeding.getFeedTypeId())),</span>
+<span class="fc" id="L152">                        DecimalScaleUtils.zeroIfNull(feeding.getQuantity())))</span>
+<span class="fc" id="L153">                .reduce(0.0, (left, right) -&gt; DecimalScaleUtils.normalize(left + right));</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        Double totalAcquisitionCost = includeAcquisitionCost</span>
+<span class="fc" id="L155">                ? DecimalScaleUtils.zeroIfNull(sumAcquisitionCost(animals))</span>
+<span class="nc" id="L156">                : 0.0;</span>
+<span class="fc" id="L157">        Double totalSaleRevenue = DecimalScaleUtils.zeroIfNull(sumSaleRevenue(animals, startDate, endDate));</span>
+<span class="fc" id="L158">        Double totalRevenue = DecimalScaleUtils.normalize(sumMilkRevenue(productions) + totalSaleRevenue);</span>
+<span class="fc" id="L159">        Double totalProfit = DecimalScaleUtils.subtract(</span>
+                totalRevenue,
+<span class="fc" id="L161">                DecimalScaleUtils.normalize(totalFeedingCost + totalAcquisitionCost));</span>
+<span class="fc" id="L162">        Long animalCount = (long) animals.size();</span>
+
+<span class="fc" id="L164">        return new DashboardResponse(</span>
+                totalProduction,
+<span class="fc" id="L166">                CurrencyConversionUtils.convertMonetaryValue(totalFeedingCost, currency),</span>
+<span class="fc" id="L167">                CurrencyConversionUtils.convertMonetaryValue(totalRevenue, currency),</span>
+<span class="fc" id="L168">                CurrencyConversionUtils.convertMonetaryValue(totalProfit, currency),</span>
+                animalCount);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDashboard(String farmId, boolean includeAcquisitionCost) {
+<span class="fc" id="L174">        return exportDashboard(farmId, null, null, null, null, includeAcquisitionCost, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDashboard(String farmId, boolean includeAcquisitionCost, String currency) {
+<span class="nc" id="L179">        return exportDashboard(farmId, null, null, null, null, includeAcquisitionCost, currency);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDashboard(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String status,
+            boolean includeAcquisitionCost) {
+<span class="fc" id="L190">        return exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDashboardByAnimals(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Collection&lt;String&gt; animalIds,
+            String status,
+            boolean includeAcquisitionCost) {
+<span class="nc" id="L201">        return exportDashboardByAnimals(farmId, startDate, endDate, animalIds, status, includeAcquisitionCost, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDashboard(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String status,
+            boolean includeAcquisitionCost,
+            String currency) {
+<span class="fc" id="L213">        DashboardResponse dashboard = getDashboard(</span>
+                farmId,
+                startDate,
+                endDate,
+                animalId,
+                status,
+                includeAcquisitionCost,
+                currency);
+<span class="fc" id="L221">        return CsvExportUtils.write(List.of(dashboard), List.of(</span>
+                new CsvColumn&lt;&gt;(&quot;totalProduction&quot;, DashboardResponse::getTotalProduction),
+                new CsvColumn&lt;&gt;(&quot;totalFeedingCost&quot;, DashboardResponse::getTotalFeedingCost),
+                new CsvColumn&lt;&gt;(&quot;totalRevenue&quot;, DashboardResponse::getTotalRevenue),
+                new CsvColumn&lt;&gt;(&quot;totalProfit&quot;, DashboardResponse::getTotalProfit),
+                new CsvColumn&lt;&gt;(&quot;animalCount&quot;, DashboardResponse::getAnimalCount)));
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDashboardByAnimals(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Collection&lt;String&gt; animalIds,
+            String status,
+            boolean includeAcquisitionCost,
+            String currency) {
+<span class="nc" id="L238">        DashboardResponse dashboard = getDashboardByAnimals(</span>
+                farmId,
+                startDate,
+                endDate,
+                animalIds,
+                status,
+                includeAcquisitionCost,
+                currency);
+<span class="nc" id="L246">        return CsvExportUtils.write(List.of(dashboard), List.of(</span>
+                new CsvColumn&lt;&gt;(&quot;totalProduction&quot;, DashboardResponse::getTotalProduction),
+                new CsvColumn&lt;&gt;(&quot;totalFeedingCost&quot;, DashboardResponse::getTotalFeedingCost),
+                new CsvColumn&lt;&gt;(&quot;totalRevenue&quot;, DashboardResponse::getTotalRevenue),
+                new CsvColumn&lt;&gt;(&quot;totalProfit&quot;, DashboardResponse::getTotalProfit),
+                new CsvColumn&lt;&gt;(&quot;animalCount&quot;, DashboardResponse::getAnimalCount)));
+    }
+
+    private void validateFilters(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Collection&lt;String&gt; animalIds,
+            String status) {
+<span class="pc bpc" id="L260" title="1 of 6 branches missed.">        if (startDate != null &amp;&amp; endDate != null &amp;&amp; startDate.isAfter(endDate)) {</span>
+<span class="fc" id="L261">            throw new ValidationException(&quot;startDate must be before or equal to endDate&quot;);</span>
+        }
+
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">        if (farmAccessService != null) {</span>
+<span class="fc" id="L265">            farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+        }
+
+<span class="fc bfc" id="L268" title="All 2 branches covered.">        for (String animalId : animalIds) {</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">            if (!animalRepository.existsById(animalId)) {</span>
+<span class="nc" id="L270">                throw new ResourceNotFoundException(&quot;Animal not found&quot;);</span>
+            }
+
+<span class="pc bpc" id="L273" title="1 of 4 branches missed.">            if (StringUtils.hasText(farmId) &amp;&amp; !animalRepository.existsByIdAndFarmId(animalId, farmId)) {</span>
+<span class="fc" id="L274">                throw new ResourceNotFoundException(&quot;Animal not found&quot;);</span>
+            }
+<span class="fc" id="L276">        }</span>
+
+<span class="fc bfc" id="L278" title="All 4 branches covered.">        if (StringUtils.hasText(status) &amp;&amp; !SUPPORTED_ANIMAL_STATUSES.contains(status)) {</span>
+<span class="fc" id="L279">            throw new ValidationException(&quot;status must be ACTIVE, INACTIVE, SOLD, or DEAD&quot;);</span>
+        }
+<span class="fc" id="L281">    }</span>
+
+    private List&lt;AnimalEntity&gt; filterAnimals(Collection&lt;String&gt; animalIds, String farmId, String status) {
+        List&lt;AnimalEntity&gt; animals;
+<span class="fc bfc" id="L285" title="All 2 branches covered.">        if (!animalIds.isEmpty()) {</span>
+<span class="fc" id="L286">            LinkedHashSet&lt;String&gt; requestedAnimalIds = new LinkedHashSet&lt;&gt;(animalIds);</span>
+<span class="fc" id="L287">            animals = animalRepository.findAllById(requestedAnimalIds).stream()</span>
+<span class="pc bpc" id="L288" title="2 of 4 branches missed.">                    .filter(animal -&gt; !StringUtils.hasText(farmId) || Objects.equals(animal.getFarmId(), farmId))</span>
+<span class="fc" id="L289">                    .toList();</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        } else if (StringUtils.hasText(farmId)) {</span>
+<span class="fc" id="L291">            animals = animalRepository.findByFarmId(farmId);</span>
+        } else {
+<span class="fc" id="L293">            animals = animalRepository.findAll();</span>
+        }
+
+<span class="fc" id="L296">        return animals.stream()</span>
+<span class="fc" id="L297">                .filter(animal -&gt; matchesStatus(animal.getStatus(), status))</span>
+<span class="fc" id="L298">                .toList();</span>
+    }
+
+    private List&lt;ProductionEntity&gt; filterProductions(
+            LocalDate startDate,
+            LocalDate endDate,
+            String farmId,
+            Set&lt;String&gt; animalIds) {
+<span class="fc bfc" id="L306" title="All 2 branches covered.">        if (animalIds.isEmpty()) {</span>
+<span class="fc" id="L307">            return List.of();</span>
+        }
+
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">        List&lt;ProductionEntity&gt; productions = StringUtils.hasText(farmId)</span>
+<span class="fc" id="L311">                ? productionRepository.findByFarmIdAndStatus(farmId, ProductionEntity.STATUS_ACTIVE)</span>
+<span class="pc" id="L312">                : productionRepository.findAll();</span>
+
+<span class="fc" id="L314">        return productions.stream()</span>
+<span class="fc" id="L315">                .filter(production -&gt; animalIds.contains(production.getAnimalId()))</span>
+<span class="fc" id="L316">                .filter(production -&gt; matchesDateRange(production.getDate(), startDate, endDate))</span>
+<span class="fc" id="L317">                .toList();</span>
+    }
+
+    private List&lt;FeedingEntity&gt; filterFeedings(
+            LocalDate startDate,
+            LocalDate endDate,
+            String farmId,
+            Set&lt;String&gt; animalIds) {
+<span class="fc bfc" id="L325" title="All 2 branches covered.">        if (animalIds.isEmpty()) {</span>
+<span class="fc" id="L326">            return List.of();</span>
+        }
+
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">        List&lt;FeedingEntity&gt; feedings = StringUtils.hasText(farmId)</span>
+<span class="fc" id="L330">                ? feedingRepository.findByFarmIdAndStatus(farmId, FeedingEntity.STATUS_ACTIVE)</span>
+<span class="pc" id="L331">                : feedingRepository.findAll();</span>
+
+<span class="fc" id="L333">        return feedings.stream()</span>
+<span class="fc" id="L334">                .filter(feeding -&gt; animalIds.contains(feeding.getAnimalId()))</span>
+<span class="fc" id="L335">                .filter(feeding -&gt; matchesDateRange(feeding.getDate(), startDate, endDate))</span>
+<span class="fc" id="L336">                .toList();</span>
+    }
+
+    private Map&lt;String, Double&gt; loadFeedCostsById(Collection&lt;FeedingEntity&gt; feedings) {
+<span class="fc" id="L340">        Set&lt;String&gt; feedTypeIds = feedings.stream()</span>
+<span class="fc" id="L341">                .map(FeedingEntity::getFeedTypeId)</span>
+<span class="fc" id="L342">                .filter(StringUtils::hasText)</span>
+<span class="fc" id="L343">                .collect(Collectors.toSet());</span>
+
+<span class="fc bfc" id="L345" title="All 2 branches covered.">        if (feedTypeIds.isEmpty()) {</span>
+<span class="fc" id="L346">            return Map.of();</span>
+        }
+
+<span class="fc" id="L349">        return feedTypeRepository.findAllById(feedTypeIds).stream()</span>
+<span class="fc" id="L350">                .collect(Collectors.toMap(FeedTypeEntity::getId, feedType -&gt; DecimalScaleUtils.zeroIfNull(feedType.getCostPerKg())));</span>
+    }
+
+    private Double sumMilkRevenue(List&lt;ProductionEntity&gt; productions) {
+<span class="fc" id="L354">        return productions.stream()</span>
+<span class="fc" id="L355">                .map(production -&gt; DecimalScaleUtils.multiply(</span>
+<span class="fc" id="L356">                        DecimalScaleUtils.zeroIfNull(production.getQuantity()),</span>
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">                        milkPriceService != null</span>
+<span class="nc" id="L358">                                ? milkPriceService.resolveCurrentPriceValue(production.getFarmId())</span>
+<span class="fc" id="L359">                                : MilkPriceService.DEFAULT_MILK_PRICE))</span>
+<span class="fc" id="L360">                .reduce(0.0, (left, right) -&gt; DecimalScaleUtils.normalize(left + right));</span>
+    }
+
+    private Double sumAcquisitionCost(List&lt;AnimalEntity&gt; animals) {
+<span class="fc" id="L364">        return animals.stream()</span>
+<span class="fc" id="L365">                .map(AnimalEntity::getAcquisitionCost)</span>
+<span class="fc" id="L366">                .map(DecimalScaleUtils::zeroIfNull)</span>
+<span class="fc" id="L367">                .reduce(0.0, (left, right) -&gt; DecimalScaleUtils.normalize(left + right));</span>
+    }
+
+    private Double sumSaleRevenue(List&lt;AnimalEntity&gt; animals, LocalDate startDate, LocalDate endDate) {
+<span class="fc" id="L371">        return animals.stream()</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">                .filter(animal -&gt; animal.getSaleDate() != null)</span>
+<span class="fc" id="L373">                .filter(animal -&gt; matchesDateRange(animal.getSaleDate(), startDate, endDate))</span>
+<span class="fc" id="L374">                .map(AnimalEntity::getSalePrice)</span>
+<span class="fc" id="L375">                .map(DecimalScaleUtils::zeroIfNull)</span>
+<span class="fc" id="L376">                .reduce(0.0, (left, right) -&gt; DecimalScaleUtils.normalize(left + right));</span>
+    }
+
+    private boolean matchesDateRange(LocalDate date, LocalDate startDate, LocalDate endDate) {
+<span class="pc bpc" id="L380" title="1 of 2 branches missed.">        if (date == null) {</span>
+<span class="nc" id="L381">            return false;</span>
+        }
+
+<span class="pc bpc" id="L384" title="1 of 4 branches missed.">        boolean matchesStart = startDate == null || !date.isBefore(startDate);</span>
+<span class="fc bfc" id="L385" title="All 4 branches covered.">        boolean matchesEnd = endDate == null || !date.isAfter(endDate);</span>
+<span class="pc bpc" id="L386" title="1 of 4 branches missed.">        return matchesStart &amp;&amp; matchesEnd;</span>
+    }
+
+    private boolean matchesStatus(String animalStatus, String requestedStatus) {
+<span class="pc bpc" id="L390" title="1 of 4 branches missed.">        return !StringUtils.hasText(requestedStatus) || Objects.equals(animalStatus, requestedStatus);</span>
+    }
+
+    private List&lt;String&gt; toAnimalFilterList(String animalId) {
+<span class="fc bfc" id="L394" title="All 2 branches covered.">        if (!StringUtils.hasText(animalId)) {</span>
+<span class="fc" id="L395">            return List.of();</span>
+        }
+<span class="fc" id="L397">        return List.of(animalId.trim());</span>
+    }
+
+    private List&lt;String&gt; normalizeAnimalIds(Collection&lt;String&gt; animalIds) {
+<span class="pc bpc" id="L401" title="1 of 4 branches missed.">        if (animalIds == null || animalIds.isEmpty()) {</span>
+<span class="fc" id="L402">            return List.of();</span>
+        }
+
+<span class="fc" id="L405">        return animalIds.stream()</span>
+<span class="fc" id="L406">                .filter(StringUtils::hasText)</span>
+<span class="fc" id="L407">                .map(String::trim)</span>
+<span class="fc" id="L408">                .distinct()</span>
+<span class="fc" id="L409">                .toList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

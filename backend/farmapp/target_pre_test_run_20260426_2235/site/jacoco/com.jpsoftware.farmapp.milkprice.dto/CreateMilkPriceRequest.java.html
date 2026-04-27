@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CreateMilkPriceRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.milkprice.dto</a> &gt; <span class="el_source">CreateMilkPriceRequest.java</span></div><h1>CreateMilkPriceRequest.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.milkprice.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import java.time.LocalDate;
+
+@Schema(description = &quot;Request payload for registering a new milk price.&quot;)
+public class CreateMilkPriceRequest {
+
+    @NotNull
+    @Positive
+    @Digits(integer = 10, fraction = 2, message = &quot;price must have at most 2 decimal places&quot;)
+    @Schema(description = &quot;Milk price per liter.&quot;, example = &quot;2.35&quot;)
+    private Double price;
+
+    @NotNull
+    @Schema(description = &quot;Date from which the milk price becomes effective.&quot;, example = &quot;2026-04-14&quot;)
+    private LocalDate effectiveDate;
+
+<span class="nc" id="L22">    public CreateMilkPriceRequest() {</span>
+<span class="nc" id="L23">    }</span>
+
+<span class="nc" id="L25">    public CreateMilkPriceRequest(Double price, LocalDate effectiveDate) {</span>
+<span class="nc" id="L26">        this.price = price;</span>
+<span class="nc" id="L27">        this.effectiveDate = effectiveDate;</span>
+<span class="nc" id="L28">    }</span>
+
+    public Double getPrice() {
+<span class="nc" id="L31">        return price;</span>
+    }
+
+    public void setPrice(Double price) {
+<span class="nc" id="L35">        this.price = price;</span>
+<span class="nc" id="L36">    }</span>
+
+    public LocalDate getEffectiveDate() {
+<span class="nc" id="L39">        return effectiveDate;</span>
+    }
+
+    public void setEffectiveDate(LocalDate effectiveDate) {
+<span class="nc" id="L43">        this.effectiveDate = effectiveDate;</span>
+<span class="nc" id="L44">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

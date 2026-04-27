@@ -256,7 +256,7 @@ class ProductionControllerContractTest {
         mockMvc.perform(get("/productions/summary/by-animal"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").exists())
+                .andExpect(jsonPath("$.error").value("O parâmetro 'animalId' é obrigatório."))
                 .andExpect(jsonPath("$.path").value("/productions/summary/by-animal"));
     }
 

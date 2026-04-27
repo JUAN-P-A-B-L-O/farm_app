@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FeedingEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.feeding.entity</a> &gt; <span class="el_source">FeedingEntity.java</span></div><h1>FeedingEntity.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.feeding.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDate;
+
+@Entity
+@Table(name = &quot;feedings&quot;)
+public class FeedingEntity {
+
+    public static final String STATUS_ACTIVE = &quot;ACTIVE&quot;;
+    public static final String STATUS_INACTIVE = &quot;INACTIVE&quot;;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private String id;
+
+    @Column(nullable = false)
+    private String animalId;
+
+    @Column(nullable = false)
+    private String feedTypeId;
+
+    @Column(nullable = false)
+    private LocalDate date;
+
+    @Column(nullable = false)
+    private Double quantity;
+
+    @Column(name = &quot;created_by&quot;, nullable = false)
+    private String createdBy;
+
+    @Column(name = &quot;farm_id&quot;)
+    private String farmId;
+
+    @Column(nullable = false)
+    private String status;
+
+<span class="fc" id="L44">    public FeedingEntity() {</span>
+<span class="fc" id="L45">        this.status = STATUS_ACTIVE;</span>
+<span class="fc" id="L46">    }</span>
+
+    public FeedingEntity(String id, String animalId, String feedTypeId, LocalDate date, Double quantity, String createdBy) {
+<span class="fc" id="L49">        this(id, animalId, feedTypeId, date, quantity, createdBy, STATUS_ACTIVE);</span>
+<span class="fc" id="L50">    }</span>
+
+    public FeedingEntity(
+            String id,
+            String animalId,
+            String feedTypeId,
+            LocalDate date,
+            Double quantity,
+            String createdBy,
+            String status) {
+<span class="fc" id="L60">        this(id, animalId, feedTypeId, date, quantity, createdBy, null, status);</span>
+<span class="fc" id="L61">    }</span>
+
+    public FeedingEntity(
+            String id,
+            String animalId,
+            String feedTypeId,
+            LocalDate date,
+            Double quantity,
+            String createdBy,
+            String farmId,
+<span class="fc" id="L71">            String status) {</span>
+<span class="fc" id="L72">        this.id = id;</span>
+<span class="fc" id="L73">        this.animalId = animalId;</span>
+<span class="fc" id="L74">        this.feedTypeId = feedTypeId;</span>
+<span class="fc" id="L75">        this.date = date;</span>
+<span class="fc" id="L76">        this.quantity = quantity;</span>
+<span class="fc" id="L77">        this.createdBy = createdBy;</span>
+<span class="fc" id="L78">        this.farmId = farmId;</span>
+<span class="fc" id="L79">        this.status = status;</span>
+<span class="fc" id="L80">    }</span>
+
+    public String getId() {
+<span class="fc" id="L83">        return id;</span>
+    }
+
+    public void setId(String id) {
+<span class="fc" id="L87">        this.id = id;</span>
+<span class="fc" id="L88">    }</span>
+
+    public String getAnimalId() {
+<span class="fc" id="L91">        return animalId;</span>
+    }
+
+    public void setAnimalId(String animalId) {
+<span class="fc" id="L95">        this.animalId = animalId;</span>
+<span class="fc" id="L96">    }</span>
+
+    public String getFeedTypeId() {
+<span class="fc" id="L99">        return feedTypeId;</span>
+    }
+
+    public void setFeedTypeId(String feedTypeId) {
+<span class="fc" id="L103">        this.feedTypeId = feedTypeId;</span>
+<span class="fc" id="L104">    }</span>
+
+    public LocalDate getDate() {
+<span class="fc" id="L107">        return date;</span>
+    }
+
+    public void setDate(LocalDate date) {
+<span class="fc" id="L111">        this.date = date;</span>
+<span class="fc" id="L112">    }</span>
+
+    public Double getQuantity() {
+<span class="fc" id="L115">        return quantity;</span>
+    }
+
+    public void setQuantity(Double quantity) {
+<span class="fc" id="L119">        this.quantity = quantity;</span>
+<span class="fc" id="L120">    }</span>
+
+    public String getCreatedBy() {
+<span class="nc" id="L123">        return createdBy;</span>
+    }
+
+    public void setCreatedBy(String createdBy) {
+<span class="fc" id="L127">        this.createdBy = createdBy;</span>
+<span class="fc" id="L128">    }</span>
+
+    public String getFarmId() {
+<span class="nc" id="L131">        return farmId;</span>
+    }
+
+    public void setFarmId(String farmId) {
+<span class="fc" id="L135">        this.farmId = farmId;</span>
+<span class="fc" id="L136">    }</span>
+
+    public String getStatus() {
+<span class="fc" id="L139">        return status;</span>
+    }
+
+    public void setStatus(String status) {
+<span class="fc" id="L143">        this.status = status;</span>
+<span class="fc" id="L144">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
