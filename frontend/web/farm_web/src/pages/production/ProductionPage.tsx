@@ -6,6 +6,7 @@ import PaginationControls from '../../components/common/PaginationControls'
 import ProductionForm from '../../components/production/ProductionForm'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
 import {
@@ -26,6 +27,11 @@ import type {
 } from '../../types/production'
 import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { isManager } from '../../utils/authorization'
+import {
+  appendUnitToLabel,
+  formatMeasurementValue,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import '../../App.css'
 
 const emptyProductionForm: ProductionFormData = {
@@ -72,9 +78,10 @@ function mapAnimalsToOptions(animals: Animal[]): ProductionAnimalOption[] {
 }
 
 function ProductionPage() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const { productionUnit } = useMeasurementUnits()
   const canSelectCreateDate = isManager(user)
   const canDeleteResources = isManager(user)
   const [productions, setProductions] = useState<Production[]>([])
@@ -278,7 +285,7 @@ function ProductionPage() {
     setListErrorMessage('')
 
     try {
-      await exportProductionsCsv(selectedFarmId, appliedFilters)
+      await exportProductionsCsv(selectedFarmId, appliedFilters, productionUnit)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
     } finally {
@@ -298,6 +305,11 @@ function ProductionPage() {
     setPage(0)
     void loadProductions(defaultFilters, 0, pageSize)
   }
+
+  const quantityLabel = appendUnitToLabel(
+    t('production.table.quantity'),
+    t(getMeasurementUnitShortLabelKey(productionUnit)),
+  )
 
   return (
     <main className="animals-page">
@@ -409,7 +421,7 @@ function ProductionPage() {
                   <tr>
                     <th>{t('production.table.animalTag')}</th>
                     <th>{t('production.table.date')}</th>
-                    <th>{t('production.table.quantity')}</th>
+                    <th>{quantityLabel}</th>
                     <th>{t('production.table.actions')}</th>
                   </tr>
                 </thead>
@@ -418,7 +430,7 @@ function ProductionPage() {
                     <tr key={production.id}>
                       <td>{production.animal?.tag}</td>
                       <td>{production.date}</td>
-                      <td>{production.quantity}</td>
+                      <td>{formatMeasurementValue(production.quantity, productionUnit, language)}</td>
                       <td className="animals-table__actions">
                         <button
                           type="button"

@@ -6,6 +6,7 @@ import PaginationControls from '../../components/common/PaginationControls'
 import FeedingForm from '../../components/feeding/FeedingForm'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
 import {
@@ -28,6 +29,11 @@ import type {
 } from '../../types/feeding'
 import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { isManager } from '../../utils/authorization'
+import {
+  appendUnitToLabel,
+  formatMeasurementValue,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import '../../App.css'
 
 const emptyFeedingForm: FeedingFormData = {
@@ -76,9 +82,10 @@ function mapAnimalsToOptions(animals: Animal[]): FeedingAnimalOption[] {
 }
 
 function FeedingPage() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const { feedingUnit } = useMeasurementUnits()
   const canSelectCreateDate = isManager(user)
   const canDeleteResources = isManager(user)
   const [feedings, setFeedings] = useState<Feeding[]>([])
@@ -271,7 +278,7 @@ function FeedingPage() {
     setListErrorMessage('')
 
     try {
-      await exportFeedingsCsv(selectedFarmId, appliedFilters)
+      await exportFeedingsCsv(selectedFarmId, appliedFilters, feedingUnit)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
     } finally {
@@ -291,6 +298,11 @@ function FeedingPage() {
     setPage(0)
     void loadFeedings(defaultFilters, 0, pageSize)
   }
+
+  const quantityLabel = appendUnitToLabel(
+    t('feeding.table.quantity'),
+    t(getMeasurementUnitShortLabelKey(feedingUnit)),
+  )
 
   return (
     <main className="animals-page">
@@ -418,7 +430,7 @@ function FeedingPage() {
                     <th>{t('feeding.table.animalTag')}</th>
                     <th>{t('feeding.table.feedType')}</th>
                     <th>{t('feeding.table.date')}</th>
-                    <th>{t('feeding.table.quantity')}</th>
+                    <th>{quantityLabel}</th>
                     <th>{t('feeding.table.actions')}</th>
                   </tr>
                 </thead>
@@ -428,7 +440,7 @@ function FeedingPage() {
                       <td>{feeding.animal?.tag}</td>
                       <td>{feeding.feedType?.name}</td>
                       <td>{feeding.date}</td>
-                      <td>{feeding.quantity}</td>
+                      <td>{formatMeasurementValue(feeding.quantity, feedingUnit, language)}</td>
                       <td className="animals-table__actions">
                         <button
                           type="button"

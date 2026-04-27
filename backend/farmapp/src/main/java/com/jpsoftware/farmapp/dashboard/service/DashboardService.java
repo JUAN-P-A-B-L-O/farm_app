@@ -13,6 +13,8 @@ import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
 import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
@@ -210,6 +212,20 @@ public class DashboardService {
             String status,
             boolean includeAcquisitionCost,
             String currency) {
+        return exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDashboard(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String status,
+            boolean includeAcquisitionCost,
+            String currency,
+            String productionUnitParam) {
+        MeasurementUnit productionUnit = MeasurementUnit.fromProductionParam(productionUnitParam, "productionUnit");
         DashboardResponse dashboard = getDashboard(
                 farmId,
                 startDate,
@@ -219,7 +235,10 @@ public class DashboardService {
                 includeAcquisitionCost,
                 currency);
         return CsvExportUtils.write(List.of(dashboard), List.of(
-                new CsvColumn<>("totalProduction", DashboardResponse::getTotalProduction),
+                new CsvColumn<>("totalProduction", response -> MeasurementUnitConverter.convertFromBase(
+                        response.getTotalProduction(),
+                        productionUnit)),
+                new CsvColumn<>("totalProductionUnit", row -> productionUnit.getSymbol()),
                 new CsvColumn<>("totalFeedingCost", DashboardResponse::getTotalFeedingCost),
                 new CsvColumn<>("totalRevenue", DashboardResponse::getTotalRevenue),
                 new CsvColumn<>("totalProfit", DashboardResponse::getTotalProfit),
@@ -235,6 +254,20 @@ public class DashboardService {
             String status,
             boolean includeAcquisitionCost,
             String currency) {
+        return exportDashboardByAnimals(farmId, startDate, endDate, animalIds, status, includeAcquisitionCost, currency, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDashboardByAnimals(
+            String farmId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Collection<String> animalIds,
+            String status,
+            boolean includeAcquisitionCost,
+            String currency,
+            String productionUnitParam) {
+        MeasurementUnit productionUnit = MeasurementUnit.fromProductionParam(productionUnitParam, "productionUnit");
         DashboardResponse dashboard = getDashboardByAnimals(
                 farmId,
                 startDate,
@@ -244,7 +277,10 @@ public class DashboardService {
                 includeAcquisitionCost,
                 currency);
         return CsvExportUtils.write(List.of(dashboard), List.of(
-                new CsvColumn<>("totalProduction", DashboardResponse::getTotalProduction),
+                new CsvColumn<>("totalProduction", response -> MeasurementUnitConverter.convertFromBase(
+                        response.getTotalProduction(),
+                        productionUnit)),
+                new CsvColumn<>("totalProductionUnit", row -> productionUnit.getSymbol()),
                 new CsvColumn<>("totalFeedingCost", DashboardResponse::getTotalFeedingCost),
                 new CsvColumn<>("totalRevenue", DashboardResponse::getTotalRevenue),
                 new CsvColumn<>("totalProfit", DashboardResponse::getTotalProfit),

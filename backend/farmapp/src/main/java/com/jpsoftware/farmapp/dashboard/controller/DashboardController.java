@@ -74,11 +74,32 @@ public class DashboardController {
             @RequestParam(required = false) List<String> animalIds,
             @RequestParam(required = false) String status,
             @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
-            @RequestParam(required = false) String currency) {
+            @RequestParam(required = false) String currency,
+            @RequestParam(required = false) String productionUnit) {
         boolean hasMultiAnimalFilter = hasAnimalIds(animalIds);
         return CsvResponseFactory.buildDownload(
                 "dashboard-summary.csv",
-                StringUtils.hasText(currency)
+                StringUtils.hasText(productionUnit)
+                        ? hasMultiAnimalFilter
+                                ? dashboardService.exportDashboardByAnimals(
+                                        farmId,
+                                        startDate,
+                                        endDate,
+                                        mergeAnimalFilters(animalId, animalIds),
+                                        status,
+                                        includeAcquisitionCost,
+                                        currency,
+                                        productionUnit)
+                                : dashboardService.exportDashboard(
+                                        farmId,
+                                        startDate,
+                                        endDate,
+                                        animalId,
+                                        status,
+                                        includeAcquisitionCost,
+                                        currency,
+                                        productionUnit)
+                        : StringUtils.hasText(currency)
                         ? hasMultiAnimalFilter
                                 ? dashboardService.exportDashboardByAnimals(
                                         farmId,

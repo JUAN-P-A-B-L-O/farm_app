@@ -4,10 +4,16 @@ import ExportCsvButton from '../../components/common/ExportCsvButton'
 import StatCard from '../../components/dashboard/StatCard'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
 import { exportDashboardCsv, fetchDashboard } from '../../services/dashboardService'
 import { appendCurrencyCode } from '../../utils/currency'
+import {
+  appendUnitToLabel,
+  convertMeasurementFromBase,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import type { Animal, ApiErrorResponse, AnimalStatus } from '../../types/animal'
 import type { DashboardFilters, DashboardSummary } from '../../types/dashboard'
 import '../../App.css'
@@ -70,6 +76,7 @@ function DashboardPage() {
   const { t } = useTranslation()
   const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
+  const { productionUnit } = useMeasurementUnits()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
   const [filters, setFilters] = useState<DashboardFilters>(createInitialFilters)
   const [appliedFilters, setAppliedFilters] = useState<DashboardFilters>(createInitialFilters)
@@ -201,13 +208,24 @@ function DashboardPage() {
     setSummaryErrorMessage('')
 
     try {
-      await exportDashboardCsv(selectedFarmId, includeAcquisitionCost, currency, appliedFilters)
+      await exportDashboardCsv(
+        selectedFarmId,
+        includeAcquisitionCost,
+        currency,
+        appliedFilters,
+        productionUnit,
+      )
     } catch (error) {
       setSummaryErrorMessage(getErrorMessage(error, t('common.exportError')))
     } finally {
       setIsExporting(false)
     }
   }
+
+  const productionTitle = appendUnitToLabel(
+    t('dashboard.stats.totalProduction'),
+    t(getMeasurementUnitShortLabelKey(productionUnit)),
+  )
 
   return (
     <main className="dashboard-page">
@@ -330,10 +348,14 @@ function DashboardPage() {
           {dashboardStats.map((stat) => (
             <StatCard
               key={stat.key}
-              title={stat.format === 'currency'
-                ? appendCurrencyCode(t(stat.titleKey), currency)
-                : t(stat.titleKey)}
-              value={summary[stat.key] ?? 0}
+              title={stat.key === 'totalProduction'
+                ? productionTitle
+                : stat.format === 'currency'
+                  ? appendCurrencyCode(t(stat.titleKey), currency)
+                  : t(stat.titleKey)}
+              value={stat.key === 'totalProduction'
+                ? convertMeasurementFromBase(summary.totalProduction, productionUnit)
+                : summary[stat.key] ?? 0}
               format={stat.format}
             />
           ))}

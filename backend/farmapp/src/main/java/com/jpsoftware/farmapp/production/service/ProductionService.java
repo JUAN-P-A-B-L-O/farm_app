@@ -18,6 +18,8 @@ import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.BusinessException;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
@@ -121,12 +123,21 @@ public class ProductionService {
 
     @Transactional(readOnly = true)
     public String exportAll(String search, String animalId, LocalDate date, String farmId) {
+        return exportAll(search, animalId, date, farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String search, String animalId, LocalDate date, String farmId, String measurementUnitParam) {
+        MeasurementUnit measurementUnit = MeasurementUnit.fromProductionParam(measurementUnitParam, "measurementUnit");
         return CsvExportUtils.write(findAll(search, animalId, date, farmId), List.of(
                 new CsvColumn<>("id", ProductionResponse::getId),
                 new CsvColumn<>("animalId", ProductionResponse::getAnimalId),
                 new CsvColumn<>("animalTag", production -> production.getAnimal() != null ? production.getAnimal().getTag() : null),
                 new CsvColumn<>("date", ProductionResponse::getDate),
-                new CsvColumn<>("quantity", ProductionResponse::getQuantity)));
+                new CsvColumn<>("quantity", production -> MeasurementUnitConverter.convertFromBase(
+                        production.getQuantity(),
+                        measurementUnit)),
+                new CsvColumn<>("quantityUnit", row -> measurementUnit.getSymbol())));
     }
 
     @Transactional(readOnly = true)

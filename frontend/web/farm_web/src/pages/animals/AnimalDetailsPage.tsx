@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAnimalById } from '../../services/animalService'
 import { getFeedingsByAnimalId } from '../../services/feedingService'
@@ -10,6 +11,11 @@ import type { Animal, ApiErrorResponse } from '../../types/animal'
 import type { FeedingTrendPoint } from '../../types/feeding'
 import type { ProductionTrendPoint } from '../../types/production'
 import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
+import {
+  appendUnitToLabel,
+  formatMeasurementValue,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import '../../App.css'
 
 interface AnimalDetailsPageProps {
@@ -42,6 +48,7 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
   const { t, language } = useTranslation()
   const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
+  const { productionUnit, feedingUnit } = useMeasurementUnits()
   const [animal, setAnimal] = useState<Animal | null>(null)
   const [productions, setProductions] = useState<ProductionTrendPoint[]>([])
   const [feedings, setFeedings] = useState<FeedingTrendPoint[]>([])
@@ -176,14 +183,14 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                   <thead>
                     <tr>
                       <th>{t('production.table.date')}</th>
-                      <th>{t('production.table.quantity')}</th>
+                      <th>{appendUnitToLabel(t('production.table.quantity'), t(getMeasurementUnitShortLabelKey(productionUnit)))}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {productions.map((production) => (
                       <tr key={`${production.date}-${production.quantity}`}>
                         <td>{production.date}</td>
-                        <td>{production.quantity}</td>
+                        <td>{formatMeasurementValue(production.quantity, productionUnit, language)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -210,14 +217,14 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                   <thead>
                     <tr>
                       <th>{t('production.table.date')}</th>
-                      <th>{t('production.table.quantity')}</th>
+                      <th>{appendUnitToLabel(t('feeding.table.quantity'), t(getMeasurementUnitShortLabelKey(feedingUnit)))}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {feedings.map((feeding) => (
                       <tr key={`${feeding.date}-${feeding.quantity}`}>
                         <td>{feeding.date}</td>
-                        <td>{feeding.quantity}</td>
+                        <td>{formatMeasurementValue(feeding.quantity, feedingUnit, language)}</td>
                       </tr>
                     ))}
                   </tbody>

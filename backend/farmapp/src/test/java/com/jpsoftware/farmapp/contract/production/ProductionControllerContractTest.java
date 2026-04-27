@@ -97,6 +97,17 @@ class ProductionControllerContractTest {
     }
 
     @Test
+    void shouldExportProductionsWithMeasurementUnit() throws Exception {
+        productionService.exportWithUnitResponse = "id,quantity,quantityUnit\nproduction-1,12500.0,mL\n";
+
+        mockMvc.perform(get("/productions/export")
+                        .param("animalId", "animal-1")
+                        .param("measurementUnit", "MILLILITER"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("id,quantity,quantityUnit\nproduction-1,12500.0,mL\n"));
+    }
+
+    @Test
     void shouldReturnSummary() throws Exception {
         productionService.summaryResponse = new ProductionSummaryResponse("123", 35.5);
 
@@ -277,6 +288,7 @@ class ProductionControllerContractTest {
         private ProductionSummaryResponse summaryResponse;
         private ProductionProfitResponse profitResponse;
         private String exportResponse = "";
+        private String exportWithUnitResponse = "";
         private ProductionResponse updateResponse;
         private RuntimeException summaryException;
         private RuntimeException profitException;
@@ -301,6 +313,11 @@ class ProductionControllerContractTest {
         @Override
         public String exportAll(String search, String animalId, LocalDate date, String farmId) {
             return exportResponse;
+        }
+
+        @Override
+        public String exportAll(String search, String animalId, LocalDate date, String farmId, String measurementUnitParam) {
+            return exportWithUnitResponse;
         }
 
         @Override

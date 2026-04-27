@@ -83,6 +83,42 @@ class DashboardExportControllerContractTest {
     }
 
     @Test
+    void shouldExportDashboardAsCsvWithProductionUnit() throws Exception {
+        when(dashboardService.exportDashboard(
+                "farm-001",
+                LocalDate.parse("2026-02-01"),
+                LocalDate.parse("2026-02-28"),
+                "animal-9",
+                "SOLD",
+                true,
+                "USD",
+                "MILLILITER"))
+                .thenReturn("totalProduction,totalProductionUnit\n100000.0,mL\n");
+
+        mockMvc.perform(get("/dashboard/export")
+                        .param("farmId", "farm-001")
+                        .param("startDate", "2026-02-01")
+                        .param("endDate", "2026-02-28")
+                        .param("animalId", "animal-9")
+                        .param("status", "SOLD")
+                        .param("includeAcquisitionCost", "true")
+                        .param("currency", "USD")
+                        .param("productionUnit", "MILLILITER"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("totalProduction,totalProductionUnit\n100000.0,mL\n"));
+
+        verify(dashboardService).exportDashboard(
+                "farm-001",
+                LocalDate.parse("2026-02-01"),
+                LocalDate.parse("2026-02-28"),
+                "animal-9",
+                "SOLD",
+                true,
+                "USD",
+                "MILLILITER");
+    }
+
+    @Test
     void shouldExportDashboardAsCsvWithMultiAnimalFilters() throws Exception {
         when(dashboardService.exportDashboardByAnimals(
                 "farm-001",

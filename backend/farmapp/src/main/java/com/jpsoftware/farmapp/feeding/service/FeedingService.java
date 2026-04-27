@@ -16,6 +16,8 @@ import com.jpsoftware.farmapp.feeding.mapper.FeedingMapper;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
@@ -115,6 +117,18 @@ public class FeedingService {
 
     @Transactional(readOnly = true)
     public String exportAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
+        return exportAll(search, animalId, feedTypeId, date, farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(
+            String search,
+            String animalId,
+            String feedTypeId,
+            LocalDate date,
+            String farmId,
+            String measurementUnitParam) {
+        MeasurementUnit measurementUnit = MeasurementUnit.fromFeedingParam(measurementUnitParam, "measurementUnit");
         return CsvExportUtils.write(findAll(search, animalId, feedTypeId, date, farmId), List.of(
                 new CsvColumn<>("id", FeedingResponse::getId),
                 new CsvColumn<>("animalId", FeedingResponse::getAnimalId),
@@ -122,7 +136,10 @@ public class FeedingService {
                 new CsvColumn<>("feedTypeId", FeedingResponse::getFeedTypeId),
                 new CsvColumn<>("feedTypeName", feeding -> feeding.getFeedType() != null ? feeding.getFeedType().getName() : null),
                 new CsvColumn<>("date", FeedingResponse::getDate),
-                new CsvColumn<>("quantity", FeedingResponse::getQuantity)));
+                new CsvColumn<>("quantity", feeding -> MeasurementUnitConverter.convertFromBase(
+                        feeding.getQuantity(),
+                        measurementUnit)),
+                new CsvColumn<>("quantityUnit", row -> measurementUnit.getSymbol())));
     }
 
     @Transactional(readOnly = true)

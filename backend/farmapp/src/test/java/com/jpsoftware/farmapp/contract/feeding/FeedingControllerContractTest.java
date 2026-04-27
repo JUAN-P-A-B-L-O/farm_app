@@ -154,6 +154,17 @@ class FeedingControllerContractTest {
     }
 
     @Test
+    void shouldExportFeedingsWithMeasurementUnit() throws Exception {
+        feedingService.exportWithUnitResponse = "id,quantity,quantityUnit\nfeeding-1,8500.0,g\n";
+
+        mockMvc.perform(get("/feedings/export")
+                        .param("animalId", "animal-1")
+                        .param("measurementUnit", "GRAM"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("id,quantity,quantityUnit\nfeeding-1,8500.0,g\n"));
+    }
+
+    @Test
     void shouldReturnEmptyWhenNoMatch() throws Exception {
         feedingService.findAllResponse = List.of();
 
@@ -223,6 +234,7 @@ class FeedingControllerContractTest {
         private PaginatedResponse<FeedingResponse> paginatedResponse;
         private FeedingResponse findByIdResponse;
         private String exportResponse = "";
+        private String exportWithUnitResponse = "";
         private RuntimeException findByIdException;
         private FeedingResponse updateResponse;
         private RuntimeException updateException;
@@ -251,6 +263,17 @@ class FeedingControllerContractTest {
         @Override
         public String exportAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
             return exportResponse;
+        }
+
+        @Override
+        public String exportAll(
+                String search,
+                String animalId,
+                String feedTypeId,
+                LocalDate date,
+                String farmId,
+                String measurementUnitParam) {
+            return exportWithUnitResponse;
         }
 
         @Override

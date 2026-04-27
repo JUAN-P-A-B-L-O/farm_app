@@ -2,6 +2,7 @@ import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-route
 import { useAuth } from '../hooks/useAuth'
 import { useCurrency } from '../hooks/useCurrency'
 import { useFarm } from '../hooks/useFarm'
+import { useMeasurementUnits } from '../hooks/useMeasurementUnits'
 import { useLanguage, type Language } from '../context/LanguageContext'
 import { useTranslation } from '../hooks/useTranslation'
 import { isManager } from '../utils/authorization'
@@ -31,6 +32,12 @@ function AppLayout() {
     setSelectedFarmId,
   } = useFarm()
   const { currency, setCurrency } = useCurrency()
+  const {
+    productionUnit,
+    feedingUnit,
+    setProductionUnit,
+    setFeedingUnit,
+  } = useMeasurementUnits()
   const { language, setLanguage } = useLanguage()
   const { t } = useTranslation()
   const canManageRestrictedFeatures = isManager(user)
@@ -135,6 +142,36 @@ function AppLayout() {
           >
             <option value="BRL">{t('layout.currencyOptions.BRL')}</option>
             <option value="USD">{t('layout.currencyOptions.USD')}</option>
+          </select>
+        </div>
+
+        <div className="app-layout__farm-selector">
+          <label className="app-layout__language-label" htmlFor="production-unit-selector">
+            {t('measurementUnits.productionLabel')}
+          </label>
+          <select
+            id="production-unit-selector"
+            className="app-layout__farm-select"
+            value={productionUnit}
+            onChange={(event) => setProductionUnit(event.target.value as typeof productionUnit)}
+          >
+            <option value="LITER">{t('measurementUnits.options.LITER')}</option>
+            <option value="MILLILITER">{t('measurementUnits.options.MILLILITER')}</option>
+          </select>
+        </div>
+
+        <div className="app-layout__farm-selector">
+          <label className="app-layout__language-label" htmlFor="feeding-unit-selector">
+            {t('measurementUnits.feedingLabel')}
+          </label>
+          <select
+            id="feeding-unit-selector"
+            className="app-layout__farm-select"
+            value={feedingUnit}
+            onChange={(event) => setFeedingUnit(event.target.value as typeof feedingUnit)}
+          >
+            <option value="KILOGRAM">{t('measurementUnits.options.KILOGRAM')}</option>
+            <option value="GRAM">{t('measurementUnits.options.GRAM')}</option>
           </select>
         </div>
 

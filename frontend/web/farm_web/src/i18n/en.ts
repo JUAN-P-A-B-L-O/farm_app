@@ -29,6 +29,26 @@ const en = {
       settings: 'Settings',
     },
   },
+  measurementUnits: {
+    productionLabel: 'Production unit',
+    feedingLabel: 'Feeding unit',
+    options: {
+      LITER: 'Liters (L)',
+      MILLILITER: 'Milliliters (mL)',
+      KILOGRAM: 'Kilograms (kg)',
+      GRAM: 'Grams (g)',
+    },
+    short: {
+      LITER: 'L',
+      MILLILITER: 'mL',
+      KILOGRAM: 'kg',
+      GRAM: 'g',
+    },
+    errors: {
+      productionStep: 'When using milliliters, enter values in 10 mL increments.',
+      feedingStep: 'When using grams, enter values in 10 g increments.',
+    },
+  },
   common: {
     loading: 'Loading...',
     saving: 'Saving...',
@@ -374,6 +394,7 @@ const en = {
       loadDetails: 'Unable to load feeding details.',
       selectAnimal: 'Select an animal before creating the feeding record.',
       selectFeedType: 'Select a feed type before creating the feeding record.',
+      quantity: 'Quantity must be greater than zero.',
       quantityPrecision: 'Quantity must have at most 2 decimal places.',
       userRequired: 'User is required.',
       loadUsers: 'Unable to load users.',

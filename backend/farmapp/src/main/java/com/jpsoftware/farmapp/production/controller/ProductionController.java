@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -71,8 +72,13 @@ public class ProductionController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) LocalDate date,
-            @RequestParam(required = false) String farmId) {
-        return CsvResponseFactory.buildDownload("productions.csv", productionService.exportAll(search, animalId, date, farmId));
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String measurementUnit) {
+        return CsvResponseFactory.buildDownload(
+                "productions.csv",
+                StringUtils.hasText(measurementUnit)
+                        ? productionService.exportAll(search, animalId, date, farmId, measurementUnit)
+                        : productionService.exportAll(search, animalId, date, farmId));
     }
 
     @GetMapping("/{id}")

@@ -29,6 +29,26 @@ const ptBR = {
       settings: 'Configurações',
     },
   },
+  measurementUnits: {
+    productionLabel: 'Unidade da producao',
+    feedingLabel: 'Unidade da alimentacao',
+    options: {
+      LITER: 'Litros (L)',
+      MILLILITER: 'Mililitros (mL)',
+      KILOGRAM: 'Quilogramas (kg)',
+      GRAM: 'Gramas (g)',
+    },
+    short: {
+      LITER: 'L',
+      MILLILITER: 'mL',
+      KILOGRAM: 'kg',
+      GRAM: 'g',
+    },
+    errors: {
+      productionStep: 'Ao usar mililitros, informe valores em multiplos de 10 mL.',
+      feedingStep: 'Ao usar gramas, informe valores em multiplos de 10 g.',
+    },
+  },
   common: {
     loading: 'Carregando...',
     saving: 'Salvando...',
@@ -374,6 +394,7 @@ const ptBR = {
       loadDetails: 'Não foi possível carregar os detalhes da alimentação.',
       selectAnimal: 'Selecione um animal antes de criar o registro de alimentação.',
       selectFeedType: 'Selecione um tipo de ração antes de criar o registro de alimentação.',
+      quantity: 'A quantidade deve ser maior que zero.',
       quantityPrecision: 'A quantidade deve ter no máximo 2 casas decimais.',
       userRequired: 'Usuário é obrigatório.',
       loadUsers: 'Não foi possível carregar os usuários.',

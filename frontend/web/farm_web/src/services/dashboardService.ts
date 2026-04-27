@@ -2,6 +2,7 @@ import api from './api'
 import { downloadCsv } from './csvExportService'
 import type { CurrencyCode } from '../context/CurrencyContext'
 import type { DashboardFilters, DashboardSummary } from '../types/dashboard'
+import type { ProductionUnit } from '../utils/measurementUnits'
 
 const inFlightDashboardRequests = new Map<string, Promise<DashboardSummary>>()
 
@@ -55,10 +56,14 @@ export async function exportDashboardCsv(
   includeAcquisitionCost = true,
   currency?: CurrencyCode,
   filters?: DashboardFilters,
+  productionUnit?: ProductionUnit,
 ): Promise<void> {
   await downloadCsv(
     '/dashboard/export',
-    buildDashboardParams(farmId, includeAcquisitionCost, currency, filters),
+    {
+      ...buildDashboardParams(farmId, includeAcquisitionCost, currency, filters),
+      ...(productionUnit ? { productionUnit } : {}),
+    },
     'dashboard-summary.csv',
   )
 }

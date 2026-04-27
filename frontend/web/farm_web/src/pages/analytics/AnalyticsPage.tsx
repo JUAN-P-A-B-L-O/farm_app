@@ -6,6 +6,7 @@ import ExportCsvButton from '../../components/common/ExportCsvButton'
 import LineChart from '../../components/analytics/LineChart'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
 import {
@@ -18,6 +19,12 @@ import {
 import type { Animal, ApiErrorResponse } from '../../types/animal'
 import type { AnalyticsDataset, AnalyticsFilters } from '../../types/analytics'
 import { appendCurrencyCode, formatCurrencyValue } from '../../utils/currency'
+import {
+  appendUnitToLabel,
+  convertMeasurementFromBase,
+  formatConvertedMeasurementValue,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import '../../App.css'
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -58,6 +65,7 @@ function AnalyticsPage() {
   const { t, language } = useTranslation()
   const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
+  const { productionUnit } = useMeasurementUnits()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
   const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters)
   const [appliedFilters, setAppliedFilters] = useState<AnalyticsFilters>(initialFilters)
@@ -157,6 +165,25 @@ function AnalyticsPage() {
   const showCharts = hasAppliedFilters && !isChartsLoading && !errorMessage
   const shouldShowInitialState = !hasAppliedFilters && !isChartsLoading && !errorMessage
   const formatChartCurrency = (value: number) => formatCurrencyValue(value, language, currency)
+  const formatChartProduction = (value: number) => (
+    `${formatConvertedMeasurementValue(value, language)} ${t(getMeasurementUnitShortLabelKey(productionUnit))}`
+  )
+  const productionSeries = analytics.productionSeries.map((point) => ({
+    ...point,
+    value: convertMeasurementFromBase(point.value, productionUnit),
+  }))
+  const productionByAnimal = analytics.productionByAnimal.map((point) => ({
+    ...point,
+    value: convertMeasurementFromBase(point.value, productionUnit),
+  }))
+  const productionTitle = appendUnitToLabel(
+    t('analytics.productionTitle'),
+    t(getMeasurementUnitShortLabelKey(productionUnit)),
+  )
+  const productionByAnimalTitle = appendUnitToLabel(
+    t('analytics.productionByAnimalTitle'),
+    t(getMeasurementUnitShortLabelKey(productionUnit)),
+  )
 
   function renderChartEmptyState() {
     return <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
@@ -186,13 +213,13 @@ function AnalyticsPage() {
 
     try {
       if (key === 'production') {
-        await exportAnalyticsProductionCsv(appliedFilters, selectedFarmId, currency)
+        await exportAnalyticsProductionCsv(appliedFilters, selectedFarmId, currency, productionUnit)
       } else if (key === 'feeding') {
         await exportAnalyticsFeedingCsv(appliedFilters, selectedFarmId, currency)
       } else if (key === 'profit') {
-        await exportAnalyticsProfitCsv(appliedFilters, selectedFarmId, currency)
+        await exportAnalyticsProfitCsv(appliedFilters, selectedFarmId, currency, productionUnit)
       } else {
-        await exportAnalyticsProductionByAnimalCsv(appliedFilters, selectedFarmId, currency)
+        await exportAnalyticsProductionByAnimalCsv(appliedFilters, selectedFarmId, currency, productionUnit)
       }
     } catch (error) {
       setChartsErrorMessage(getErrorMessage(error, t('common.exportError')))
@@ -304,7 +331,7 @@ function AnalyticsPage() {
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
               <div className="analytics-chart__header-copy">
-                <h2>{t('analytics.productionTitle')}</h2>
+                <h2>{productionTitle}</h2>
                 <p>{t('analytics.productionDescription')}</p>
               </div>
               <ExportCsvButton
@@ -312,19 +339,23 @@ function AnalyticsPage() {
                 label={t('common.exportCsv')}
                 loadingLabel={t('common.exportingCsv')}
                 isLoading={exportingKey === 'production'}
-                disabled={!showCharts || analytics.productionSeries.length === 0}
+                disabled={!showCharts || productionSeries.length === 0}
               />
             </div>
 
             {shouldShowInitialState && renderChartEmptyState()}
 
-            {showCharts && analytics.productionSeries.length > 0 && (
+            {showCharts && productionSeries.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
-                <LineChart data={analytics.productionSeries} color="#2e6a46" />
+                <LineChart
+                  data={productionSeries}
+                  color="#2e6a46"
+                  valueFormatter={formatChartProduction}
+                />
               </ChartErrorBoundary>
             )}
 
-            {showCharts && analytics.productionSeries.length === 0 && (
+            {showCharts && productionSeries.length === 0 && (
               renderChartEmptyState()
             )}
           </article>
@@ -396,7 +427,7 @@ function AnalyticsPage() {
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
               <div className="analytics-chart__header-copy">
-                <h2>{t('analytics.productionByAnimalTitle')}</h2>
+                <h2>{productionByAnimalTitle}</h2>
                 <p>{t('analytics.productionByAnimalDescription')}</p>
               </div>
               <ExportCsvButton
@@ -404,19 +435,23 @@ function AnalyticsPage() {
                 label={t('common.exportCsv')}
                 loadingLabel={t('common.exportingCsv')}
                 isLoading={exportingKey === 'productionByAnimal'}
-                disabled={!showCharts || analytics.productionByAnimal.length === 0}
+                disabled={!showCharts || productionByAnimal.length === 0}
               />
             </div>
 
             {shouldShowInitialState && renderChartEmptyState()}
 
-            {showCharts && analytics.productionByAnimal.length > 0 && (
+            {showCharts && productionByAnimal.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
-                <BarChart data={analytics.productionByAnimal} color="#7b8f2a" />
+                <BarChart
+                  data={productionByAnimal}
+                  color="#7b8f2a"
+                  valueFormatter={formatChartProduction}
+                />
               </ChartErrorBoundary>
             )}
 
-            {showCharts && analytics.productionByAnimal.length === 0 && (
+            {showCharts && productionByAnimal.length === 0 && (
               renderChartEmptyState()
             )}
           </article>

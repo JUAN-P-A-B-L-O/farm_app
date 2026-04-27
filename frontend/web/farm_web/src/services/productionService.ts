@@ -1,6 +1,7 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
 import { normalizeToTwoDecimals } from '../utils/decimal'
+import type { ProductionUnit } from '../utils/measurementUnits'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 import type {
   CreateProductionPayload,
@@ -95,6 +96,17 @@ export async function deleteProduction(id: string, farmId?: string): Promise<voi
   })
 }
 
-export async function exportProductionsCsv(farmId?: string, filters?: ProductionListFilters): Promise<void> {
-  await downloadCsv('/productions/export', buildProductionListParams(farmId, filters), 'productions.csv')
+export async function exportProductionsCsv(
+  farmId?: string,
+  filters?: ProductionListFilters,
+  measurementUnit?: ProductionUnit,
+): Promise<void> {
+  await downloadCsv(
+    '/productions/export',
+    {
+      ...buildProductionListParams(farmId, filters),
+      ...(measurementUnit ? { measurementUnit } : {}),
+    },
+    'productions.csv',
+  )
 }

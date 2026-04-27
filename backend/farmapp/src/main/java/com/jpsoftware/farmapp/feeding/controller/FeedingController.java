@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -85,8 +86,13 @@ public class FeedingController {
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String feedTypeId,
             @RequestParam(required = false) LocalDate date,
-            @RequestParam(required = false) String farmId) {
-        return CsvResponseFactory.buildDownload("feedings.csv", feedingService.exportAll(search, animalId, feedTypeId, date, farmId));
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String measurementUnit) {
+        return CsvResponseFactory.buildDownload(
+                "feedings.csv",
+                StringUtils.hasText(measurementUnit)
+                        ? feedingService.exportAll(search, animalId, feedTypeId, date, farmId, measurementUnit)
+                        : feedingService.exportAll(search, animalId, feedTypeId, date, farmId));
     }
 
     @GetMapping("/{id}")
