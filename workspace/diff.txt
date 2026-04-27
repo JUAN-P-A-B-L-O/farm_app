@@ -1,300 +1,300 @@
---- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/config/DefaultAdminInitializer.java
-+++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/config/DefaultAdminInitializer.java
--        admin.setName("Default Admin");
-+        admin.setName("Administrador padrão");
--        farmRepository.save(new FarmEntity(null, "Default Farm", admin.getId()));
-+        farmRepository.save(new FarmEntity(null, "Fazenda padrão", admin.getId()));
---- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
-+++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
-+            Map.entry("Bad Request", "Requisição inválida."),
-+            Map.entry("Forbidden", "Acesso negado."),
-+            Map.entry("Not Found", "Recurso não encontrado."),
-+            Map.entry("Access Denied", "Acesso negado."),
-+            Map.entry("Animal entity must not be null", "Animal obrigatório."),
---- /dev/null
-+++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/LocalizedErrorAttributes.java
-+package com.jpsoftware.farmapp.shared.exception;
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandler.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandler.java
++import org.springframework.web.servlet.resource.NoResourceFoundException;
++    @ExceptionHandler(NoResourceFoundException.class)
++    public ResponseEntity<ErrorResponse> handleNoResourceFoundException(
++            NoResourceFoundException exception,
++            HttpServletRequest request) {
++        return buildErrorResponse(HttpStatus.NOT_FOUND, "Not Found", request.getRequestURI());
++    }
 +
-+import java.util.Map;
-+import org.springframework.boot.web.error.ErrorAttributeOptions;
-+import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
-+import org.springframework.stereotype.Component;
-+import org.springframework.web.context.request.WebRequest;
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandlerTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandlerTest.java
++import org.springframework.web.servlet.resource.NoResourceFoundException;
++    @Test
++    void shouldReturnLocalized404WhenStaticResourceDoesNotExist() throws Exception {
++        mockMvc.perform(get("/test-exceptions/missing-static-resource"))
++                .andExpect(status().isNotFound())
++                .andExpect(jsonPath("$.timestamp").exists())
++                .andExpect(jsonPath("$.status").value(404))
++                .andExpect(jsonPath("$.error").value("Recurso não encontrado."))
++                .andExpect(jsonPath("$.path").value("/test-exceptions/missing-static-resource"));
++    }
 +
-+@Component
-+public class LocalizedErrorAttributes extends DefaultErrorAttributes {
 +
-+    @Override
-+    public Map<String, Object> getErrorAttributes(WebRequest webRequest, ErrorAttributeOptions options) {
-+        Map<String, Object> attributes = super.getErrorAttributes(webRequest, options);
-+        Object error = attributes.get("error");
-+        if (error instanceof String errorMessage) {
-+            attributes.put("error", ErrorMessageTranslator.translate(errorMessage));
++        @GetMapping("/missing-static-resource")
++        ResponseEntity<Void> missingStaticResource() throws NoResourceFoundException {
++            throw new NoResourceFoundException(null, "/test-exceptions/missing-static-resource");
 +        }
-+        return attributes;
-+    }
-+}
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java
-+        assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Access Denied"));
-+        assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Forbidden"));
-+    @Test
-+    void shouldTranslateMapperMessages() {
-+        assertEquals("Animal obrigatório.", ErrorMessageTranslator.translate("Animal entity must not be null"));
-+    }
-+
---- /dev/null
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/LocalizedErrorAttributesTest.java
-+package com.jpsoftware.farmapp.shared.exception;
-+
-+import static org.junit.jupiter.api.Assertions.assertEquals;
-+
-+import jakarta.servlet.RequestDispatcher;
-+import java.util.Map;
-+import org.junit.jupiter.api.Test;
-+import org.springframework.boot.web.error.ErrorAttributeOptions;
-+import org.springframework.mock.web.MockHttpServletRequest;
-+import org.springframework.web.context.request.ServletWebRequest;
-+
-+class LocalizedErrorAttributesTest {
-+
-+    @Test
-+    void shouldTranslateErrorAttributeMessage() {
-+        LocalizedErrorAttributes localizedErrorAttributes = new LocalizedErrorAttributes();
-+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/animals");
-+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
-+        ServletWebRequest webRequest = new ServletWebRequest(request);
-+
-+        Map<String, Object> attributes = localizedErrorAttributes.getErrorAttributes(
-+                webRequest,
-+                ErrorAttributeOptions.defaults());
-+
-+        assertEquals("Acesso negado.", attributes.get("error"));
-+    }
-+}
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/shared/config/DefaultAdminInitializerTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/shared/config/DefaultAdminInitializerTest.java
--        assertEquals("Default Admin", savedUser.getName());
-+        assertEquals("Administrador padrão", savedUser.getName());
--        assertEquals("Default Farm", farmCaptor.getValue().getName());
-+        assertEquals("Fazenda padrão", farmCaptor.getValue().getName());
---- a/frontend/web/farm_web/src/i18n/en.ts
-+++ b/frontend/web/farm_web/src/i18n/en.ts
-+    languageOptions: {
-+      'pt-BR': 'Portuguese',
-+      en: 'English',
-+    },
-+    currencyOptions: {
-+      BRL: 'Brazilian real (BRL)',
-+      USD: 'US dollar (USD)',
-+    },
 --- a/frontend/web/farm_web/src/i18n/pt-BR.ts
 +++ b/frontend/web/farm_web/src/i18n/pt-BR.ts
-+    languageOptions: {
-+      'pt-BR': 'Português',
-+      en: 'Inglês',
-+    },
-+    currencyOptions: {
-+      BRL: 'Real brasileiro (BRL)',
-+      USD: 'Dólar americano (USD)',
-+    },
---- a/frontend/web/farm_web/src/layout/AppLayout.tsx
-+++ b/frontend/web/farm_web/src/layout/AppLayout.tsx
--              PT
-+              {t('layout.languageOptions.pt-BR')}
--              EN
-+              {t('layout.languageOptions.en')}
--            <option value="BRL">BRL</option>
--            <option value="USD">USD</option>
-+            <option value="BRL">{t('layout.currencyOptions.BRL')}</option>
-+            <option value="USD">{t('layout.currencyOptions.USD')}</option>
---- a/skills/fixer.md
-+++ b/skills/fixer.md
+-      dashboard: 'Dashboard',
++      dashboard: 'Painel',
+-    title: 'Login',
++    title: 'Entrar',
+-    title: 'Dashboard',
++    title: 'Painel',
+-    confirmDelete: 'Tem certeza de que deseja excluir este tipo de alimento?',
++    confirmDelete: 'Tem certeza de que deseja excluir este tipo de ração?',
+--- a/frontend/web/farm_web/tests/.compiled-translation-hook/LanguageContext.js
++++ b/frontend/web/farm_web/tests/.compiled-translation-hook/LanguageContext.js
+-      dashboard: 'Dashboard',
++      dashboard: 'Painel',
+-    title: 'Login',
++    title: 'Entrar',
+-    title: 'Dashboard',
++    title: 'Painel',
+-    confirmDelete: 'Tem certeza de que deseja excluir este tipo de alimento?',
++    confirmDelete: 'Tem certeza de que deseja excluir este tipo de ração?',
+--- a/frontend/web/farm_web/tests/translation-hook.test.mjs
++++ b/frontend/web/farm_web/tests/translation-hook.test.mjs
++  assert.equal(translation.t('layout.navigation.dashboard'), 'Painel')
++  assert.equal(translation.t('auth.title'), 'Entrar')
+--- a/ia_pipeline.sh
++++ b/ia_pipeline.sh
+-# 🔹 CONTEXT LOAD (1x)
++# 🔹 CONTEXT LOAD
+-  DEV_SYSTEM="$AI_CONTEXT"$'\n\n'"$DEV_SKILL"
+-  DEV_PROMPT="$DEV_SYSTEM"$'\n\n'"$FEATURE"
 -
-+5. If error type is contract:
-+- Prefer adjusting response format or message
-+- Do NOT refactor large parts of system
---- a/skills/tester.md
-+++ b/skills/tester.md
-+- Do NOT assume behavior not present in implementation
-+- Do NOT invent new business rules
---- /dev/null
-+++ b/workspace/error_focus.txt
-+     Content type = application/json
-+             Body = {"timestamp":"2026-04-27T17:53:17.784440968Z","status":403,"error":"Access Denied","path":"/dashboard"}
-+    Forwarded URL = null
-+   Redirected URL = null
-+          Cookies = []
-+[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m6[m, [1;31mFailures: [0;1;31m2[m, Errors: 0, Skipped: 0, Time elapsed: 5.698 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
-+[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints -- Time elapsed: 0.133 s <<< FAILURE!
-+java.lang.AssertionError: JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>
-+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
-+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
-+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
-+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:112)
-+--
-+	at com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints(AuthIntegrationTest.java:172)
-+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
++  DEV_PROMPT="$AI_CONTEXT"$'\n\n'"$DEV_SKILL"$'\n\n'"$FEATURE"
+-  echo "📂 Generating diff..."
+-
+-
+-  # diff reduzido (economia de token)
+-  TESTER_SYSTEM="$TESTER_SKILL"
++  TESTER_INPUT="Analyze changes and update tests.
+-  TESTER_INPUT="Analyze the following changes and UPDATE tests accordingly.
+-
+-Changed files:
++Files:
+-Relevant diff:
++Diff:
++"
+-Ensure tests reflect the new behavior and remain aligned with the implementation."
+-
+-  TESTER_PROMPT="$TESTER_SYSTEM"$'\n\n'"$TESTER_INPUT"
+-
++  TESTER_PROMPT="$TESTER_SKILL"$'\n\n'"$TESTER_INPUT"
+-  git commit -m "test(ai): update tests for $(basename "$FILE")" || echo "⚠️ No test changes"
++  git commit -m "test(ai): update tests for $(basename "$FILE")" || true
+-  # 🔁 LOOP DE TESTE + FIX
++  # 🔁 TEST + CLASSIFY + FIX
+-  echo "🧪 Running tests with auto-fix..."
+-
+-    # =====================
+-    # 🧪 EXECUÇÃO REAL (CORRETO)
+-    # =====================
+-    # 🔎 CAPTURA DE ERRO MELHOR
++    # 🔎 ERROR CLASSIFIER
++    ERROR_TYPE="unknown"
 +
-+[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToAccessDashboardAndAnalytics -- Time elapsed: 0.127 s <<< FAILURE!
-+java.lang.AssertionError: JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>
-+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
-+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
-+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
-+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:112)
-+--
-+Hibernate: select count(*) from users ue1_0
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.486 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
-+[[1;34mINFO[m] 
-+[[1;34mINFO[m] Results:
-+[[1;34mINFO[m] 
-+[[1;31mERROR[m] [1;31mFailures: [m
-+[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldAllowOnlyManagersToAccessDashboardAndAnalytics:120 JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>[m
-+[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints:172 JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>[m
-+[[1;34mINFO[m] 
-+[[1;31mERROR[m] [1;31mTests run: 213, Failures: 2, Errors: 0, Skipped: 0[m
-+[[1;34mINFO[m] 
-+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
-+[[1;34mINFO[m] [1;31mBUILD FAILURE[m
-+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
-+[[1;34mINFO[m] Total time:  16.365 s
-+[[1;34mINFO[m] Finished at: 2026-04-27T14:53:21-03:00
-+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
-+[[1;31mERROR[m] Failed to execute goal [32morg.apache.maven.plugins:maven-surefire-plugin:3.5.2:test[m [1m(default-test)[m on project [36mfarmapp[m: [1;31mThere are test failures.[m
-+[[1;31mERROR[m] [1;31m[m
-+[[1;31mERROR[m] [1;31mSee /home/juaneugenio/programmig/farm_app/backend/farmapp/target/surefire-reports for the individual test results.[m
-+[[1;31mERROR[m] [1;31mSee dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.[m
-+[[1;31mERROR[m] -> [1m[Help 1][m
-+[[1;31mERROR[m] 
-+[[1;31mERROR[m] To see the full stack trace of the errors, re-run Maven with the [1m-e[m switch.
-+[[1;31mERROR[m] Re-run Maven using the [1m-X[m switch to enable full debug logging.
-+[[1;31mERROR[m] 
-+[[1;31mERROR[m] For more information about the errors and possible solutions, please read the following articles:
-+[[1;31mERROR[m] [1m[Help 1][m http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
++    if grep -q "expected:<.*> but was:<.*>" workspace/mvn.log; then
++      ERROR_TYPE="contract"
++    elif grep -q "method does not override" workspace/mvn.log; then
++      ERROR_TYPE="signature"
++    elif grep -q "NullPointerException" workspace/mvn.log; then
++      ERROR_TYPE="runtime"
++    fi
++
++    echo "🔍 Error type: $ERROR_TYPE"
++
+-    # 🛠 FIXER
++    # 🛠 FIXER INPUT DINÂMICO
+-    echo "🛠 Running FIXER..."
++    case $ERROR_TYPE in
+-    FIXER_SYSTEM="$FIXER_SKILL"
++      contract)
++        FIXER_INPUT="Fix contract mismatch.
+-    FIXER_INPUT="Fix the issues causing test or compilation failures.
++Tests and implementation disagree.
+-Relevant error:
++Example:
+-Full tail:
+-$(tail -n 50 workspace/mvn.log)
++Rules:
++- Prefer aligning backend responses
++- Do NOT refactor unrelated code
++- Minimal fix only
++"
++        ;;
++
++      signature)
++        FIXER_INPUT="Fix method signature mismatch.
++
++$(cat workspace/error_focus.txt)
+-- Do NOT delete or disable tests
+-- Fix root cause, not symptoms
+-- Keep changes minimal
++- Align tests and implementation
++- Fix @Override issues
++        ;;
++
++      runtime)
++        FIXER_INPUT="Fix runtime error.
+-    FIXER_PROMPT="$FIXER_SYSTEM"$'\n\n'"$FIXER_INPUT"
++$(cat workspace/error_focus.txt)
++
++Rules:
++- Identify root cause
++- Fix minimal logic
++"
++        ;;
++
++      *)
++        FIXER_INPUT="Fix failure based on error:
++
++$(tail -n 50 workspace/mvn.log)
++
++Rules:
++- Minimal fix
++- No large refactors
++"
++        ;;
++    esac
++
++    echo "🛠 Running FIXER..."
++    FIXER_PROMPT="$FIXER_SKILL"$'\n\n'"$FIXER_INPUT"
+-    # 🔒 PROTEÇÃO CONTRA FIXES GRANDES
++    # 🔒 PROTEÇÃO
+-      echo "⚠️ Fix too large ($CHANGED_LINES lines). Aborting to avoid damage."
++      echo "⚠️ Fix too large ($CHANGED_LINES lines). Aborting."
+-    git commit -m "fix(ai): auto-fix after test failure (attempt $ATTEMPT)" || echo "⚠️ No fix changes"
++    git commit -m "fix(ai): attempt $ATTEMPT ($ERROR_TYPE)" || true
+-  echo "✅ Feature completed successfully"
++  echo "✅ Feature completed"
+--- a/workspace/error_focus.txt
++++ b/workspace/error_focus.txt
+-     Content type = application/json
+-             Body = {"timestamp":"2026-04-27T17:53:17.784440968Z","status":403,"error":"Access Denied","path":"/dashboard"}
+-    Forwarded URL = null
+-   Redirected URL = null
+-          Cookies = []
+-[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m6[m, [1;31mFailures: [0;1;31m2[m, Errors: 0, Skipped: 0, Time elapsed: 5.698 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+-[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints -- Time elapsed: 0.133 s <<< FAILURE!
+-java.lang.AssertionError: JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>
++Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
++Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
++Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
++Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
++Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
++[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m7[m, [1;31mFailures: [0;1;31m1[m, Errors: 0, Skipped: 0, Time elapsed: 6.650 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
++[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldLocalizeDefaultErrorAttributesForMissingProtectedRoutes -- Time elapsed: 0.294 s <<< FAILURE!
++java.lang.AssertionError: Status expected:<404> but was:<500>
+-	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
+-	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:112)
+---
+-	at com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints(AuthIntegrationTest.java:172)
+-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+-
+-[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToAccessDashboardAndAnalytics -- Time elapsed: 0.127 s <<< FAILURE!
+-java.lang.AssertionError: JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>
+-	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
+-	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
+-	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
+-	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:112)
++	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:640)
++	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.486 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.669 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+-[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldAllowOnlyManagersToAccessDashboardAndAnalytics:120 JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>[m
+-[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints:172 JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>[m
++[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldLocalizeDefaultErrorAttributesForMissingProtectedRoutes:186 Status expected:<404> but was:<500>[m
+-[[1;31mERROR[m] [1;31mTests run: 213, Failures: 2, Errors: 0, Skipped: 0[m
++[[1;31mERROR[m] [1;31mTests run: 216, Failures: 1, Errors: 0, Skipped: 0[m
+-[[1;34mINFO[m] Total time:  16.365 s
+-[[1;34mINFO[m] Finished at: 2026-04-27T14:53:21-03:00
++[[1;34mINFO[m] Total time:  18.397 s
++[[1;34mINFO[m] Finished at: 2026-04-27T15:23:25-03:00
 --- a/workspace/mvn.log
 +++ b/workspace/mvn.log
--23:32:35.744 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
--23:32:36.739 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:36.739 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:36.744 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 4 ms
--23:32:36.992 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:36.992 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:36.992 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:37.223 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:37.223 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:37.224 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.735 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
-+14:53:07.478 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
-+14:53:08.334 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-+14:53:08.334 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-+14:53:08.339 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 3 ms
-+14:53:08.535 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-+14:53:08.536 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-+14:53:08.536 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-+14:53:08.716 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-+14:53:08.716 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-+14:53:08.717 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.492 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m5[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.006 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.009 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m27[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.094 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m27[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.084 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
--23:32:39.527 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.214 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
-+14:53:10.045 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.234 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.036 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.034 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.825 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.808 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
--23:32:40.570 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.570 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.570 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.596 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.596 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.596 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.613 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.613 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.613 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.629 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.629 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.629 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.134 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
-+14:53:11.057 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-+14:53:11.057 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-+14:53:11.058 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-+14:53:11.082 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-+14:53:11.082 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-+14:53:11.082 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-+14:53:11.096 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-+14:53:11.096 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-+14:53:11.097 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
-+14:53:11.112 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-+14:53:11.112 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-+14:53:11.112 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.119 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
--23:32:40.644 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.644 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.644 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.663 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.663 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.664 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
--23:32:40.674 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.674 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.675 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
--23:32:40.685 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.685 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.685 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.049 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
-+14:53:11.127 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-+14:53:11.127 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-+14:53:11.127 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-+14:53:11.145 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-+14:53:11.145 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-+14:53:11.145 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-+14:53:11.154 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-+14:53:11.154 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-+14:53:11.154 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-+14:53:11.163 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-+14:53:11.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-+14:53:11.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.048 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
--23:32:40.705 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.705 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.705 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.740 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.740 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.740 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.763 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.763 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.763 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.781 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.781 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.781 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.796 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.797 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.797 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.808 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.808 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.808 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.822 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.822 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.823 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.840 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.840 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.840 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
--23:32:40.858 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
--23:32:40.858 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
--23:32:40.858 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-14:53:07.478 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
+-14:53:08.334 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-14:53:08.334 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-14:53:08.339 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 3 ms
+-14:53:08.535 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-14:53:08.536 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-14:53:08.536 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-14:53:08.716 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-14:53:08.716 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-14:53:08.717 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.492 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
++15:23:09.532 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
++15:23:10.691 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++15:23:10.691 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++15:23:10.696 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 4 ms
++15:23:10.923 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++15:23:10.924 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++15:23:10.924 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++15:23:11.071 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++15:23:11.071 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++15:23:11.071 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.865 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m5[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.019 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mLocalizedErrorAttributesTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.jpsoftware.farmapp.shared.exception.[1mLocalizedErrorAttributesTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.009 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.952 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m27[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.084 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m27[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.050 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
+-14:53:10.045 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.234 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
++15:23:12.277 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.198 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.034 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.029 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.808 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.829 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
+-14:53:11.057 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-14:53:11.057 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-14:53:11.058 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-14:53:11.082 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-14:53:11.082 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-14:53:11.082 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-14:53:11.096 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-14:53:11.096 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-14:53:11.097 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-14:53:11.112 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-14:53:11.112 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-14:53:11.112 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.119 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
++15:23:13.431 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++15:23:13.431 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++15:23:13.431 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++15:23:13.471 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++15:23:13.471 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++15:23:13.471 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++15:23:13.495 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++15:23:13.495 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++15:23:13.495 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++15:23:13.512 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++15:23:13.512 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++15:23:13.512 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.270 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
+-14:53:11.127 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-14:53:11.127 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-14:53:11.127 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-14:53:11.145 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-14:53:11.145 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-14:53:11.145 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-14:53:11.154 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-14:53:11.154 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-14:53:11.154 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-14:53:11.163 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-14:53:11.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-14:53:11.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.048 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
++15:23:13.527 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++15:23:13.527 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++15:23:13.527 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++15:23:13.550 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++15:23:13.550 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''

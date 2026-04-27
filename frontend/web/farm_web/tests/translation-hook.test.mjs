@@ -100,11 +100,13 @@ test('returns translated placeholders and details-section labels for both suppor
 
   assert.equal(translation.t('layout.navigation.dashboard'), 'Painel')
   assert.equal(translation.t('auth.title'), 'Entrar')
+  assert.equal(translation.t('dashboard.title'), 'Painel')
   assert.equal(translation.t('animals.form.placeholders.tag'), 'A-102')
   assert.equal(translation.t('animals.form.placeholders.farmId'), 'fazenda-001')
   assert.equal(translation.t('accessControl.form.placeholders.password'), 'farmapp@123')
   assert.equal(translation.t('animals.detailsSections.productionTitle'), 'Histórico de produção')
   assert.equal(translation.t('animals.detailsSections.feedingEmpty'), 'Nenhum registro de alimentação encontrado para este animal.')
+  assert.equal(translation.t('feedType.confirmDelete'), 'Tem certeza de que deseja excluir este tipo de ração?')
   assert.equal(translation.t('layout.languageOptions.pt-BR'), 'Português')
   assert.equal(translation.t('layout.currencyOptions.USD'), 'Dólar americano (USD)')
 
