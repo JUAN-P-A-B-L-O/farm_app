@@ -29,9 +29,16 @@ class ErrorMessageTranslatorTest {
     void shouldTranslateSecurityMessages() {
         assertEquals("Não autorizado.", ErrorMessageTranslator.translate("Unauthorized"));
         assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Access is denied"));
+        assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Access Denied"));
+        assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Forbidden"));
         assertEquals(
                 "É necessário autenticação para acessar este recurso.",
                 ErrorMessageTranslator.translate("Full authentication is required to access this resource"));
+    }
+
+    @Test
+    void shouldTranslateMapperMessages() {
+        assertEquals("Animal obrigatório.", ErrorMessageTranslator.translate("Animal entity must not be null"));
     }
 
     @Test

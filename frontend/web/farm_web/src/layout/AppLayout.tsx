@@ -110,7 +110,7 @@ function AppLayout() {
               onClick={() => handleLanguageChange('pt-BR')}
               aria-pressed={language === 'pt-BR'}
             >
-              PT
+              {t('layout.languageOptions.pt-BR')}
             </button>
             <button
               type="button"
@@ -118,7 +118,7 @@ function AppLayout() {
               onClick={() => handleLanguageChange('en')}
               aria-pressed={language === 'en'}
             >
-              EN
+              {t('layout.languageOptions.en')}
             </button>
           </div>
         </div>
@@ -133,8 +133,8 @@ function AppLayout() {
             value={currency}
             onChange={(event) => setCurrency(event.target.value as 'BRL' | 'USD')}
           >
-            <option value="BRL">BRL</option>
-            <option value="USD">USD</option>
+            <option value="BRL">{t('layout.currencyOptions.BRL')}</option>
+            <option value="USD">{t('layout.currencyOptions.USD')}</option>
           </select>
         </div>
 

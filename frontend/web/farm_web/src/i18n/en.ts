@@ -9,6 +9,14 @@ const en = {
     languageLabel: 'Language',
     currencyLabel: 'Display currency',
     logout: 'Logout',
+    languageOptions: {
+      'pt-BR': 'Portuguese',
+      en: 'English',
+    },
+    currencyOptions: {
+      BRL: 'Brazilian real (BRL)',
+      USD: 'US dollar (USD)',
+    },
     navigation: {
       dashboard: 'Dashboard',
       animals: 'Animals',

@@ -9,6 +9,14 @@ const ptBR = {
     languageLabel: 'Idioma',
     currencyLabel: 'Moeda exibida',
     logout: 'Sair',
+    languageOptions: {
+      'pt-BR': 'Português',
+      en: 'Inglês',
+    },
+    currencyOptions: {
+      BRL: 'Real brasileiro (BRL)',
+      USD: 'Dólar americano (USD)',
+    },
     navigation: {
       dashboard: 'Dashboard',
       animals: 'Animais',
