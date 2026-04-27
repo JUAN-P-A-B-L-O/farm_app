@@ -103,6 +103,8 @@ test('returns translated placeholders and details-section labels for both suppor
   assert.equal(translation.t('accessControl.form.placeholders.password'), 'farmapp@123')
   assert.equal(translation.t('animals.detailsSections.productionTitle'), 'Histórico de produção')
   assert.equal(translation.t('animals.detailsSections.feedingEmpty'), 'Nenhum registro de alimentação encontrado para este animal.')
+  assert.equal(translation.t('layout.languageOptions.pt-BR'), 'Português')
+  assert.equal(translation.t('layout.currencyOptions.USD'), 'Dólar americano (USD)')
 
   globalThis.__testLanguage = 'en'
   translation = useTranslation()
@@ -111,6 +113,8 @@ test('returns translated placeholders and details-section labels for both suppor
   assert.equal(translation.t('accessControl.form.placeholders.email'), 'mary.smith@farmapp.com')
   assert.equal(translation.t('animals.detailsSections.productionDescription'), 'Production records sorted from most recent to oldest.')
   assert.equal(translation.t('animals.detailsSections.feedingTitle'), 'Feeding History')
+  assert.equal(translation.t('layout.languageOptions.en'), 'English')
+  assert.equal(translation.t('layout.currencyOptions.BRL'), 'Brazilian real (BRL)')
 })
 
 test('falls back to the key when a translation path does not exist', () => {

@@ -1,300 +1,300 @@
---- /dev/null
-+++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAccessDeniedHandler.java
-+package com.jpsoftware.farmapp.auth.infrastructure;
-+
-+import com.fasterxml.jackson.databind.ObjectMapper;
-+import com.jpsoftware.farmapp.shared.exception.ErrorMessageTranslator;
-+import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
-+import jakarta.servlet.http.HttpServletRequest;
-+import jakarta.servlet.http.HttpServletResponse;
-+import java.io.IOException;
-+import java.time.Instant;
-+import org.springframework.http.HttpStatus;
-+import org.springframework.http.MediaType;
-+import org.springframework.security.access.AccessDeniedException;
-+import org.springframework.security.web.access.AccessDeniedHandler;
-+import org.springframework.stereotype.Component;
-+
-+@Component
-+public class RestAccessDeniedHandler implements AccessDeniedHandler {
-+
-+    private final ObjectMapper objectMapper;
-+
-+    public RestAccessDeniedHandler(ObjectMapper objectMapper) {
-+        this.objectMapper = objectMapper;
-+    }
-+
-+    @Override
-+    public void handle(
-+            HttpServletRequest request,
-+            HttpServletResponse response,
-+            AccessDeniedException accessDeniedException) throws IOException {
-+        response.setStatus(HttpStatus.FORBIDDEN.value());
-+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-+
-+        String message = accessDeniedException != null && accessDeniedException.getMessage() != null
-+                ? accessDeniedException.getMessage()
-+                : "Access is denied";
-+
-+        ErrorResponse body = ErrorResponse.builder()
-+                .timestamp(Instant.now())
-+                .status(HttpStatus.FORBIDDEN.value())
-+                .error(ErrorMessageTranslator.translate(message))
-+                .path(request.getRequestURI())
-+                .build();
-+
-+        objectMapper.writeValue(response.getOutputStream(), body);
-+    }
-+}
---- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAuthenticationEntryPoint.java
-+++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAuthenticationEntryPoint.java
-+import com.jpsoftware.farmapp.shared.exception.ErrorMessageTranslator;
--                .error(message)
-+                .error(ErrorMessageTranslator.translate(message))
---- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/SecurityConfig.java
-+++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/SecurityConfig.java
-+    private final RestAccessDeniedHandler accessDeniedHandler;
--            RestAuthenticationEntryPoint authenticationEntryPoint) {
-+            RestAuthenticationEntryPoint authenticationEntryPoint,
-+            RestAccessDeniedHandler accessDeniedHandler) {
-+        this.accessDeniedHandler = accessDeniedHandler;
--                .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
-+                .exceptionHandling(exception -> exception
-+                        .authenticationEntryPoint(authenticationEntryPoint)
-+                        .accessDeniedHandler(accessDeniedHandler))
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/config/DefaultAdminInitializer.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/config/DefaultAdminInitializer.java
+-        admin.setName("Default Admin");
++        admin.setName("Administrador padrão");
+-        farmRepository.save(new FarmEntity(null, "Default Farm", admin.getId()));
++        farmRepository.save(new FarmEntity(null, "Fazenda padrão", admin.getId()));
 --- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
 +++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
--final class ErrorMessageTranslator {
-+public final class ErrorMessageTranslator {
-+    private static final Pattern EMPTY_FIELD_PATTERN =
-+            Pattern.compile("^([A-Za-z]+) must not be empty$");
-+            Map.entry("Unauthorized", "Não autorizado."),
-+            Map.entry("Access is denied", "Acesso negado."),
-+            Map.entry("Full authentication is required to access this resource", "É necessário autenticação para acessar este recurso."),
-+            Map.entry("Invalid or expired token", "Token inválido ou expirado."),
-+            Map.entry("currency must be BRL or USD", "A moeda deve ser BRL ou USD."),
--    static String translate(String message) {
-+    public static String translate(String message) {
-+        String emptyFieldTranslation = translateFieldMessage(trimmedMessage, EMPTY_FIELD_PATTERN, TranslationKind.REQUIRED);
-+        if (emptyFieldTranslation != null) {
-+            return emptyFieldTranslation;
++            Map.entry("Bad Request", "Requisição inválida."),
++            Map.entry("Forbidden", "Acesso negado."),
++            Map.entry("Not Found", "Recurso não encontrado."),
++            Map.entry("Access Denied", "Acesso negado."),
++            Map.entry("Animal entity must not be null", "Animal obrigatório."),
+--- /dev/null
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/LocalizedErrorAttributes.java
++package com.jpsoftware.farmapp.shared.exception;
++
++import java.util.Map;
++import org.springframework.boot.web.error.ErrorAttributeOptions;
++import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
++import org.springframework.stereotype.Component;
++import org.springframework.web.context.request.WebRequest;
++
++@Component
++public class LocalizedErrorAttributes extends DefaultErrorAttributes {
++
++    @Override
++    public Map<String, Object> getErrorAttributes(WebRequest webRequest, ErrorAttributeOptions options) {
++        Map<String, Object> attributes = super.getErrorAttributes(webRequest, options);
++        Object error = attributes.get("error");
++        if (error instanceof String errorMessage) {
++            attributes.put("error", ErrorMessageTranslator.translate(errorMessage));
 +        }
-+
---- a/frontend/web/farm_web/src/components/animal/AnimalForm.tsx
-+++ b/frontend/web/farm_web/src/components/animal/AnimalForm.tsx
--            placeholder="A-102"
-+            placeholder={t('animals.form.placeholders.tag')}
--              placeholder="farm-001"
-+              placeholder={t('animals.form.placeholders.farmId')}
---- a/frontend/web/farm_web/src/components/common/PaginationControls.tsx
-+++ b/frontend/web/farm_web/src/components/common/PaginationControls.tsx
--        {t('common.pagination.summary')
--          .replace('{from}', String(from))
--          .replace('{to}', String(to))
--          .replace('{total}', String(pagination.totalElements))}
-+        {t('common.pagination.summary', {
-+          from,
-+          to,
-+          total: pagination.totalElements,
-+        })}
--          {t('common.pagination.page')
--            .replace('{page}', String(currentPage + 1))
--            .replace('{totalPages}', String(totalPages))}
-+          {t('common.pagination.page', {
-+            page: currentPage + 1,
-+            totalPages,
-+          })}
---- a/frontend/web/farm_web/src/components/user/UserForm.tsx
-+++ b/frontend/web/farm_web/src/components/user/UserForm.tsx
--            placeholder="Maria Silva"
-+            placeholder={t('accessControl.form.placeholders.name')}
--            placeholder="maria.silva@example.com"
-+            placeholder={t('accessControl.form.placeholders.email')}
--              placeholder="farmapp@123"
-+              placeholder={t('accessControl.form.placeholders.password')}
--            placeholder="https://example.com/avatar.png"
-+            placeholder={t('accessControl.form.placeholders.avatarUrl')}
---- a/frontend/web/farm_web/src/hooks/useTranslation.ts
-+++ b/frontend/web/farm_web/src/hooks/useTranslation.ts
-+function interpolate(
-+  template: string,
-+  variables: Record<string, string | number> | undefined,
-+) {
-+  if (!variables) {
-+    return template
-+  }
-+
-+  return Object.entries(variables).reduce(
-+    (currentValue, [key, value]) => currentValue.replaceAll(`{${key}}`, String(value)),
-+    template,
-+  )
++        return attributes;
++    }
 +}
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java
++        assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Access Denied"));
++        assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Forbidden"));
++    @Test
++    void shouldTranslateMapperMessages() {
++        assertEquals("Animal obrigatório.", ErrorMessageTranslator.translate("Animal entity must not be null"));
++    }
 +
--  function t(key: string): string {
-+  function t(key: string, variables?: Record<string, string | number>): string {
--    return typeof value === 'string' ? value : key
-+    return typeof value === 'string' ? interpolate(value, variables) : key
+--- /dev/null
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/LocalizedErrorAttributesTest.java
++package com.jpsoftware.farmapp.shared.exception;
++
++import static org.junit.jupiter.api.Assertions.assertEquals;
++
++import jakarta.servlet.RequestDispatcher;
++import java.util.Map;
++import org.junit.jupiter.api.Test;
++import org.springframework.boot.web.error.ErrorAttributeOptions;
++import org.springframework.mock.web.MockHttpServletRequest;
++import org.springframework.web.context.request.ServletWebRequest;
++
++class LocalizedErrorAttributesTest {
++
++    @Test
++    void shouldTranslateErrorAttributeMessage() {
++        LocalizedErrorAttributes localizedErrorAttributes = new LocalizedErrorAttributes();
++        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/animals");
++        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
++        ServletWebRequest webRequest = new ServletWebRequest(request);
++
++        Map<String, Object> attributes = localizedErrorAttributes.getErrorAttributes(
++                webRequest,
++                ErrorAttributeOptions.defaults());
++
++        assertEquals("Acesso negado.", attributes.get("error"));
++    }
++}
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/shared/config/DefaultAdminInitializerTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/shared/config/DefaultAdminInitializerTest.java
+-        assertEquals("Default Admin", savedUser.getName());
++        assertEquals("Administrador padrão", savedUser.getName());
+-        assertEquals("Default Farm", farmCaptor.getValue().getName());
++        assertEquals("Fazenda padrão", farmCaptor.getValue().getName());
 --- a/frontend/web/farm_web/src/i18n/en.ts
 +++ b/frontend/web/farm_web/src/i18n/en.ts
-+        tag: 'A-102',
-+        farmId: 'farm-001',
-+      productionTitle: 'Production History',
-+      productionDescription: 'Production records sorted from most recent to oldest.',
-+      productionEmpty: 'No production records found for this animal.',
-+      feedingTitle: 'Feeding History',
-+      feedingDescription: 'Feeding records sorted from most recent to oldest.',
-+      feedingEmpty: 'No feeding records found for this animal.',
-+      placeholders: {
-+        name: 'Mary Smith',
-+        email: 'mary.smith@farmapp.com',
-+        password: 'farmapp@123',
-+        avatarUrl: 'https://example.com/avatar.png',
-+      },
++    languageOptions: {
++      'pt-BR': 'Portuguese',
++      en: 'English',
++    },
++    currencyOptions: {
++      BRL: 'Brazilian real (BRL)',
++      USD: 'US dollar (USD)',
++    },
 --- a/frontend/web/farm_web/src/i18n/pt-BR.ts
 +++ b/frontend/web/farm_web/src/i18n/pt-BR.ts
-+        tag: 'A-102',
-+        farmId: 'fazenda-001',
-+      productionTitle: 'Histórico de produção',
-+      productionDescription: 'Registros de produção ordenados do mais recente para o mais antigo.',
-+      productionEmpty: 'Nenhum registro de produção encontrado para este animal.',
-+      feedingTitle: 'Histórico de alimentação',
-+      feedingDescription: 'Registros de alimentação ordenados do mais recente para o mais antigo.',
-+      feedingEmpty: 'Nenhum registro de alimentação encontrado para este animal.',
-+      placeholders: {
-+        name: 'Maria Silva',
-+        email: 'maria.silva@fazenda.com',
-+        password: 'farmapp@123',
-+        avatarUrl: 'https://exemplo.com/avatar.png',
-+      },
---- a/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
-+++ b/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
--                <h2>Production History</h2>
--                <p>Production records sorted from most recent to oldest.</p>
-+                <h2>{t('animals.detailsSections.productionTitle')}</h2>
-+                <p>{t('animals.detailsSections.productionDescription')}</p>
--              <p className="animals-page__status">No production records found for this animal.</p>
-+              <p className="animals-page__status">{t('animals.detailsSections.productionEmpty')}</p>
--                      <th>Date</th>
--                      <th>Quantity</th>
-+                      <th>{t('production.table.date')}</th>
-+                      <th>{t('production.table.quantity')}</th>
--                <h2>Feeding History</h2>
--                <p>Feeding records sorted from most recent to oldest.</p>
-+                <h2>{t('animals.detailsSections.feedingTitle')}</h2>
-+                <p>{t('animals.detailsSections.feedingDescription')}</p>
--              <p className="animals-page__status">No feeding records found for this animal.</p>
-+              <p className="animals-page__status">{t('animals.detailsSections.feedingEmpty')}</p>
--                      <th>Date</th>
--                      <th>Quantity</th>
-+                      <th>{t('production.table.date')}</th>
-+                      <th>{t('production.table.quantity')}</th>
---- a/frontend/web/farm_web/src/pages/animals/AnimalsPage.tsx
-+++ b/frontend/web/farm_web/src/pages/animals/AnimalsPage.tsx
--                <p>{t('animals.sellDescription').replace('{tag}', sellingAnimal.tag)}</p>
-+                <p>{t('animals.sellDescription', { tag: sellingAnimal.tag })}</p>
---- a/frontend/web/farm_web/src/pages/users/UsersPage.tsx
-+++ b/frontend/web/farm_web/src/pages/users/UsersPage.tsx
--                <p>{t('accessControl.activateDescription').replace('{name}', activationTarget.name)}</p>
-+                <p>{t('accessControl.activateDescription', { name: activationTarget.name })}</p>
--                  placeholder="farmapp@123"
-+                  placeholder={t('accessControl.form.placeholders.password')}
---- a/workspace/features/add-language-translation.md
-+++ b/workspace/features/add-language-translation.md
--You are a senior software engineer working on a fullstack project (React + Spring Boot).
-+# Feature: Standardize Application Language
--====================================
--MANDATORY CONTEXT USAGE
--====================================
-+## Goal
-+Ensure all user-facing text is consistently translated to the system’s chosen language, eliminating mixed-language content and improving UX.
--- BEFORE making any decision, you MUST read AI_CONTEXT.md
--- Use it as the single source of truth for:
--  - UI/label conventions
--  - Error handling patterns
--  - Enum/role representations
--  - Existing localization (i18n) approach, if any
++    languageOptions: {
++      'pt-BR': 'Português',
++      en: 'Inglês',
++    },
++    currencyOptions: {
++      BRL: 'Real brasileiro (BRL)',
++      USD: 'Dólar americano (USD)',
++    },
+--- a/frontend/web/farm_web/src/layout/AppLayout.tsx
++++ b/frontend/web/farm_web/src/layout/AppLayout.tsx
+-              PT
++              {t('layout.languageOptions.pt-BR')}
+-              EN
++              {t('layout.languageOptions.en')}
+-            <option value="BRL">BRL</option>
+-            <option value="USD">USD</option>
++            <option value="BRL">{t('layout.currencyOptions.BRL')}</option>
++            <option value="USD">{t('layout.currencyOptions.USD')}</option>
+--- a/skills/fixer.md
++++ b/skills/fixer.md
 -
--- Do NOT assume current language strategy
--- Do NOT hardcode translations without verifying patterns
--- Validate everything against the codebase
--
--====================================
--TASK
--====================================
--
--Identify and translate all user-facing labels, messages, and responses that are still in English, aligning them with the system’s chosen language.
--
--This includes:
--- UI labels (buttons, fields, titles)
--- Validation/error messages
--- API response messages (when exposed to frontend)
-+## Scope
-+- Frontend UI (labels, buttons, titles, placeholders)
-+- Backend messages exposed to frontend (validation/errors)
--====================================
--GOAL
--====================================
-+## Requirements
-+- Translate all UI labels (buttons, fields, titles)
-+- Translate validation and error messages
-+- Ensure API response messages exposed to users are localized
-+- Map enum/role values to user-friendly labels in UI
-+- Centralize text handling to avoid duplication
--- Ensure consistent language across the entire application
--- Improve UX by eliminating mixed-language content
--- Centralize and standardize text handling
--- Keep implementation scalable for future localization
--
--====================================
--CONSTRAINTS
--====================================
--
--- Do NOT refactor unrelated business logic
-+## Constraints
--- Keep changes minimal and controlled
--- Respect existing architecture and patterns
--- Controllers must remain thin
--- Business logic must stay in services
--- Frontend must use service layer
--
--====================================
--DESIGN GUIDELINES
--====================================
--
--- Treat all user-facing text as part of presentation layer
--
--- Avoid hardcoding strings directly in:
--  - Components
--  - Controllers
--  - Services (unless internal)
--
--- Prefer centralized text management:
--  - Frontend: i18n/config files or constants
--  - Backend: message sources or consistent response mapping
--
--- Enum/roles:
--  - Keep internal values (e.g., MANAGER)
--  - Map to user-friendly labels in UI
--
--- Errors:
--  - Ensure messages returned to frontend are user-friendly
--  - Avoid exposing technical/internal messages
--
--====================================
--IMPLEMENTATION INSTRUCTIONS
--====================================
--
--1. Analyze:
--   - Read AI_CONTEXT.md
--   - Identify where labels/messages are defined (frontend and backend)
--   - Search for English strings in:
--     - UI components
--     - API responses
--     - Validation messages
--     - Enums displayed in UI
--
--2. Backend:
--
--- Review response messages:
--  - Ensure user-facing messages are localized
--  - Keep internal logs/messages unchanged if appropriate
++5. If error type is contract:
++- Prefer adjusting response format or message
++- Do NOT refactor large parts of system
+--- a/skills/tester.md
++++ b/skills/tester.md
++- Do NOT assume behavior not present in implementation
++- Do NOT invent new business rules
+--- /dev/null
++++ b/workspace/error_focus.txt
++     Content type = application/json
++             Body = {"timestamp":"2026-04-27T17:53:17.784440968Z","status":403,"error":"Access Denied","path":"/dashboard"}
++    Forwarded URL = null
++   Redirected URL = null
++          Cookies = []
++[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m6[m, [1;31mFailures: [0;1;31m2[m, Errors: 0, Skipped: 0, Time elapsed: 5.698 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
++[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints -- Time elapsed: 0.133 s <<< FAILURE!
++java.lang.AssertionError: JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>
++	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
++	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
++	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
++	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:112)
++--
++	at com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints(AuthIntegrationTest.java:172)
++	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
++	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
++	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
++
++[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToAccessDashboardAndAnalytics -- Time elapsed: 0.127 s <<< FAILURE!
++java.lang.AssertionError: JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>
++	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
++	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
++	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
++	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:112)
++--
++Hibernate: select count(*) from users ue1_0
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.486 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
++[[1;34mINFO[m] 
++[[1;34mINFO[m] Results:
++[[1;34mINFO[m] 
++[[1;31mERROR[m] [1;31mFailures: [m
++[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldAllowOnlyManagersToAccessDashboardAndAnalytics:120 JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>[m
++[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints:172 JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>[m
++[[1;34mINFO[m] 
++[[1;31mERROR[m] [1;31mTests run: 213, Failures: 2, Errors: 0, Skipped: 0[m
++[[1;34mINFO[m] 
++[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
++[[1;34mINFO[m] [1;31mBUILD FAILURE[m
++[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
++[[1;34mINFO[m] Total time:  16.365 s
++[[1;34mINFO[m] Finished at: 2026-04-27T14:53:21-03:00
++[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
++[[1;31mERROR[m] Failed to execute goal [32morg.apache.maven.plugins:maven-surefire-plugin:3.5.2:test[m [1m(default-test)[m on project [36mfarmapp[m: [1;31mThere are test failures.[m
++[[1;31mERROR[m] [1;31m[m
++[[1;31mERROR[m] [1;31mSee /home/juaneugenio/programmig/farm_app/backend/farmapp/target/surefire-reports for the individual test results.[m
++[[1;31mERROR[m] [1;31mSee dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.[m
++[[1;31mERROR[m] -> [1m[Help 1][m
++[[1;31mERROR[m] 
++[[1;31mERROR[m] To see the full stack trace of the errors, re-run Maven with the [1m-e[m switch.
++[[1;31mERROR[m] Re-run Maven using the [1m-X[m switch to enable full debug logging.
++[[1;31mERROR[m] 
++[[1;31mERROR[m] For more information about the errors and possible solutions, please read the following articles:
++[[1;31mERROR[m] [1m[Help 1][m http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+--- a/workspace/mvn.log
++++ b/workspace/mvn.log
+-23:32:35.744 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
+-23:32:36.739 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:36.739 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:36.744 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 4 ms
+-23:32:36.992 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:36.992 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:36.992 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:37.223 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:37.223 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:37.224 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.735 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
++14:53:07.478 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
++14:53:08.334 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++14:53:08.334 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++14:53:08.339 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 3 ms
++14:53:08.535 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++14:53:08.536 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++14:53:08.536 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++14:53:08.716 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++14:53:08.716 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++14:53:08.717 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.492 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m5[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.006 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.009 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m27[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.094 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m27[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.084 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
+-23:32:39.527 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.214 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
++14:53:10.045 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.234 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.036 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.034 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.825 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.808 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
+-23:32:40.570 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.570 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.570 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.596 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.596 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.596 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.613 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.613 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.613 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.629 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.629 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.629 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.134 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
++14:53:11.057 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++14:53:11.057 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++14:53:11.058 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++14:53:11.082 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++14:53:11.082 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++14:53:11.082 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++14:53:11.096 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++14:53:11.096 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++14:53:11.097 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++14:53:11.112 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++14:53:11.112 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++14:53:11.112 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.119 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
+-23:32:40.644 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.644 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.644 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.663 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.663 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.664 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-23:32:40.674 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.674 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.675 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-23:32:40.685 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.685 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.685 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.049 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
++14:53:11.127 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++14:53:11.127 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++14:53:11.127 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++14:53:11.145 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++14:53:11.145 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++14:53:11.145 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++14:53:11.154 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++14:53:11.154 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++14:53:11.154 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++14:53:11.163 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++14:53:11.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++14:53:11.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.048 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
+-23:32:40.705 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.705 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.705 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.740 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.740 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.740 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.763 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.763 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.763 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.781 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.781 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.781 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.796 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.797 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.797 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.808 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.808 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.808 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.822 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.822 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.823 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.840 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.840 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.840 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-23:32:40.858 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-23:32:40.858 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-23:32:40.858 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms

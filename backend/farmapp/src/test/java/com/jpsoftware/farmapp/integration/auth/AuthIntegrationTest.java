@@ -176,4 +176,16 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                         .header("Authorization", bearerToken(manager)))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void shouldLocalizeDefaultErrorAttributesForMissingProtectedRoutes() throws Exception {
+        UserEntity worker = createAuthenticatedUser("WORKER");
+
+        mockMvc.perform(get("/missing-route")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Recurso não encontrado."))
+                .andExpect(jsonPath("$.path").value("/missing-route"));
+    }
 }

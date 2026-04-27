@@ -9,6 +9,14 @@ const enTranslations = {
     languageLabel: 'Language',
     currencyLabel: 'Display currency',
     logout: 'Logout',
+    languageOptions: {
+      'pt-BR': 'Portuguese',
+      en: 'English',
+    },
+    currencyOptions: {
+      BRL: 'Brazilian real (BRL)',
+      USD: 'US dollar (USD)',
+    },
     navigation: {
       dashboard: 'Dashboard',
       animals: 'Animals',
@@ -582,6 +590,14 @@ const ptBRTranslations = {
     languageLabel: 'Idioma',
     currencyLabel: 'Moeda exibida',
     logout: 'Sair',
+    languageOptions: {
+      'pt-BR': 'Português',
+      en: 'Inglês',
+    },
+    currencyOptions: {
+      BRL: 'Real brasileiro (BRL)',
+      USD: 'Dólar americano (USD)',
+    },
     navigation: {
       dashboard: 'Dashboard',
       animals: 'Animais',
