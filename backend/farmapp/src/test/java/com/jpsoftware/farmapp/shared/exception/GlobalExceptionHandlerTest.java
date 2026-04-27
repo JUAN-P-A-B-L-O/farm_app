@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 class GlobalExceptionHandlerTest {
 
@@ -72,6 +73,16 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.path").value("/test-exceptions/not-found"));
     }
 
+    @Test
+    void shouldReturnLocalized404WhenStaticResourceDoesNotExist() throws Exception {
+        mockMvc.perform(get("/test-exceptions/missing-static-resource"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Recurso não encontrado."))
+                .andExpect(jsonPath("$.path").value("/test-exceptions/missing-static-resource"));
+    }
+
     @RestController
     @RequestMapping("/test-exceptions")
     private static class TestExceptionController {
@@ -89,6 +100,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/not-found")
         ResponseEntity<Void> notFound() {
             throw new ResourceNotFoundException("Resource not found");
+        }
+
+        @GetMapping("/missing-static-resource")
+        ResponseEntity<Void> missingStaticResource() throws NoResourceFoundException {
+            throw new NoResourceFoundException(null, "/test-exceptions/missing-static-resource");
         }
     }
 

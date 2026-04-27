@@ -18,7 +18,7 @@ const ptBR = {
       USD: 'Dólar americano (USD)',
     },
     navigation: {
-      dashboard: 'Dashboard',
+      dashboard: 'Painel',
       animals: 'Animais',
       production: 'Produção',
       milkPrices: 'Preços do leite',
@@ -48,7 +48,7 @@ const ptBR = {
   },
   auth: {
     eyebrow: 'Autenticação',
-    title: 'Login',
+    title: 'Entrar',
     description: 'Informe suas credenciais para acessar a aplicação.',
     submit: 'Entrar',
     submitting: 'Entrando...',
@@ -63,7 +63,7 @@ const ptBR = {
   },
   dashboard: {
     eyebrow: 'Visão da fazenda',
-    title: 'Dashboard',
+    title: 'Painel',
     description: 'Monitore as métricas mais importantes da fazenda em uma única visão resumida.',
     includeAcquisitionCost: 'Incluir custo de aquisição no lucro',
     loading: 'Carregando dashboard...',
@@ -396,7 +396,7 @@ const ptBR = {
     edit: 'Editar',
     delete: 'Excluir',
     deleting: 'Excluindo...',
-    confirmDelete: 'Tem certeza de que deseja excluir este tipo de alimento?',
+    confirmDelete: 'Tem certeza de que deseja excluir este tipo de ração?',
     table: {
       name: 'Nome',
       costPerKg: 'Custo por kg',

@@ -98,6 +98,8 @@ test('interpolates pagination and dialog templates through the translation hook'
 test('returns translated placeholders and details-section labels for both supported languages', () => {
   let translation = useTranslation()
 
+  assert.equal(translation.t('layout.navigation.dashboard'), 'Painel')
+  assert.equal(translation.t('auth.title'), 'Entrar')
   assert.equal(translation.t('animals.form.placeholders.tag'), 'A-102')
   assert.equal(translation.t('animals.form.placeholders.farmId'), 'fazenda-001')
   assert.equal(translation.t('accessControl.form.placeholders.password'), 'farmapp@123')
