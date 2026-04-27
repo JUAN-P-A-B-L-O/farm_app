@@ -150,6 +150,9 @@ const en = {
       status: 'Status',
       farm: 'Farm',
       farmId: 'Farm ID',
+      placeholders: {
+        breed: 'Holstein',
+      },
     },
     detailsSections: {
       infoTitle: 'Animal Information',
@@ -386,6 +389,9 @@ const en = {
     form: {
       name: 'Name',
       costPerKg: 'Cost per kg',
+      placeholders: {
+        name: 'Corn silage',
+      },
     },
     filters: {
       searchLabel: 'Search',
@@ -471,6 +477,10 @@ const en = {
       loadingFarms: 'Loading farms...',
       noFarms: 'Create a farm before registering users.',
       selectRole: 'Select a role',
+    },
+    roles: {
+      MANAGER: 'Manager',
+      WORKER: 'Worker',
     },
     errors: {
       validationSave: 'Validation error while saving user.',

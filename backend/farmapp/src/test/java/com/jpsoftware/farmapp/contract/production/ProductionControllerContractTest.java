@@ -158,7 +158,7 @@ class ProductionControllerContractTest {
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("must be greater than 0"))
+                .andExpect(jsonPath("$.error").value("O valor deve ser maior que zero."))
                 .andExpect(jsonPath("$.path").value("/productions"));
     }
 
@@ -180,7 +180,7 @@ class ProductionControllerContractTest {
                         .content(requestBody))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Animal not found"))
+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
                 .andExpect(jsonPath("$.path").value("/productions"));
     }
 
@@ -225,7 +225,7 @@ class ProductionControllerContractTest {
                         .content(requestBody))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Production not found"))
+                .andExpect(jsonPath("$.error").value("Produção não encontrada."))
                 .andExpect(jsonPath("$.path").value("/productions/missing-id"));
     }
 
@@ -236,7 +236,7 @@ class ProductionControllerContractTest {
         mockMvc.perform(get("/productions/summary/by-animal").param("animalId", "missing-animal"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Animal not found"))
+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
                 .andExpect(jsonPath("$.path").value("/productions/summary/by-animal"));
     }
 
@@ -247,7 +247,7 @@ class ProductionControllerContractTest {
         mockMvc.perform(get("/productions/summary/profit/by-animal").param("animalId", "missing-animal"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Animal not found"))
+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
                 .andExpect(jsonPath("$.path").value("/productions/summary/profit/by-animal"));
     }
 
@@ -461,7 +461,7 @@ class ProductionControllerContractTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.error").value("Inactive production cannot be updated"))
+                .andExpect(jsonPath("$.error").value("Não é possível atualizar uma produção inativa."))
                 .andExpect(jsonPath("$.path").value("/productions/production-1"));
     }
 

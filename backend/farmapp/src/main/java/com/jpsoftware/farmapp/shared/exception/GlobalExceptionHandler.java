@@ -75,7 +75,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(
             MissingServletRequestParameterException exception,
             HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "O parâmetro '" + exception.getParameterName() + "' é obrigatório.",
+                request.getRequestURI());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -137,7 +140,7 @@ public class GlobalExceptionHandler {
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .status(status.value())
-                .error(error)
+                .error(ErrorMessageTranslator.translate(error))
                 .path(path)
                 .build();
 

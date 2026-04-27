@@ -71,7 +71,7 @@ function AnimalForm({
             type="text"
             value={formData.breed}
             onChange={handleChange}
-            placeholder="Holstein"
+            placeholder={t('animals.form.placeholders.breed')}
             required
           />
         </label>

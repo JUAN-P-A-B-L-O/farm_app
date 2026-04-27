@@ -243,7 +243,7 @@ class UserControllerContractTest {
         mockMvc.perform(get("/users/11111111-1111-1111-1111-111111111111"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("User not found"))
+                .andExpect(jsonPath("$.error").value("Usuário não encontrado."))
                 .andExpect(jsonPath("$.path").value("/users/11111111-1111-1111-1111-111111111111"));
     }
 

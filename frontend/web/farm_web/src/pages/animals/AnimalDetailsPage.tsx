@@ -23,7 +23,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
     const apiMessage = error.response?.data?.error
 
     if (status === 404) {
-      return apiMessage ?? 'Animal not found.'
+      return apiMessage ?? fallbackMessage
     }
 
     if (apiMessage) {
@@ -72,14 +72,14 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
         setProductions(sortByDateDescending(productionsData))
         setFeedings(sortByDateDescending(feedingsData))
       } catch (error) {
-        setErrorMessage(getErrorMessage(error, 'Unable to load animal details.'))
+        setErrorMessage(getErrorMessage(error, t('animals.errors.loadDetails')))
       } finally {
         setIsLoading(false)
       }
     }
 
     void loadAnimalDetails()
-  }, [animalId, selectedFarmId])
+  }, [animalId, selectedFarmId, t])
 
   return (
     <main className="animals-page">

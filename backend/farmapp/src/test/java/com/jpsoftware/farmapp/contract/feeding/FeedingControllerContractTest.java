@@ -182,7 +182,7 @@ class FeedingControllerContractTest {
         mockMvc.perform(get("/feedings/missing-id"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Feeding not found"))
+                .andExpect(jsonPath("$.error").value("Alimentação não encontrada."))
                 .andExpect(jsonPath("$.path").value("/feedings/missing-id"));
     }
 
@@ -203,7 +203,7 @@ class FeedingControllerContractTest {
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("userId must not be blank"))
+                .andExpect(jsonPath("$.error").value("Selecione um usuário."))
                 .andExpect(jsonPath("$.path").value("/feedings"));
     }
 
@@ -416,7 +416,7 @@ class FeedingControllerContractTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.error").value("Inactive feeding cannot be updated"))
+                .andExpect(jsonPath("$.error").value("Não é possível atualizar uma alimentação inativa."))
                 .andExpect(jsonPath("$.path").value("/feedings/feeding-1"));
     }
 

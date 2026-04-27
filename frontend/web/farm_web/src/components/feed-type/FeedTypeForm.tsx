@@ -65,7 +65,7 @@ function FeedTypeForm({
             type="text"
             value={formData.name}
             onChange={handleChange}
-            placeholder="Corn silage"
+            placeholder={t('feedType.form.placeholders.name')}
             required
           />
         </label>

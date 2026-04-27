@@ -155,7 +155,7 @@ function UserForm({
             <option value="">{t('accessControl.form.selectRole')}</option>
             {roleOptions.map((role) => (
               <option key={role} value={role}>
-                {role}
+                {t(`accessControl.roles.${role}`)}
               </option>
             ))}
           </select>

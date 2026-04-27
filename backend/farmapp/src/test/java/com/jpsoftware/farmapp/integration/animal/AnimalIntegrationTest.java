@@ -76,6 +76,6 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(AnimalFixture.createRequestJson(farm.getId())))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("Animal with this tag already exists"));
+                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag."));
     }
 }

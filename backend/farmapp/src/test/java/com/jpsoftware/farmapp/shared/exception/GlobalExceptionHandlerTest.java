@@ -42,7 +42,7 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.error").value("Animal with this tag already exists"))
+                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag."))
                 .andExpect(jsonPath("$.path").value("/test-exceptions/conflict"));
     }
 
@@ -58,7 +58,7 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("name must not be blank"))
+                .andExpect(jsonPath("$.error").value("O nome é obrigatório."))
                 .andExpect(jsonPath("$.path").value("/test-exceptions/validation"));
     }
 
@@ -68,7 +68,7 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Resource not found"))
+                .andExpect(jsonPath("$.error").value("Recurso não encontrado."))
                 .andExpect(jsonPath("$.path").value("/test-exceptions/not-found"));
     }
 

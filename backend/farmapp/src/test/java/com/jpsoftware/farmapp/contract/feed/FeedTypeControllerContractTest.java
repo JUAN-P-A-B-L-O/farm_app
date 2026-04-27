@@ -125,7 +125,7 @@ class FeedTypeControllerContractTest {
         mockMvc.perform(get("/feed-types/missing-id"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Feed type not found"))
+                .andExpect(jsonPath("$.error").value("Tipo de ração não encontrado."))
                 .andExpect(jsonPath("$.path").value("/feed-types/missing-id"));
     }
 

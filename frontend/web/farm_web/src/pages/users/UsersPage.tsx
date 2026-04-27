@@ -400,8 +400,8 @@ function UsersPage() {
                 onChange: (value) => setFilters((current) => ({ ...current, role: value })),
                 options: [
                   { value: '', label: t('accessControl.filters.allRoles') },
-                  { value: 'MANAGER', label: 'MANAGER' },
-                  { value: 'WORKER', label: 'WORKER' },
+                  { value: 'MANAGER', label: t('accessControl.roles.MANAGER') },
+                  { value: 'WORKER', label: t('accessControl.roles.WORKER') },
                 ],
               },
             ]}
@@ -484,7 +484,7 @@ function UsersPage() {
                         </div>
                       </td>
                       <td>{user.email}</td>
-                      <td>{user.role}</td>
+                      <td>{t(`accessControl.roles.${user.role}`)}</td>
                       <td>
                         <span className={`animals-table__status animals-table__status--${user.active ? 'active' : 'inactive'}`}>
                           {user.active ? t('accessControl.status.active') : t('accessControl.status.inactive')}

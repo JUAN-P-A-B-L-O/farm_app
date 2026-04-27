@@ -57,6 +57,10 @@
   React + TypeScript + Vite
   Keep separation: pages, components, services, types, layout, context, hooks
   Use typed service layer for HTTP; do not hardcode API contracts in components
+  Default visible language is pt-BR; avoid mixed-language UI
+  Frontend user-facing labels live in frontend/web/farm_web/src/i18n and should be consumed via LanguageContext/useTranslation
+  Enum values such as MANAGER, WORKER, ACTIVE, INACTIVE, SOLD, PURCHASED, and BORN remain internal/API values and must be mapped to localized labels in the UI
+  Backend error responses returned to the frontend are localized centrally in shared.exception so services can keep internal canonical messages when needed
   JWT attachment is centralized in Axios service layer
   On first authenticated 401, clear auth state and force logout; /auth/login failures do not trigger auto-logout
   Farm selection is centralized in FarmContext

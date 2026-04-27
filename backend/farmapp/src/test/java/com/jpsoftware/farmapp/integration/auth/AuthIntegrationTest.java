@@ -57,7 +57,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("Invalid email or password"));
+                .andExpect(jsonPath("$.error").value("E-mail ou senha inválidos."));
     }
 
     @Test
@@ -79,7 +79,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("Invalid email or password"));
+                .andExpect(jsonPath("$.error").value("E-mail ou senha inválidos."));
     }
 
     @Test

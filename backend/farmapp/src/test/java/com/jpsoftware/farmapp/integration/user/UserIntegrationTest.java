@@ -133,7 +133,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
                                 }
                                 """.formatted(farm.getId())))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("User with this email already exists"));
+                .andExpect(jsonPath("$.error").value("Já existe um usuário com este e-mail."));
     }
 
     @Test
@@ -154,7 +154,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
                                 }
                                 """.formatted(farm.getId())))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("password must not be blank when active is true"));
+                .andExpect(jsonPath("$.error").value("A senha é obrigatória para usuários ativos."));
     }
 
     @Test
@@ -178,7 +178,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
                                 }
                                 """.formatted(otherFarm.getId())))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("farmIds must reference farms owned by the authenticated manager"));
+                .andExpect(jsonPath("$.error").value("Selecione apenas fazendas pertencentes ao gerente autenticado."));
     }
 
     @Test
@@ -289,7 +289,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(delete("/users/" + owner.getId())
                         .header("Authorization", bearerToken(manager)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("Cannot delete user who owns farms"));
+                .andExpect(jsonPath("$.error").value("Não é possível excluir um usuário que possui fazendas."));
     }
 
     @Test
