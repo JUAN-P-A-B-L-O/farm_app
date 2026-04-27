@@ -1,0 +1,53 @@
+     Content type = application/json
+             Body = {"timestamp":"2026-04-27T17:53:17.784440968Z","status":403,"error":"Access Denied","path":"/dashboard"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m6[m, [1;31mFailures: [0;1;31m2[m, Errors: 0, Skipped: 0, Time elapsed: 5.698 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints -- Time elapsed: 0.133 s <<< FAILURE!
+java.lang.AssertionError: JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:112)
+--
+	at com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints(AuthIntegrationTest.java:172)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToAccessDashboardAndAnalytics -- Time elapsed: 0.127 s <<< FAILURE!
+java.lang.AssertionError: JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:112)
+--
+Hibernate: select count(*) from users ue1_0
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.486 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] Results:
+[[1;34mINFO[m] 
+[[1;31mERROR[m] [1;31mFailures: [m
+[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldAllowOnlyManagersToAccessDashboardAndAnalytics:120 JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>[m
+[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints:172 JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>[m
+[[1;34mINFO[m] 
+[[1;31mERROR[m] [1;31mTests run: 213, Failures: 2, Errors: 0, Skipped: 0[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] [1;31mBUILD FAILURE[m
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] Total time:  16.365 s
+[[1;34mINFO[m] Finished at: 2026-04-27T14:53:21-03:00
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;31mERROR[m] Failed to execute goal [32morg.apache.maven.plugins:maven-surefire-plugin:3.5.2:test[m [1m(default-test)[m on project [36mfarmapp[m: [1;31mThere are test failures.[m
+[[1;31mERROR[m] [1;31m[m
+[[1;31mERROR[m] [1;31mSee /home/juaneugenio/programmig/farm_app/backend/farmapp/target/surefire-reports for the individual test results.[m
+[[1;31mERROR[m] [1;31mSee dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.[m
+[[1;31mERROR[m] -> [1m[Help 1][m
+[[1;31mERROR[m] 
+[[1;31mERROR[m] To see the full stack trace of the errors, re-run Maven with the [1m-e[m switch.
+[[1;31mERROR[m] Re-run Maven using the [1m-X[m switch to enable full debug logging.
+[[1;31mERROR[m] 
+[[1;31mERROR[m] For more information about the errors and possible solutions, please read the following articles:
+[[1;31mERROR[m] [1m[Help 1][m http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

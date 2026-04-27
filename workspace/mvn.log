@@ -27,313 +27,313 @@
 [[1;34mINFO[m]  T E S T S
 [[1;34mINFO[m] -------------------------------------------------------
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
-23:32:35.744 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
-23:32:36.739 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:36.739 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:36.744 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 4 ms
-23:32:36.992 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:36.992 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:36.992 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:37.223 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:37.223 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:37.224 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.735 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
+14:53:07.478 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
+14:53:08.334 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:08.334 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:08.339 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 3 ms
+14:53:08.535 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:08.536 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:08.536 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:08.716 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:08.716 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:08.717 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.492 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m5[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
 Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
 WARNING: A Java agent has been loaded dynamically (/home/juaneugenio/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar)
 WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
 WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
 WARNING: Dynamic loading of agents will be disallowed by default in a future release
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.006 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.009 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m27[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.094 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m27[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.084 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
-23:32:39.527 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.214 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
+14:53:10.045 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.234 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.036 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.034 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.825 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.808 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
-23:32:40.570 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.570 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.570 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.596 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.596 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.596 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.613 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.613 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.613 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.629 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.629 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.629 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.134 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
+14:53:11.057 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.057 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.058 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.082 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.082 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.082 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.096 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.096 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.097 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+14:53:11.112 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.112 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.112 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.119 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
-23:32:40.644 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.644 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.644 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.663 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.663 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.664 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
-23:32:40.674 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.674 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.675 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
-23:32:40.685 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.685 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.685 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.049 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
+14:53:11.127 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.127 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.127 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.145 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.145 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.145 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.154 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.154 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.154 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.163 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.048 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
-23:32:40.705 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.705 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.705 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.740 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.740 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.740 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.763 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.763 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.763 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.781 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.781 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.781 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.796 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.797 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.797 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.808 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.808 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.808 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.822 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.822 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.823 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.840 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.840 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.840 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.858 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.858 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.858 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.870 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.870 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.870 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.880 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.881 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.881 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.893 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.893 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.893 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.912 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.912 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.912 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.927 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.927 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.928 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
-23:32:40.936 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.936 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.936 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.944 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.945 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.945 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.954 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.954 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.954 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.961 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.961 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.961 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.971 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.971 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.971 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.287 s -- in com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
+14:53:11.182 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.182 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.183 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.210 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.210 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.210 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.229 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.229 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.229 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.245 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.245 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.245 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.258 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.258 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.258 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.269 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.269 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.269 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.282 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.282 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.282 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.304 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.304 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.304 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.318 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.318 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.318 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.328 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.328 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.329 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+14:53:11.342 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.342 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.342 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.351 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.351 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.352 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.370 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.370 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.370 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.381 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.381 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.381 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.389 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.389 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.389 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.398 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.398 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.398 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.405 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.405 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.406 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+14:53:11.412 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.412 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.412 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.420 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.420 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.420 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.256 s -- in com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
-23:32:40.984 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.985 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.985 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:40.998 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:40.998 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:40.998 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.010 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.010 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.010 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.026 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.026 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.027 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
-23:32:41.040 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.040 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.040 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.056 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.056 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.056 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.067 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.067 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.067 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.076 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.076 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.076 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.085 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.085 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.085 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.094 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.094 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.094 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.104 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.104 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.104 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.112 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.113 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.113 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.120 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.120 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.120 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.132 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.132 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.132 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.143 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.144 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.144 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.154 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.155 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.155 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.163 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m17[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.193 s -- in com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
+14:53:11.434 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.434 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.434 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.442 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.443 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.443 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.452 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.452 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.452 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.461 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.461 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.461 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.471 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.471 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.471 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.478 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.478 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.479 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+14:53:11.488 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.488 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.488 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.496 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.496 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.496 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.503 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.503 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.503 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.511 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.511 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.511 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.520 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.520 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.520 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.528 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.528 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.528 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.534 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.534 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.534 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.546 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.546 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.546 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.557 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.557 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.557 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.568 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.568 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.568 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.576 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.576 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.576 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m17[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.157 s -- in com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
-23:32:41.196 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.196 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.197 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
-23:32:41.204 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.204 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.204 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.036 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
+14:53:11.614 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.614 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.614 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.632 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.632 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.632 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.051 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
-23:32:41.211 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.211 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.211 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.218 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.218 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.218 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.226 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.226 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.227 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.241 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.241 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.241 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.249 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.249 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.249 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.257 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.257 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.257 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.267 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.267 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.267 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.067 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
+14:53:11.639 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.639 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.639 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.646 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.646 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.646 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.655 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.655 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.655 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.670 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.670 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.671 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+14:53:11.677 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.677 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.677 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.684 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.684 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.684 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.694 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.695 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.695 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.066 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
-23:32:41.301 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.301 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.301 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.730 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.730 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.730 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
 [[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.034 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
-23:32:41.312 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.312 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.312 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.318 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.318 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.319 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
+14:53:11.741 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.741 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.741 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.747 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.748 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.748 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
-23:32:41.351 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.351 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.351 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.359 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.359 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.359 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.375 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.375 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.376 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
-23:32:41.382 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.383 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.383 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.391 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.391 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.391 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.397 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.398 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.398 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.080 s -- in com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
+14:53:11.780 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.780 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.780 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.788 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.788 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.788 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.796 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.797 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.797 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.804 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.804 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.804 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.813 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.813 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.813 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.821 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.821 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.821 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.074 s -- in com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
-23:32:41.409 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.409 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.409 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.420 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.420 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.420 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.427 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.427 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.427 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.433 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.433 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.433 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.445 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.445 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.445 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.453 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.453 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.453 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.462 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.462 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.462 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.065 s -- in com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
+14:53:11.833 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.833 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.833 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.842 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.842 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.842 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.849 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.849 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.849 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.856 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.856 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.857 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+14:53:11.872 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.872 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.872 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.880 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.880 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.881 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+14:53:11.896 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.896 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.897 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.079 s -- in com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
-23:32:41.479 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.479 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.479 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.490 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.490 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.490 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.506 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.506 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.507 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.515 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.515 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.515 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.522 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.522 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.522 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.531 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.531 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.532 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
-23:32:41.539 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.540 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.540 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.551 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.552 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.552 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.564 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.565 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.565 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.581 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.581 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.581 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.588 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.589 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.589 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-23:32:41.598 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
-23:32:41.598 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
-23:32:41.598 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m12[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.136 s -- in com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
+14:53:11.924 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.924 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.924 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.938 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.938 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.938 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.953 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.953 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.953 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.961 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.961 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.961 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.968 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.968 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.968 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.977 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.977 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.977 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.984 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.984 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.984 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:11.991 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:11.991 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:11.991 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:12.000 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:12.000 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:12.000 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:12.011 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:12.011 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:12.011 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:12.017 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:12.017 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:12.017 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+14:53:12.025 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+14:53:12.025 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+14:53:12.025 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m12[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.126 s -- in com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.080 s -- in com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.055 s -- in com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
-23:32:41.714 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest]: AuthIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-23:32:41.811 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest
+14:53:12.112 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest]: AuthIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:53:12.203 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest
 
   .   ____          _            __ _ _
  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
@@ -344,19 +344,19 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
 
  :: Spring Boot ::                (v3.4.4)
 
-2026-04-26T23:32:42.215-03:00  INFO 83447 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Starting AuthIntegrationTest using Java 21.0.7 with PID 83447 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
-2026-04-26T23:32:42.216-03:00  INFO 83447 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : No active profile set, falling back to 1 default profile: "default"
-2026-04-26T23:32:42.843-03:00  INFO 83447 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-04-26T23:32:42.901-03:00  INFO 83447 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 48 ms. Found 8 JPA repository interfaces.
-2026-04-26T23:32:43.378-03:00  INFO 83447 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
-2026-04-26T23:32:43.429-03:00  INFO 83447 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.11.Final
-2026-04-26T23:32:43.456-03:00  INFO 83447 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
-2026-04-26T23:32:43.602-03:00  INFO 83447 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2026-04-26T23:32:43.628-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2026-04-26T23:32:43.898-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:farmdb user=SA
-2026-04-26T23:32:43.901-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
-2026-04-26T23:32:43.932-03:00  WARN 83447 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
-2026-04-26T23:32:43.958-03:00  INFO 83447 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+2026-04-27T14:53:12.499-03:00  INFO 19241 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Starting AuthIntegrationTest using Java 21.0.7 with PID 19241 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
+2026-04-27T14:53:12.500-03:00  INFO 19241 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : No active profile set, falling back to 1 default profile: "default"
+2026-04-27T14:53:13.098-03:00  INFO 19241 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-27T14:53:13.154-03:00  INFO 19241 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 48 ms. Found 8 JPA repository interfaces.
+2026-04-27T14:53:13.563-03:00  INFO 19241 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-27T14:53:13.610-03:00  INFO 19241 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.11.Final
+2026-04-27T14:53:13.639-03:00  INFO 19241 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-27T14:53:13.801-03:00  INFO 19241 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-27T14:53:13.827-03:00  INFO 19241 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-27T14:53:14.075-03:00  INFO 19241 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:farmdb user=SA
+2026-04-27T14:53:14.077-03:00  INFO 19241 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-27T14:53:14.103-03:00  WARN 19241 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-04-27T14:53:14.124-03:00  INFO 19241 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
 	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
 	Database driver: undefined/unknown
 	Database version: 2.3.232
@@ -364,7 +364,7 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
 	Isolation level: undefined/unknown
 	Minimum pool size: undefined/unknown
 	Maximum pool size: undefined/unknown
-2026-04-26T23:32:44.684-03:00  INFO 83447 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-27T14:53:14.842-03:00  INFO 19241 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
 Hibernate: create table animals (id varchar(255) not null, acquisition_cost float(53), birth_date date not null, breed varchar(255) not null, farm_id varchar(255) not null, origin varchar(255) not null, sale_date date, sale_price float(53), status varchar(255) not null, tag varchar(255) not null, primary key (id))
 Hibernate: create table farms (id varchar(255) not null, name varchar(255) not null, owner_id uuid not null, primary key (id))
 Hibernate: create table feed_types (id varchar(255) not null, active boolean not null, cost_per_kg float(53) not null, farm_id varchar(255), name varchar(255) not null, primary key (id))
@@ -379,15 +379,15 @@ Hibernate: alter table if exists user_farm_assignments drop constraint if exists
 Hibernate: alter table if exists user_farm_assignments add constraint UK9k021clhmghjjepfpvejsguce unique (user_id, farm_id)
 Hibernate: alter table if exists users drop constraint if exists UK6dotkott2kjsp8vw4d0m25fb7
 Hibernate: alter table if exists users add constraint UK6dotkott2kjsp8vw4d0m25fb7 unique (email)
-2026-04-26T23:32:44.757-03:00  INFO 83447 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2026-04-26T23:32:44.977-03:00  INFO 83447 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
-2026-04-26T23:32:46.118-03:00  WARN 83447 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
-2026-04-26T23:32:46.642-03:00  INFO 83447 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
-2026-04-26T23:32:46.642-03:00  INFO 83447 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
-2026-04-26T23:32:46.643-03:00  INFO 83447 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
-2026-04-26T23:32:46.664-03:00  INFO 83447 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Started AuthIntegrationTest in 4.761 seconds (process running for 12.098)
+2026-04-27T14:53:14.912-03:00  INFO 19241 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-27T14:53:15.101-03:00  INFO 19241 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-27T14:53:16.150-03:00  WARN 19241 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-27T14:53:16.679-03:00  INFO 19241 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-04-27T14:53:16.679-03:00  INFO 19241 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-04-27T14:53:16.679-03:00  INFO 19241 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-04-27T14:53:16.699-03:00  INFO 19241 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Started AuthIntegrationTest in 4.415 seconds (process running for 10.283)
 Hibernate: select count(*) from users ue1_0
-2026-04-26T23:32:46.801-03:00  INFO 83447 --- [           main] c.j.f.s.config.DefaultAdminInitializer   : Default admin user created
+2026-04-27T14:53:16.850-03:00  INFO 19241 --- [           main] c.j.f.s.config.DefaultAdminInitializer   : Default admin user created
 Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
 Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
 Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
@@ -435,8 +435,42 @@ Hibernate: delete from users where id=?
 Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
 Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
 Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+
+MockHttpServletRequest:
+      HTTP Method = DELETE
+      Request URI = /animals/missing
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI4MjA3NjU5Zi00NWUxLTQ5MTAtYWZhYy1hZjU2NjIzNDFiOGEiLCJyb2xlIjoiV09SS0VSIiwiaWF0IjoxNzc3MzEyMzk3LCJleHAiOjE3NzczOTg3OTd9.5dGcTlmnXJQGSbdSE7bjR4D8S7wvLVVvNdzt9aJJpDbC4MqOhkxbI9ym0nWqWdCDquo6MXgI1GGdRqTyd4aVVA"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = null
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 403
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"timestamp":"2026-04-27T17:53:17.578928545Z","status":403,"error":"Access Denied","path":"/animals/missing"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
 Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
 Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
 Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
@@ -459,21 +493,70 @@ Hibernate: delete from users where id=?
 Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
 Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
 Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
-Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
-Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
-Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.084 s -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+
+MockHttpServletRequest:
+      HTTP Method = GET
+      Request URI = /dashboard
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYzg5MGY3MS0xMjdhLTRiYTEtODk2MC00ZDA3YTE1MjkwYmUiLCJyb2xlIjoiV09SS0VSIiwiaWF0IjoxNzc3MzEyMzk3LCJleHAiOjE3NzczOTg3OTd9.EiW2OsIN_EoeB6r7bG3jqi7pMG4IamSW4-sV9kLn-186EuI5g5FpHcnUC7Vt6PQpO77rnPvnmKcW5CKY45WX8w"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = null
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 403
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"timestamp":"2026-04-27T17:53:17.784440968Z","status":403,"error":"Access Denied","path":"/dashboard"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m6[m, [1;31mFailures: [0;1;31m2[m, Errors: 0, Skipped: 0, Time elapsed: 5.698 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints -- Time elapsed: 0.133 s <<< FAILURE!
+java.lang.AssertionError: JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:112)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints(AuthIntegrationTest.java:172)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToAccessDashboardAndAnalytics -- Time elapsed: 0.127 s <<< FAILURE!
+java.lang.AssertionError: JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:112)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldAllowOnlyManagersToAccessDashboardAndAnalytics(AuthIntegrationTest.java:120)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
-2026-04-26T23:32:47.774-03:00  INFO 83447 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest]: ProductionIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-04-26T23:32:47.782-03:00  INFO 83447 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest
+2026-04-27T14:53:17.792-03:00  INFO 19241 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest]: ProductionIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-27T14:53:17.798-03:00  INFO 19241 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest
 Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
 Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
 Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
@@ -585,10 +668,10 @@ Hibernate: select coalesce(sum((fe1_0.quantity*fte1_0.cost_per_kg)),0) from feed
 Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
 Hibernate: select count(*) from farms fe1_0 where fe1_0.id=?
 Hibernate: select mpe1_0.id,mpe1_0.created_at,mpe1_0.created_by,mpe1_0.effective_date,mpe1_0.farm_id,mpe1_0.price from milk_prices mpe1_0 where mpe1_0.farm_id=? and mpe1_0.effective_date<=? order by mpe1_0.effective_date desc,mpe1_0.created_at desc fetch first ? rows only
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.525 s -- in com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.498 s -- in com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
-2026-04-26T23:32:48.299-03:00  INFO 83447 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest]: FeedingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-04-26T23:32:48.304-03:00  INFO 83447 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest
+2026-04-27T14:53:18.291-03:00  INFO 19241 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest]: FeedingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-27T14:53:18.298-03:00  INFO 19241 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest
 Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
 Hibernate: delete from productions where id=?
 Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
@@ -724,10 +807,10 @@ Hibernate: select fte1_0.id from feed_types fte1_0 where fte1_0.id=? and fte1_0.
 Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
 Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
 Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.465 s -- in com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.446 s -- in com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
-2026-04-26T23:32:48.765-03:00  INFO 83447 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest]: AnimalIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-04-26T23:32:48.773-03:00  INFO 83447 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest
+2026-04-27T14:53:18.737-03:00  INFO 19241 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest]: AnimalIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-27T14:53:18.743-03:00  INFO 19241 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest
 Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
 Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
 Hibernate: delete from feedings where id=?
@@ -779,10 +862,10 @@ Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin
 Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
 Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
 Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.210 s -- in com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.253 s -- in com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
-2026-04-26T23:32:48.978-03:00  INFO 83447 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.user.UserIntegrationTest]: UserIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-04-26T23:32:48.984-03:00  INFO 83447 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.user.UserIntegrationTest
+2026-04-27T14:53:18.992-03:00  INFO 19241 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.user.UserIntegrationTest]: UserIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-27T14:53:19.007-03:00  INFO 19241 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.user.UserIntegrationTest
 Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
 Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
 Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
@@ -1010,7 +1093,7 @@ Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
 Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
 Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
 Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_0.owner_id=?
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m13[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.124 s -- in com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m13[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.210 s -- in com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
 [[1;34mINFO[m] Running com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
 
   .   ____          _            __ _ _
@@ -1022,18 +1105,18 @@ Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_
 
  :: Spring Boot ::                (v3.4.4)
 
-2026-04-26T23:32:51.113-03:00  INFO 83447 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Starting FarmAppApplicationTests using Java 21.0.7 with PID 83447 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
-2026-04-26T23:32:51.113-03:00  INFO 83447 --- [           main] c.j.farmapp.FarmAppApplicationTests      : No active profile set, falling back to 1 default profile: "default"
-2026-04-26T23:32:51.263-03:00  INFO 83447 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-04-26T23:32:51.274-03:00  INFO 83447 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 9 ms. Found 8 JPA repository interfaces.
-2026-04-26T23:32:51.325-03:00  INFO 83447 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
-2026-04-26T23:32:51.326-03:00  INFO 83447 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
-2026-04-26T23:32:51.331-03:00  INFO 83447 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2026-04-26T23:32:51.332-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
-2026-04-26T23:32:51.333-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn10: url=jdbc:h2:mem:farmdb user=SA
-2026-04-26T23:32:51.333-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
-2026-04-26T23:32:51.333-03:00  WARN 83447 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
-2026-04-26T23:32:51.334-03:00  INFO 83447 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+2026-04-27T14:53:21.215-03:00  INFO 19241 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Starting FarmAppApplicationTests using Java 21.0.7 with PID 19241 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
+2026-04-27T14:53:21.215-03:00  INFO 19241 --- [           main] c.j.farmapp.FarmAppApplicationTests      : No active profile set, falling back to 1 default profile: "default"
+2026-04-27T14:53:21.315-03:00  INFO 19241 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-27T14:53:21.325-03:00  INFO 19241 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 8 ms. Found 8 JPA repository interfaces.
+2026-04-27T14:53:21.377-03:00  INFO 19241 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-27T14:53:21.378-03:00  INFO 19241 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-27T14:53:21.383-03:00  INFO 19241 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-27T14:53:21.383-03:00  INFO 19241 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-04-27T14:53:21.385-03:00  INFO 19241 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn10: url=jdbc:h2:mem:farmdb user=SA
+2026-04-27T14:53:21.385-03:00  INFO 19241 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-04-27T14:53:21.385-03:00  WARN 19241 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-04-27T14:53:21.385-03:00  INFO 19241 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
 	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-2)']
 	Database driver: undefined/unknown
 	Database version: 2.3.232
@@ -1041,26 +1124,37 @@ Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_
 	Isolation level: undefined/unknown
 	Minimum pool size: undefined/unknown
 	Maximum pool size: undefined/unknown
-2026-04-26T23:32:51.413-03:00  INFO 83447 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-27T14:53:21.453-03:00  INFO 19241 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
 Hibernate: alter table if exists user_farm_assignments drop constraint if exists UK9k021clhmghjjepfpvejsguce
 Hibernate: alter table if exists user_farm_assignments add constraint UK9k021clhmghjjepfpvejsguce unique (user_id, farm_id)
-2026-04-26T23:32:51.420-03:00  INFO 83447 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2026-04-26T23:32:51.562-03:00  WARN 83447 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
-2026-04-26T23:32:51.657-03:00  INFO 83447 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Started FarmAppApplicationTests in 0.553 seconds (process running for 17.091)
+2026-04-27T14:53:21.458-03:00  INFO 19241 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-27T14:53:21.591-03:00  WARN 19241 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-27T14:53:21.680-03:00  INFO 19241 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Started FarmAppApplicationTests in 0.475 seconds (process running for 15.264)
 Hibernate: select count(*) from users ue1_0
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.563 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.486 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
 [[1;34mINFO[m] 
 [[1;34mINFO[m] Results:
 [[1;34mINFO[m] 
-[[1;34mINFO[m] [1;32mTests run: 211, Failures: 0, Errors: 0, Skipped: 0[m
+[[1;31mERROR[m] [1;31mFailures: [m
+[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldAllowOnlyManagersToAccessDashboardAndAnalytics:120 JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>[m
+[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldAllowOnlyManagersToReachDeleteEndpoints:172 JSON path "$.error" expected:<Acesso negado.> but was:<Access Denied>[m
 [[1;34mINFO[m] 
+[[1;31mERROR[m] [1;31mTests run: 213, Failures: 2, Errors: 0, Skipped: 0[m
 [[1;34mINFO[m] 
-[[1;34mINFO[m] [1m--- [0;32mjacoco-maven-plugin:0.8.11:report[m [1m(report)[m @ [36mfarmapp[0;1m ---[m
-[[1;34mINFO[m] Loading execution data file /home/juaneugenio/programmig/farm_app/backend/farmapp/target/jacoco.exec
-[[1;34mINFO[m] Analyzed bundle 'farmapp' with 87 classes
 [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
-[[1;34mINFO[m] [1;32mBUILD SUCCESS[m
+[[1;34mINFO[m] [1;31mBUILD FAILURE[m
 [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
-[[1;34mINFO[m] Total time:  18.711 s
-[[1;34mINFO[m] Finished at: 2026-04-26T23:32:52-03:00
+[[1;34mINFO[m] Total time:  16.365 s
+[[1;34mINFO[m] Finished at: 2026-04-27T14:53:21-03:00
 [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;31mERROR[m] Failed to execute goal [32morg.apache.maven.plugins:maven-surefire-plugin:3.5.2:test[m [1m(default-test)[m on project [36mfarmapp[m: [1;31mThere are test failures.[m
+[[1;31mERROR[m] [1;31m[m
+[[1;31mERROR[m] [1;31mSee /home/juaneugenio/programmig/farm_app/backend/farmapp/target/surefire-reports for the individual test results.[m
+[[1;31mERROR[m] [1;31mSee dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.[m
+[[1;31mERROR[m] -> [1m[Help 1][m
+[[1;31mERROR[m] 
+[[1;31mERROR[m] To see the full stack trace of the errors, re-run Maven with the [1m-e[m switch.
+[[1;31mERROR[m] Re-run Maven using the [1m-X[m switch to enable full debug logging.
+[[1;31mERROR[m] 
+[[1;31mERROR[m] For more information about the errors and possible solutions, please read the following articles:
+[[1;31mERROR[m] [1m[Help 1][m http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

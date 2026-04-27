@@ -39,7 +39,9 @@ You MUST use this information to guide your fix.
    - signature mismatch
 3. Apply the smallest possible fix
 4. Preserve behavior and contracts
-
+5. If error type is contract:
+- Prefer adjusting response format or message
+- Do NOT refactor large parts of system
 ---
 
 ## TEST ALIGNMENT RULES (CRITICAL)

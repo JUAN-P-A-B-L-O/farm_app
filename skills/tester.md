@@ -155,6 +155,8 @@ You MUST return your response in JSON format:
 - Do NOT refactor production code
 - Do NOT ignore git diff context
 - Do NOT generate generic tests unrelated to changes
+- Do NOT assume behavior not present in implementation
+- Do NOT invent new business rules
 
 ---
 
