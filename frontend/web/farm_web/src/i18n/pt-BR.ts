@@ -151,12 +151,20 @@ const ptBR = {
       farm: 'Fazenda',
       farmId: 'ID da fazenda',
       placeholders: {
+        tag: 'A-102',
         breed: 'Holandesa',
+        farmId: 'fazenda-001',
       },
     },
     detailsSections: {
       infoTitle: 'Informações do animal',
       infoDescription: 'Dados principais do animal selecionado.',
+      productionTitle: 'Histórico de produção',
+      productionDescription: 'Registros de produção ordenados do mais recente para o mais antigo.',
+      productionEmpty: 'Nenhum registro de produção encontrado para este animal.',
+      feedingTitle: 'Histórico de alimentação',
+      feedingDescription: 'Registros de alimentação ordenados do mais recente para o mais antigo.',
+      feedingEmpty: 'Nenhum registro de alimentação encontrado para este animal.',
     },
     origins: {
       BORN: 'Nascido',
@@ -477,6 +485,12 @@ const ptBR = {
       loadingFarms: 'Carregando fazendas...',
       noFarms: 'Crie uma fazenda antes de cadastrar usuários.',
       selectRole: 'Selecione uma função',
+      placeholders: {
+        name: 'Maria Silva',
+        email: 'maria.silva@fazenda.com',
+        password: 'farmapp@123',
+        avatarUrl: 'https://exemplo.com/avatar.png',
+      },
     },
     roles: {
       MANAGER: 'Gerente',

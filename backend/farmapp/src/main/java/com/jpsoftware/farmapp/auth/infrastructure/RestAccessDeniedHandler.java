@@ -1,42 +1,42 @@
 package com.jpsoftware.farmapp.auth.infrastructure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorMessageTranslator;
+import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Instant;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
+public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
     private final ObjectMapper objectMapper;
 
-    public RestAuthenticationEntryPoint(ObjectMapper objectMapper) {
+    public RestAccessDeniedHandler(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
     @Override
-    public void commence(
+    public void handle(
             HttpServletRequest request,
             HttpServletResponse response,
-            AuthenticationException authException) throws IOException {
-        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            AccessDeniedException accessDeniedException) throws IOException {
+        response.setStatus(HttpStatus.FORBIDDEN.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-        String message = authException != null && authException.getMessage() != null
-                ? authException.getMessage()
-                : "Unauthorized";
+        String message = accessDeniedException != null && accessDeniedException.getMessage() != null
+                ? accessDeniedException.getMessage()
+                : "Access is denied";
 
         ErrorResponse body = ErrorResponse.builder()
                 .timestamp(Instant.now())
-                .status(HttpStatus.UNAUTHORIZED.value())
+                .status(HttpStatus.FORBIDDEN.value())
                 .error(ErrorMessageTranslator.translate(message))
                 .path(request.getRequestURI())
                 .build();

@@ -351,7 +351,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
             <div className="animals-panel__header">
               <div>
                 <h2>{t('animals.sellTitle')}</h2>
-                <p>{t('animals.sellDescription').replace('{tag}', sellingAnimal.tag)}</p>
+                <p>{t('animals.sellDescription', { tag: sellingAnimal.tag })}</p>
               </div>
             </div>
 

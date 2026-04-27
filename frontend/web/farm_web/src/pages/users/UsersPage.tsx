@@ -411,7 +411,7 @@ function UsersPage() {
             <div className="activation-panel">
               <div>
                 <h3>{t('accessControl.activateTitle')}</h3>
-                <p>{t('accessControl.activateDescription').replace('{name}', activationTarget.name)}</p>
+                <p>{t('accessControl.activateDescription', { name: activationTarget.name })}</p>
               </div>
               <label className="animal-form__field" htmlFor="activation-password">
                 <span>{t('accessControl.form.password')}</span>
@@ -420,7 +420,7 @@ function UsersPage() {
                   type="password"
                   value={activationPassword}
                   onChange={(event) => setActivationPassword(event.target.value)}
-                  placeholder="farmapp@123"
+                  placeholder={t('accessControl.form.placeholders.password')}
                 />
               </label>
               <div className="animal-form__actions">

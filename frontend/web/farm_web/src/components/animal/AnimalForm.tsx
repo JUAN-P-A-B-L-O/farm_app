@@ -59,7 +59,7 @@ function AnimalForm({
             type="text"
             value={formData.tag}
             onChange={handleChange}
-            placeholder="A-102"
+            placeholder={t('animals.form.placeholders.tag')}
             required
           />
         </label>
@@ -134,7 +134,7 @@ function AnimalForm({
               type="text"
               value={formData.farmId}
               onChange={handleChange}
-              placeholder="farm-001"
+              placeholder={t('animals.form.placeholders.farmId')}
               required
             />
           </label>

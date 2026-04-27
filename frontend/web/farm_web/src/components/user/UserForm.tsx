@@ -132,7 +132,7 @@ function UserForm({
             type="text"
             value={formData.name}
             onChange={handleChange}
-            placeholder="Maria Silva"
+            placeholder={t('accessControl.form.placeholders.name')}
             required
           />
         </label>
@@ -144,7 +144,7 @@ function UserForm({
             type="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="maria.silva@example.com"
+            placeholder={t('accessControl.form.placeholders.email')}
             required
           />
         </label>
@@ -185,7 +185,7 @@ function UserForm({
               type="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="farmapp@123"
+              placeholder={t('accessControl.form.placeholders.password')}
               required={formData.active}
             />
           </label>
@@ -198,7 +198,7 @@ function UserForm({
             type="url"
             value={formData.avatarUrl}
             onChange={handleChange}
-            placeholder="https://example.com/avatar.png"
+            placeholder={t('accessControl.form.placeholders.avatarUrl')}
           />
           <small>{t('accessControl.form.avatarHint')}</small>
         </label>

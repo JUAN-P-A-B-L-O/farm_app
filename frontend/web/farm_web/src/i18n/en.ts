@@ -151,12 +151,20 @@ const en = {
       farm: 'Farm',
       farmId: 'Farm ID',
       placeholders: {
+        tag: 'A-102',
         breed: 'Holstein',
+        farmId: 'farm-001',
       },
     },
     detailsSections: {
       infoTitle: 'Animal Information',
       infoDescription: 'Core data for the selected animal.',
+      productionTitle: 'Production History',
+      productionDescription: 'Production records sorted from most recent to oldest.',
+      productionEmpty: 'No production records found for this animal.',
+      feedingTitle: 'Feeding History',
+      feedingDescription: 'Feeding records sorted from most recent to oldest.',
+      feedingEmpty: 'No feeding records found for this animal.',
     },
     origins: {
       BORN: 'Born',
@@ -477,6 +485,12 @@ const en = {
       loadingFarms: 'Loading farms...',
       noFarms: 'Create a farm before registering users.',
       selectRole: 'Select a role',
+      placeholders: {
+        name: 'Mary Smith',
+        email: 'mary.smith@farmapp.com',
+        password: 'farmapp@123',
+        avatarUrl: 'https://example.com/avatar.png',
+      },
     },
     roles: {
       MANAGER: 'Manager',

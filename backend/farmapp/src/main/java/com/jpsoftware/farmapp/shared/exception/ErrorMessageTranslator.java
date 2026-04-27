@@ -4,11 +4,13 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-final class ErrorMessageTranslator {
+public final class ErrorMessageTranslator {
 
     private static final String VALIDATION_FALLBACK = "Falha de validação.";
     private static final Pattern REQUIRED_FIELD_PATTERN =
             Pattern.compile("^(?:Animal )?([A-Za-z]+) must not be (?:blank|null)$");
+    private static final Pattern EMPTY_FIELD_PATTERN =
+            Pattern.compile("^([A-Za-z]+) must not be empty$");
     private static final Pattern POSITIVE_FIELD_PATTERN =
             Pattern.compile("^(?:Animal )?([A-Za-z]+) must be greater than zero$");
     private static final Pattern SCALE_FIELD_PATTERN =
@@ -19,6 +21,10 @@ final class ErrorMessageTranslator {
             Map.entry("Malformed request body", "Corpo da requisição inválido."),
             Map.entry("Internal server error", "Erro interno do servidor."),
             Map.entry("Resource not found", "Recurso não encontrado."),
+            Map.entry("Unauthorized", "Não autorizado."),
+            Map.entry("Access is denied", "Acesso negado."),
+            Map.entry("Full authentication is required to access this resource", "É necessário autenticação para acessar este recurso."),
+            Map.entry("Invalid or expired token", "Token inválido ou expirado."),
             Map.entry("request must not be null", "Requisição obrigatória."),
             Map.entry("Create animal request must not be null", "Requisição obrigatória."),
             Map.entry("Update animal request must not be null", "Requisição obrigatória."),
@@ -55,6 +61,7 @@ final class ErrorMessageTranslator {
             Map.entry("startDate must be before or equal to endDate", "A data inicial deve ser anterior ou igual à data final."),
             Map.entry("groupBy must be day or month", "O agrupamento deve ser por dia ou mês."),
             Map.entry("status must be ACTIVE, INACTIVE, SOLD, or DEAD", "O status deve ser Ativo, Inativo, Vendido ou Morto."),
+            Map.entry("currency must be BRL or USD", "A moeda deve ser BRL ou USD."),
             Map.entry("Invalid email or password", "E-mail ou senha inválidos."),
             Map.entry("Inactive production cannot be updated", "Não é possível atualizar uma produção inativa."),
             Map.entry("Inactive feeding cannot be updated", "Não é possível atualizar uma alimentação inativa."),
@@ -66,7 +73,7 @@ final class ErrorMessageTranslator {
     private ErrorMessageTranslator() {
     }
 
-    static String translate(String message) {
+    public static String translate(String message) {
         if (message == null || message.isBlank()) {
             return VALIDATION_FALLBACK;
         }
@@ -80,6 +87,11 @@ final class ErrorMessageTranslator {
         String requiredFieldTranslation = translateFieldMessage(trimmedMessage, REQUIRED_FIELD_PATTERN, TranslationKind.REQUIRED);
         if (requiredFieldTranslation != null) {
             return requiredFieldTranslation;
+        }
+
+        String emptyFieldTranslation = translateFieldMessage(trimmedMessage, EMPTY_FIELD_PATTERN, TranslationKind.REQUIRED);
+        if (emptyFieldTranslation != null) {
+            return emptyFieldTranslation;
         }
 
         String positiveFieldTranslation = translateFieldMessage(trimmedMessage, POSITIVE_FIELD_PATTERN, TranslationKind.POSITIVE);

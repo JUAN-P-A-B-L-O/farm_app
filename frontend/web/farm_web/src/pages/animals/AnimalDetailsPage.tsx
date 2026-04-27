@@ -161,13 +161,13 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
           <article className="animals-panel animals-panel--table">
             <div className="animals-panel__header">
               <div>
-                <h2>Production History</h2>
-                <p>Production records sorted from most recent to oldest.</p>
+                <h2>{t('animals.detailsSections.productionTitle')}</h2>
+                <p>{t('animals.detailsSections.productionDescription')}</p>
               </div>
             </div>
 
             {productions.length === 0 && (
-              <p className="animals-page__status">No production records found for this animal.</p>
+              <p className="animals-page__status">{t('animals.detailsSections.productionEmpty')}</p>
             )}
 
             {productions.length > 0 && (
@@ -175,8 +175,8 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                 <table className="animals-table">
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Quantity</th>
+                      <th>{t('production.table.date')}</th>
+                      <th>{t('production.table.quantity')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -195,13 +195,13 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
           <article className="animals-panel animals-panel--table">
             <div className="animals-panel__header">
               <div>
-                <h2>Feeding History</h2>
-                <p>Feeding records sorted from most recent to oldest.</p>
+                <h2>{t('animals.detailsSections.feedingTitle')}</h2>
+                <p>{t('animals.detailsSections.feedingDescription')}</p>
               </div>
             </div>
 
             {feedings.length === 0 && (
-              <p className="animals-page__status">No feeding records found for this animal.</p>
+              <p className="animals-page__status">{t('animals.detailsSections.feedingEmpty')}</p>
             )}
 
             {feedings.length > 0 && (
@@ -209,8 +209,8 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                 <table className="animals-table">
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Quantity</th>
+                      <th>{t('production.table.date')}</th>
+                      <th>{t('production.table.quantity')}</th>
                     </tr>
                   </thead>
                   <tbody>
