@@ -87,10 +87,16 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         UserEntity user = createAuthenticatedUser();
 
         mockMvc.perform(get("/animals"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
+                .andExpect(jsonPath("$.path").value("/animals"));
 
         mockMvc.perform(get("/animals/export"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
+                .andExpect(jsonPath("$.path").value("/animals/export"));
 
         mockMvc.perform(get("/animals")
                         .header("Authorization", bearerToken(user)))
@@ -109,19 +115,31 @@ class AuthIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(get("/dashboard")
                         .header("Authorization", bearerToken(worker)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Acesso negado."))
+                .andExpect(jsonPath("$.path").value("/dashboard"));
 
         mockMvc.perform(get("/analytics/production")
                         .header("Authorization", bearerToken(worker)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Acesso negado."))
+                .andExpect(jsonPath("$.path").value("/analytics/production"));
 
         mockMvc.perform(get("/dashboard/export")
                         .header("Authorization", bearerToken(worker)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Acesso negado."))
+                .andExpect(jsonPath("$.path").value("/dashboard/export"));
 
         mockMvc.perform(get("/analytics/production/export")
                         .header("Authorization", bearerToken(worker)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Acesso negado."))
+                .andExpect(jsonPath("$.path").value("/analytics/production/export"));
 
         mockMvc.perform(get("/dashboard")
                         .header("Authorization", bearerToken(manager)))
@@ -149,7 +167,10 @@ class AuthIntegrationTest extends BaseIntegrationTest {
 
         mockMvc.perform(delete("/animals/missing")
                         .header("Authorization", bearerToken(worker)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Acesso negado."))
+                .andExpect(jsonPath("$.path").value("/animals/missing"));
 
         mockMvc.perform(delete("/animals/missing")
                         .header("Authorization", bearerToken(manager)))

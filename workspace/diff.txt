@@ -1,300 +1,300 @@
---- a/AI_CONTEXT.md
-+++ b/AI_CONTEXT.md
-+  Default visible language is pt-BR; avoid mixed-language UI
-+  Frontend user-facing labels live in frontend/web/farm_web/src/i18n and should be consumed via LanguageContext/useTranslation
-+  Enum values such as MANAGER, WORKER, ACTIVE, INACTIVE, SOLD, PURCHASED, and BORN remain internal/API values and must be mapped to localized labels in the UI
-+  Backend error responses returned to the frontend are localized centrally in shared.exception so services can keep internal canonical messages when needed
 --- /dev/null
-+++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
-+package com.jpsoftware.farmapp.shared.exception;
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAccessDeniedHandler.java
++package com.jpsoftware.farmapp.auth.infrastructure;
 +
-+import java.util.Map;
-+import java.util.regex.Matcher;
-+import java.util.regex.Pattern;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import com.jpsoftware.farmapp.shared.exception.ErrorMessageTranslator;
++import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
++import jakarta.servlet.http.HttpServletRequest;
++import jakarta.servlet.http.HttpServletResponse;
++import java.io.IOException;
++import java.time.Instant;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.MediaType;
++import org.springframework.security.access.AccessDeniedException;
++import org.springframework.security.web.access.AccessDeniedHandler;
++import org.springframework.stereotype.Component;
 +
-+final class ErrorMessageTranslator {
++@Component
++public class RestAccessDeniedHandler implements AccessDeniedHandler {
 +
-+    private static final String VALIDATION_FALLBACK = "Falha de validação.";
-+    private static final Pattern REQUIRED_FIELD_PATTERN =
-+            Pattern.compile("^(?:Animal )?([A-Za-z]+) must not be (?:blank|null)$");
-+    private static final Pattern POSITIVE_FIELD_PATTERN =
-+            Pattern.compile("^(?:Animal )?([A-Za-z]+) must be greater than zero$");
-+    private static final Pattern SCALE_FIELD_PATTERN =
-+            Pattern.compile("^([A-Za-z]+) must have at most 2 decimal places$");
++    private final ObjectMapper objectMapper;
 +
-+    private static final Map<String, String> EXACT_TRANSLATIONS = Map.ofEntries(
-+            Map.entry("Validation failed", VALIDATION_FALLBACK),
-+            Map.entry("Malformed request body", "Corpo da requisição inválido."),
-+            Map.entry("Internal server error", "Erro interno do servidor."),
-+            Map.entry("Resource not found", "Recurso não encontrado."),
-+            Map.entry("request must not be null", "Requisição obrigatória."),
-+            Map.entry("Create animal request must not be null", "Requisição obrigatória."),
-+            Map.entry("Update animal request must not be null", "Requisição obrigatória."),
-+            Map.entry("Sell animal request must not be null", "Requisição obrigatória."),
-+            Map.entry("Authenticated manager is required", "Gerente autenticado obrigatório."),
-+            Map.entry("Authenticated user is required", "Usuário autenticado obrigatório."),
-+            Map.entry("Authenticated user is required to register milk price", "É necessário estar autenticado para registrar o preço do leite."),
-+            Map.entry("currentPassword is incorrect", "A senha atual está incorreta."),
-+            Map.entry("newPassword must be different from currentPassword", "A nova senha deve ser diferente da senha atual."),
-+            Map.entry("farmIds must reference farms owned by the authenticated manager", "Selecione apenas fazendas pertencentes ao gerente autenticado."),
-+            Map.entry("User with this email already exists", "Já existe um usuário com este e-mail."),
-+            Map.entry("password must not be blank when active is true", "A senha é obrigatória para usuários ativos."),
-+            Map.entry("User who owns farms must remain a manager", "Usuários proprietários de fazendas devem permanecer com a função de gerente."),
-+            Map.entry("Inactive user who owns farms cannot be updated", "Não é possível atualizar um usuário inativo que possui fazendas."),
-+            Map.entry("id must be a valid UUID", "Informe um identificador válido."),
-+            Map.entry("userId must be a valid UUID", "Selecione um usuário válido."),
-+            Map.entry("Farm not found", "Fazenda não encontrada."),
-+            Map.entry("User not found", "Usuário não encontrado."),
-+            Map.entry("Animal not found", "Animal não encontrado."),
-+            Map.entry("Feed type not found", "Tipo de ração não encontrado."),
-+            Map.entry("Production not found", "Produção não encontrada."),
-+            Map.entry("Feeding not found", "Alimentação não encontrada."),
-+            Map.entry("Date cannot be in the future", "A data não pode estar no futuro."),
-+            Map.entry("Animal must be ACTIVE for production operations", "O animal deve estar ativo para registrar produção."),
-+            Map.entry("Animal must be ACTIVE for feeding operations", "O animal deve estar ativo para registrar alimentação."),
-+            Map.entry("Animal with this tag already exists", "Já existe um animal com esta tag."),
-+            Map.entry("Animal status must be ACTIVE, SOLD, DEAD, or INACTIVE", "O status do animal deve ser Ativo, Vendido, Morto ou Inativo."),
-+            Map.entry("Use the sell action to mark an animal as SOLD", "Use a ação de venda para marcar o animal como vendido."),
-+            Map.entry("Sold animals cannot transition to another status", "Animais vendidos não podem mudar para outro status."),
-+            Map.entry("Animal origin must be PURCHASED or BORN", "A origem do animal deve ser Comprado ou Nascido."),
-+            Map.entry("Animal acquisitionCost must be greater than zero for purchased animals", "O custo de aquisição deve ser maior que zero para animais comprados."),
-+            Map.entry("Animal is already sold", "O animal já foi vendido."),
-+            Map.entry("Only active animals can be sold", "Apenas animais ativos podem ser vendidos."),
-+            Map.entry("startDate must be before or equal to endDate", "A data inicial deve ser anterior ou igual à data final."),
-+            Map.entry("groupBy must be day or month", "O agrupamento deve ser por dia ou mês."),
-+            Map.entry("status must be ACTIVE, INACTIVE, SOLD, or DEAD", "O status deve ser Ativo, Inativo, Vendido ou Morto."),
-+            Map.entry("Invalid email or password", "E-mail ou senha inválidos."),
-+            Map.entry("Inactive production cannot be updated", "Não é possível atualizar uma produção inativa."),
-+            Map.entry("Inactive feeding cannot be updated", "Não é possível atualizar uma alimentação inativa."),
-+            Map.entry("Cannot inactivate user who owns farms", "Não é possível inativar um usuário que possui fazendas."),
-+            Map.entry("Cannot delete user who owns farms", "Não é possível excluir um usuário que possui fazendas."),
-+            Map.entry("Data integrity violation", "Violação de integridade de dados."),
-+            Map.entry("must be greater than 0", "O valor deve ser maior que zero."));
-+
-+    private ErrorMessageTranslator() {
++    public RestAccessDeniedHandler(ObjectMapper objectMapper) {
++        this.objectMapper = objectMapper;
 +    }
 +
-+    static String translate(String message) {
-+        if (message == null || message.isBlank()) {
-+            return VALIDATION_FALLBACK;
-+        }
++    @Override
++    public void handle(
++            HttpServletRequest request,
++            HttpServletResponse response,
++            AccessDeniedException accessDeniedException) throws IOException {
++        response.setStatus(HttpStatus.FORBIDDEN.value());
++        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 +
-+        String trimmedMessage = message.trim();
-+        String exactTranslation = EXACT_TRANSLATIONS.get(trimmedMessage);
-+        if (exactTranslation != null) {
-+            return exactTranslation;
-+        }
++        String message = accessDeniedException != null && accessDeniedException.getMessage() != null
++                ? accessDeniedException.getMessage()
++                : "Access is denied";
 +
-+        String requiredFieldTranslation = translateFieldMessage(trimmedMessage, REQUIRED_FIELD_PATTERN, TranslationKind.REQUIRED);
-+        if (requiredFieldTranslation != null) {
-+            return requiredFieldTranslation;
-+        }
++        ErrorResponse body = ErrorResponse.builder()
++                .timestamp(Instant.now())
++                .status(HttpStatus.FORBIDDEN.value())
++                .error(ErrorMessageTranslator.translate(message))
++                .path(request.getRequestURI())
++                .build();
 +
-+        String positiveFieldTranslation = translateFieldMessage(trimmedMessage, POSITIVE_FIELD_PATTERN, TranslationKind.POSITIVE);
-+        if (positiveFieldTranslation != null) {
-+            return positiveFieldTranslation;
-+        }
-+
-+        String scaleFieldTranslation = translateFieldMessage(trimmedMessage, SCALE_FIELD_PATTERN, TranslationKind.SCALE);
-+        if (scaleFieldTranslation != null) {
-+            return scaleFieldTranslation;
-+        }
-+
-+        return trimmedMessage;
-+    }
-+
-+    private static String translateFieldMessage(String message, Pattern pattern, TranslationKind translationKind) {
-+        Matcher matcher = pattern.matcher(message);
-+        if (!matcher.matches()) {
-+            return null;
-+        }
-+
-+        String fieldName = matcher.group(1);
-+        return switch (translationKind) {
-+            case REQUIRED -> translateRequiredField(fieldName);
-+            case POSITIVE -> translatePositiveField(fieldName);
-+            case SCALE -> translateScaleField(fieldName);
-+        };
-+    }
-+
-+    private static String translateRequiredField(String fieldName) {
-+        return switch (fieldName) {
-+            case "name" -> "O nome é obrigatório.";
-+            case "email" -> "O e-mail é obrigatório.";
-+            case "password" -> "A senha é obrigatória.";
-+            case "currentPassword" -> "A senha atual é obrigatória.";
-+            case "newPassword" -> "A nova senha é obrigatória.";
-+            case "role" -> "A função é obrigatória.";
-+            case "farmIds" -> "Selecione ao menos uma fazenda.";
-+            case "active" -> "Informe se o usuário está ativo.";
-+            case "farmId" -> "Selecione uma fazenda.";
-+            case "animalId" -> "Selecione um animal.";
-+            case "feedTypeId" -> "Selecione um tipo de ração.";
-+            case "userId" -> "Selecione um usuário.";
-+            case "quantity" -> "A quantidade é obrigatória.";
-+            case "price" -> "O preço é obrigatório.";
-+            case "effectiveDate" -> "A data de vigência é obrigatória.";
-+            case "date" -> "A data é obrigatória.";
-+            case "costPerKg" -> "O custo por kg é obrigatório.";
-+            case "acquisitionCost" -> "O custo de aquisição é obrigatório.";
-+            case "salePrice" -> "O valor da venda é obrigatório.";
-+            case "tag" -> "A tag do animal é obrigatória.";
-+            case "breed" -> "A raça do animal é obrigatória.";
-+            case "birthDate" -> "A data de nascimento do animal é obrigatória.";
-+            case "origin" -> "A origem do animal é obrigatória.";
-+            case "id" -> "O identificador é obrigatório.";
-+            case "request" -> "Requisição obrigatória.";
-+            default -> null;
-+        };
-+    }
-+
-+    private static String translatePositiveField(String fieldName) {
-+        return switch (fieldName) {
-+            case "quantity" -> "A quantidade deve ser maior que zero.";
-+            case "price" -> "O preço deve ser maior que zero.";
-+            case "costPerKg" -> "O custo por kg deve ser maior que zero.";
-+            case "acquisitionCost" -> "O custo de aquisição deve ser maior que zero.";
-+            case "salePrice" -> "O valor da venda deve ser maior que zero.";
-+            default -> null;
-+        };
-+    }
-+
-+    private static String translateScaleField(String fieldName) {
-+        return switch (fieldName) {
-+            case "quantity" -> "A quantidade deve ter no máximo 2 casas decimais.";
-+            case "price" -> "O preço deve ter no máximo 2 casas decimais.";
-+            case "costPerKg" -> "O custo por kg deve ter no máximo 2 casas decimais.";
-+            case "acquisitionCost" -> "O custo de aquisição deve ter no máximo 2 casas decimais.";
-+            case "salePrice" -> "O valor da venda deve ter no máximo 2 casas decimais.";
-+            default -> null;
-+        };
-+    }
-+
-+    private enum TranslationKind {
-+        REQUIRED,
-+        POSITIVE,
-+        SCALE
++        objectMapper.writeValue(response.getOutputStream(), body);
 +    }
 +}
---- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandler.java
-+++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandler.java
--        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());
-+        return buildErrorResponse(
-+                HttpStatus.BAD_REQUEST,
-+                "O parâmetro '" + exception.getParameterName() + "' é obrigatório.",
-+                request.getRequestURI());
--                .error(error)
-+                .error(ErrorMessageTranslator.translate(error))
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java
--                .andExpect(jsonPath("$.error").value("Feed type not found"))
-+                .andExpect(jsonPath("$.error").value("Tipo de ração não encontrado."))
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java
--                .andExpect(jsonPath("$.error").value("Feeding not found"))
-+                .andExpect(jsonPath("$.error").value("Alimentação não encontrada."))
--                .andExpect(jsonPath("$.error").value("userId must not be blank"))
-+                .andExpect(jsonPath("$.error").value("Selecione um usuário."))
--                .andExpect(jsonPath("$.error").value("Inactive feeding cannot be updated"))
-+                .andExpect(jsonPath("$.error").value("Não é possível atualizar uma alimentação inativa."))
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java
--                .andExpect(jsonPath("$.error").value("must be greater than 0"))
-+                .andExpect(jsonPath("$.error").value("O valor deve ser maior que zero."))
--                .andExpect(jsonPath("$.error").value("Animal not found"))
-+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
--                .andExpect(jsonPath("$.error").value("Production not found"))
-+                .andExpect(jsonPath("$.error").value("Produção não encontrada."))
--                .andExpect(jsonPath("$.error").value("Animal not found"))
-+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
--                .andExpect(jsonPath("$.error").value("Animal not found"))
-+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
--                .andExpect(jsonPath("$.error").value("Inactive production cannot be updated"))
-+                .andExpect(jsonPath("$.error").value("Não é possível atualizar uma produção inativa."))
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/user/UserControllerContractTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/user/UserControllerContractTest.java
--                .andExpect(jsonPath("$.error").value("User not found"))
-+                .andExpect(jsonPath("$.error").value("Usuário não encontrado."))
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/animal/AnimalIntegrationTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/animal/AnimalIntegrationTest.java
--                .andExpect(jsonPath("$.error").value("Animal with this tag already exists"));
-+                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag."));
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
--                .andExpect(jsonPath("$.error").value("Invalid email or password"));
-+                .andExpect(jsonPath("$.error").value("E-mail ou senha inválidos."));
--                .andExpect(jsonPath("$.error").value("Invalid email or password"));
-+                .andExpect(jsonPath("$.error").value("E-mail ou senha inválidos."));
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/user/UserIntegrationTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/user/UserIntegrationTest.java
--                .andExpect(jsonPath("$.error").value("User with this email already exists"));
-+                .andExpect(jsonPath("$.error").value("Já existe um usuário com este e-mail."));
--                .andExpect(jsonPath("$.error").value("password must not be blank when active is true"));
-+                .andExpect(jsonPath("$.error").value("A senha é obrigatória para usuários ativos."));
--                .andExpect(jsonPath("$.error").value("farmIds must reference farms owned by the authenticated manager"));
-+                .andExpect(jsonPath("$.error").value("Selecione apenas fazendas pertencentes ao gerente autenticado."));
--                .andExpect(jsonPath("$.error").value("Cannot delete user who owns farms"));
-+                .andExpect(jsonPath("$.error").value("Não é possível excluir um usuário que possui fazendas."));
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandlerTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandlerTest.java
--                .andExpect(jsonPath("$.error").value("Animal with this tag already exists"))
-+                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag."))
--                .andExpect(jsonPath("$.error").value("name must not be blank"))
-+                .andExpect(jsonPath("$.error").value("O nome é obrigatório."))
--                .andExpect(jsonPath("$.error").value("Resource not found"))
-+                .andExpect(jsonPath("$.error").value("Recurso não encontrado."))
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAuthenticationEntryPoint.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAuthenticationEntryPoint.java
++import com.jpsoftware.farmapp.shared.exception.ErrorMessageTranslator;
+-                .error(message)
++                .error(ErrorMessageTranslator.translate(message))
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/SecurityConfig.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/SecurityConfig.java
++    private final RestAccessDeniedHandler accessDeniedHandler;
+-            RestAuthenticationEntryPoint authenticationEntryPoint) {
++            RestAuthenticationEntryPoint authenticationEntryPoint,
++            RestAccessDeniedHandler accessDeniedHandler) {
++        this.accessDeniedHandler = accessDeniedHandler;
+-                .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
++                .exceptionHandling(exception -> exception
++                        .authenticationEntryPoint(authenticationEntryPoint)
++                        .accessDeniedHandler(accessDeniedHandler))
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
+-final class ErrorMessageTranslator {
++public final class ErrorMessageTranslator {
++    private static final Pattern EMPTY_FIELD_PATTERN =
++            Pattern.compile("^([A-Za-z]+) must not be empty$");
++            Map.entry("Unauthorized", "Não autorizado."),
++            Map.entry("Access is denied", "Acesso negado."),
++            Map.entry("Full authentication is required to access this resource", "É necessário autenticação para acessar este recurso."),
++            Map.entry("Invalid or expired token", "Token inválido ou expirado."),
++            Map.entry("currency must be BRL or USD", "A moeda deve ser BRL ou USD."),
+-    static String translate(String message) {
++    public static String translate(String message) {
++        String emptyFieldTranslation = translateFieldMessage(trimmedMessage, EMPTY_FIELD_PATTERN, TranslationKind.REQUIRED);
++        if (emptyFieldTranslation != null) {
++            return emptyFieldTranslation;
++        }
++
 --- a/frontend/web/farm_web/src/components/animal/AnimalForm.tsx
 +++ b/frontend/web/farm_web/src/components/animal/AnimalForm.tsx
--            placeholder="Holstein"
-+            placeholder={t('animals.form.placeholders.breed')}
---- a/frontend/web/farm_web/src/components/feed-type/FeedTypeForm.tsx
-+++ b/frontend/web/farm_web/src/components/feed-type/FeedTypeForm.tsx
--            placeholder="Corn silage"
-+            placeholder={t('feedType.form.placeholders.name')}
+-            placeholder="A-102"
++            placeholder={t('animals.form.placeholders.tag')}
+-              placeholder="farm-001"
++              placeholder={t('animals.form.placeholders.farmId')}
+--- a/frontend/web/farm_web/src/components/common/PaginationControls.tsx
++++ b/frontend/web/farm_web/src/components/common/PaginationControls.tsx
+-        {t('common.pagination.summary')
+-          .replace('{from}', String(from))
+-          .replace('{to}', String(to))
+-          .replace('{total}', String(pagination.totalElements))}
++        {t('common.pagination.summary', {
++          from,
++          to,
++          total: pagination.totalElements,
++        })}
+-          {t('common.pagination.page')
+-            .replace('{page}', String(currentPage + 1))
+-            .replace('{totalPages}', String(totalPages))}
++          {t('common.pagination.page', {
++            page: currentPage + 1,
++            totalPages,
++          })}
 --- a/frontend/web/farm_web/src/components/user/UserForm.tsx
 +++ b/frontend/web/farm_web/src/components/user/UserForm.tsx
--                {role}
-+                {t(`accessControl.roles.${role}`)}
+-            placeholder="Maria Silva"
++            placeholder={t('accessControl.form.placeholders.name')}
+-            placeholder="maria.silva@example.com"
++            placeholder={t('accessControl.form.placeholders.email')}
+-              placeholder="farmapp@123"
++              placeholder={t('accessControl.form.placeholders.password')}
+-            placeholder="https://example.com/avatar.png"
++            placeholder={t('accessControl.form.placeholders.avatarUrl')}
+--- a/frontend/web/farm_web/src/hooks/useTranslation.ts
++++ b/frontend/web/farm_web/src/hooks/useTranslation.ts
++function interpolate(
++  template: string,
++  variables: Record<string, string | number> | undefined,
++) {
++  if (!variables) {
++    return template
++  }
++
++  return Object.entries(variables).reduce(
++    (currentValue, [key, value]) => currentValue.replaceAll(`{${key}}`, String(value)),
++    template,
++  )
++}
++
+-  function t(key: string): string {
++  function t(key: string, variables?: Record<string, string | number>): string {
+-    return typeof value === 'string' ? value : key
++    return typeof value === 'string' ? interpolate(value, variables) : key
 --- a/frontend/web/farm_web/src/i18n/en.ts
 +++ b/frontend/web/farm_web/src/i18n/en.ts
++        tag: 'A-102',
++        farmId: 'farm-001',
++      productionTitle: 'Production History',
++      productionDescription: 'Production records sorted from most recent to oldest.',
++      productionEmpty: 'No production records found for this animal.',
++      feedingTitle: 'Feeding History',
++      feedingDescription: 'Feeding records sorted from most recent to oldest.',
++      feedingEmpty: 'No feeding records found for this animal.',
 +      placeholders: {
-+        breed: 'Holstein',
++        name: 'Mary Smith',
++        email: 'mary.smith@farmapp.com',
++        password: 'farmapp@123',
++        avatarUrl: 'https://example.com/avatar.png',
 +      },
-+      placeholders: {
-+        name: 'Corn silage',
-+      },
-+    roles: {
-+      MANAGER: 'Manager',
-+      WORKER: 'Worker',
-+    },
 --- a/frontend/web/farm_web/src/i18n/pt-BR.ts
 +++ b/frontend/web/farm_web/src/i18n/pt-BR.ts
--      email: 'Email',
-+      email: 'E-mail',
--      invalidCredentials: 'Invalid credentials',
-+      invalidCredentials: 'E-mail ou senha inválidos.',
--    formDescription: 'Esta fazenda será o contexto ativo para animais, alimentação, produção e analytics.',
-+    formDescription: 'Esta fazenda será o contexto ativo para animais, alimentação, produção e análises.',
++        tag: 'A-102',
++        farmId: 'fazenda-001',
++      productionTitle: 'Histórico de produção',
++      productionDescription: 'Registros de produção ordenados do mais recente para o mais antigo.',
++      productionEmpty: 'Nenhum registro de produção encontrado para este animal.',
++      feedingTitle: 'Histórico de alimentação',
++      feedingDescription: 'Registros de alimentação ordenados do mais recente para o mais antigo.',
++      feedingEmpty: 'Nenhum registro de alimentação encontrado para este animal.',
 +      placeholders: {
-+        breed: 'Holandesa',
++        name: 'Maria Silva',
++        email: 'maria.silva@fazenda.com',
++        password: 'farmapp@123',
++        avatarUrl: 'https://exemplo.com/avatar.png',
 +      },
--    currentDescription: 'O preço do leite com vigência mais recente é usado por padrão nos cálculos de dashboard, lucro e analytics.',
-+    currentDescription: 'O preço do leite com vigência mais recente é usado por padrão nos cálculos de dashboard, lucro e análises.',
--    createTitle: 'Criar tipo de alimento',
--    updateTitle: 'Atualizar tipo de alimento',
--    createDescription: 'Preencha as informações do tipo de alimento para criar um novo registro.',
--    updateDescription: 'Edite o tipo de alimento selecionado usando os dados existentes.',
--    submitCreate: 'Criar tipo de alimento',
--    submitUpdate: 'Atualizar tipo de alimento',
--    listTitle: 'Lista de tipos de alimento',
--    listDescription: 'Revise os tipos de alimento atuais e gerencie atualizações ou exclusões.',
--    loading: 'Carregando tipos de alimento...',
--    empty: 'Nenhum tipo de alimento encontrado.',
-+    createTitle: 'Criar tipo de ração',
-+    updateTitle: 'Atualizar tipo de ração',
-+    createDescription: 'Preencha as informações do tipo de ração para criar um novo registro.',
-+    updateDescription: 'Edite o tipo de ração selecionado usando os dados existentes.',
-+    submitCreate: 'Criar tipo de ração',
-+    submitUpdate: 'Atualizar tipo de ração',
-+    listTitle: 'Lista de tipos de ração',
-+    listDescription: 'Revise os tipos de ração atuais e gerencie atualizações ou exclusões.',
+--- a/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
++++ b/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
+-                <h2>Production History</h2>
+-                <p>Production records sorted from most recent to oldest.</p>
++                <h2>{t('animals.detailsSections.productionTitle')}</h2>
++                <p>{t('animals.detailsSections.productionDescription')}</p>
+-              <p className="animals-page__status">No production records found for this animal.</p>
++              <p className="animals-page__status">{t('animals.detailsSections.productionEmpty')}</p>
+-                      <th>Date</th>
+-                      <th>Quantity</th>
++                      <th>{t('production.table.date')}</th>
++                      <th>{t('production.table.quantity')}</th>
+-                <h2>Feeding History</h2>
+-                <p>Feeding records sorted from most recent to oldest.</p>
++                <h2>{t('animals.detailsSections.feedingTitle')}</h2>
++                <p>{t('animals.detailsSections.feedingDescription')}</p>
+-              <p className="animals-page__status">No feeding records found for this animal.</p>
++              <p className="animals-page__status">{t('animals.detailsSections.feedingEmpty')}</p>
+-                      <th>Date</th>
+-                      <th>Quantity</th>
++                      <th>{t('production.table.date')}</th>
++                      <th>{t('production.table.quantity')}</th>
+--- a/frontend/web/farm_web/src/pages/animals/AnimalsPage.tsx
++++ b/frontend/web/farm_web/src/pages/animals/AnimalsPage.tsx
+-                <p>{t('animals.sellDescription').replace('{tag}', sellingAnimal.tag)}</p>
++                <p>{t('animals.sellDescription', { tag: sellingAnimal.tag })}</p>
+--- a/frontend/web/farm_web/src/pages/users/UsersPage.tsx
++++ b/frontend/web/farm_web/src/pages/users/UsersPage.tsx
+-                <p>{t('accessControl.activateDescription').replace('{name}', activationTarget.name)}</p>
++                <p>{t('accessControl.activateDescription', { name: activationTarget.name })}</p>
+-                  placeholder="farmapp@123"
++                  placeholder={t('accessControl.form.placeholders.password')}
+--- a/workspace/features/add-language-translation.md
++++ b/workspace/features/add-language-translation.md
+-You are a senior software engineer working on a fullstack project (React + Spring Boot).
++# Feature: Standardize Application Language
+-====================================
+-MANDATORY CONTEXT USAGE
+-====================================
++## Goal
++Ensure all user-facing text is consistently translated to the system’s chosen language, eliminating mixed-language content and improving UX.
+-- BEFORE making any decision, you MUST read AI_CONTEXT.md
+-- Use it as the single source of truth for:
+-  - UI/label conventions
+-  - Error handling patterns
+-  - Enum/role representations
+-  - Existing localization (i18n) approach, if any
+-
+-- Do NOT assume current language strategy
+-- Do NOT hardcode translations without verifying patterns
+-- Validate everything against the codebase
+-
+-====================================
+-TASK
+-====================================
+-
+-Identify and translate all user-facing labels, messages, and responses that are still in English, aligning them with the system’s chosen language.
+-
+-This includes:
+-- UI labels (buttons, fields, titles)
+-- Validation/error messages
+-- API response messages (when exposed to frontend)
++## Scope
++- Frontend UI (labels, buttons, titles, placeholders)
++- Backend messages exposed to frontend (validation/errors)
+-====================================
+-GOAL
+-====================================
++## Requirements
++- Translate all UI labels (buttons, fields, titles)
++- Translate validation and error messages
++- Ensure API response messages exposed to users are localized
++- Map enum/role values to user-friendly labels in UI
++- Centralize text handling to avoid duplication
+-- Ensure consistent language across the entire application
+-- Improve UX by eliminating mixed-language content
+-- Centralize and standardize text handling
+-- Keep implementation scalable for future localization
+-
+-====================================
+-CONSTRAINTS
+-====================================
+-
+-- Do NOT refactor unrelated business logic
++## Constraints
+-- Keep changes minimal and controlled
+-- Respect existing architecture and patterns
+-- Controllers must remain thin
+-- Business logic must stay in services
+-- Frontend must use service layer
+-
+-====================================
+-DESIGN GUIDELINES
+-====================================
+-
+-- Treat all user-facing text as part of presentation layer
+-
+-- Avoid hardcoding strings directly in:
+-  - Components
+-  - Controllers
+-  - Services (unless internal)
+-
+-- Prefer centralized text management:
+-  - Frontend: i18n/config files or constants
+-  - Backend: message sources or consistent response mapping
+-
+-- Enum/roles:
+-  - Keep internal values (e.g., MANAGER)
+-  - Map to user-friendly labels in UI
+-
+-- Errors:
+-  - Ensure messages returned to frontend are user-friendly
+-  - Avoid exposing technical/internal messages
+-
+-====================================
+-IMPLEMENTATION INSTRUCTIONS
+-====================================
+-
+-1. Analyze:
+-   - Read AI_CONTEXT.md
+-   - Identify where labels/messages are defined (frontend and backend)
+-   - Search for English strings in:
+-     - UI components
+-     - API responses
+-     - Validation messages
+-     - Enums displayed in UI
+-
+-2. Backend:
+-
+-- Review response messages:
+-  - Ensure user-facing messages are localized
+-  - Keep internal logs/messages unchanged if appropriate

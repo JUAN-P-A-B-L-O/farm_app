@@ -1,875 +1,531 @@
-diff --git a/AI_CONTEXT.md b/AI_CONTEXT.md
-index a90ad77..a045ca8 100644
---- a/AI_CONTEXT.md
-+++ b/AI_CONTEXT.md
-@@ -57,6 +57,10 @@
-   React + TypeScript + Vite
-   Keep separation: pages, components, services, types, layout, context, hooks
-   Use typed service layer for HTTP; do not hardcode API contracts in components
-+  Default visible language is pt-BR; avoid mixed-language UI
-+  Frontend user-facing labels live in frontend/web/farm_web/src/i18n and should be consumed via LanguageContext/useTranslation
-+  Enum values such as MANAGER, WORKER, ACTIVE, INACTIVE, SOLD, PURCHASED, and BORN remain internal/API values and must be mapped to localized labels in the UI
-+  Backend error responses returned to the frontend are localized centrally in shared.exception so services can keep internal canonical messages when needed
-   JWT attachment is centralized in Axios service layer
-   On first authenticated 401, clear auth state and force logout; /auth/login failures do not trigger auto-logout
-   Farm selection is centralized in FarmContext
-diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAccessDeniedHandler.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAccessDeniedHandler.java
 new file mode 100644
-index 0000000..9516156
+index 0000000..9a16af7
 --- /dev/null
-+++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
-@@ -0,0 +1,170 @@
-+package com.jpsoftware.farmapp.shared.exception;
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAccessDeniedHandler.java
+@@ -0,0 +1,46 @@
++package com.jpsoftware.farmapp.auth.infrastructure;
 +
-+import java.util.Map;
-+import java.util.regex.Matcher;
-+import java.util.regex.Pattern;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import com.jpsoftware.farmapp.shared.exception.ErrorMessageTranslator;
++import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
++import jakarta.servlet.http.HttpServletRequest;
++import jakarta.servlet.http.HttpServletResponse;
++import java.io.IOException;
++import java.time.Instant;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.MediaType;
++import org.springframework.security.access.AccessDeniedException;
++import org.springframework.security.web.access.AccessDeniedHandler;
++import org.springframework.stereotype.Component;
 +
-+final class ErrorMessageTranslator {
++@Component
++public class RestAccessDeniedHandler implements AccessDeniedHandler {
 +
-+    private static final String VALIDATION_FALLBACK = "Falha de validação.";
-+    private static final Pattern REQUIRED_FIELD_PATTERN =
-+            Pattern.compile("^(?:Animal )?([A-Za-z]+) must not be (?:blank|null)$");
-+    private static final Pattern POSITIVE_FIELD_PATTERN =
-+            Pattern.compile("^(?:Animal )?([A-Za-z]+) must be greater than zero$");
-+    private static final Pattern SCALE_FIELD_PATTERN =
-+            Pattern.compile("^([A-Za-z]+) must have at most 2 decimal places$");
++    private final ObjectMapper objectMapper;
 +
-+    private static final Map<String, String> EXACT_TRANSLATIONS = Map.ofEntries(
-+            Map.entry("Validation failed", VALIDATION_FALLBACK),
-+            Map.entry("Malformed request body", "Corpo da requisição inválido."),
-+            Map.entry("Internal server error", "Erro interno do servidor."),
-+            Map.entry("Resource not found", "Recurso não encontrado."),
-+            Map.entry("request must not be null", "Requisição obrigatória."),
-+            Map.entry("Create animal request must not be null", "Requisição obrigatória."),
-+            Map.entry("Update animal request must not be null", "Requisição obrigatória."),
-+            Map.entry("Sell animal request must not be null", "Requisição obrigatória."),
-+            Map.entry("Authenticated manager is required", "Gerente autenticado obrigatório."),
-+            Map.entry("Authenticated user is required", "Usuário autenticado obrigatório."),
-+            Map.entry("Authenticated user is required to register milk price", "É necessário estar autenticado para registrar o preço do leite."),
-+            Map.entry("currentPassword is incorrect", "A senha atual está incorreta."),
-+            Map.entry("newPassword must be different from currentPassword", "A nova senha deve ser diferente da senha atual."),
-+            Map.entry("farmIds must reference farms owned by the authenticated manager", "Selecione apenas fazendas pertencentes ao gerente autenticado."),
-+            Map.entry("User with this email already exists", "Já existe um usuário com este e-mail."),
-+            Map.entry("password must not be blank when active is true", "A senha é obrigatória para usuários ativos."),
-+            Map.entry("User who owns farms must remain a manager", "Usuários proprietários de fazendas devem permanecer com a função de gerente."),
-+            Map.entry("Inactive user who owns farms cannot be updated", "Não é possível atualizar um usuário inativo que possui fazendas."),
-+            Map.entry("id must be a valid UUID", "Informe um identificador válido."),
-+            Map.entry("userId must be a valid UUID", "Selecione um usuário válido."),
-+            Map.entry("Farm not found", "Fazenda não encontrada."),
-+            Map.entry("User not found", "Usuário não encontrado."),
-+            Map.entry("Animal not found", "Animal não encontrado."),
-+            Map.entry("Feed type not found", "Tipo de ração não encontrado."),
-+            Map.entry("Production not found", "Produção não encontrada."),
-+            Map.entry("Feeding not found", "Alimentação não encontrada."),
-+            Map.entry("Date cannot be in the future", "A data não pode estar no futuro."),
-+            Map.entry("Animal must be ACTIVE for production operations", "O animal deve estar ativo para registrar produção."),
-+            Map.entry("Animal must be ACTIVE for feeding operations", "O animal deve estar ativo para registrar alimentação."),
-+            Map.entry("Animal with this tag already exists", "Já existe um animal com esta tag."),
-+            Map.entry("Animal status must be ACTIVE, SOLD, DEAD, or INACTIVE", "O status do animal deve ser Ativo, Vendido, Morto ou Inativo."),
-+            Map.entry("Use the sell action to mark an animal as SOLD", "Use a ação de venda para marcar o animal como vendido."),
-+            Map.entry("Sold animals cannot transition to another status", "Animais vendidos não podem mudar para outro status."),
-+            Map.entry("Animal origin must be PURCHASED or BORN", "A origem do animal deve ser Comprado ou Nascido."),
-+            Map.entry("Animal acquisitionCost must be greater than zero for purchased animals", "O custo de aquisição deve ser maior que zero para animais comprados."),
-+            Map.entry("Animal is already sold", "O animal já foi vendido."),
-+            Map.entry("Only active animals can be sold", "Apenas animais ativos podem ser vendidos."),
-+            Map.entry("startDate must be before or equal to endDate", "A data inicial deve ser anterior ou igual à data final."),
-+            Map.entry("groupBy must be day or month", "O agrupamento deve ser por dia ou mês."),
-+            Map.entry("status must be ACTIVE, INACTIVE, SOLD, or DEAD", "O status deve ser Ativo, Inativo, Vendido ou Morto."),
-+            Map.entry("Invalid email or password", "E-mail ou senha inválidos."),
-+            Map.entry("Inactive production cannot be updated", "Não é possível atualizar uma produção inativa."),
-+            Map.entry("Inactive feeding cannot be updated", "Não é possível atualizar uma alimentação inativa."),
-+            Map.entry("Cannot inactivate user who owns farms", "Não é possível inativar um usuário que possui fazendas."),
-+            Map.entry("Cannot delete user who owns farms", "Não é possível excluir um usuário que possui fazendas."),
-+            Map.entry("Data integrity violation", "Violação de integridade de dados."),
-+            Map.entry("must be greater than 0", "O valor deve ser maior que zero."));
-+
-+    private ErrorMessageTranslator() {
++    public RestAccessDeniedHandler(ObjectMapper objectMapper) {
++        this.objectMapper = objectMapper;
 +    }
 +
-+    static String translate(String message) {
-+        if (message == null || message.isBlank()) {
-+            return VALIDATION_FALLBACK;
-+        }
++    @Override
++    public void handle(
++            HttpServletRequest request,
++            HttpServletResponse response,
++            AccessDeniedException accessDeniedException) throws IOException {
++        response.setStatus(HttpStatus.FORBIDDEN.value());
++        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 +
-+        String trimmedMessage = message.trim();
-+        String exactTranslation = EXACT_TRANSLATIONS.get(trimmedMessage);
-+        if (exactTranslation != null) {
-+            return exactTranslation;
-+        }
++        String message = accessDeniedException != null && accessDeniedException.getMessage() != null
++                ? accessDeniedException.getMessage()
++                : "Access is denied";
 +
-+        String requiredFieldTranslation = translateFieldMessage(trimmedMessage, REQUIRED_FIELD_PATTERN, TranslationKind.REQUIRED);
-+        if (requiredFieldTranslation != null) {
-+            return requiredFieldTranslation;
-+        }
++        ErrorResponse body = ErrorResponse.builder()
++                .timestamp(Instant.now())
++                .status(HttpStatus.FORBIDDEN.value())
++                .error(ErrorMessageTranslator.translate(message))
++                .path(request.getRequestURI())
++                .build();
 +
-+        String positiveFieldTranslation = translateFieldMessage(trimmedMessage, POSITIVE_FIELD_PATTERN, TranslationKind.POSITIVE);
-+        if (positiveFieldTranslation != null) {
-+            return positiveFieldTranslation;
-+        }
-+
-+        String scaleFieldTranslation = translateFieldMessage(trimmedMessage, SCALE_FIELD_PATTERN, TranslationKind.SCALE);
-+        if (scaleFieldTranslation != null) {
-+            return scaleFieldTranslation;
-+        }
-+
-+        return trimmedMessage;
-+    }
-+
-+    private static String translateFieldMessage(String message, Pattern pattern, TranslationKind translationKind) {
-+        Matcher matcher = pattern.matcher(message);
-+        if (!matcher.matches()) {
-+            return null;
-+        }
-+
-+        String fieldName = matcher.group(1);
-+        return switch (translationKind) {
-+            case REQUIRED -> translateRequiredField(fieldName);
-+            case POSITIVE -> translatePositiveField(fieldName);
-+            case SCALE -> translateScaleField(fieldName);
-+        };
-+    }
-+
-+    private static String translateRequiredField(String fieldName) {
-+        return switch (fieldName) {
-+            case "name" -> "O nome é obrigatório.";
-+            case "email" -> "O e-mail é obrigatório.";
-+            case "password" -> "A senha é obrigatória.";
-+            case "currentPassword" -> "A senha atual é obrigatória.";
-+            case "newPassword" -> "A nova senha é obrigatória.";
-+            case "role" -> "A função é obrigatória.";
-+            case "farmIds" -> "Selecione ao menos uma fazenda.";
-+            case "active" -> "Informe se o usuário está ativo.";
-+            case "farmId" -> "Selecione uma fazenda.";
-+            case "animalId" -> "Selecione um animal.";
-+            case "feedTypeId" -> "Selecione um tipo de ração.";
-+            case "userId" -> "Selecione um usuário.";
-+            case "quantity" -> "A quantidade é obrigatória.";
-+            case "price" -> "O preço é obrigatório.";
-+            case "effectiveDate" -> "A data de vigência é obrigatória.";
-+            case "date" -> "A data é obrigatória.";
-+            case "costPerKg" -> "O custo por kg é obrigatório.";
-+            case "acquisitionCost" -> "O custo de aquisição é obrigatório.";
-+            case "salePrice" -> "O valor da venda é obrigatório.";
-+            case "tag" -> "A tag do animal é obrigatória.";
-+            case "breed" -> "A raça do animal é obrigatória.";
-+            case "birthDate" -> "A data de nascimento do animal é obrigatória.";
-+            case "origin" -> "A origem do animal é obrigatória.";
-+            case "id" -> "O identificador é obrigatório.";
-+            case "request" -> "Requisição obrigatória.";
-+            default -> null;
-+        };
-+    }
-+
-+    private static String translatePositiveField(String fieldName) {
-+        return switch (fieldName) {
-+            case "quantity" -> "A quantidade deve ser maior que zero.";
-+            case "price" -> "O preço deve ser maior que zero.";
-+            case "costPerKg" -> "O custo por kg deve ser maior que zero.";
-+            case "acquisitionCost" -> "O custo de aquisição deve ser maior que zero.";
-+            case "salePrice" -> "O valor da venda deve ser maior que zero.";
-+            default -> null;
-+        };
-+    }
-+
-+    private static String translateScaleField(String fieldName) {
-+        return switch (fieldName) {
-+            case "quantity" -> "A quantidade deve ter no máximo 2 casas decimais.";
-+            case "price" -> "O preço deve ter no máximo 2 casas decimais.";
-+            case "costPerKg" -> "O custo por kg deve ter no máximo 2 casas decimais.";
-+            case "acquisitionCost" -> "O custo de aquisição deve ter no máximo 2 casas decimais.";
-+            case "salePrice" -> "O valor da venda deve ter no máximo 2 casas decimais.";
-+            default -> null;
-+        };
-+    }
-+
-+    private enum TranslationKind {
-+        REQUIRED,
-+        POSITIVE,
-+        SCALE
++        objectMapper.writeValue(response.getOutputStream(), body);
 +    }
 +}
-diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandler.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandler.java
-index 43f824f..0f76232 100644
---- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandler.java
-+++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandler.java
-@@ -75,7 +75,10 @@ public class GlobalExceptionHandler {
-     public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(
-             MissingServletRequestParameterException exception,
-             HttpServletRequest request) {
--        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());
-+        return buildErrorResponse(
-+                HttpStatus.BAD_REQUEST,
-+                "O parâmetro '" + exception.getParameterName() + "' é obrigatório.",
-+                request.getRequestURI());
-     }
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAuthenticationEntryPoint.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAuthenticationEntryPoint.java
+index 52943bb..132e5aa 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAuthenticationEntryPoint.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/RestAuthenticationEntryPoint.java
+@@ -2,6 +2,7 @@ package com.jpsoftware.farmapp.auth.infrastructure;
  
-     @ExceptionHandler(HttpMessageNotReadableException.class)
-@@ -137,7 +140,7 @@ public class GlobalExceptionHandler {
-         ErrorResponse response = ErrorResponse.builder()
+ import com.fasterxml.jackson.databind.ObjectMapper;
+ import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
++import com.jpsoftware.farmapp.shared.exception.ErrorMessageTranslator;
+ import jakarta.servlet.http.HttpServletRequest;
+ import jakarta.servlet.http.HttpServletResponse;
+ import java.io.IOException;
+@@ -36,7 +37,7 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
+         ErrorResponse body = ErrorResponse.builder()
                  .timestamp(Instant.now())
-                 .status(status.value())
--                .error(error)
-+                .error(ErrorMessageTranslator.translate(error))
-                 .path(path)
+                 .status(HttpStatus.UNAUTHORIZED.value())
+-                .error(message)
++                .error(ErrorMessageTranslator.translate(message))
+                 .path(request.getRequestURI())
                  .build();
  
-diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java
-index bb39726..8b431bd 100644
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java
-@@ -125,7 +125,7 @@ class FeedTypeControllerContractTest {
-         mockMvc.perform(get("/feed-types/missing-id"))
-                 .andExpect(status().isNotFound())
-                 .andExpect(jsonPath("$.status").value(404))
--                .andExpect(jsonPath("$.error").value("Feed type not found"))
-+                .andExpect(jsonPath("$.error").value("Tipo de ração não encontrado."))
-                 .andExpect(jsonPath("$.path").value("/feed-types/missing-id"));
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/SecurityConfig.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/SecurityConfig.java
+index ac8dd50..f6b278f 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/SecurityConfig.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/SecurityConfig.java
+@@ -21,12 +21,15 @@ public class SecurityConfig {
+ 
+     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+     private final RestAuthenticationEntryPoint authenticationEntryPoint;
++    private final RestAccessDeniedHandler accessDeniedHandler;
+ 
+     public SecurityConfig(
+             JwtAuthenticationFilter jwtAuthenticationFilter,
+-            RestAuthenticationEntryPoint authenticationEntryPoint) {
++            RestAuthenticationEntryPoint authenticationEntryPoint,
++            RestAccessDeniedHandler accessDeniedHandler) {
+         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+         this.authenticationEntryPoint = authenticationEntryPoint;
++        this.accessDeniedHandler = accessDeniedHandler;
      }
  
-diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java
-index f8969b2..f793f79 100644
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java
-@@ -182,7 +182,7 @@ class FeedingControllerContractTest {
-         mockMvc.perform(get("/feedings/missing-id"))
-                 .andExpect(status().isNotFound())
-                 .andExpect(jsonPath("$.status").value(404))
--                .andExpect(jsonPath("$.error").value("Feeding not found"))
-+                .andExpect(jsonPath("$.error").value("Alimentação não encontrada."))
-                 .andExpect(jsonPath("$.path").value("/feedings/missing-id"));
+     @Bean
+@@ -35,7 +38,9 @@ public class SecurityConfig {
+                 .csrf(AbstractHttpConfigurer::disable)
+                 .cors(Customizer.withDefaults())
+                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+-                .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
++                .exceptionHandling(exception -> exception
++                        .authenticationEntryPoint(authenticationEntryPoint)
++                        .accessDeniedHandler(accessDeniedHandler))
+                 .authorizeHttpRequests(authorize -> authorize
+                         .requestMatchers("/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                         .requestMatchers(HttpMethod.PUT, "/users/me/password").authenticated()
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
+index 9516156..02a1647 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
+@@ -4,11 +4,13 @@ import java.util.Map;
+ import java.util.regex.Matcher;
+ import java.util.regex.Pattern;
+ 
+-final class ErrorMessageTranslator {
++public final class ErrorMessageTranslator {
+ 
+     private static final String VALIDATION_FALLBACK = "Falha de validação.";
+     private static final Pattern REQUIRED_FIELD_PATTERN =
+             Pattern.compile("^(?:Animal )?([A-Za-z]+) must not be (?:blank|null)$");
++    private static final Pattern EMPTY_FIELD_PATTERN =
++            Pattern.compile("^([A-Za-z]+) must not be empty$");
+     private static final Pattern POSITIVE_FIELD_PATTERN =
+             Pattern.compile("^(?:Animal )?([A-Za-z]+) must be greater than zero$");
+     private static final Pattern SCALE_FIELD_PATTERN =
+@@ -19,6 +21,10 @@ final class ErrorMessageTranslator {
+             Map.entry("Malformed request body", "Corpo da requisição inválido."),
+             Map.entry("Internal server error", "Erro interno do servidor."),
+             Map.entry("Resource not found", "Recurso não encontrado."),
++            Map.entry("Unauthorized", "Não autorizado."),
++            Map.entry("Access is denied", "Acesso negado."),
++            Map.entry("Full authentication is required to access this resource", "É necessário autenticação para acessar este recurso."),
++            Map.entry("Invalid or expired token", "Token inválido ou expirado."),
+             Map.entry("request must not be null", "Requisição obrigatória."),
+             Map.entry("Create animal request must not be null", "Requisição obrigatória."),
+             Map.entry("Update animal request must not be null", "Requisição obrigatória."),
+@@ -55,6 +61,7 @@ final class ErrorMessageTranslator {
+             Map.entry("startDate must be before or equal to endDate", "A data inicial deve ser anterior ou igual à data final."),
+             Map.entry("groupBy must be day or month", "O agrupamento deve ser por dia ou mês."),
+             Map.entry("status must be ACTIVE, INACTIVE, SOLD, or DEAD", "O status deve ser Ativo, Inativo, Vendido ou Morto."),
++            Map.entry("currency must be BRL or USD", "A moeda deve ser BRL ou USD."),
+             Map.entry("Invalid email or password", "E-mail ou senha inválidos."),
+             Map.entry("Inactive production cannot be updated", "Não é possível atualizar uma produção inativa."),
+             Map.entry("Inactive feeding cannot be updated", "Não é possível atualizar uma alimentação inativa."),
+@@ -66,7 +73,7 @@ final class ErrorMessageTranslator {
+     private ErrorMessageTranslator() {
      }
  
-@@ -203,7 +203,7 @@ class FeedingControllerContractTest {
-                         .content(requestBody))
-                 .andExpect(status().isBadRequest())
-                 .andExpect(jsonPath("$.status").value(400))
--                .andExpect(jsonPath("$.error").value("userId must not be blank"))
-+                .andExpect(jsonPath("$.error").value("Selecione um usuário."))
-                 .andExpect(jsonPath("$.path").value("/feedings"));
-     }
+-    static String translate(String message) {
++    public static String translate(String message) {
+         if (message == null || message.isBlank()) {
+             return VALIDATION_FALLBACK;
+         }
+@@ -82,6 +89,11 @@ final class ErrorMessageTranslator {
+             return requiredFieldTranslation;
+         }
  
-@@ -416,7 +416,7 @@ class FeedingControllerContractTest {
-                                 """))
-                 .andExpect(status().isConflict())
-                 .andExpect(jsonPath("$.status").value(409))
--                .andExpect(jsonPath("$.error").value("Inactive feeding cannot be updated"))
-+                .andExpect(jsonPath("$.error").value("Não é possível atualizar uma alimentação inativa."))
-                 .andExpect(jsonPath("$.path").value("/feedings/feeding-1"));
-     }
- 
-diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java
-index 70f0260..fb6e3af 100644
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java
-@@ -158,7 +158,7 @@ class ProductionControllerContractTest {
-                         .content(requestBody))
-                 .andExpect(status().isBadRequest())
-                 .andExpect(jsonPath("$.status").value(400))
--                .andExpect(jsonPath("$.error").value("must be greater than 0"))
-+                .andExpect(jsonPath("$.error").value("O valor deve ser maior que zero."))
-                 .andExpect(jsonPath("$.path").value("/productions"));
-     }
- 
-@@ -180,7 +180,7 @@ class ProductionControllerContractTest {
-                         .content(requestBody))
-                 .andExpect(status().isNotFound())
-                 .andExpect(jsonPath("$.status").value(404))
--                .andExpect(jsonPath("$.error").value("Animal not found"))
-+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
-                 .andExpect(jsonPath("$.path").value("/productions"));
-     }
- 
-@@ -225,7 +225,7 @@ class ProductionControllerContractTest {
-                         .content(requestBody))
-                 .andExpect(status().isNotFound())
-                 .andExpect(jsonPath("$.status").value(404))
--                .andExpect(jsonPath("$.error").value("Production not found"))
-+                .andExpect(jsonPath("$.error").value("Produção não encontrada."))
-                 .andExpect(jsonPath("$.path").value("/productions/missing-id"));
-     }
- 
-@@ -236,7 +236,7 @@ class ProductionControllerContractTest {
-         mockMvc.perform(get("/productions/summary/by-animal").param("animalId", "missing-animal"))
-                 .andExpect(status().isNotFound())
-                 .andExpect(jsonPath("$.status").value(404))
--                .andExpect(jsonPath("$.error").value("Animal not found"))
-+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
-                 .andExpect(jsonPath("$.path").value("/productions/summary/by-animal"));
-     }
- 
-@@ -247,7 +247,7 @@ class ProductionControllerContractTest {
-         mockMvc.perform(get("/productions/summary/profit/by-animal").param("animalId", "missing-animal"))
-                 .andExpect(status().isNotFound())
-                 .andExpect(jsonPath("$.status").value(404))
--                .andExpect(jsonPath("$.error").value("Animal not found"))
-+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
-                 .andExpect(jsonPath("$.path").value("/productions/summary/profit/by-animal"));
-     }
- 
-@@ -461,7 +461,7 @@ class ProductionControllerContractTest {
-                                 """))
-                 .andExpect(status().isConflict())
-                 .andExpect(jsonPath("$.status").value(409))
--                .andExpect(jsonPath("$.error").value("Inactive production cannot be updated"))
-+                .andExpect(jsonPath("$.error").value("Não é possível atualizar uma produção inativa."))
-                 .andExpect(jsonPath("$.path").value("/productions/production-1"));
-     }
- 
-diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/user/UserControllerContractTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/user/UserControllerContractTest.java
-index 6eb53dc..661efe4 100644
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/user/UserControllerContractTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/user/UserControllerContractTest.java
-@@ -243,7 +243,7 @@ class UserControllerContractTest {
-         mockMvc.perform(get("/users/11111111-1111-1111-1111-111111111111"))
-                 .andExpect(status().isNotFound())
-                 .andExpect(jsonPath("$.status").value(404))
--                .andExpect(jsonPath("$.error").value("User not found"))
-+                .andExpect(jsonPath("$.error").value("Usuário não encontrado."))
-                 .andExpect(jsonPath("$.path").value("/users/11111111-1111-1111-1111-111111111111"));
-     }
- 
-diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/animal/AnimalIntegrationTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/animal/AnimalIntegrationTest.java
-index 898962b..37c56e8 100644
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/animal/AnimalIntegrationTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/animal/AnimalIntegrationTest.java
-@@ -76,6 +76,6 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
-                         .contentType(MediaType.APPLICATION_JSON)
-                         .content(AnimalFixture.createRequestJson(farm.getId())))
-                 .andExpect(status().isConflict())
--                .andExpect(jsonPath("$.error").value("Animal with this tag already exists"));
-+                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag."));
-     }
- }
-diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
-index 99b22d2..8472d7e 100644
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
-@@ -57,7 +57,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
-                                 }
-                                 """))
-                 .andExpect(status().isUnauthorized())
--                .andExpect(jsonPath("$.error").value("Invalid email or password"));
-+                .andExpect(jsonPath("$.error").value("E-mail ou senha inválidos."));
-     }
- 
-     @Test
-@@ -79,7 +79,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
-                                 }
-                                 """))
-                 .andExpect(status().isUnauthorized())
--                .andExpect(jsonPath("$.error").value("Invalid email or password"));
-+                .andExpect(jsonPath("$.error").value("E-mail ou senha inválidos."));
-     }
- 
-     @Test
-diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/user/UserIntegrationTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/user/UserIntegrationTest.java
-index 1d4af2e..3bd6e8f 100644
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/user/UserIntegrationTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/user/UserIntegrationTest.java
-@@ -133,7 +133,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
-                                 }
-                                 """.formatted(farm.getId())))
-                 .andExpect(status().isConflict())
--                .andExpect(jsonPath("$.error").value("User with this email already exists"));
-+                .andExpect(jsonPath("$.error").value("Já existe um usuário com este e-mail."));
-     }
- 
-     @Test
-@@ -154,7 +154,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
-                                 }
-                                 """.formatted(farm.getId())))
-                 .andExpect(status().isBadRequest())
--                .andExpect(jsonPath("$.error").value("password must not be blank when active is true"));
-+                .andExpect(jsonPath("$.error").value("A senha é obrigatória para usuários ativos."));
-     }
- 
-     @Test
-@@ -178,7 +178,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
-                                 }
-                                 """.formatted(otherFarm.getId())))
-                 .andExpect(status().isBadRequest())
--                .andExpect(jsonPath("$.error").value("farmIds must reference farms owned by the authenticated manager"));
-+                .andExpect(jsonPath("$.error").value("Selecione apenas fazendas pertencentes ao gerente autenticado."));
-     }
- 
-     @Test
-@@ -289,7 +289,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
-         mockMvc.perform(delete("/users/" + owner.getId())
-                         .header("Authorization", bearerToken(manager)))
-                 .andExpect(status().isConflict())
--                .andExpect(jsonPath("$.error").value("Cannot delete user who owns farms"));
-+                .andExpect(jsonPath("$.error").value("Não é possível excluir um usuário que possui fazendas."));
-     }
- 
-     @Test
-diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandlerTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandlerTest.java
-index 6e842d1..b4769b4 100644
---- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandlerTest.java
-+++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandlerTest.java
-@@ -42,7 +42,7 @@ class GlobalExceptionHandlerTest {
-                 .andExpect(status().isConflict())
-                 .andExpect(jsonPath("$.timestamp").exists())
-                 .andExpect(jsonPath("$.status").value(409))
--                .andExpect(jsonPath("$.error").value("Animal with this tag already exists"))
-+                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag."))
-                 .andExpect(jsonPath("$.path").value("/test-exceptions/conflict"));
-     }
- 
-@@ -58,7 +58,7 @@ class GlobalExceptionHandlerTest {
-                 .andExpect(status().isBadRequest())
-                 .andExpect(jsonPath("$.timestamp").exists())
-                 .andExpect(jsonPath("$.status").value(400))
--                .andExpect(jsonPath("$.error").value("name must not be blank"))
-+                .andExpect(jsonPath("$.error").value("O nome é obrigatório."))
-                 .andExpect(jsonPath("$.path").value("/test-exceptions/validation"));
-     }
- 
-@@ -68,7 +68,7 @@ class GlobalExceptionHandlerTest {
-                 .andExpect(status().isNotFound())
-                 .andExpect(jsonPath("$.timestamp").exists())
-                 .andExpect(jsonPath("$.status").value(404))
--                .andExpect(jsonPath("$.error").value("Resource not found"))
-+                .andExpect(jsonPath("$.error").value("Recurso não encontrado."))
-                 .andExpect(jsonPath("$.path").value("/test-exceptions/not-found"));
-     }
- 
++        String emptyFieldTranslation = translateFieldMessage(trimmedMessage, EMPTY_FIELD_PATTERN, TranslationKind.REQUIRED);
++        if (emptyFieldTranslation != null) {
++            return emptyFieldTranslation;
++        }
++
+         String positiveFieldTranslation = translateFieldMessage(trimmedMessage, POSITIVE_FIELD_PATTERN, TranslationKind.POSITIVE);
+         if (positiveFieldTranslation != null) {
+             return positiveFieldTranslation;
 diff --git a/frontend/web/farm_web/src/components/animal/AnimalForm.tsx b/frontend/web/farm_web/src/components/animal/AnimalForm.tsx
-index 28d5924..ff43197 100644
+index ff43197..675ee61 100644
 --- a/frontend/web/farm_web/src/components/animal/AnimalForm.tsx
 +++ b/frontend/web/farm_web/src/components/animal/AnimalForm.tsx
-@@ -71,7 +71,7 @@ function AnimalForm({
+@@ -59,7 +59,7 @@ function AnimalForm({
              type="text"
-             value={formData.breed}
+             value={formData.tag}
              onChange={handleChange}
--            placeholder="Holstein"
-+            placeholder={t('animals.form.placeholders.breed')}
+-            placeholder="A-102"
++            placeholder={t('animals.form.placeholders.tag')}
              required
            />
          </label>
-diff --git a/frontend/web/farm_web/src/components/feed-type/FeedTypeForm.tsx b/frontend/web/farm_web/src/components/feed-type/FeedTypeForm.tsx
-index a887577..f474e8f 100644
---- a/frontend/web/farm_web/src/components/feed-type/FeedTypeForm.tsx
-+++ b/frontend/web/farm_web/src/components/feed-type/FeedTypeForm.tsx
-@@ -65,7 +65,7 @@ function FeedTypeForm({
+@@ -134,7 +134,7 @@ function AnimalForm({
+               type="text"
+               value={formData.farmId}
+               onChange={handleChange}
+-              placeholder="farm-001"
++              placeholder={t('animals.form.placeholders.farmId')}
+               required
+             />
+           </label>
+diff --git a/frontend/web/farm_web/src/components/common/PaginationControls.tsx b/frontend/web/farm_web/src/components/common/PaginationControls.tsx
+index 90d407b..dfa9be3 100644
+--- a/frontend/web/farm_web/src/components/common/PaginationControls.tsx
++++ b/frontend/web/farm_web/src/components/common/PaginationControls.tsx
+@@ -32,10 +32,11 @@ function PaginationControls({
+   return (
+     <div className="pagination-controls">
+       <p className="pagination-controls__summary">
+-        {t('common.pagination.summary')
+-          .replace('{from}', String(from))
+-          .replace('{to}', String(to))
+-          .replace('{total}', String(pagination.totalElements))}
++        {t('common.pagination.summary', {
++          from,
++          to,
++          total: pagination.totalElements,
++        })}
+       </p>
+ 
+       <div className="pagination-controls__actions">
+@@ -56,9 +57,10 @@ function PaginationControls({
+         </label>
+ 
+         <span className="pagination-controls__page">
+-          {t('common.pagination.page')
+-            .replace('{page}', String(currentPage + 1))
+-            .replace('{totalPages}', String(totalPages))}
++          {t('common.pagination.page', {
++            page: currentPage + 1,
++            totalPages,
++          })}
+         </span>
+ 
+         <div className="pagination-controls__buttons">
+diff --git a/frontend/web/farm_web/src/components/user/UserForm.tsx b/frontend/web/farm_web/src/components/user/UserForm.tsx
+index 2bbadbc..620cd20 100644
+--- a/frontend/web/farm_web/src/components/user/UserForm.tsx
++++ b/frontend/web/farm_web/src/components/user/UserForm.tsx
+@@ -132,7 +132,7 @@ function UserForm({
              type="text"
              value={formData.name}
              onChange={handleChange}
--            placeholder="Corn silage"
-+            placeholder={t('feedType.form.placeholders.name')}
+-            placeholder="Maria Silva"
++            placeholder={t('accessControl.form.placeholders.name')}
              required
            />
          </label>
-diff --git a/frontend/web/farm_web/src/components/user/UserForm.tsx b/frontend/web/farm_web/src/components/user/UserForm.tsx
-index 767c25b..2bbadbc 100644
---- a/frontend/web/farm_web/src/components/user/UserForm.tsx
-+++ b/frontend/web/farm_web/src/components/user/UserForm.tsx
-@@ -155,7 +155,7 @@ function UserForm({
-             <option value="">{t('accessControl.form.selectRole')}</option>
-             {roleOptions.map((role) => (
-               <option key={role} value={role}>
--                {role}
-+                {t(`accessControl.roles.${role}`)}
-               </option>
-             ))}
-           </select>
+@@ -144,7 +144,7 @@ function UserForm({
+             type="email"
+             value={formData.email}
+             onChange={handleChange}
+-            placeholder="maria.silva@example.com"
++            placeholder={t('accessControl.form.placeholders.email')}
+             required
+           />
+         </label>
+@@ -185,7 +185,7 @@ function UserForm({
+               type="password"
+               value={formData.password}
+               onChange={handleChange}
+-              placeholder="farmapp@123"
++              placeholder={t('accessControl.form.placeholders.password')}
+               required={formData.active}
+             />
+           </label>
+@@ -198,7 +198,7 @@ function UserForm({
+             type="url"
+             value={formData.avatarUrl}
+             onChange={handleChange}
+-            placeholder="https://example.com/avatar.png"
++            placeholder={t('accessControl.form.placeholders.avatarUrl')}
+           />
+           <small>{t('accessControl.form.avatarHint')}</small>
+         </label>
+diff --git a/frontend/web/farm_web/src/hooks/useTranslation.ts b/frontend/web/farm_web/src/hooks/useTranslation.ts
+index b543968..2104f1e 100644
+--- a/frontend/web/farm_web/src/hooks/useTranslation.ts
++++ b/frontend/web/farm_web/src/hooks/useTranslation.ts
+@@ -10,12 +10,26 @@ function getNestedValue(source: unknown, key: string): string | undefined {
+   }, source) as string | undefined
+ }
+ 
++function interpolate(
++  template: string,
++  variables: Record<string, string | number> | undefined,
++) {
++  if (!variables) {
++    return template
++  }
++
++  return Object.entries(variables).reduce(
++    (currentValue, [key, value]) => currentValue.replaceAll(`{${key}}`, String(value)),
++    template,
++  )
++}
++
+ export function useTranslation() {
+   const { language } = useLanguage()
+ 
+-  function t(key: string): string {
++  function t(key: string, variables?: Record<string, string | number>): string {
+     const value = getNestedValue(translations[language], key)
+-    return typeof value === 'string' ? value : key
++    return typeof value === 'string' ? interpolate(value, variables) : key
+   }
+ 
+   return {
 diff --git a/frontend/web/farm_web/src/i18n/en.ts b/frontend/web/farm_web/src/i18n/en.ts
-index d4a4d94..5b1f4a7 100644
+index 5b1f4a7..d26a7d5 100644
 --- a/frontend/web/farm_web/src/i18n/en.ts
 +++ b/frontend/web/farm_web/src/i18n/en.ts
-@@ -150,6 +150,9 @@ const en = {
-       status: 'Status',
+@@ -151,12 +151,20 @@ const en = {
        farm: 'Farm',
        farmId: 'Farm ID',
-+      placeholders: {
-+        breed: 'Holstein',
-+      },
+       placeholders: {
++        tag: 'A-102',
+         breed: 'Holstein',
++        farmId: 'farm-001',
+       },
      },
      detailsSections: {
        infoTitle: 'Animal Information',
-@@ -386,6 +389,9 @@ const en = {
-     form: {
-       name: 'Name',
-       costPerKg: 'Cost per kg',
-+      placeholders: {
-+        name: 'Corn silage',
-+      },
+       infoDescription: 'Core data for the selected animal.',
++      productionTitle: 'Production History',
++      productionDescription: 'Production records sorted from most recent to oldest.',
++      productionEmpty: 'No production records found for this animal.',
++      feedingTitle: 'Feeding History',
++      feedingDescription: 'Feeding records sorted from most recent to oldest.',
++      feedingEmpty: 'No feeding records found for this animal.',
      },
-     filters: {
-       searchLabel: 'Search',
-@@ -472,6 +478,10 @@ const en = {
+     origins: {
+       BORN: 'Born',
+@@ -477,6 +485,12 @@ const en = {
+       loadingFarms: 'Loading farms...',
        noFarms: 'Create a farm before registering users.',
        selectRole: 'Select a role',
++      placeholders: {
++        name: 'Mary Smith',
++        email: 'mary.smith@farmapp.com',
++        password: 'farmapp@123',
++        avatarUrl: 'https://example.com/avatar.png',
++      },
      },
-+    roles: {
-+      MANAGER: 'Manager',
-+      WORKER: 'Worker',
-+    },
-     errors: {
-       validationSave: 'Validation error while saving user.',
-       notFound: 'User not found.',
+     roles: {
+       MANAGER: 'Manager',
 diff --git a/frontend/web/farm_web/src/i18n/pt-BR.ts b/frontend/web/farm_web/src/i18n/pt-BR.ts
-index cd14bce..d20a206 100644
+index d20a206..3295c71 100644
 --- a/frontend/web/farm_web/src/i18n/pt-BR.ts
 +++ b/frontend/web/farm_web/src/i18n/pt-BR.ts
-@@ -45,11 +45,11 @@ const ptBR = {
-     submit: 'Entrar',
-     submitting: 'Entrando...',
-     form: {
--      email: 'Email',
-+      email: 'E-mail',
-       password: 'Senha',
-     },
-     errors: {
--      invalidCredentials: 'Invalid credentials',
-+      invalidCredentials: 'E-mail ou senha inválidos.',
-       generic: 'Não foi possível entrar. Tente novamente.',
-     },
-   },
-@@ -87,7 +87,7 @@ const ptBR = {
-     createTitle: 'Criar fazenda',
-     createDescription: 'Crie o limite da fazenda antes de entrar nos módulos operacionais.',
-     formTitle: 'Configuração da fazenda',
--    formDescription: 'Esta fazenda será o contexto ativo para animais, alimentação, produção e analytics.',
-+    formDescription: 'Esta fazenda será o contexto ativo para animais, alimentação, produção e análises.',
-     submitCreate: 'Criar fazenda',
-     createAction: 'Criar fazenda',
-     loadError: 'Não foi possível carregar as fazendas.',
-@@ -150,6 +150,9 @@ const ptBR = {
-       status: 'Status',
+@@ -151,12 +151,20 @@ const ptBR = {
        farm: 'Fazenda',
        farmId: 'ID da fazenda',
-+      placeholders: {
-+        breed: 'Holandesa',
-+      },
+       placeholders: {
++        tag: 'A-102',
+         breed: 'Holandesa',
++        farmId: 'fazenda-001',
+       },
      },
      detailsSections: {
        infoTitle: 'Informações do animal',
-@@ -256,7 +259,7 @@ const ptBR = {
-     title: 'Gestão do preço do leite',
-     description: 'Cadastre preços do leite ao longo do tempo preservando o histórico completo para cálculos e análises.',
-     currentTitle: 'Preço atual',
--    currentDescription: 'O preço do leite com vigência mais recente é usado por padrão nos cálculos de dashboard, lucro e analytics.',
-+    currentDescription: 'O preço do leite com vigência mais recente é usado por padrão nos cálculos de dashboard, lucro e análises.',
-     createTitle: 'Registrar novo preço',
-     createDescription: 'Salve cada alteração de preço como um novo registro, sem sobrescrever valores anteriores.',
-     historyTitle: 'Histórico de preços',
-@@ -364,16 +367,16 @@ const ptBR = {
-     eyebrow: 'Controle de ração',
-     title: 'Gestão de tipos de ração',
-     description: 'Gerencie os tipos de ração disponíveis e mantenha os registros de alimentação alinhados com as opções atuais.',
--    createTitle: 'Criar tipo de alimento',
--    updateTitle: 'Atualizar tipo de alimento',
--    createDescription: 'Preencha as informações do tipo de alimento para criar um novo registro.',
--    updateDescription: 'Edite o tipo de alimento selecionado usando os dados existentes.',
--    submitCreate: 'Criar tipo de alimento',
--    submitUpdate: 'Atualizar tipo de alimento',
--    listTitle: 'Lista de tipos de alimento',
--    listDescription: 'Revise os tipos de alimento atuais e gerencie atualizações ou exclusões.',
--    loading: 'Carregando tipos de alimento...',
--    empty: 'Nenhum tipo de alimento encontrado.',
-+    createTitle: 'Criar tipo de ração',
-+    updateTitle: 'Atualizar tipo de ração',
-+    createDescription: 'Preencha as informações do tipo de ração para criar um novo registro.',
-+    updateDescription: 'Edite o tipo de ração selecionado usando os dados existentes.',
-+    submitCreate: 'Criar tipo de ração',
-+    submitUpdate: 'Atualizar tipo de ração',
-+    listTitle: 'Lista de tipos de ração',
-+    listDescription: 'Revise os tipos de ração atuais e gerencie atualizações ou exclusões.',
-+    loading: 'Carregando tipos de ração...',
-+    empty: 'Nenhum tipo de ração encontrado.',
-     edit: 'Editar',
-     delete: 'Excluir',
-     deleting: 'Excluindo...',
-@@ -386,6 +389,9 @@ const ptBR = {
-     form: {
-       name: 'Nome',
-       costPerKg: 'Custo por kg',
-+      placeholders: {
-+        name: 'Silagem de milho',
-+      },
+       infoDescription: 'Dados principais do animal selecionado.',
++      productionTitle: 'Histórico de produção',
++      productionDescription: 'Registros de produção ordenados do mais recente para o mais antigo.',
++      productionEmpty: 'Nenhum registro de produção encontrado para este animal.',
++      feedingTitle: 'Histórico de alimentação',
++      feedingDescription: 'Registros de alimentação ordenados do mais recente para o mais antigo.',
++      feedingEmpty: 'Nenhum registro de alimentação encontrado para este animal.',
      },
-     filters: {
-       searchLabel: 'Buscar',
-@@ -394,13 +400,13 @@ const ptBR = {
-       clear: 'Limpar',
-     },
-     errors: {
--      validationSave: 'Erro de validação ao salvar o tipo de alimento.',
--      notFound: 'Tipo de alimento não encontrado.',
--      duplicateName: 'Já existe um tipo de alimento com este nome.',
--      loadList: 'Não foi possível carregar os tipos de alimento.',
--      update: 'Não foi possível atualizar o tipo de alimento.',
--      create: 'Não foi possível criar o tipo de alimento.',
--      delete: 'Não foi possível excluir o tipo de alimento.',
-+      validationSave: 'Erro de validação ao salvar o tipo de ração.',
-+      notFound: 'Tipo de ração não encontrado.',
-+      duplicateName: 'Já existe um tipo de ração com este nome.',
-+      loadList: 'Não foi possível carregar os tipos de ração.',
-+      update: 'Não foi possível atualizar o tipo de ração.',
-+      create: 'Não foi possível criar o tipo de ração.',
-+      delete: 'Não foi possível excluir o tipo de ração.',
-       costPerKg: 'O custo por kg deve ser maior que zero.',
-       costPrecision: 'O custo por kg deve ter no máximo 2 casas decimais.',
-     },
-@@ -436,7 +442,7 @@ const ptBR = {
-     },
-     table: {
-       name: 'Nome',
--      email: 'Email',
-+      email: 'E-mail',
-       role: 'Função',
-       status: 'Status',
-       farms: 'Fazendas',
-@@ -444,7 +450,7 @@ const ptBR = {
-     },
-     filters: {
-       searchLabel: 'Buscar',
--      searchPlaceholder: 'Buscar por nome ou email',
-+      searchPlaceholder: 'Buscar por nome ou e-mail',
-       statusLabel: 'Status',
-       roleLabel: 'Função',
-       allStatuses: 'Todos os status',
-@@ -456,7 +462,7 @@ const ptBR = {
-     },
-     form: {
-       name: 'Nome',
--      email: 'Email',
-+      email: 'E-mail',
-       role: 'Função',
-       active: 'Permitir login',
-       password: 'Senha',
-@@ -472,10 +478,14 @@ const ptBR = {
+     origins: {
+       BORN: 'Nascido',
+@@ -477,6 +485,12 @@ const ptBR = {
+       loadingFarms: 'Carregando fazendas...',
        noFarms: 'Crie uma fazenda antes de cadastrar usuários.',
        selectRole: 'Selecione uma função',
++      placeholders: {
++        name: 'Maria Silva',
++        email: 'maria.silva@fazenda.com',
++        password: 'farmapp@123',
++        avatarUrl: 'https://exemplo.com/avatar.png',
++      },
      },
-+    roles: {
-+      MANAGER: 'Gerente',
-+      WORKER: 'Trabalhador',
-+    },
-     errors: {
-       validationSave: 'Erro de validação ao salvar o usuário.',
-       notFound: 'Usuário não encontrado.',
--      duplicateEmail: 'Já existe um usuário com este email.',
-+      duplicateEmail: 'Já existe um usuário com este e-mail.',
-       loadList: 'Não foi possível carregar os usuários.',
-       loadFarms: 'Não foi possível carregar as fazendas para o cadastro do usuário.',
-       create: 'Não foi possível criar o usuário.',
-@@ -485,7 +495,7 @@ const ptBR = {
-       inactivate: 'Não foi possível inativar o usuário.',
-       delete: 'Não foi possível excluir o usuário.',
-       nameRequired: 'Nome é obrigatório.',
--      emailRequired: 'Email é obrigatório.',
-+      emailRequired: 'E-mail é obrigatório.',
-       roleRequired: 'Função é obrigatória.',
-       passwordRequired: 'Senha é obrigatória para usuários ativos.',
-       farmsRequired: 'Selecione ao menos uma fazenda.',
+     roles: {
+       MANAGER: 'Gerente',
 diff --git a/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx b/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
-index b0d81fc..8270c3c 100644
+index 8270c3c..8b446b3 100644
 --- a/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
 +++ b/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
-@@ -23,7 +23,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
-     const apiMessage = error.response?.data?.error
+@@ -161,13 +161,13 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
+           <article className="animals-panel animals-panel--table">
+             <div className="animals-panel__header">
+               <div>
+-                <h2>Production History</h2>
+-                <p>Production records sorted from most recent to oldest.</p>
++                <h2>{t('animals.detailsSections.productionTitle')}</h2>
++                <p>{t('animals.detailsSections.productionDescription')}</p>
+               </div>
+             </div>
  
-     if (status === 404) {
--      return apiMessage ?? 'Animal not found.'
-+      return apiMessage ?? fallbackMessage
-     }
+             {productions.length === 0 && (
+-              <p className="animals-page__status">No production records found for this animal.</p>
++              <p className="animals-page__status">{t('animals.detailsSections.productionEmpty')}</p>
+             )}
  
-     if (apiMessage) {
-@@ -72,14 +72,14 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
-         setProductions(sortByDateDescending(productionsData))
-         setFeedings(sortByDateDescending(feedingsData))
-       } catch (error) {
--        setErrorMessage(getErrorMessage(error, 'Unable to load animal details.'))
-+        setErrorMessage(getErrorMessage(error, t('animals.errors.loadDetails')))
-       } finally {
-         setIsLoading(false)
-       }
-     }
+             {productions.length > 0 && (
+@@ -175,8 +175,8 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
+                 <table className="animals-table">
+                   <thead>
+                     <tr>
+-                      <th>Date</th>
+-                      <th>Quantity</th>
++                      <th>{t('production.table.date')}</th>
++                      <th>{t('production.table.quantity')}</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+@@ -195,13 +195,13 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
+           <article className="animals-panel animals-panel--table">
+             <div className="animals-panel__header">
+               <div>
+-                <h2>Feeding History</h2>
+-                <p>Feeding records sorted from most recent to oldest.</p>
++                <h2>{t('animals.detailsSections.feedingTitle')}</h2>
++                <p>{t('animals.detailsSections.feedingDescription')}</p>
+               </div>
+             </div>
  
-     void loadAnimalDetails()
--  }, [animalId, selectedFarmId])
-+  }, [animalId, selectedFarmId, t])
+             {feedings.length === 0 && (
+-              <p className="animals-page__status">No feeding records found for this animal.</p>
++              <p className="animals-page__status">{t('animals.detailsSections.feedingEmpty')}</p>
+             )}
  
-   return (
-     <main className="animals-page">
+             {feedings.length > 0 && (
+@@ -209,8 +209,8 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
+                 <table className="animals-table">
+                   <thead>
+                     <tr>
+-                      <th>Date</th>
+-                      <th>Quantity</th>
++                      <th>{t('production.table.date')}</th>
++                      <th>{t('production.table.quantity')}</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+diff --git a/frontend/web/farm_web/src/pages/animals/AnimalsPage.tsx b/frontend/web/farm_web/src/pages/animals/AnimalsPage.tsx
+index 90feca2..323e932 100644
+--- a/frontend/web/farm_web/src/pages/animals/AnimalsPage.tsx
++++ b/frontend/web/farm_web/src/pages/animals/AnimalsPage.tsx
+@@ -351,7 +351,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
+             <div className="animals-panel__header">
+               <div>
+                 <h2>{t('animals.sellTitle')}</h2>
+-                <p>{t('animals.sellDescription').replace('{tag}', sellingAnimal.tag)}</p>
++                <p>{t('animals.sellDescription', { tag: sellingAnimal.tag })}</p>
+               </div>
+             </div>
+ 
 diff --git a/frontend/web/farm_web/src/pages/users/UsersPage.tsx b/frontend/web/farm_web/src/pages/users/UsersPage.tsx
-index f25d686..1e4d9c7 100644
+index 1e4d9c7..8c98f77 100644
 --- a/frontend/web/farm_web/src/pages/users/UsersPage.tsx
 +++ b/frontend/web/farm_web/src/pages/users/UsersPage.tsx
-@@ -400,8 +400,8 @@ function UsersPage() {
-                 onChange: (value) => setFilters((current) => ({ ...current, role: value })),
-                 options: [
-                   { value: '', label: t('accessControl.filters.allRoles') },
--                  { value: 'MANAGER', label: 'MANAGER' },
--                  { value: 'WORKER', label: 'WORKER' },
-+                  { value: 'MANAGER', label: t('accessControl.roles.MANAGER') },
-+                  { value: 'WORKER', label: t('accessControl.roles.WORKER') },
-                 ],
-               },
-             ]}
-@@ -484,7 +484,7 @@ function UsersPage() {
-                         </div>
-                       </td>
-                       <td>{user.email}</td>
--                      <td>{user.role}</td>
-+                      <td>{t(`accessControl.roles.${user.role}`)}</td>
-                       <td>
-                         <span className={`animals-table__status animals-table__status--${user.active ? 'active' : 'inactive'}`}>
-                           {user.active ? t('accessControl.status.active') : t('accessControl.status.inactive')}
-diff --git a/ia_pipeline.sh b/ia_pipeline.sh
-index d526eb9..54a7da2 100755
---- a/ia_pipeline.sh
-+++ b/ia_pipeline.sh
-@@ -60,7 +60,7 @@ for FILE in workspace/features/*.md; do
-   fi
- 
-   # =====================
--  # 🧪 TESTER (atualiza testes)
-+  # 🧪 TESTER
-   # =====================
-   echo "🧪 Running TESTER..."
- 
-@@ -74,7 +74,7 @@ $(cat workspace/files.txt)
- Relevant diff:
- $(cat workspace/diff.txt)
- 
--Ensure tests reflect the new behavior and remain aligned with the current implementation."
-+Ensure tests reflect the new behavior and remain aligned with the implementation."
- 
-   TESTER_PROMPT="$TESTER_SYSTEM"$'\n\n'"$TESTER_INPUT"
- 
-@@ -84,7 +84,7 @@ Ensure tests reflect the new behavior and remain aligned with the current implem
-   git commit -m "test(ai): update tests for $(basename "$FILE")" || echo "⚠️ No test changes"
- 
-   # =====================
--  # 🔁 LOOP DE VALIDAÇÃO + FIX
-+  # 🔁 LOOP DE TESTE + FIX
-   # =====================
-   echo "🧪 Running tests with auto-fix..."
- 
-@@ -95,10 +95,10 @@ Ensure tests reflect the new behavior and remain aligned with the current implem
- 
-     echo "➡️ Attempt $ATTEMPT..."
- 
--    # roda testes e captura log
--    (cd backend/farmapp && mvn -q test) > workspace/mvn.log 2>&1 || true
--
--    if grep -q "BUILD SUCCESS" workspace/mvn.log; then
-+    # =====================
-+    # 🧪 EXECUÇÃO REAL (CORRETO)
-+    # =====================
-+    if (cd backend/farmapp && mvn test > ../../workspace/mvn.log 2>&1); then
-       echo "✅ Tests passed"
-       SUCCESS=true
-       break
-@@ -106,6 +106,11 @@ Ensure tests reflect the new behavior and remain aligned with the current implem
- 
-     echo "❌ Tests failed"
- 
-+    # =====================
-+    # 🔎 CAPTURA DE ERRO MELHOR
-+    # =====================
-+    grep -A 5 -B 5 "ERROR" workspace/mvn.log > workspace/error_focus.txt || true
-+
-     # =====================
-     # 🛠 FIXER
-     # =====================
-@@ -115,21 +120,33 @@ Ensure tests reflect the new behavior and remain aligned with the current implem
- 
-     FIXER_INPUT="Fix the issues causing test or compilation failures.
- 
--Recent error log:
--$(tail -n 80 workspace/mvn.log)
-+Relevant error:
-+$(cat workspace/error_focus.txt)
- 
--Focus on:
--- Updating tests if they are outdated
--- Fixing incorrect @Override usage
--- Fixing method signature mismatches
--- Ensuring compatibility with current implementation
-+Full tail:
-+$(tail -n 50 workspace/mvn.log)
- 
--Only modify what is necessary."
-+Rules:
-+- Do NOT delete or disable tests
-+- Fix root cause, not symptoms
-+- Keep changes minimal
-+- Do NOT refactor unrelated code
-+"
- 
-     FIXER_PROMPT="$FIXER_SYSTEM"$'\n\n'"$FIXER_INPUT"
- 
-     codex exec "$FIXER_PROMPT"
- 
-+    # =====================
-+    # 🔒 PROTEÇÃO CONTRA FIXES GRANDES
-+    # =====================
-+    CHANGED_LINES=$(git diff --stat | grep -Eo '[0-9]+ insertions' | grep -Eo '[0-9]+' || echo 0)
-+
-+    if [ "$CHANGED_LINES" -gt 200 ]; then
-+      echo "⚠️ Fix too large ($CHANGED_LINES lines). Aborting to avoid damage."
-+      exit 1
-+    fi
-+
-     git add .
-     git commit -m "fix(ai): auto-fix after test failure (attempt $ATTEMPT)" || echo "⚠️ No fix changes"
- 
-diff --git a/workspace/features/add-dashboard-filters.md b/workspace/features/add-dashboard-filters.md
-deleted file mode 100644
-index 2344aeb..0000000
---- a/workspace/features/add-dashboard-filters.md
-+++ /dev/null
-@@ -1,148 +0,0 @@
+@@ -411,7 +411,7 @@ function UsersPage() {
+             <div className="activation-panel">
+               <div>
+                 <h3>{t('accessControl.activateTitle')}</h3>
+-                <p>{t('accessControl.activateDescription').replace('{name}', activationTarget.name)}</p>
++                <p>{t('accessControl.activateDescription', { name: activationTarget.name })}</p>
+               </div>
+               <label className="animal-form__field" htmlFor="activation-password">
+                 <span>{t('accessControl.form.password')}</span>
+@@ -420,7 +420,7 @@ function UsersPage() {
+                   type="password"
+                   value={activationPassword}
+                   onChange={(event) => setActivationPassword(event.target.value)}
+-                  placeholder="farmapp@123"
++                  placeholder={t('accessControl.form.placeholders.password')}
+                 />
+               </label>
+               <div className="animal-form__actions">
+diff --git a/workspace/features/add-language-translation.md b/workspace/features/add-language-translation.md
+index e70093b..eab7af2 100644
+--- a/workspace/features/add-language-translation.md
++++ b/workspace/features/add-language-translation.md
+@@ -1,151 +1,42 @@
 -You are a senior software engineer working on a fullstack project (React + Spring Boot).
--
++# Feature: Standardize Application Language
+ 
 -====================================
 -MANDATORY CONTEXT USAGE
 -====================================
--
++## Goal
++Ensure all user-facing text is consistently translated to the system’s chosen language, eliminating mixed-language content and improving UX.
+ 
 -- BEFORE making any decision, you MUST read AI_CONTEXT.md
 -- Use it as the single source of truth for:
--  - Dashboard and analytics behavior
--  - Available domain filters (animals, dates, farms, etc.)
--  - API contracts and query patterns
--  - Existing UI/state management patterns
+-  - UI/label conventions
+-  - Error handling patterns
+-  - Enum/role representations
+-  - Existing localization (i18n) approach, if any
 -
--- Do NOT assume available fields or filters
--- Do NOT guess how dashboard data is aggregated
+-- Do NOT assume current language strategy
+-- Do NOT hardcode translations without verifying patterns
 -- Validate everything against the codebase
 -
 -====================================
 -TASK
 -====================================
 -
--Add filtering capabilities to the dashboard page.
+-Identify and translate all user-facing labels, messages, and responses that are still in English, aligning them with the system’s chosen language.
 -
--Filters must include:
--- Time period (date range)
--- Animal(s)
--
--Also identify and include other relevant filters based on the domain.
--
+-This includes:
+-- UI labels (buttons, fields, titles)
+-- Validation/error messages
+-- API response messages (when exposed to frontend)
++## Scope
++- Frontend UI (labels, buttons, titles, placeholders)
++- Backend messages exposed to frontend (validation/errors)
+ - Enum/role labels displayed in UI (e.g., MANAGER)
+ 
 -====================================
 -GOAL
 -====================================
--
--- Allow users to refine dashboard data dynamically
--- Ensure filters are consistent with analytics and listings
--- Keep UX simple and scalable
--- Maintain alignment with backend data aggregation
++## Requirements
++- Translate all UI labels (buttons, fields, titles)
++- Translate validation and error messages
++- Ensure API response messages exposed to users are localized
++- Map enum/role values to user-friendly labels in UI
++- Centralize text handling to avoid duplication
+ 
+-- Ensure consistent language across the entire application
+-- Improve UX by eliminating mixed-language content
+-- Centralize and standardize text handling
+-- Keep implementation scalable for future localization
 -
 -====================================
 -CONSTRAINTS
 -====================================
 -
--- Do NOT refactor unrelated parts of the system
--- Do NOT break existing dashboard endpoints
--- Keep changes minimal and incremental
--- Respect existing architecture (domain/application/infra separation)
+-- Do NOT refactor unrelated business logic
++## Constraints
+ - Do NOT break existing API contracts
+-- Keep changes minimal and controlled
+-- Respect existing architecture and patterns
 -- Controllers must remain thin
 -- Business logic must stay in services
 -- Frontend must use service layer
@@ -878,21 +534,24 @@ index 2344aeb..0000000
 -DESIGN GUIDELINES
 -====================================
 -
--- Filters must be backend-driven (no frontend-only filtering)
+-- Treat all user-facing text as part of presentation layer
 -
--- Time filter:
--  - Support date range
--  - Default behavior must be defined (e.g., all time or recent period)
+-- Avoid hardcoding strings directly in:
+-  - Components
+-  - Controllers
+-  - Services (unless internal)
 -
--- Animal filter:
--  - Single or multi-select (based on existing patterns)
+-- Prefer centralized text management:
+-  - Frontend: i18n/config files or constants
+-  - Backend: message sources or consistent response mapping
 -
--- Additional filters:
--  - Identify relevant ones from domain (e.g., farm, status, type)
--  - Keep extensible
+-- Enum/roles:
+-  - Keep internal values (e.g., MANAGER)
+-  - Map to user-friendly labels in UI
 -
--- Consistency:
--  - Align with filters used in analytics and listings
+-- Errors:
+-  - Ensure messages returned to frontend are user-friendly
+-  - Avoid exposing technical/internal messages
 -
 -====================================
 -IMPLEMENTATION INSTRUCTIONS
@@ -900,42 +559,42 @@ index 2344aeb..0000000
 -
 -1. Analyze:
 -   - Read AI_CONTEXT.md
--   - Inspect how dashboard data is currently fetched
--   - Identify existing filter/query patterns
+-   - Identify where labels/messages are defined (frontend and backend)
+-   - Search for English strings in:
+-     - UI components
+-     - API responses
+-     - Validation messages
+-     - Enums displayed in UI
 -
 -2. Backend:
 -
--- Extend dashboard endpoint(s):
--  - Accept filter parameters (date range, animalId(s), others)
+-- Review response messages:
+-  - Ensure user-facing messages are localized
+-  - Keep internal logs/messages unchanged if appropriate
 -
--- Ensure:
--  - Filtering is applied at query/service level
--  - Aggregations respect filters
--  - Parameter naming is consistent with other endpoints
+-- Validate error handling:
+-  - Ensure consistent message format
 -
 -3. Frontend:
 -
--- Add filter UI:
--  - Date range picker
--  - Animal selector
--  - Additional filters as identified
+-- Replace hardcoded strings with centralized labels
+-- Translate:
+-  - Buttons, forms, titles
+-  - Error messages
+-  - Enum labels (e.g., MANAGER → localized label)
 -
--- State:
--  - Store filters in a consistent way
--  - Trigger data reload on change
--
--- Reusability:
--  - Reuse existing filter/search components if available
--  - Keep components configurable for future reuse
+-- Ensure:
+-  - Consistent terminology across screens
+-  - Reusable label structure
 -
 -====================================
 -AI_CONTEXT.md MAINTENANCE (MANDATORY)
 -====================================
 -
 -- Update AI_CONTEXT.md to reflect:
--  - Dashboard filtering behavior
--  - Supported parameters
--  - Default filter logic
+-  - Language conventions
+-  - Where labels/messages are defined
+-  - Mapping strategy for enums and roles
 -
 -- Keep updates concise and structured
 -
@@ -943,20 +602,34 @@ index 2344aeb..0000000
 -VALIDATION (MANDATORY)
 -====================================
 -
--- Dashboard updates correctly when filters change
--- Data reflects selected period and animals
--- Filters integrate correctly with backend aggregation
--- No regression in existing dashboard behavior
--- Performance remains acceptable
--
+-- No visible English labels remain (unless intentionally kept)
++- Do NOT change internal enum values or identifiers
++- Keep changes incremental and localized
++- Follow existing architecture and patterns from AI_CONTEXT
++
++## Implementation Notes
++- Identify all user-facing strings across frontend and backend
++- Replace hardcoded strings with centralized label management
++- Keep internal system values unchanged (IDs, enums)
++- Reuse existing i18n or configuration patterns if available
++- Avoid duplicating translation logic
++
++## Validation
++- No user-facing English text remains (unless intentional)
+ - UI is consistent in selected language
+-- Error messages are clear and user-friendly
++- Error messages are clear and localized
+ - Enum values are properly mapped for display
+ - No regression in functionality
+ 
 -====================================
 -ANTI-PATTERNS TO AVOID
 -====================================
 -
--- Filtering only in frontend
--- Hardcoding filter values
--- Breaking existing dashboard logic
--- Duplicating filter logic unnecessarily
+-- Hardcoding translations in multiple places
+-- Translating internal system values (IDs, enums) directly
+-- Mixing languages across screens
+-- Breaking response formats
 -
 -====================================
 -OUTPUT REQUIREMENTS
@@ -971,160 +644,1180 @@ index 2344aeb..0000000
 -GOAL
 -====================================
 -
--Deliver a flexible and consistent filtering system for the dashboard, aligned with domain behavior and scalable for future extensions.
+-Deliver a consistent and scalable localization of all user-facing text, eliminating mixed-language issues and improving overall user experience.
+\ No newline at end of file
++## Done Criteria
++- All user-facing text is standardized in the chosen language
++- Labels and messages are centralized
++- No mixed-language content remains
++- Implementation supports future localization
+\ No newline at end of file
+diff --git a/workspace/features/add-medida-selection.md b/workspace/features/add-medida-selection.md
+index 5ee7d11..876f5d1 100644
+--- a/workspace/features/add-medida-selection.md
++++ b/workspace/features/add-medida-selection.md
+@@ -1,144 +1,39 @@
+-You are a senior software engineer working on a fullstack project (React + Spring Boot).
+-
+-====================================
+-MANDATORY CONTEXT USAGE
+-====================================
+-
+-- BEFORE making any decision, you MUST read AI_CONTEXT.md
+-- Use it as the single source of truth for:
+-  - Domain entities and fields (quantities, measurements)
+-  - API contracts
+-  - Analytics/dashboard calculations
+-  - Existing UI/state patterns
+-
+-- Do NOT assume which fields use units
+-- Do NOT guess conversion rules or storage format
+-- Validate everything against the codebase
+-
+-====================================
+-TASK
+-====================================
+-
+-Add support for selecting and using measurement units (e.g., liters, kilograms, etc.) across relevant features.
+-
+-====================================
+-GOAL
+-====================================
+-
+-- Allow users to choose measurement units where applicable
+-- Ensure quantities are consistent across inputs, listings, dashboard, and analytics
+-- Maintain correctness in calculations
+-- Keep implementation simple and extensible
+-
+-====================================
+-CONSTRAINTS
+-====================================
+-
+-- Do NOT refactor unrelated parts of the system
+-- Do NOT break existing endpoints or contracts
+-- Keep changes minimal and incremental
+-- Respect existing architecture (domain/application/infra separation)
+-- Controllers must remain thin
+-- Business logic must stay in services
+-- Frontend must use service layer
+-
+-====================================
+-DESIGN GUIDELINES
+-====================================
+-
+-- Units are part of domain context for quantities
+-
+-- Storage:
+-  - Prefer a consistent base unit internally (if pattern exists)
+-  - Avoid mixing units without clear conversion rules
+-
+-- Selection:
+-  - Can be per-entity (e.g., feeding in kg, production in liters)
+-  - Or contextual (choose based on existing patterns)
+-
+-- Conversion:
+-  - Must be handled consistently
+-  - Avoid duplicating conversion logic across layers
+-
+-- UI:
+-  - Labels must reflect selected unit
+-  - Inputs must be clear and unambiguous
+-
+-====================================
+-IMPLEMENTATION INSTRUCTIONS
+-====================================
+-
+-1. Analyze:
+-   - Read AI_CONTEXT.md
+-   - Identify all fields representing measurable quantities
+-   - Identify where these values are used (forms, listings, analytics)
+-
+-2. Backend:
+-
+-- Extend domain where needed to support unit information
+-- Ensure calculations:
+-  - Use consistent units internally
+-  - Apply conversion logic where necessary
+-
+-- Update services:
+-  - Handle unit selection and validation
+-  - Ensure compatibility with existing logic
+-
+-3. Frontend:
+-
+-- Add unit selection where relevant:
+-  - Forms (feeding, production, etc.)
+-  - Possibly global/contextual selector if pattern fits
+-
+-- Update UI:
+-  - Show unit labels consistently
+-  - Ensure values match selected unit
+-
+-- Ensure:
+-  - All API calls go through service layer
+-  - No duplicated conversion logic
+-
+-====================================
+-AI_CONTEXT.md MAINTENANCE (MANDATORY)
+-====================================
+-
+-- Update AI_CONTEXT.md to reflect:
+-  - Supported units
+-  - Storage and conversion strategy
+-  - UI conventions
+-
+-- Keep updates concise and structured
+-
+-====================================
+-VALIDATION (MANDATORY)
+-====================================
+-
+-- Unit selection works across relevant features
+-- Values are consistent between input, storage, and display
+-- Calculations remain correct
+-- No regression in existing flows
++# Feature: Measurement Unit Selection
++
++## Goal
++Allow users to select measurement units (e.g., liters, kilograms) and ensure consistency across inputs, listings, dashboard, and analytics.
++
++## Scope
++- Backend handling of quantity fields
++- Frontend forms, listings, dashboard, and analytics where quantities are displayed or entered
++
++## Requirements
++- Support selection of measurement units where applicable
++- Ensure quantities are consistent across all parts of the system
++- Calculations must remain correct regardless of selected unit
++- UI must reflect the selected unit clearly in labels and values
++
++## Constraints
++- Do NOT break existing calculations or behavior
++- Do NOT change API contracts unless strictly necessary
++- Keep changes incremental and localized
++- Follow existing architecture and patterns from AI_CONTEXT
++
++## Implementation Notes
++- Identify all fields that represent measurable quantities
++- Ensure a consistent internal representation of values
++- Handle unit selection and conversion in a centralized way
++- Reuse existing services/components when possible
++- Avoid duplicating conversion logic across layers
++
++## Validation
++- Unit selection correctly updates displayed values
++- Inputs, listings, and analytics reflect the selected unit
++- Calculations remain accurate
++- No regression in existing features
++
++## Done Criteria
++- Users can select measurement units where applicable
++- Values are consistent across the system
+ - UI clearly reflects selected units
+-
+-====================================
+-ANTI-PATTERNS TO AVOID
+-====================================
+-
+-- Mixing units without conversion rules
+-- Duplicating conversion logic across layers
+-- Hardcoding units in UI
+-- Breaking existing calculations
+-
+-====================================
+-OUTPUT REQUIREMENTS
+-====================================
+-
+-- Show only necessary changes
+-- Keep explanation minimal
+-- Always return a Conventional Commit message
+-- Provide git commands if possible
+-
+-====================================
+-GOAL
+-====================================
+-
+-Deliver a consistent and extensible unit handling system that integrates cleanly with domain logic, calculations, and UI.
+\ No newline at end of file
++- Implementation is reusable and scalable
 \ No newline at end of file
 diff --git a/workspace/features/improve-filters.md b/workspace/features/improve-filters.md
-new file mode 100644
-index 0000000..a84b6fb
---- /dev/null
+index a84b6fb..d9db104 100644
+--- a/workspace/features/improve-filters.md
 +++ b/workspace/features/improve-filters.md
-@@ -0,0 +1,148 @@
-+You are a senior software engineer working on a fullstack project (React + Spring Boot).
+@@ -1,148 +1,41 @@
+-You are a senior software engineer working on a fullstack project (React + Spring Boot).
++# Feature: Standardize Filter Components
+ 
+-====================================
+-MANDATORY CONTEXT USAGE
+-====================================
++## Goal
++Unify all filter components across the application to provide a consistent, reusable, and clean user experience.
+ 
+-- BEFORE making any decision, you MUST read AI_CONTEXT.md
+-- Use it as the single source of truth for:
+-  - UI patterns and components
+-  - Existing filter/search implementations
+-  - Design conventions
+-  - State management approach
++## Scope
++- All frontend filter components
++- Listing pages (animals, users, feedings, productions, etc.)
++- Dashboard and analytics filters
+ 
+-- Do NOT assume how filters are currently implemented
+-- Do NOT guess UI patterns
+-- Validate everything against the codebase
++## Requirements
++- Multi-selection filters must use a standardized dropdown with multi-select
++- Single selection filters must use a consistent dropdown component
++- Boolean filters must use a standardized checkbox or toggle
++- Date filters must use a consistent date picker component
++- Filters must support clear/reset behavior
++- Filters must maintain current integration with backend APIs
+ 
+-====================================
+-TASK
+-====================================
+-
+-Standardize all filter components across the application.
+-
+-This includes:
+-- Multi-selection filters
+-- Single selection filters
+-- Checkboxes
+-- Dropdowns
+-- Date filters
+-- Any other filtering UI elements
+-
+-====================================
+-GOAL
+-====================================
+-
+-- Provide a consistent and clean UX for all filters
+-- Improve usability and visual coherence
+-- Ensure filters are reusable and scalable
+-- Reduce duplication and inconsistencies
+-
+-====================================
+-CONSTRAINTS
+-====================================
+-
+-- Do NOT refactor unrelated business logic
++## Constraints
+ - Do NOT break existing filtering behavior
+-- Keep changes incremental and isolated
+-- Respect existing frontend architecture
+-- All API interactions must continue via service layer
+-
+-====================================
+-DESIGN GUIDELINES
+-====================================
+-
+-- Standardization:
+-
+-  - Multi-select → use dropdown (select component with multi-selection)
+-  - Single select → use dropdown
+-  - Boolean filters → use styled toggle or checkbox
+-  - Date filters → use consistent date picker
+-
+-- Visual consistency:
+-  - Same spacing, sizing, and interaction pattern
+-  - Same labeling style across all filters
+-
+-- Reusability:
+-  - Create reusable filter components
+-  - Components must be configurable and decoupled
+-
+-- UX:
+-  - Clear labels and placeholders
+-  - Easy to reset/clear filters
+-  - Consistent behavior across all screens
+-
+-====================================
+-IMPLEMENTATION INSTRUCTIONS
+-====================================
+-
+-1. Analyze:
+-   - Read AI_CONTEXT.md
+-   - Identify all filter implementations across the app
+-   - Map inconsistencies (UI, behavior, structure)
+-
+-2. Frontend:
+-
+-- Create reusable components:
+-  - Dropdown (single/multi)
+-  - Checkbox/toggle
+-  - Date filter
+-  - Filter container/layout
+-
+-- Replace existing implementations:
+-  - Gradually migrate screens to standardized components
+-  - Keep behavior intact
+-
+-- Ensure:
+-  - Filters integrate with existing API calls
+-  - No duplication of logic
+-
+-3. Backend:
+-
+-- Ensure filter parameters remain consistent
+ - Do NOT change API contracts unless strictly necessary
+-
+-====================================
+-AI_CONTEXT.md MAINTENANCE (MANDATORY)
+-====================================
+-
+-- Update AI_CONTEXT.md to reflect:
+-  - Standard filter patterns
+-  - Component usage guidelines
+-  - Naming conventions
+-
+-- Keep updates concise and structured
+-
+-====================================
+-VALIDATION (MANDATORY)
+-====================================
+-
+-- All filters follow the same visual and interaction pattern
+-- Filtering behavior remains correct
+-- No regression in search/filter functionality
++- Keep changes incremental and localized
++- Follow existing architecture and patterns from AI_CONTEXT
 +
-+====================================
-+MANDATORY CONTEXT USAGE
-+====================================
++## Implementation Notes
++- Identify all current filter implementations across the application
++- Create reusable filter components (dropdown, multi-select, checkbox, date picker)
++- Replace existing implementations progressively
++- Ensure compatibility with existing service layer and API calls
++- Avoid duplicating filter logic across screens
 +
-+- BEFORE making any decision, you MUST read AI_CONTEXT.md
-+- Use it as the single source of truth for:
-+  - UI patterns and components
-+  - Existing filter/search implementations
-+  - Design conventions
-+  - State management approach
++## Validation
++- Filters behave consistently across all screens
++- No regression in filtering functionality
++- UI is visually consistent and predictable
++- Filters integrate correctly with backend data
 +
-+- Do NOT assume how filters are currently implemented
-+- Do NOT guess UI patterns
-+- Validate everything against the codebase
-+
-+====================================
-+TASK
-+====================================
-+
-+Standardize all filter components across the application.
-+
-+This includes:
-+- Multi-selection filters
-+- Single selection filters
-+- Checkboxes
-+- Dropdowns
-+- Date filters
-+- Any other filtering UI elements
-+
-+====================================
-+GOAL
-+====================================
-+
-+- Provide a consistent and clean UX for all filters
-+- Improve usability and visual coherence
-+- Ensure filters are reusable and scalable
-+- Reduce duplication and inconsistencies
-+
-+====================================
-+CONSTRAINTS
-+====================================
-+
-+- Do NOT refactor unrelated business logic
-+- Do NOT break existing filtering behavior
-+- Keep changes incremental and isolated
-+- Respect existing frontend architecture
-+- All API interactions must continue via service layer
-+
-+====================================
-+DESIGN GUIDELINES
-+====================================
-+
-+- Standardization:
-+
-+  - Multi-select → use dropdown (select component with multi-selection)
-+  - Single select → use dropdown
-+  - Boolean filters → use styled toggle or checkbox
-+  - Date filters → use consistent date picker
-+
-+- Visual consistency:
-+  - Same spacing, sizing, and interaction pattern
-+  - Same labeling style across all filters
-+
-+- Reusability:
-+  - Create reusable filter components
-+  - Components must be configurable and decoupled
-+
-+- UX:
-+  - Clear labels and placeholders
-+  - Easy to reset/clear filters
-+  - Consistent behavior across all screens
-+
-+====================================
-+IMPLEMENTATION INSTRUCTIONS
-+====================================
-+
-+1. Analyze:
-+   - Read AI_CONTEXT.md
-+   - Identify all filter implementations across the app
-+   - Map inconsistencies (UI, behavior, structure)
-+
-+2. Frontend:
-+
-+- Create reusable components:
-+  - Dropdown (single/multi)
-+  - Checkbox/toggle
-+  - Date filter
-+  - Filter container/layout
-+
-+- Replace existing implementations:
-+  - Gradually migrate screens to standardized components
-+  - Keep behavior intact
-+
-+- Ensure:
-+  - Filters integrate with existing API calls
-+  - No duplication of logic
-+
-+3. Backend:
-+
-+- Ensure filter parameters remain consistent
-+- Do NOT change API contracts unless strictly necessary
-+
-+====================================
-+AI_CONTEXT.md MAINTENANCE (MANDATORY)
-+====================================
-+
-+- Update AI_CONTEXT.md to reflect:
-+  - Standard filter patterns
-+  - Component usage guidelines
-+  - Naming conventions
-+
-+- Keep updates concise and structured
-+
-+====================================
-+VALIDATION (MANDATORY)
-+====================================
-+
-+- All filters follow the same visual and interaction pattern
-+- Filtering behavior remains correct
-+- No regression in search/filter functionality
-+- Components are reusable and configurable
-+- UI is consistent across all listing and dashboard screens
-+
-+====================================
-+ANTI-PATTERNS TO AVOID
-+====================================
-+
-+- Duplicating filter logic per screen
-+- Mixing different UI patterns for same type of filter
-+- Hardcoding filter behavior
-+- Breaking existing API integration
-+
-+====================================
-+OUTPUT REQUIREMENTS
-+====================================
-+
-+- Show only necessary changes
-+- Keep explanation minimal
-+- Always return a Conventional Commit message
-+- Provide git commands if possible
-+
-+====================================
-+GOAL
-+====================================
-+
-+Deliver a unified, reusable, and scalable filtering system with consistent UX across the entire application.
++## Done Criteria
++- All filters follow the same UI and behavior pattern
+ - Components are reusable and configurable
+-- UI is consistent across all listing and dashboard screens
+-
+-====================================
+-ANTI-PATTERNS TO AVOID
+-====================================
+-
+-- Duplicating filter logic per screen
+-- Mixing different UI patterns for same type of filter
+-- Hardcoding filter behavior
+-- Breaking existing API integration
+-
+-====================================
+-OUTPUT REQUIREMENTS
+-====================================
+-
+-- Show only necessary changes
+-- Keep explanation minimal
+-- Always return a Conventional Commit message
+-- Provide git commands if possible
+-
+-====================================
+-GOAL
+-====================================
+-
+-Deliver a unified, reusable, and scalable filtering system with consistent UX across the entire application.
 \ No newline at end of file
++- No duplicated filter implementations remain
+\ No newline at end of file
+diff --git a/workspace/mvn.log b/workspace/mvn.log
+index 4481be0..4e44061 100644
+--- a/workspace/mvn.log
++++ b/workspace/mvn.log
+@@ -1,264 +1,339 @@
+-21:02:15.816 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
+-21:02:16.699 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:16.700 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:16.703 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 2 ms
+-21:02:16.979 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:16.979 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:16.980 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-21:02:17.195 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:17.195 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:17.196 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++[[1;34mINFO[m] Scanning for projects...
++[[1;34mINFO[m] 
++[[1;34mINFO[m] [1m-----------------------< [0;36mcom.jpsoftware:farmapp[0;1m >-----------------------[m
++[[1;34mINFO[m] [1mBuilding farmapp 0.0.1-SNAPSHOT[m
++[[1;34mINFO[m] [1m--------------------------------[ jar ]---------------------------------[m
++[[1;34mINFO[m] 
++[[1;34mINFO[m] [1m--- [0;32mjacoco-maven-plugin:0.8.11:prepare-agent[m [1m(default)[m @ [36mfarmapp[0;1m ---[m
++[[1;34mINFO[m] argLine set to -javaagent:/home/juaneugenio/.m2/repository/org/jacoco/org.jacoco.agent/0.8.11/org.jacoco.agent-0.8.11-runtime.jar=destfile=/home/juaneugenio/programmig/farm_app/backend/farmapp/target/jacoco.exec
++[[1;34mINFO[m] 
++[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:resources[m [1m(default-resources)[m @ [36mfarmapp[0;1m ---[m
++[[1;34mINFO[m] Copying 2 resources from src/main/resources to target/classes
++[[1;34mINFO[m] Copying 0 resource from src/main/resources to target/classes
++[[1;34mINFO[m] 
++[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.13.0:compile[m [1m(default-compile)[m @ [36mfarmapp[0;1m ---[m
++[[1;34mINFO[m] Nothing to compile - all classes are up to date.
++[[1;34mINFO[m] 
++[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:testResources[m [1m(default-testResources)[m @ [36mfarmapp[0;1m ---[m
++[[1;34mINFO[m] Copying 2 resources from src/test/resources to target/test-classes
++[[1;34mINFO[m] 
++[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.13.0:testCompile[m [1m(default-testCompile)[m @ [36mfarmapp[0;1m ---[m
++[[1;34mINFO[m] Nothing to compile - all classes are up to date.
++[[1;34mINFO[m] 
++[[1;34mINFO[m] [1m--- [0;32mmaven-surefire-plugin:3.5.2:test[m [1m(default-test)[m @ [36mfarmapp[0;1m ---[m
++[[1;34mINFO[m] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
++[[1;34mINFO[m] 
++[[1;34mINFO[m] -------------------------------------------------------
++[[1;34mINFO[m]  T E S T S
++[[1;34mINFO[m] -------------------------------------------------------
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
++23:32:35.744 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
++23:32:36.739 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:36.739 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:36.744 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 4 ms
++23:32:36.992 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:36.992 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:36.992 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:37.223 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:37.223 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:37.224 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.735 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+ Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+ WARNING: A Java agent has been loaded dynamically (/home/juaneugenio/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar)
+ WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+ WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+ WARNING: Dynamic loading of agents will be disallowed by default in a future release
+-21:02:19.042 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
+-21:02:20.375 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.376 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.376 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.413 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.413 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.414 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-21:02:20.436 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.436 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.437 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-21:02:20.465 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.465 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.465 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.484 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.484 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.485 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-21:02:20.507 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.507 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.507 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.521 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.521 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.521 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.537 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.537 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.538 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-21:02:20.579 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.579 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.579 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.628 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.628 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.628 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.652 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.653 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.653 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.677 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.677 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.677 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.696 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.696 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.696 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.718 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.718 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.718 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.737 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.737 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.737 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.762 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.762 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.762 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.784 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.784 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.784 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.799 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.799 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.799 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.813 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.813 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.813 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.826 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.827 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.827 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.851 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.851 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.851 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.870 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.870 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.870 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.882 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.882 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.882 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.897 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.897 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.897 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.909 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.909 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.909 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.918 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.918 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.918 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.930 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.930 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.930 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.947 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.947 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.947 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.962 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.962 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.962 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.981 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.981 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.981 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:20.997 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:20.997 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:20.997 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.013 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.013 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.013 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.028 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.029 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.029 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.049 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.049 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.049 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.072 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.072 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.072 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.090 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.090 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.090 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.110 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.110 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.110 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.127 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.127 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.128 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-21:02:21.141 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.142 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.142 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.151 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.151 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.151 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.173 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.174 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.174 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.193 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.193 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.193 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.221 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.221 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.222 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.252 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.252 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.252 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.351 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.351 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.351 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.367 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.367 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.367 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.380 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.380 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.380 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.392 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.392 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.392 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.413 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.414 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.414 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.451 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.451 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.451 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.462 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.462 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.462 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.473 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.474 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.474 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.490 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.490 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.490 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.573 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.574 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.574 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.599 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.599 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.599 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.612 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.612 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.612 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.695 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.695 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.696 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-21:02:21.709 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.709 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.709 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.722 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.722 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.722 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.733 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.733 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.733 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.751 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.752 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.752 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.765 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.765 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.765 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.783 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.783 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.783 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.807 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.808 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.808 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.836 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.836 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.836 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.853 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.853 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.853 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.879 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.879 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.879 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.893 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.893 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.893 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.907 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.907 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.907 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.943 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.943 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.943 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:21.966 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:21.966 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:21.967 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-21:02:22.006 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:22.006 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:22.006 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:22.025 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:22.025 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:22.025 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:22.035 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:22.035 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:22.035 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:22.053 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:22.053 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:22.053 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:22.068 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:22.068 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:22.068 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:22.083 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:22.083 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:22.084 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-21:02:22.098 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:22.098 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:22.098 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:22.131 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:22.131 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:22.131 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:22.140 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:22.141 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:22.141 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:22.155 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-21:02:22.155 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-21:02:22.155 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-21:02:22.311 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest]: AuthIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+-21:02:22.442 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.006 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m27[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.094 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
++23:32:39.527 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.214 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.036 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.825 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
++23:32:40.570 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.570 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.570 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.596 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.596 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.596 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.613 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.613 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.613 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.629 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.629 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.629 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.134 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
++23:32:40.644 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.644 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.644 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.663 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.663 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.664 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++23:32:40.674 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.674 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.675 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++23:32:40.685 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.685 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.685 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.049 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
++23:32:40.705 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.705 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.705 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.740 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.740 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.740 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.763 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.763 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.763 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.781 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.781 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.781 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.796 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.797 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.797 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.808 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.808 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.808 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.822 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.822 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.823 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.840 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.840 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.840 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.858 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.858 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.858 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.870 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.870 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.870 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.880 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.881 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.881 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.893 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.893 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.893 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.912 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.912 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.912 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.927 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.927 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.928 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++23:32:40.936 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.936 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.936 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.944 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.945 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.945 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.954 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.954 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.954 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.961 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.961 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.961 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.971 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.971 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.971 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.287 s -- in com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
++23:32:40.984 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.985 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.985 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:40.998 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:40.998 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:40.998 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.010 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.010 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.010 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.026 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.026 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.027 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++23:32:41.040 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.040 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.040 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.056 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.056 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.056 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.067 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.067 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.067 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.076 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.076 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.076 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.085 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.085 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.085 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.094 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.094 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.094 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.104 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.104 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.104 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.112 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.113 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.113 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.120 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.120 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.120 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.132 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.132 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.132 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.143 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.144 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.144 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.154 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.155 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.155 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.163 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.163 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m17[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.193 s -- in com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
++23:32:41.196 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.196 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.197 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++23:32:41.204 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.204 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.204 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.036 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
++23:32:41.211 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.211 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.211 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.218 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.218 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.218 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.226 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.226 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.227 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.241 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.241 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.241 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.249 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.249 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.249 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.257 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.257 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.257 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.267 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.267 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.267 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.067 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
++23:32:41.301 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.301 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.301 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.034 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
++23:32:41.312 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.312 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.312 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.318 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.318 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.319 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
++23:32:41.351 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.351 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.351 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.359 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.359 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.359 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.375 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.375 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.376 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++23:32:41.382 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.383 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.383 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.391 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.391 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.391 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.397 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.398 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.398 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.080 s -- in com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
++23:32:41.409 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.409 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.409 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.420 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.420 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.420 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.427 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.427 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.427 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.433 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.433 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.433 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.445 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.445 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.445 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.453 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.453 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.453 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.462 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.462 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.462 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.065 s -- in com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
++23:32:41.479 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.479 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.479 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.490 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.490 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.490 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.506 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.506 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.507 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.515 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.515 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.515 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.522 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.522 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.522 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.531 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.531 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.532 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++23:32:41.539 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.540 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.540 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.551 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.552 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.552 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.564 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.565 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.565 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.581 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.581 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.581 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.588 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.589 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.589 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++23:32:41.598 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++23:32:41.598 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++23:32:41.598 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m12[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.136 s -- in com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.080 s -- in com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
++23:32:41.714 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest]: AuthIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++23:32:41.811 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest
+ 
+   .   ____          _            __ _ _
+  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+@@ -269,19 +344,19 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
+ 
+  :: Spring Boot ::                (v3.4.4)
+ 
+-2026-04-26T21:02:23.055-03:00  INFO 36747 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Starting AuthIntegrationTest using Java 21.0.7 with PID 36747 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
+-2026-04-26T21:02:23.057-03:00  INFO 36747 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : No active profile set, falling back to 1 default profile: "default"
+-2026-04-26T21:02:24.053-03:00  INFO 36747 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+-2026-04-26T21:02:24.134-03:00  INFO 36747 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 70 ms. Found 8 JPA repository interfaces.
+-2026-04-26T21:02:24.801-03:00  INFO 36747 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+-2026-04-26T21:02:24.881-03:00  INFO 36747 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.11.Final
+-2026-04-26T21:02:24.928-03:00  INFO 36747 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+-2026-04-26T21:02:25.135-03:00  INFO 36747 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+-2026-04-26T21:02:25.173-03:00  INFO 36747 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+-2026-04-26T21:02:25.641-03:00  INFO 36747 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:farmdb user=SA
+-2026-04-26T21:02:25.644-03:00  INFO 36747 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+-2026-04-26T21:02:25.683-03:00  WARN 36747 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+-2026-04-26T21:02:25.718-03:00  INFO 36747 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
++2026-04-26T23:32:42.215-03:00  INFO 83447 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Starting AuthIntegrationTest using Java 21.0.7 with PID 83447 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
++2026-04-26T23:32:42.216-03:00  INFO 83447 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : No active profile set, falling back to 1 default profile: "default"
++2026-04-26T23:32:42.843-03:00  INFO 83447 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
++2026-04-26T23:32:42.901-03:00  INFO 83447 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 48 ms. Found 8 JPA repository interfaces.
++2026-04-26T23:32:43.378-03:00  INFO 83447 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
++2026-04-26T23:32:43.429-03:00  INFO 83447 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.11.Final
++2026-04-26T23:32:43.456-03:00  INFO 83447 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
++2026-04-26T23:32:43.602-03:00  INFO 83447 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
++2026-04-26T23:32:43.628-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
++2026-04-26T23:32:43.898-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:farmdb user=SA
++2026-04-26T23:32:43.901-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
++2026-04-26T23:32:43.932-03:00  WARN 83447 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
++2026-04-26T23:32:43.958-03:00  INFO 83447 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+ 	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+ 	Database driver: undefined/unknown
+ 	Database version: 2.3.232
+@@ -289,7 +364,7 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
+ 	Isolation level: undefined/unknown
+ 	Minimum pool size: undefined/unknown
+ 	Maximum pool size: undefined/unknown
+-2026-04-26T21:02:26.532-03:00  INFO 36747 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
++2026-04-26T23:32:44.684-03:00  INFO 83447 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+ Hibernate: create table animals (id varchar(255) not null, acquisition_cost float(53), birth_date date not null, breed varchar(255) not null, farm_id varchar(255) not null, origin varchar(255) not null, sale_date date, sale_price float(53), status varchar(255) not null, tag varchar(255) not null, primary key (id))
+ Hibernate: create table farms (id varchar(255) not null, name varchar(255) not null, owner_id uuid not null, primary key (id))
+ Hibernate: create table feed_types (id varchar(255) not null, active boolean not null, cost_per_kg float(53) not null, farm_id varchar(255), name varchar(255) not null, primary key (id))
+@@ -304,15 +379,15 @@ Hibernate: alter table if exists user_farm_assignments drop constraint if exists
+ Hibernate: alter table if exists user_farm_assignments add constraint UK9k021clhmghjjepfpvejsguce unique (user_id, farm_id)
+ Hibernate: alter table if exists users drop constraint if exists UK6dotkott2kjsp8vw4d0m25fb7
+ Hibernate: alter table if exists users add constraint UK6dotkott2kjsp8vw4d0m25fb7 unique (email)
+-2026-04-26T21:02:26.634-03:00  INFO 36747 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+-2026-04-26T21:02:26.854-03:00  INFO 36747 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+-2026-04-26T21:02:28.337-03:00  WARN 36747 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+-2026-04-26T21:02:29.003-03:00  INFO 36747 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+-2026-04-26T21:02:29.004-03:00  INFO 36747 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+-2026-04-26T21:02:29.005-03:00  INFO 36747 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+-2026-04-26T21:02:29.033-03:00  INFO 36747 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Started AuthIntegrationTest in 6.427 seconds (process running for 14.322)
++2026-04-26T23:32:44.757-03:00  INFO 83447 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
++2026-04-26T23:32:44.977-03:00  INFO 83447 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
++2026-04-26T23:32:46.118-03:00  WARN 83447 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
++2026-04-26T23:32:46.642-03:00  INFO 83447 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
++2026-04-26T23:32:46.642-03:00  INFO 83447 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
++2026-04-26T23:32:46.643-03:00  INFO 83447 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
++2026-04-26T23:32:46.664-03:00  INFO 83447 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Started AuthIntegrationTest in 4.761 seconds (process running for 12.098)
+ Hibernate: select count(*) from users ue1_0
+-2026-04-26T21:02:29.220-03:00  INFO 36747 --- [           main] c.j.f.s.config.DefaultAdminInitializer   : Default admin user created
++2026-04-26T23:32:46.801-03:00  INFO 83447 --- [           main] c.j.f.s.config.DefaultAdminInitializer   : Default admin user created
+ Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+ Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+@@ -395,8 +470,10 @@ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,
+ Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
+-2026-04-26T21:02:30.374-03:00  INFO 36747 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest]: ProductionIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+-2026-04-26T21:02:30.391-03:00  INFO 36747 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.084 s -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
++2026-04-26T23:32:47.774-03:00  INFO 83447 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest]: ProductionIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++2026-04-26T23:32:47.782-03:00  INFO 83447 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+ Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+ Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+@@ -508,8 +585,10 @@ Hibernate: select coalesce(sum((fe1_0.quantity*fte1_0.cost_per_kg)),0) from feed
+ Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+ Hibernate: select count(*) from farms fe1_0 where fe1_0.id=?
+ Hibernate: select mpe1_0.id,mpe1_0.created_at,mpe1_0.created_by,mpe1_0.effective_date,mpe1_0.farm_id,mpe1_0.price from milk_prices mpe1_0 where mpe1_0.farm_id=? and mpe1_0.effective_date<=? order by mpe1_0.effective_date desc,mpe1_0.created_at desc fetch first ? rows only
+-2026-04-26T21:02:31.052-03:00  INFO 36747 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest]: FeedingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+-2026-04-26T21:02:31.061-03:00  INFO 36747 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.525 s -- in com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
++2026-04-26T23:32:48.299-03:00  INFO 83447 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest]: FeedingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++2026-04-26T23:32:48.304-03:00  INFO 83447 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+ Hibernate: delete from productions where id=?
+ Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+@@ -645,8 +724,10 @@ Hibernate: select fte1_0.id from feed_types fte1_0 where fte1_0.id=? and fte1_0.
+ Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+ Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+ Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
+-2026-04-26T21:02:31.544-03:00  INFO 36747 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest]: AnimalIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+-2026-04-26T21:02:31.549-03:00  INFO 36747 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.465 s -- in com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
++2026-04-26T23:32:48.765-03:00  INFO 83447 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest]: AnimalIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++2026-04-26T23:32:48.773-03:00  INFO 83447 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+ Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+ Hibernate: delete from feedings where id=?
+@@ -698,8 +779,10 @@ Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin
+ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+ Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+ Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
+-2026-04-26T21:02:31.766-03:00  INFO 36747 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.user.UserIntegrationTest]: UserIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+-2026-04-26T21:02:31.776-03:00  INFO 36747 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.user.UserIntegrationTest
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.210 s -- in com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
++2026-04-26T23:32:48.978-03:00  INFO 83447 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.user.UserIntegrationTest]: UserIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++2026-04-26T23:32:48.984-03:00  INFO 83447 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.user.UserIntegrationTest
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+ Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+ Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+@@ -927,8 +1010,8 @@ Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+ Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_0.owner_id=?
+-2026-04-26T21:02:34.063-03:00  INFO 36747 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.FarmAppApplicationTests]: FarmAppApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+-2026-04-26T21:02:34.066-03:00  INFO 36747 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.FarmAppApplicationTests
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m13[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.124 s -- in com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
++[[1;34mINFO[m] Running com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+ 
+   .   ____          _            __ _ _
+  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+@@ -939,18 +1022,18 @@ Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_
+ 
+  :: Spring Boot ::                (v3.4.4)
+ 
+-2026-04-26T21:02:34.077-03:00  INFO 36747 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Starting FarmAppApplicationTests using Java 21.0.7 with PID 36747 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
+-2026-04-26T21:02:34.077-03:00  INFO 36747 --- [           main] c.j.farmapp.FarmAppApplicationTests      : No active profile set, falling back to 1 default profile: "default"
+-2026-04-26T21:02:34.180-03:00  INFO 36747 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+-2026-04-26T21:02:34.190-03:00  INFO 36747 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 9 ms. Found 8 JPA repository interfaces.
+-2026-04-26T21:02:34.249-03:00  INFO 36747 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+-2026-04-26T21:02:34.250-03:00  INFO 36747 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+-2026-04-26T21:02:34.255-03:00  INFO 36747 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+-2026-04-26T21:02:34.255-03:00  INFO 36747 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+-2026-04-26T21:02:34.256-03:00  INFO 36747 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn10: url=jdbc:h2:mem:farmdb user=SA
+-2026-04-26T21:02:34.257-03:00  INFO 36747 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+-2026-04-26T21:02:34.257-03:00  WARN 36747 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+-2026-04-26T21:02:34.257-03:00  INFO 36747 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
++2026-04-26T23:32:51.113-03:00  INFO 83447 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Starting FarmAppApplicationTests using Java 21.0.7 with PID 83447 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
++2026-04-26T23:32:51.113-03:00  INFO 83447 --- [           main] c.j.farmapp.FarmAppApplicationTests      : No active profile set, falling back to 1 default profile: "default"
++2026-04-26T23:32:51.263-03:00  INFO 83447 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
++2026-04-26T23:32:51.274-03:00  INFO 83447 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 9 ms. Found 8 JPA repository interfaces.
++2026-04-26T23:32:51.325-03:00  INFO 83447 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
++2026-04-26T23:32:51.326-03:00  INFO 83447 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
++2026-04-26T23:32:51.331-03:00  INFO 83447 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
++2026-04-26T23:32:51.332-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
++2026-04-26T23:32:51.333-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn10: url=jdbc:h2:mem:farmdb user=SA
++2026-04-26T23:32:51.333-03:00  INFO 83447 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
++2026-04-26T23:32:51.333-03:00  WARN 83447 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
++2026-04-26T23:32:51.334-03:00  INFO 83447 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+ 	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-2)']
+ 	Database driver: undefined/unknown
+ 	Database version: 2.3.232
+@@ -958,10 +1041,26 @@ Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_
+ 	Isolation level: undefined/unknown
+ 	Minimum pool size: undefined/unknown
+ 	Maximum pool size: undefined/unknown
+-2026-04-26T21:02:34.349-03:00  INFO 36747 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
++2026-04-26T23:32:51.413-03:00  INFO 83447 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+ Hibernate: alter table if exists user_farm_assignments drop constraint if exists UK9k021clhmghjjepfpvejsguce
+ Hibernate: alter table if exists user_farm_assignments add constraint UK9k021clhmghjjepfpvejsguce unique (user_id, farm_id)
+-2026-04-26T21:02:34.358-03:00  INFO 36747 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+-2026-04-26T21:02:34.556-03:00  WARN 36747 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+-2026-04-26T21:02:34.680-03:00  INFO 36747 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Started FarmAppApplicationTests in 0.612 seconds (process running for 19.969)
++2026-04-26T23:32:51.420-03:00  INFO 83447 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
++2026-04-26T23:32:51.562-03:00  WARN 83447 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
++2026-04-26T23:32:51.657-03:00  INFO 83447 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Started FarmAppApplicationTests in 0.553 seconds (process running for 17.091)
+ Hibernate: select count(*) from users ue1_0
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.563 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
++[[1;34mINFO[m] 
++[[1;34mINFO[m] Results:
++[[1;34mINFO[m] 
++[[1;34mINFO[m] [1;32mTests run: 211, Failures: 0, Errors: 0, Skipped: 0[m
++[[1;34mINFO[m] 
++[[1;34mINFO[m] 
++[[1;34mINFO[m] [1m--- [0;32mjacoco-maven-plugin:0.8.11:report[m [1m(report)[m @ [36mfarmapp[0;1m ---[m
++[[1;34mINFO[m] Loading execution data file /home/juaneugenio/programmig/farm_app/backend/farmapp/target/jacoco.exec
++[[1;34mINFO[m] Analyzed bundle 'farmapp' with 87 classes
++[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
++[[1;34mINFO[m] [1;32mBUILD SUCCESS[m
++[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
++[[1;34mINFO[m] Total time:  18.711 s
++[[1;34mINFO[m] Finished at: 2026-04-26T23:32:52-03:00
++[[1;34mINFO[m] [1m------------------------------------------------------------------------[m

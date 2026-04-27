@@ -21,6 +21,20 @@ class ErrorMessageTranslatorTest {
     }
 
     @Test
+    void shouldTranslateEmptyFieldValidationMessages() {
+        assertEquals("O nome é obrigatório.", ErrorMessageTranslator.translate("name must not be empty"));
+    }
+
+    @Test
+    void shouldTranslateSecurityMessages() {
+        assertEquals("Não autorizado.", ErrorMessageTranslator.translate("Unauthorized"));
+        assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Access is denied"));
+        assertEquals(
+                "É necessário autenticação para acessar este recurso.",
+                ErrorMessageTranslator.translate("Full authentication is required to access this resource"));
+    }
+
+    @Test
     void shouldReturnValidationFallbackForBlankMessages() {
         assertEquals("Falha de validação.", ErrorMessageTranslator.translate("  "));
     }
