@@ -60,7 +60,7 @@ for FILE in workspace/features/*.md; do
   fi
 
   # =====================
-  # 🧪 TESTER (atualiza testes)
+  # 🧪 TESTER
   # =====================
   echo "🧪 Running TESTER..."
 
@@ -74,7 +74,7 @@ $(cat workspace/files.txt)
 Relevant diff:
 $(cat workspace/diff.txt)
 
-Ensure tests reflect the new behavior and remain aligned with the current implementation."
+Ensure tests reflect the new behavior and remain aligned with the implementation."
 
   TESTER_PROMPT="$TESTER_SYSTEM"$'\n\n'"$TESTER_INPUT"
 
@@ -84,7 +84,7 @@ Ensure tests reflect the new behavior and remain aligned with the current implem
   git commit -m "test(ai): update tests for $(basename "$FILE")" || echo "⚠️ No test changes"
 
   # =====================
-  # 🔁 LOOP DE VALIDAÇÃO + FIX
+  # 🔁 LOOP DE TESTE + FIX
   # =====================
   echo "🧪 Running tests with auto-fix..."
 
@@ -95,16 +95,21 @@ Ensure tests reflect the new behavior and remain aligned with the current implem
 
     echo "➡️ Attempt $ATTEMPT..."
 
-    # roda testes e captura log
-    (cd backend/farmapp && mvn -q test) > workspace/mvn.log 2>&1 || true
-
-    if grep -q "BUILD SUCCESS" workspace/mvn.log; then
+    # =====================
+    # 🧪 EXECUÇÃO REAL (CORRETO)
+    # =====================
+    if (cd backend/farmapp && mvn test > ../../workspace/mvn.log 2>&1); then
       echo "✅ Tests passed"
       SUCCESS=true
       break
     fi
 
     echo "❌ Tests failed"
+
+    # =====================
+    # 🔎 CAPTURA DE ERRO MELHOR
+    # =====================
+    grep -A 5 -B 5 "ERROR" workspace/mvn.log > workspace/error_focus.txt || true
 
     # =====================
     # 🛠 FIXER
@@ -115,20 +120,32 @@ Ensure tests reflect the new behavior and remain aligned with the current implem
 
     FIXER_INPUT="Fix the issues causing test or compilation failures.
 
-Recent error log:
-$(tail -n 80 workspace/mvn.log)
+Relevant error:
+$(cat workspace/error_focus.txt)
 
-Focus on:
-- Updating tests if they are outdated
-- Fixing incorrect @Override usage
-- Fixing method signature mismatches
-- Ensuring compatibility with current implementation
+Full tail:
+$(tail -n 50 workspace/mvn.log)
 
-Only modify what is necessary."
+Rules:
+- Do NOT delete or disable tests
+- Fix root cause, not symptoms
+- Keep changes minimal
+- Do NOT refactor unrelated code
+"
 
     FIXER_PROMPT="$FIXER_SYSTEM"$'\n\n'"$FIXER_INPUT"
 
     codex exec "$FIXER_PROMPT"
+
+    # =====================
+    # 🔒 PROTEÇÃO CONTRA FIXES GRANDES
+    # =====================
+    CHANGED_LINES=$(git diff --stat | grep -Eo '[0-9]+ insertions' | grep -Eo '[0-9]+' || echo 0)
+
+    if [ "$CHANGED_LINES" -gt 200 ]; then
+      echo "⚠️ Fix too large ($CHANGED_LINES lines). Aborting to avoid damage."
+      exit 1
+    fi
 
     git add .
     git commit -m "fix(ai): auto-fix after test failure (attempt $ATTEMPT)" || echo "⚠️ No fix changes"
