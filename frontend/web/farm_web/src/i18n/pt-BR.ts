@@ -8,6 +8,8 @@ const ptBR = {
     loadingFarms: 'Carregando fazendas...',
     languageLabel: 'Idioma',
     currencyLabel: 'Moeda exibida',
+    openNavigation: 'Menu',
+    closeNavigation: 'Fechar',
     logout: 'Sair',
     languageOptions: {
       'pt-BR': 'Português',

@@ -8,6 +8,8 @@ const en = {
     loadingFarms: 'Loading farms...',
     languageLabel: 'Language',
     currencyLabel: 'Display currency',
+    openNavigation: 'Menu',
+    closeNavigation: 'Close',
     logout: 'Logout',
     languageOptions: {
       'pt-BR': 'Portuguese',
