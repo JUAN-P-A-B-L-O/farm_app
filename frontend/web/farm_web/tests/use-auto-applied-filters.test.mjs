@@ -272,3 +272,24 @@ test('useAutoAppliedFilters keeps action callbacks stable across rerenders with 
   assert.equal(harness.result.resetFilters, firstResetFilters)
   harness.unmount()
 })
+
+test('useAutoAppliedFilters resets to the latest initial filters after rerender', () => {
+  let initialAnimalIds = ['animal-1']
+  const harness = createHookHarness(() => useAutoAppliedFilters(
+    () => ({ animalIds: initialAnimalIds }),
+  ))
+
+  harness.render()
+
+  harness.result.setFilters({ animalIds: ['animal-9'] })
+  harness.render()
+
+  initialAnimalIds = ['animal-2']
+  harness.render()
+  harness.result.resetFilters()
+  harness.render()
+
+  assert.deepEqual(harness.result.filters, { animalIds: ['animal-2'] })
+  assert.deepEqual(harness.result.appliedFilters, { animalIds: ['animal-2'] })
+  harness.unmount()
+})
