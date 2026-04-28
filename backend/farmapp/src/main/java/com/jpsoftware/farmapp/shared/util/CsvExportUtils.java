@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.shared.util;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 
@@ -32,6 +33,15 @@ public final class CsvExportUtils {
     }
 
     private static String formatValue(Object value) {
+        if (value instanceof BigDecimal decimal) {
+            return decimal.toPlainString();
+        }
+        if (value instanceof Double doubleValue) {
+            return BigDecimal.valueOf(doubleValue).toPlainString();
+        }
+        if (value instanceof Float floatValue) {
+            return BigDecimal.valueOf(floatValue.doubleValue()).toPlainString();
+        }
         return value == null ? "" : value.toString();
     }
 
