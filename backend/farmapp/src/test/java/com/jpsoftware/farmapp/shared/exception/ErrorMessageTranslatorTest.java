@@ -32,13 +32,32 @@ class ErrorMessageTranslatorTest {
         assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Access Denied"));
         assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Forbidden"));
         assertEquals(
-                "É necessário autenticação para acessar este recurso.",
+                "É necessário estar autenticado para acessar este recurso.",
                 ErrorMessageTranslator.translate("Full authentication is required to access this resource"));
+        assertEquals(
+                "É necessário estar autenticado como gerente.",
+                ErrorMessageTranslator.translate("Authenticated manager is required"));
+        assertEquals(
+                "É necessário estar autenticado.",
+                ErrorMessageTranslator.translate("Authenticated user is required"));
     }
 
     @Test
     void shouldTranslateMapperMessages() {
         assertEquals("Animal obrigatório.", ErrorMessageTranslator.translate("Animal entity must not be null"));
+    }
+
+    @Test
+    void shouldTranslateAnimalFieldValidationMessagesWithDomainPrefixes() {
+        assertEquals(
+                "A data de nascimento do animal é obrigatória.",
+                ErrorMessageTranslator.translate("Animal birthDate must not be null"));
+        assertEquals(
+                "O status do animal é obrigatório.",
+                ErrorMessageTranslator.translate("Animal status must not be blank"));
+        assertEquals(
+                "O valor da venda deve ser maior que zero.",
+                ErrorMessageTranslator.translate("Animal salePrice must be greater than zero"));
     }
 
     @Test

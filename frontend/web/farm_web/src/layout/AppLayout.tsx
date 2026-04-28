@@ -97,7 +97,7 @@ function AppLayout() {
             ))}
           </select>
           {farmsErrorMessage && (
-            <p className="animals-page__status animals-page__status--error">{t('farm.loadError')}</p>
+            <p className="animals-page__status animals-page__status--error">{t(farmsErrorMessage)}</p>
           )}
           <button
             type="button"

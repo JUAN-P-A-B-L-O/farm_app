@@ -65,7 +65,7 @@ export function FarmProvider({ children }: { children: ReactNode }) {
     } catch {
       setFarms([])
       setSelectedFarmIdState('')
-      setErrorMessage('Unable to load farms.')
+      setErrorMessage('farm.loadError')
       clearStoredFarmId()
     } finally {
       setIsLoading(false)

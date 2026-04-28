@@ -27,14 +27,14 @@ public final class ErrorMessageTranslator {
             Map.entry("Unauthorized", "Não autorizado."),
             Map.entry("Access is denied", "Acesso negado."),
             Map.entry("Access Denied", "Acesso negado."),
-            Map.entry("Full authentication is required to access this resource", "É necessário autenticação para acessar este recurso."),
+            Map.entry("Full authentication is required to access this resource", "É necessário estar autenticado para acessar este recurso."),
             Map.entry("Invalid or expired token", "Token inválido ou expirado."),
             Map.entry("request must not be null", "Requisição obrigatória."),
             Map.entry("Create animal request must not be null", "Requisição obrigatória."),
             Map.entry("Update animal request must not be null", "Requisição obrigatória."),
             Map.entry("Sell animal request must not be null", "Requisição obrigatória."),
-            Map.entry("Authenticated manager is required", "Gerente autenticado obrigatório."),
-            Map.entry("Authenticated user is required", "Usuário autenticado obrigatório."),
+            Map.entry("Authenticated manager is required", "É necessário estar autenticado como gerente."),
+            Map.entry("Authenticated user is required", "É necessário estar autenticado."),
             Map.entry("Authenticated user is required to register milk price", "É necessário estar autenticado para registrar o preço do leite."),
             Map.entry("currentPassword is incorrect", "A senha atual está incorreta."),
             Map.entry("newPassword must be different from currentPassword", "A nova senha deve ser diferente da senha atual."),
@@ -137,6 +137,7 @@ public final class ErrorMessageTranslator {
             case "currentPassword" -> "A senha atual é obrigatória.";
             case "newPassword" -> "A nova senha é obrigatória.";
             case "role" -> "A função é obrigatória.";
+            case "status" -> "O status do animal é obrigatório.";
             case "farmIds" -> "Selecione ao menos uma fazenda.";
             case "active" -> "Informe se o usuário está ativo.";
             case "farmId" -> "Selecione uma fazenda.";
