@@ -89,13 +89,13 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/animals"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
+                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
                 .andExpect(jsonPath("$.path").value("/animals"));
 
         mockMvc.perform(get("/animals/export"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
+                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
                 .andExpect(jsonPath("$.path").value("/animals/export"));
 
         mockMvc.perform(get("/animals")
