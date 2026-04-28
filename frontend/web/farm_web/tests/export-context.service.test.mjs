@@ -58,11 +58,37 @@ function compileServices() {
       ["import { downloadCsv } from './csvExportService'\n", "import { downloadCsv } from './csvExportService.js'\n"],
       ["import type { CurrencyCode } from '../context/CurrencyContext'\n", ''],
       ["import type { DashboardFilters, DashboardSummary } from '../types/dashboard'\n", ''],
+      ["import type { ProductionUnit } from '../utils/measurementUnits'\n", ''],
       ["const inFlightDashboardRequests = new Map<string, Promise<DashboardSummary>>()\n", 'const inFlightDashboardRequests = new Map()\n'],
       [/function buildDashboardParams\([\s\S]*?\) \{/g, 'function buildDashboardParams(farmId, includeAcquisitionCost = true, currency, filters) {'],
       [/export async function fetchDashboard\([\s\S]*?\): Promise<DashboardSummary> \{/g, 'export async function fetchDashboard(farmId, includeAcquisitionCost = true, currency, filters) {'],
-      [/export async function exportDashboardCsv\([\s\S]*?\): Promise<void> \{/g, 'export async function exportDashboardCsv(farmId, includeAcquisitionCost = true, currency, filters) {'],
+      [/export async function exportDashboardCsv\([\s\S]*?\): Promise<void> \{/g, 'export async function exportDashboardCsv(farmId, includeAcquisitionCost = true, currency, filters, productionUnit) {'],
       [/api.get<DashboardSummary>/g, 'api.get'],
+    ],
+  )
+
+  compileService(
+    path.join(projectRoot, 'src', 'services', 'feedTypeService.ts'),
+    'feedTypeService.js',
+    [
+      ["import api from './api'\n", "import api from './api.js'\n"],
+      ["import { downloadCsv } from './csvExportService'\n", "import { downloadCsv } from './csvExportService.js'\n"],
+      ["import type { CurrencyCode } from '../context/CurrencyContext'\n", ''],
+      ["import type { FeedingUnit } from '../utils/measurementUnits'\n", ''],
+      ["import type { FeedType, FeedTypeFormData, FeedTypeListFilters } from '../types/feedType'\n", ''],
+      ["import type { PaginatedResponse, PaginationParams } from '../types/pagination'\n", ''],
+      ["import { normalizeToTwoDecimals } from '../utils/decimal'\n", 'const normalizeToTwoDecimals = (value) => Number(value.toFixed(2))\n'],
+      [/function buildFeedTypeListParams\(farmId\?: string, filters\?: FeedTypeListFilters, currency\?: CurrencyCode\) \{/g, 'function buildFeedTypeListParams(farmId, filters, currency) {'],
+      [/export async function getAllFeedTypes\(farmId\?: string, filters\?: FeedTypeListFilters\): Promise<FeedType\[]> \{/g, 'export async function getAllFeedTypes(farmId, filters) {'],
+      [/export async function getFeedTypesPage\([\s\S]*?\): Promise<PaginatedResponse<FeedType>> \{/g, 'export async function getFeedTypesPage(farmId, pagination, filters) {'],
+      [/export async function createFeedType\(data: FeedTypeFormData, farmId\?: string\): Promise<FeedType> \{/g, 'export async function createFeedType(data, farmId) {'],
+      [/export async function updateFeedType\(id: string, data: FeedTypeFormData, farmId\?: string\): Promise<FeedType> \{/g, 'export async function updateFeedType(id, data, farmId) {'],
+      [/export async function deleteFeedType\(id: string, farmId\?: string\): Promise<void> \{/g, 'export async function deleteFeedType(id, farmId) {'],
+      [/export async function exportFeedTypesCsv\([\s\S]*?\): Promise<void> \{/g, 'export async function exportFeedTypesCsv(farmId, currency, filters, measurementUnit) {'],
+      [/const response = await api.get<FeedType\[]>/g, 'const response = await api.get'],
+      [/const response = await api.get<PaginatedResponse<FeedType>>/g, 'const response = await api.get'],
+      [/const response = await api.post<FeedType>/g, 'const response = await api.post'],
+      [/const response = await api.put<FeedType>/g, 'const response = await api.put'],
     ],
   )
 
@@ -95,9 +121,11 @@ globalThis.__exportContextDownloadCsv = (...args) => {
 
 const userServiceModuleUrl = `${pathToFileURL(path.join(compiledRoot, 'userService.js')).href}?t=${Date.now()}`
 const dashboardServiceModuleUrl = `${pathToFileURL(path.join(compiledRoot, 'dashboardService.js')).href}?t=${Date.now()}`
+const feedTypeServiceModuleUrl = `${pathToFileURL(path.join(compiledRoot, 'feedTypeService.js')).href}?t=${Date.now()}`
 
 const userService = await import(userServiceModuleUrl)
 const dashboardService = await import(dashboardServiceModuleUrl)
+const feedTypeService = await import(feedTypeServiceModuleUrl)
 
 test.beforeEach(() => {
   apiStub.requests = []
@@ -290,5 +318,20 @@ test('dashboard fetch and export use the singular animalId parameter for a singl
       currency: 'USD',
     },
     'dashboard-summary.csv',
+  ])
+})
+
+test('feed-type export preserves the selected feeding measurement unit', async () => {
+  await feedTypeService.exportFeedTypesCsv('farm-1', 'USD', { search: 'Silage' }, 'GRAM')
+
+  assert.deepEqual(downloadCsvCalls[0], [
+    '/feed-types/export',
+    {
+      farmId: 'farm-1',
+      search: 'Silage',
+      currency: 'USD',
+      measurementUnit: 'GRAM',
+    },
+    'feed-types.csv',
   ])
 })

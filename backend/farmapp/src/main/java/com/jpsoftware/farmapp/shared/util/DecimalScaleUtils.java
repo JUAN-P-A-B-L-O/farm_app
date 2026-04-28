@@ -22,12 +22,16 @@ public final class DecimalScaleUtils {
     }
 
     public static Double normalize(Double value) {
+        return normalize(value, SCALE);
+    }
+
+    public static Double normalize(Double value, int scale) {
         if (value == null) {
             return null;
         }
 
         return BigDecimal.valueOf(value)
-                .setScale(SCALE, RoundingMode.HALF_UP)
+                .setScale(scale, RoundingMode.HALF_UP)
                 .doubleValue();
     }
 
@@ -36,9 +40,13 @@ public final class DecimalScaleUtils {
     }
 
     public static Double multiply(Double left, Double right) {
+        return multiply(left, right, SCALE);
+    }
+
+    public static Double multiply(Double left, Double right, int scale) {
         return BigDecimal.valueOf(left != null ? left : 0.0)
                 .multiply(BigDecimal.valueOf(right != null ? right : 0.0))
-                .setScale(SCALE, RoundingMode.HALF_UP)
+                .setScale(scale, RoundingMode.HALF_UP)
                 .doubleValue();
     }
 

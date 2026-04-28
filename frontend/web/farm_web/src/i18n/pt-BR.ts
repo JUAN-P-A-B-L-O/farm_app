@@ -47,6 +47,7 @@ const ptBR = {
     errors: {
       productionStep: 'Ao usar mililitros, informe valores em múltiplos de 10 mL.',
       feedingStep: 'Ao usar gramas, informe valores em múltiplos de 10 g.',
+      feedCostStep: 'Ao usar gramas, informe o custo em incrementos de 0,00001 por g.',
     },
   },
   common: {
@@ -423,12 +424,12 @@ const ptBR = {
     confirmDelete: 'Tem certeza de que deseja excluir este tipo de ração?',
     table: {
       name: 'Nome',
-      costPerKg: 'Custo por kg',
+      costPerKg: 'Custo por unidade',
       actions: 'Ações',
     },
     form: {
       name: 'Nome',
-      costPerKg: 'Custo por kg',
+      costPerKg: 'Custo por unidade',
       placeholders: {
         name: 'Silagem de milho',
       },
@@ -447,8 +448,8 @@ const ptBR = {
       update: 'Não foi possível atualizar o tipo de ração.',
       create: 'Não foi possível criar o tipo de ração.',
       delete: 'Não foi possível excluir o tipo de ração.',
-      costPerKg: 'O custo por kg deve ser maior que zero.',
-      costPrecision: 'O custo por kg deve ter no máximo 2 casas decimais.',
+      costPerKg: 'O custo por unidade deve ser maior que zero.',
+      costPrecision: 'O custo por unidade deve ter no máximo 2 casas decimais.',
     },
   },
   accessControl: {

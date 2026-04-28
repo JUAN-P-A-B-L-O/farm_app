@@ -76,10 +76,17 @@ public class FeedTypeController {
     public ResponseEntity<byte[]> export(
             @RequestParam(required = false) String farmId,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String currency) {
+            @RequestParam(required = false) String currency,
+            @RequestParam(required = false) String measurementUnit) {
         return CsvResponseFactory.buildDownload(
                 "feed-types.csv",
-                feedTypeService.exportAll(farmId, search, StringUtils.hasText(currency) ? currency : null));
+                StringUtils.hasText(measurementUnit)
+                        ? feedTypeService.exportAll(
+                                farmId,
+                                search,
+                                StringUtils.hasText(currency) ? currency : null,
+                                measurementUnit)
+                        : feedTypeService.exportAll(farmId, search, StringUtils.hasText(currency) ? currency : null));
     }
 
     @GetMapping("/{id}")

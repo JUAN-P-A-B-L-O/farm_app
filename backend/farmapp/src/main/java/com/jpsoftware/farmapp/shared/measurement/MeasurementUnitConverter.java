@@ -18,4 +18,16 @@ public final class MeasurementUnitConverter {
 
         return DecimalScaleUtils.normalize(value);
     }
+
+    public static Double convertRateFromBase(Double value, MeasurementUnit unit, int scale) {
+        if (value == null) {
+            return null;
+        }
+
+        if (unit == MeasurementUnit.GRAM || unit == MeasurementUnit.MILLILITER) {
+            return DecimalScaleUtils.normalize(value / unit.getUnitsPerBaseUnit(), scale);
+        }
+
+        return DecimalScaleUtils.normalize(value, scale);
+    }
 }

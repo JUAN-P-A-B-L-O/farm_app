@@ -108,6 +108,19 @@ class FeedTypeControllerContractTest {
     }
 
     @Test
+    void shouldExportFeedTypesWithMeasurementUnit() throws Exception {
+        feedTypeService.exportResponseWithMeasurementUnit = "id,name,costPerUnit,costUnit\nfeed-type-1,Corn Silage,0.00175,g\n";
+
+        mockMvc.perform(get("/feed-types/export")
+                        .queryParam("farmId", "farm-1")
+                        .queryParam("measurementUnit", "GRAM"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("feed-types.csv")))
+                .andExpect(content().string("id,name,costPerUnit,costUnit\nfeed-type-1,Corn Silage,0.00175,g\n"));
+    }
+
+    @Test
     void shouldReturnById() throws Exception {
         feedTypeService.findByIdResponse = buildResponse();
 
@@ -155,6 +168,7 @@ class FeedTypeControllerContractTest {
         private PaginatedResponse<FeedTypeResponse> paginatedResponse = new PaginatedResponse<>(List.of(), 0, 10, 0, 0);
         private FeedTypeResponse findByIdResponse;
         private String exportResponse = "";
+        private String exportResponseWithMeasurementUnit = "";
         private RuntimeException findByIdException;
 
         TestFeedTypeService() {
@@ -179,6 +193,11 @@ class FeedTypeControllerContractTest {
         @Override
         public String exportAll(String farmId, String search, String currency) {
             return exportResponse;
+        }
+
+        @Override
+        public String exportAll(String farmId, String search, String currency, String measurementUnitParam) {
+            return exportResponseWithMeasurementUnit;
         }
 
         @Override

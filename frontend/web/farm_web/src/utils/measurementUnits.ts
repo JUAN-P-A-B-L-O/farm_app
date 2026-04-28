@@ -18,6 +18,11 @@ const UNIT_INPUT_STEPS: Record<MeasurementUnit, string> = {
   GRAM: '10',
 }
 
+const FEED_COST_INPUT_STEPS: Record<FeedingUnit, string> = {
+  KILOGRAM: '0.01',
+  GRAM: '0.00001',
+}
+
 function roundToDisplayPrecision(value: number) {
   return Number(value.toFixed(6))
 }
@@ -66,6 +71,30 @@ export function isMeasurementCompatibleWithBasePrecision(value: number, unit: Me
 
 export function getMeasurementInputStep(unit: MeasurementUnit) {
   return UNIT_INPUT_STEPS[unit]
+}
+
+export function convertFeedCostToBase(value: number, unit: FeedingUnit) {
+  if (!Number.isFinite(value)) {
+    return 0
+  }
+
+  return roundToDisplayPrecision(value / UNIT_FACTORS[unit])
+}
+
+export function convertFeedCostFromBase(value: number, unit: FeedingUnit) {
+  if (!Number.isFinite(value)) {
+    return 0
+  }
+
+  return roundToDisplayPrecision(value * UNIT_FACTORS[unit])
+}
+
+export function isFeedCostCompatibleWithBasePrecision(value: number, unit: FeedingUnit) {
+  return hasAtMostTwoDecimals(convertFeedCostToBase(value, unit))
+}
+
+export function getFeedCostInputStep(unit: FeedingUnit) {
+  return FEED_COST_INPUT_STEPS[unit]
 }
 
 export function getMeasurementUnitShortLabelKey(unit: MeasurementUnit) {

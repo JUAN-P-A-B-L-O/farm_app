@@ -148,7 +148,7 @@ public final class ErrorMessageTranslator {
             case "price" -> "O preço é obrigatório.";
             case "effectiveDate" -> "A data de vigência é obrigatória.";
             case "date" -> "A data é obrigatória.";
-            case "costPerKg" -> "O custo por kg é obrigatório.";
+            case "costPerKg" -> "O custo por unidade é obrigatório.";
             case "acquisitionCost" -> "O custo de aquisição é obrigatório.";
             case "salePrice" -> "O valor da venda é obrigatório.";
             case "tag" -> "A tag do animal é obrigatória.";
@@ -165,7 +165,7 @@ public final class ErrorMessageTranslator {
         return switch (fieldName) {
             case "quantity" -> "A quantidade deve ser maior que zero.";
             case "price" -> "O preço deve ser maior que zero.";
-            case "costPerKg" -> "O custo por kg deve ser maior que zero.";
+            case "costPerKg" -> "O custo por unidade deve ser maior que zero.";
             case "acquisitionCost" -> "O custo de aquisição deve ser maior que zero.";
             case "salePrice" -> "O valor da venda deve ser maior que zero.";
             default -> null;
@@ -176,7 +176,7 @@ public final class ErrorMessageTranslator {
         return switch (fieldName) {
             case "quantity" -> "A quantidade deve ter no máximo 2 casas decimais.";
             case "price" -> "O preço deve ter no máximo 2 casas decimais.";
-            case "costPerKg" -> "O custo por kg deve ter no máximo 2 casas decimais.";
+            case "costPerKg" -> "O custo por unidade deve ter no máximo 2 casas decimais.";
             case "acquisitionCost" -> "O custo de aquisição deve ter no máximo 2 casas decimais.";
             case "salePrice" -> "O valor da venda deve ter no máximo 2 casas decimais.";
             default -> null;

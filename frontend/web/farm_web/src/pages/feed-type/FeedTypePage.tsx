@@ -7,6 +7,7 @@ import PaginationControls from '../../components/common/PaginationControls'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
   createFeedType,
@@ -19,6 +20,10 @@ import type { FeedType, FeedTypeApiErrorResponse, FeedTypeFormData, FeedTypeList
 import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
 import { isManager } from '../../utils/authorization'
+import {
+  convertFeedCostFromBase,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import '../../App.css'
 
 const emptyFeedTypeForm: FeedTypeFormData = {
@@ -60,6 +65,7 @@ function FeedTypePage() {
   const { currency } = useCurrency()
   const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const { feedingUnit } = useMeasurementUnits()
   const canDeleteResources = isManager(user)
   const [feedTypes, setFeedTypes] = useState<FeedType[]>([])
   const [pagination, setPagination] = useState(createEmptyPaginatedResponse<FeedType>())
@@ -209,7 +215,7 @@ function FeedTypePage() {
     setListErrorMessage('')
 
     try {
-      await exportFeedTypesCsv(selectedFarmId, currency, appliedFilters)
+      await exportFeedTypesCsv(selectedFarmId, currency, appliedFilters, feedingUnit)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
     } finally {
@@ -229,6 +235,12 @@ function FeedTypePage() {
     setPage(0)
     void loadFeedTypes(defaultFilters, 0, pageSize)
   }
+
+  const unitLabel = t(getMeasurementUnitShortLabelKey(feedingUnit))
+  const costLabel = `${appendCurrencyCode(t('feedType.table.costPerKg'), currency)} / ${unitLabel}`
+  const currencyFormatOptions = feedingUnit === 'GRAM'
+    ? { minimumFractionDigits: 5, maximumFractionDigits: 5, conversionPrecision: 5 }
+    : { minimumFractionDigits: 2, maximumFractionDigits: 2, conversionPrecision: 2 }
 
   return (
     <main className="animals-page">
@@ -254,6 +266,7 @@ function FeedTypePage() {
           </div>
 
           <FeedTypeForm
+            key={editingFeedTypeId ?? 'new'}
             initialValues={formInitialValues}
             onSubmit={handleCreateOrUpdate}
             onCancel={editingFeedTypeId ? handleCancelEdit : undefined}
@@ -309,7 +322,7 @@ function FeedTypePage() {
                 <thead>
                   <tr>
                     <th>{t('feedType.table.name')}</th>
-                    <th>{appendCurrencyCode(t('feedType.table.costPerKg'), currency)}</th>
+                    <th>{costLabel}</th>
                     <th>{t('feedType.table.actions')}</th>
                   </tr>
                 </thead>
@@ -317,7 +330,12 @@ function FeedTypePage() {
                   {feedTypes.map((feedType) => (
                     <tr key={feedType.id}>
                       <td>{feedType.name}</td>
-                      <td>{formatDisplayMoney(feedType.costPerKg, language, currency)}</td>
+                      <td>{formatDisplayMoney(
+                        convertFeedCostFromBase(feedType.costPerKg, feedingUnit),
+                        language,
+                        currency,
+                        currencyFormatOptions,
+                      )}</td>
                       <td className="animals-table__actions">
                         <button
                           type="button"

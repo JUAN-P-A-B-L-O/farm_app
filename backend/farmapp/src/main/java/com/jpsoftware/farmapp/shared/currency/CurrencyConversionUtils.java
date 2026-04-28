@@ -8,16 +8,20 @@ public final class CurrencyConversionUtils {
     }
 
     public static Double convertMonetaryValue(Double value, String currencyCode) {
+        return convertMonetaryValue(value, currencyCode, 2);
+    }
+
+    public static Double convertMonetaryValue(Double value, String currencyCode, int scale) {
         if (value == null) {
             return null;
         }
 
         CurrencyCode currency = CurrencyCode.fromQueryParam(currencyCode);
         if (currency == CurrencyCode.BRL) {
-            return DecimalScaleUtils.normalize(value);
+            return DecimalScaleUtils.normalize(value, scale);
         }
 
-        return DecimalScaleUtils.multiply(value, currency.getConversionRateFromBase());
+        return DecimalScaleUtils.multiply(value, currency.getConversionRateFromBase(), scale);
     }
 
     public static String normalizeCurrencyCode(String currencyCode) {

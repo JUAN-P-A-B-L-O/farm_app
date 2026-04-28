@@ -47,6 +47,7 @@ const en = {
     errors: {
       productionStep: 'When using milliliters, enter values in 10 mL increments.',
       feedingStep: 'When using grams, enter values in 10 g increments.',
+      feedCostStep: 'When using grams, enter the cost in 0.00001-per-g increments.',
     },
   },
   common: {
@@ -423,12 +424,12 @@ const en = {
     confirmDelete: 'Are you sure you want to delete this feed type?',
     table: {
       name: 'Name',
-      costPerKg: 'Cost per kg',
+      costPerKg: 'Cost per unit',
       actions: 'Actions',
     },
     form: {
       name: 'Name',
-      costPerKg: 'Cost per kg',
+      costPerKg: 'Cost per unit',
       placeholders: {
         name: 'Corn silage',
       },
@@ -447,8 +448,8 @@ const en = {
       update: 'Unable to update feed type.',
       create: 'Unable to create feed type.',
       delete: 'Unable to delete feed type.',
-      costPerKg: 'Cost per kg must be greater than zero.',
-      costPrecision: 'Cost per kg must have at most 2 decimal places.',
+      costPerKg: 'Cost per unit must be greater than zero.',
+      costPrecision: 'Cost per unit must have at most 2 decimal places.',
     },
   },
   accessControl: {

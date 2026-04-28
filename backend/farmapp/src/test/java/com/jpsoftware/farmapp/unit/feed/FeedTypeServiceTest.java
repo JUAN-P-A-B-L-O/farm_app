@@ -124,6 +124,26 @@ class FeedTypeServiceTest {
         assertEquals("Feed type not found", exception.getMessage());
     }
 
+    @Test
+    void shouldExportFeedTypesWithConvertedMeasurementUnit() {
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
+
+        String csv = feedTypeService.exportAll("farm-1", null, null, "GRAM");
+
+        assertEquals(
+                "id,name,costPerUnit,costUnit,active\nfeed-type-1,Corn Silage,0.00175,g,true\n",
+                csv);
+    }
+
+    @Test
+    void shouldRejectInvalidMeasurementUnitWhenExportingFeedTypes() {
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> feedTypeService.exportAll("farm-1", null, null, "LITER"));
+
+        assertEquals("measurementUnit must be KILOGRAM or GRAM", exception.getMessage());
+    }
+
     private static class InMemoryFeedTypeRepository {
 
         private final Map<String, FeedTypeEntity> data = new LinkedHashMap<>();
