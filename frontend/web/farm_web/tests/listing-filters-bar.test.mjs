@@ -45,3 +45,40 @@ test('listing filter consumers wire the new dashboard and analytics filter branc
   assert.match(analyticsPageSource, /type: 'checkbox'/)
   assert.match(analyticsPageSource, /id: 'analytics-include-acquisition-cost'/)
 })
+
+test('listing filters now auto-apply across the updated pages', () => {
+  const listingFiltersBarSource = readSource('src/components/common/ListingFiltersBar.tsx')
+
+  assert.doesNotMatch(listingFiltersBarSource, /onApply:/)
+  assert.doesNotMatch(listingFiltersBarSource, /applyLabel:/)
+  assert.doesNotMatch(listingFiltersBarSource, /onClick=\{onApply\}/)
+
+  const autoAppliedPages = [
+    'src/pages/analytics/AnalyticsPage.tsx',
+    'src/pages/animals/AnimalsPage.tsx',
+    'src/pages/batch/AnimalBatchPage.tsx',
+    'src/pages/dashboard/DashboardPage.tsx',
+    'src/pages/feed-type/FeedTypePage.tsx',
+    'src/pages/feeding/FeedingPage.tsx',
+    'src/pages/milk-price/MilkPricePage.tsx',
+    'src/pages/production/ProductionPage.tsx',
+    'src/pages/users/UsersPage.tsx',
+  ]
+
+  for (const relativePath of autoAppliedPages) {
+    const source = readSource(relativePath)
+
+    assert.match(source, /useAutoAppliedFilters\(/)
+    assert.doesNotMatch(source, /onApply=/)
+    assert.doesNotMatch(source, /applyLabel=/)
+    assert.match(source, /resetFilters\(\)/)
+  }
+
+  assert.match(readSource('src/pages/animals/AnimalsPage.tsx'), /debounceKeys: debouncedAnimalFilterKeys/)
+  assert.match(readSource('src/pages/batch/AnimalBatchPage.tsx'), /debounceKeys: debouncedBatchFilterKeys/)
+  assert.match(readSource('src/pages/feed-type/FeedTypePage.tsx'), /debounceKeys: debouncedFeedTypeFilterKeys/)
+  assert.match(readSource('src/pages/feeding/FeedingPage.tsx'), /debounceKeys: debouncedFeedingFilterKeys/)
+  assert.match(readSource('src/pages/milk-price/MilkPricePage.tsx'), /debounceKeys: debouncedMilkPriceFilterKeys/)
+  assert.match(readSource('src/pages/production/ProductionPage.tsx'), /debounceKeys: debouncedProductionFilterKeys/)
+  assert.match(readSource('src/pages/users/UsersPage.tsx'), /debounceKeys: debouncedUserFilterKeys/)
+})
