@@ -10,6 +10,7 @@ import { isManager } from '../utils/authorization'
 const navigationItems = [
   { to: '/dashboard', labelKey: 'layout.navigation.dashboard', managerOnly: true },
   { to: '/animals', labelKey: 'layout.navigation.animals' },
+  { to: '/batches', labelKey: 'layout.navigation.batches' },
   { to: '/production', labelKey: 'layout.navigation.production' },
   { to: '/milk-prices', labelKey: 'layout.navigation.milkPrices' },
   { to: '/feeding', labelKey: 'layout.navigation.feeding' },

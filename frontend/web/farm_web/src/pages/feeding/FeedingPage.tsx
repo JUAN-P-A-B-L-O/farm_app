@@ -9,7 +9,9 @@ import { useFarm } from '../../hooks/useFarm'
 import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
+import { getAllAnimalBatches } from '../../services/animalBatchService'
 import {
+  createBatchFeeding,
   createFeeding,
   deleteFeeding,
   exportFeedingsCsv,
@@ -19,10 +21,12 @@ import {
   updateFeeding,
 } from '../../services/feedingService'
 import type { Animal } from '../../types/animal'
+import type { AnimalBatch } from '../../types/animalBatch'
 import type {
   Feeding,
   FeedingAnimalOption,
   FeedingApiErrorResponse,
+  FeedingBatchOption,
   FeedingFeedTypeOption,
   FeedingFormData,
   FeedingListFilters,
@@ -37,7 +41,9 @@ import {
 import '../../App.css'
 
 const emptyFeedingForm: FeedingFormData = {
+  operationMode: 'INDIVIDUAL',
   animalId: '',
+  batchId: '',
   feedTypeId: '',
   date: '',
   quantity: 0,
@@ -81,6 +87,10 @@ function mapAnimalsToOptions(animals: Animal[]): FeedingAnimalOption[] {
     }))
 }
 
+function mapBatchesToOptions(batches: AnimalBatch[]): FeedingBatchOption[] {
+  return batches
+}
+
 function FeedingPage() {
   const { t, language } = useTranslation()
   const { user } = useAuth()
@@ -93,6 +103,7 @@ function FeedingPage() {
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [animals, setAnimals] = useState<FeedingAnimalOption[]>([])
+  const [batches, setBatches] = useState<FeedingBatchOption[]>([])
   const [feedTypes, setFeedTypes] = useState<FeedingFeedTypeOption[]>([])
   const [formInitialValues, setFormInitialValues] = useState<FeedingFormData>(emptyFeedingForm)
   const [isLoading, setIsLoading] = useState(true)
@@ -145,6 +156,7 @@ function FeedingPage() {
   async function loadFormOptions() {
     if (!selectedFarmId) {
       setAnimals([])
+      setBatches([])
       setFeedTypes([])
       setFormErrorMessage('')
       setIsFormOptionsLoading(false)
@@ -155,12 +167,14 @@ function FeedingPage() {
     setFormErrorMessage('')
 
     try {
-      const [animalsData, feedTypesData] = await Promise.all([
+      const [animalsData, batchesData, feedTypesData] = await Promise.all([
         getAllAnimals(selectedFarmId),
+        getAllAnimalBatches(selectedFarmId),
         getAllFeedTypes(selectedFarmId),
       ])
 
       setAnimals(mapAnimalsToOptions(animalsData))
+      setBatches(mapBatchesToOptions(batchesData))
       setFeedTypes(feedTypesData)
     } catch (error) {
       setFormErrorMessage(getErrorMessage(error, t('feeding.errors.loadOptions'), t))
@@ -196,6 +210,8 @@ function FeedingPage() {
     try {
       if (editingFeedingId) {
         await updateFeeding(editingFeedingId, data, selectedFarmId)
+      } else if (data.operationMode === 'BATCH') {
+        await createBatchFeeding(data, selectedFarmId)
       } else {
         await createFeeding(data, selectedFarmId)
       }
@@ -225,7 +241,9 @@ function FeedingPage() {
 
       setEditingFeedingId(feeding.id)
       setFormInitialValues({
+        operationMode: 'INDIVIDUAL',
         animalId: feeding.animalId,
+        batchId: '',
         feedTypeId: feeding.feedTypeId,
         date: feeding.date,
         quantity: feeding.quantity,
@@ -341,6 +359,7 @@ function FeedingPage() {
             <FeedingForm
               initialValues={formInitialValues}
               animals={animals}
+              batches={batches}
               feedTypes={feedTypes}
               onSubmit={handleCreateOrUpdateFeeding}
               onCancel={editingFeedingId ? handleCancelEdit : undefined}

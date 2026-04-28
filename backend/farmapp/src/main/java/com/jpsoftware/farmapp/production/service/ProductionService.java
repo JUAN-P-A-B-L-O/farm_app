@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.production.service;
 
+import com.jpsoftware.farmapp.animalbatch.service.AnimalBatchService;
 import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
 import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
@@ -7,6 +8,7 @@ import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
+import com.jpsoftware.farmapp.production.dto.CreateBatchProductionRequest;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
@@ -53,6 +55,7 @@ public class ProductionService {
     private final AuthenticationContextService authenticationContextService;
     private final FarmAccessService farmAccessService;
     private final MilkPriceService milkPriceService;
+    private final AnimalBatchService animalBatchService;
 
     @Autowired
     public ProductionService(
@@ -63,7 +66,8 @@ public class ProductionService {
             ProductionMapper productionMapper,
             AuthenticationContextService authenticationContextService,
             FarmAccessService farmAccessService,
-            MilkPriceService milkPriceService) {
+            MilkPriceService milkPriceService,
+            AnimalBatchService animalBatchService) {
         this.productionRepository = productionRepository;
         this.feedingRepository = feedingRepository;
         this.animalRepository = animalRepository;
@@ -72,6 +76,7 @@ public class ProductionService {
         this.authenticationContextService = authenticationContextService;
         this.farmAccessService = farmAccessService;
         this.milkPriceService = milkPriceService;
+        this.animalBatchService = animalBatchService;
     }
 
     public ProductionService(
@@ -89,6 +94,7 @@ public class ProductionService {
                 productionMapper,
                 authenticationContextService,
                 null,
+                null,
                 null);
     }
 
@@ -99,21 +105,37 @@ public class ProductionService {
         validateInput(request, createdBy, effectiveDate);
         String resolvedFarmId = resolveFarmId(request, farmId);
         validateRelations(request, createdBy, resolvedFarmId);
-
-        ProductionEntity productionEntity = toEntity(request);
-        productionEntity.setDate(effectiveDate);
-        productionEntity.setQuantity(DecimalScaleUtils.normalize(productionEntity.getQuantity()));
-        productionEntity.setCreatedBy(createdBy);
-        productionEntity.setFarmId(resolvedFarmId);
-        productionEntity.setStatus(ProductionEntity.STATUS_ACTIVE);
-        ProductionEntity savedProduction = productionRepository.save(productionEntity);
-
-        return toEnrichedResponse(savedProduction);
+        return toEnrichedResponse(saveProduction(
+                request.getAnimalId(),
+                effectiveDate,
+                request.getQuantity(),
+                createdBy,
+                resolvedFarmId));
     }
 
     @Transactional
     public ProductionResponse create(CreateProductionRequest request) {
         return create(request, null);
+    }
+
+    @Transactional
+    public List<ProductionResponse> createBatch(CreateBatchProductionRequest request, String farmId) {
+        String createdBy = authenticationContextService.resolveUserId(request != null ? request.getUserId() : null);
+        LocalDate effectiveDate = resolveCreationDate(request);
+        validateBatchInput(request, createdBy, effectiveDate);
+        List<AnimalEntity> animals = getBatchAnimals(request.getBatchId(), farmId);
+        String resolvedFarmId = animals.get(0).getFarmId();
+        validateUserExists(createdBy);
+
+        return animals.stream()
+                .map(animal -> saveProduction(
+                        animal.getId(),
+                        effectiveDate,
+                        request.getQuantity(),
+                        createdBy,
+                        resolvedFarmId))
+                .map(this::toEnrichedResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -351,8 +373,34 @@ public class ProductionService {
         }
     }
 
+    private void validateBatchInput(CreateBatchProductionRequest request, String createdBy, LocalDate effectiveDate) {
+        if (request == null) {
+            throw new ValidationException("request must not be null");
+        }
+        if (!StringUtils.hasText(request.getBatchId())) {
+            throw new ValidationException("batchId must not be blank");
+        }
+        if (effectiveDate == null) {
+            throw new ValidationException("date must not be null");
+        }
+        if (effectiveDate.isAfter(LocalDate.now())) {
+            throw new BusinessException("Date cannot be in the future");
+        }
+        if (request.getQuantity() == null || request.getQuantity() <= 0) {
+            throw new ValidationException("quantity must be greater than zero");
+        }
+        DecimalScaleUtils.requireMaxScale(request.getQuantity(), "quantity");
+        if (!StringUtils.hasText(createdBy)) {
+            throw new ValidationException("userId must not be blank");
+        }
+    }
+
     private void validateRelations(CreateProductionRequest request, String createdBy, String farmId) {
         validateAnimalIsActive(request.getAnimalId(), farmId);
+        validateUserExists(createdBy);
+    }
+
+    private void validateUserExists(String createdBy) {
         if (!userRepository.existsById(parseUserId(createdBy))) {
             throw new ResourceNotFoundException("User not found");
         }
@@ -363,6 +411,14 @@ public class ProductionService {
     }
 
     private LocalDate resolveCreationDate(CreateProductionRequest request) {
+        if (authenticationContextService.hasRole(WORKER_ROLE)) {
+            return LocalDate.now();
+        }
+
+        return request != null ? request.getDate() : null;
+    }
+
+    private LocalDate resolveCreationDate(CreateBatchProductionRequest request) {
         if (authenticationContextService.hasRole(WORKER_ROLE)) {
             return LocalDate.now();
         }
@@ -473,6 +529,22 @@ public class ProductionService {
         return animal;
     }
 
+    private ProductionEntity saveProduction(
+            String animalId,
+            LocalDate effectiveDate,
+            Double quantity,
+            String createdBy,
+            String farmId) {
+        ProductionEntity productionEntity = new ProductionEntity();
+        productionEntity.setAnimalId(animalId);
+        productionEntity.setDate(effectiveDate);
+        productionEntity.setQuantity(DecimalScaleUtils.normalize(quantity));
+        productionEntity.setCreatedBy(createdBy);
+        productionEntity.setFarmId(farmId);
+        productionEntity.setStatus(ProductionEntity.STATUS_ACTIVE);
+        return productionRepository.save(productionEntity);
+    }
+
     private String resolveFarmId(CreateProductionRequest request, String farmId) {
         if (StringUtils.hasText(farmId)) {
             return farmAccessService != null ? farmAccessService.validateAccessibleFarm(farmId) : farmId;
@@ -502,6 +574,13 @@ public class ProductionService {
             return null;
         }
         return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private List<AnimalEntity> getBatchAnimals(String batchId, String farmId) {
+        if (animalBatchService == null) {
+            throw new ResourceNotFoundException("Batch not found");
+        }
+        return animalBatchService.getActiveAnimals(batchId, farmId);
     }
 
 }

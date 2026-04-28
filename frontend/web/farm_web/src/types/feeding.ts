@@ -1,4 +1,5 @@
 import type { FeedType } from './feedType'
+import type { AnimalBatch } from './animalBatch'
 
 export interface FeedingAnimalOption {
   id: string
@@ -6,6 +7,8 @@ export interface FeedingAnimalOption {
 }
 
 export type FeedingFeedTypeOption = FeedType
+export type FeedingBatchOption = AnimalBatch
+export type FeedingOperationMode = 'INDIVIDUAL' | 'BATCH'
 
 export interface Feeding {
   id: string
@@ -23,7 +26,9 @@ export interface FeedingTrendPoint {
 }
 
 export interface FeedingFormData {
+  operationMode: FeedingOperationMode
   animalId: string
+  batchId: string
   feedTypeId: string
   date: string
   quantity: number
@@ -32,6 +37,14 @@ export interface FeedingFormData {
 
 export interface CreateFeedingPayload {
   animalId: string
+  feedTypeId: string
+  quantity: number
+  userId: string
+  date?: string
+}
+
+export interface CreateBatchFeedingPayload {
+  batchId: string
   feedTypeId: string
   quantity: number
   userId: string

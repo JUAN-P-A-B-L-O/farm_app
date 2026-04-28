@@ -48,12 +48,16 @@ public final class ErrorMessageTranslator {
             Map.entry("Farm not found", "Fazenda não encontrada."),
             Map.entry("User not found", "Usuário não encontrado."),
             Map.entry("Animal not found", "Animal não encontrado."),
+            Map.entry("Batch not found", "Lote não encontrado."),
             Map.entry("Feed type not found", "Tipo de ração não encontrado."),
             Map.entry("Production not found", "Produção não encontrada."),
             Map.entry("Feeding not found", "Alimentação não encontrada."),
             Map.entry("Date cannot be in the future", "A data não pode estar no futuro."),
             Map.entry("Animal must be ACTIVE for production operations", "O animal deve estar ativo para registrar produção."),
             Map.entry("Animal must be ACTIVE for feeding operations", "O animal deve estar ativo para registrar alimentação."),
+            Map.entry("Animal must be ACTIVE for batch operations", "Todos os animais do lote devem estar ativos para esta operação."),
+            Map.entry("All animals in the batch must belong to the same farm", "Todos os animais do lote devem pertencer à mesma fazenda."),
+            Map.entry("Batch must contain at least one animal", "O lote deve conter ao menos um animal."),
             Map.entry("Animal with this tag already exists", "Já existe um animal com esta tag."),
             Map.entry("Animal entity must not be null", "Animal obrigatório."),
             Map.entry("Animal status must be ACTIVE, SOLD, DEAD, or INACTIVE", "O status do animal deve ser Ativo, Vendido, Morto ou Inativo."),
@@ -142,6 +146,8 @@ public final class ErrorMessageTranslator {
             case "active" -> "Informe se o usuário está ativo.";
             case "farmId" -> "Selecione uma fazenda.";
             case "animalId" -> "Selecione um animal.";
+            case "batchId" -> "Selecione um lote.";
+            case "animalIds" -> "Selecione ao menos um animal.";
             case "feedTypeId" -> "Selecione um tipo de ração.";
             case "userId" -> "Selecione um usuário.";
             case "quantity" -> "A quantidade é obrigatória.";

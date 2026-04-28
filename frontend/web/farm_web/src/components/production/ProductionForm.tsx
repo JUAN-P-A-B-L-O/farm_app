@@ -10,12 +10,13 @@ import {
   getMeasurementInputStep,
   getMeasurementUnitShortLabelKey,
 } from '../../utils/measurementUnits'
-import type { ProductionAnimalOption, ProductionFormData } from '../../types/production'
+import type { ProductionAnimalOption, ProductionBatchOption, ProductionFormData } from '../../types/production'
 import type { User } from '../../types/user'
 
 interface ProductionFormProps {
   initialValues: ProductionFormData
   animals: ProductionAnimalOption[]
+  batches: ProductionBatchOption[]
   onSubmit: (data: ProductionFormData) => Promise<void>
   onCancel?: () => void
   isSubmitting: boolean
@@ -28,6 +29,7 @@ interface ProductionFormProps {
 function ProductionForm({
   initialValues,
   animals,
+  batches,
   onSubmit,
   onCancel,
   isSubmitting,
@@ -98,9 +100,15 @@ function ProductionForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const submissionDate = allowDateSelection ? formData.date : ''
+    const isBatchMode = formData.operationMode === 'BATCH'
 
-    if (!formData.animalId) {
+    if (!isBatchMode && !formData.animalId) {
       setValidationMessage(t('production.errors.selectAnimal'))
+      return
+    }
+
+    if (isBatchMode && !formData.batchId) {
+      setValidationMessage(t('production.errors.selectBatch'))
       return
     }
 
@@ -134,9 +142,10 @@ function ProductionForm({
     })
   }
 
+  const isBatchMode = formData.operationMode === 'BATCH'
   const isFormDisabled =
     isSubmitting ||
-    animals.length === 0 ||
+    (isBatchMode ? batches.length === 0 : animals.length === 0) ||
     (requireUserSelection &&
       (isUsersLoading || users.length === 0 || usersErrorMessage.length > 0))
 
@@ -148,23 +157,60 @@ function ProductionForm({
   return (
     <form className="animal-form" onSubmit={handleSubmit}>
       <div className="animal-form__grid">
-        <label className="animal-form__field">
-          <span>{t('production.form.animal')}</span>
-          <select
-            name="animalId"
-            value={formData.animalId}
-            onChange={handleChange}
-            required
-            disabled={isFormDisabled}
-          >
-            <option value="">{t('production.form.selectAnimal')}</option>
-            {animals.map((animal) => (
-              <option key={animal.id} value={animal.id}>
-                {animal.tag}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!onCancel && (
+          <label className="animal-form__field">
+            <span>{t('production.form.operationMode')}</span>
+            <select
+              name="operationMode"
+              value={formData.operationMode}
+              onChange={handleChange}
+              disabled={isSubmitting}
+            >
+              <option value="INDIVIDUAL">{t('production.form.operationOptions.individual')}</option>
+              <option value="BATCH">{t('production.form.operationOptions.batch')}</option>
+            </select>
+          </label>
+        )}
+
+        {!isBatchMode && (
+          <label className="animal-form__field">
+            <span>{t('production.form.animal')}</span>
+            <select
+              name="animalId"
+              value={formData.animalId}
+              onChange={handleChange}
+              required
+              disabled={isFormDisabled}
+            >
+              <option value="">{t('production.form.selectAnimal')}</option>
+              {animals.map((animal) => (
+                <option key={animal.id} value={animal.id}>
+                  {animal.tag}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {isBatchMode && (
+          <label className="animal-form__field">
+            <span>{t('production.form.batch')}</span>
+            <select
+              name="batchId"
+              value={formData.batchId}
+              onChange={handleChange}
+              required
+              disabled={isFormDisabled}
+            >
+              <option value="">{t('production.form.selectBatch')}</option>
+              {batches.map((batch) => (
+                <option key={batch.id} value={batch.id}>
+                  {`${batch.name} (${batch.animals.length})`}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         {requireUserSelection && (
           <label className="animal-form__field">

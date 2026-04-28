@@ -9,7 +9,9 @@ import { useFarm } from '../../hooks/useFarm'
 import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
+import { getAllAnimalBatches } from '../../services/animalBatchService'
 import {
+  createBatchProduction,
   createProduction,
   deleteProduction,
   exportProductionsCsv,
@@ -18,10 +20,12 @@ import {
   updateProduction,
 } from '../../services/productionService'
 import type { Animal } from '../../types/animal'
+import type { AnimalBatch } from '../../types/animalBatch'
 import type {
   Production,
   ProductionApiErrorResponse,
   ProductionAnimalOption,
+  ProductionBatchOption,
   ProductionFormData,
   ProductionListFilters,
 } from '../../types/production'
@@ -35,7 +39,9 @@ import {
 import '../../App.css'
 
 const emptyProductionForm: ProductionFormData = {
+  operationMode: 'INDIVIDUAL',
   animalId: '',
+  batchId: '',
   date: '',
   quantity: 0,
   userId: '',
@@ -77,6 +83,10 @@ function mapAnimalsToOptions(animals: Animal[]): ProductionAnimalOption[] {
     }))
 }
 
+function mapBatchesToOptions(batches: AnimalBatch[]): ProductionBatchOption[] {
+  return batches
+}
+
 function ProductionPage() {
   const { t, language } = useTranslation()
   const { user } = useAuth()
@@ -89,6 +99,7 @@ function ProductionPage() {
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [animals, setAnimals] = useState<ProductionAnimalOption[]>([])
+  const [batches, setBatches] = useState<ProductionBatchOption[]>([])
   const [formInitialValues, setFormInitialValues] = useState<ProductionFormData>(emptyProductionForm)
   const [isLoading, setIsLoading] = useState(true)
   const [isAnimalsLoading, setIsAnimalsLoading] = useState(true)
@@ -140,6 +151,7 @@ function ProductionPage() {
   async function loadAnimals() {
     if (!selectedFarmId) {
       setAnimals([])
+      setBatches([])
       setFormErrorMessage('')
       setIsAnimalsLoading(false)
       return
@@ -149,8 +161,12 @@ function ProductionPage() {
     setFormErrorMessage('')
 
     try {
-      const data = await getAllAnimals(selectedFarmId)
-      setAnimals(mapAnimalsToOptions(data))
+      const [animalsData, batchesData] = await Promise.all([
+        getAllAnimals(selectedFarmId),
+        getAllAnimalBatches(selectedFarmId),
+      ])
+      setAnimals(mapAnimalsToOptions(animalsData))
+      setBatches(mapBatchesToOptions(batchesData))
     } catch (error) {
       setFormErrorMessage(getErrorMessage(error, t('production.errors.loadAnimals'), t))
     } finally {
@@ -181,14 +197,17 @@ function ProductionPage() {
   async function handleCreateOrUpdateProduction(data: ProductionFormData) {
     const requiresDate = editingProductionId !== null || canSelectCreateDate
     const payload: ProductionFormData = {
+      operationMode: data.operationMode,
       animalId: data.animalId.trim(),
+      batchId: data.batchId.trim(),
       date: data.date,
       quantity: Number(data.quantity),
       userId: data.userId.trim(),
     }
 
     if (
-      !payload.animalId ||
+      (payload.operationMode === 'INDIVIDUAL' && !payload.animalId) ||
+      (payload.operationMode === 'BATCH' && !payload.batchId) ||
       (requiresDate && !payload.date) ||
       !Number.isFinite(payload.quantity) ||
       payload.quantity <= 0 ||
@@ -204,6 +223,8 @@ function ProductionPage() {
     try {
       if (editingProductionId) {
         await updateProduction(editingProductionId, payload, selectedFarmId)
+      } else if (payload.operationMode === 'BATCH') {
+        await createBatchProduction(payload, selectedFarmId)
       } else {
         await createProduction(payload, selectedFarmId)
       }
@@ -233,7 +254,9 @@ function ProductionPage() {
 
       setEditingProductionId(production.id)
       setFormInitialValues({
+        operationMode: 'INDIVIDUAL',
         animalId: production.animalId,
+        batchId: '',
         date: production.date,
         quantity: production.quantity,
         userId: '',
@@ -344,6 +367,7 @@ function ProductionPage() {
             <ProductionForm
               initialValues={formInitialValues}
               animals={animals}
+              batches={batches}
               onSubmit={handleCreateOrUpdateProduction}
               onCancel={editingProductionId ? handleCancelEdit : undefined}
               isSubmitting={isSubmitting}

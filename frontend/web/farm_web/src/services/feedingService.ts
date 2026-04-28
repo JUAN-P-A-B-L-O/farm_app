@@ -4,6 +4,7 @@ import { normalizeToTwoDecimals } from '../utils/decimal'
 import type { FeedingUnit } from '../utils/measurementUnits'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 import type {
+  CreateBatchFeedingPayload,
   CreateFeedingPayload,
   Feeding,
   FeedingFormData,
@@ -65,6 +66,22 @@ export async function createFeeding(data: FeedingFormData, farmId?: string): Pro
   }
 
   const response = await api.post<Feeding>('/feedings', payload, {
+    params: buildFeedingListParams(farmId),
+  })
+
+  return response.data
+}
+
+export async function createBatchFeeding(data: FeedingFormData, farmId?: string): Promise<Feeding[]> {
+  const payload: CreateBatchFeedingPayload = {
+    batchId: data.batchId,
+    feedTypeId: data.feedTypeId,
+    quantity: normalizeToTwoDecimals(data.quantity),
+    userId: data.userId,
+    ...(data.date ? { date: data.date } : {}),
+  }
+
+  const response = await api.post<Feeding[]>('/feedings/batch', payload, {
     params: buildFeedingListParams(farmId),
   })
 

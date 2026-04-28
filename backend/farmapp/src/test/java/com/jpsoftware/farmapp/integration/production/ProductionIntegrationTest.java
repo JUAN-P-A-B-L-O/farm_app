@@ -155,4 +155,51 @@ class ProductionIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
     }
+
+    @Test
+    void shouldCreateProductionsForAllAnimalsInBatch() throws Exception {
+        UserEntity savedUser = createAuthenticatedUser();
+        FarmEntity farm = createFarmOwnedBy(savedUser, "North Dairy");
+        String authorization = bearerToken(savedUser);
+        animalRepository.save(AnimalFixture.animalEntity("animal-1", "TAG-001", "Angus", java.time.LocalDate.of(2022, 1, 10), "ACTIVE", farm.getId()));
+        animalRepository.save(AnimalFixture.animalEntity("animal-2", "TAG-002", "Holstein", java.time.LocalDate.of(2022, 2, 11), "ACTIVE", farm.getId()));
+
+        MvcResult batchResult = mockMvc.perform(post("/animal-batches")
+                        .header("Authorization", authorization)
+                        .param("farmId", farm.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Lote A",
+                                  "animalIds": ["animal-1", "animal-2"]
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String batchId = objectMapper.readTree(batchResult.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(post("/productions/batch")
+                        .header("Authorization", authorization)
+                        .param("farmId", farm.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "batchId": "%s",
+                                  "date": "2026-03-20",
+                                  "quantity": 12.5,
+                                  "userId": "%s"
+                                }
+                                """.formatted(batchId, savedUser.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].quantity").value(12.5))
+                .andExpect(jsonPath("$[1].quantity").value(12.5));
+
+        mockMvc.perform(get("/productions")
+                        .header("Authorization", authorization)
+                        .param("farmId", farm.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
 }

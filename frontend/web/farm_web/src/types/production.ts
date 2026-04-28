@@ -1,7 +1,12 @@
+import type { AnimalBatch } from './animalBatch'
+
 export interface ProductionAnimalOption {
   id: string
   tag: string
 }
+
+export type ProductionBatchOption = AnimalBatch
+export type ProductionOperationMode = 'INDIVIDUAL' | 'BATCH'
 
 export interface Production {
   id: string
@@ -17,7 +22,9 @@ export interface ProductionTrendPoint {
 }
 
 export interface ProductionFormData {
+  operationMode: ProductionOperationMode
   animalId: string
+  batchId: string
   date: string
   quantity: number
   userId: string
@@ -25,6 +32,13 @@ export interface ProductionFormData {
 
 export interface CreateProductionPayload {
   animalId: string
+  quantity: number
+  userId: string
+  date?: string
+}
+
+export interface CreateBatchProductionPayload {
+  batchId: string
   quantity: number
   userId: string
   date?: string

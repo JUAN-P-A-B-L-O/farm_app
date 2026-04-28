@@ -12,6 +12,7 @@ import {
 } from '../../utils/measurementUnits'
 import type {
   FeedingAnimalOption,
+  FeedingBatchOption,
   FeedingFeedTypeOption,
   FeedingFormData,
 } from '../../types/feeding'
@@ -20,6 +21,7 @@ import type { User } from '../../types/user'
 interface FeedingFormProps {
   initialValues: FeedingFormData
   animals: FeedingAnimalOption[]
+  batches: FeedingBatchOption[]
   feedTypes: FeedingFeedTypeOption[]
   onSubmit: (data: FeedingFormData) => Promise<void>
   onCancel?: () => void
@@ -33,6 +35,7 @@ interface FeedingFormProps {
 function FeedingForm({
   initialValues,
   animals,
+  batches,
   feedTypes,
   onSubmit,
   onCancel,
@@ -105,9 +108,15 @@ function FeedingForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const submissionDate = allowDateSelection ? formData.date : ''
+    const isBatchMode = formData.operationMode === 'BATCH'
 
-    if (!formData.animalId) {
+    if (!isBatchMode && !formData.animalId) {
       setValidationMessage(t('feeding.errors.selectAnimal'))
+      return
+    }
+
+    if (isBatchMode && !formData.batchId) {
+      setValidationMessage(t('feeding.errors.selectBatch'))
       return
     }
 
@@ -141,9 +150,10 @@ function FeedingForm({
     })
   }
 
+  const isBatchMode = formData.operationMode === 'BATCH'
   const isFormDisabled =
     isSubmitting ||
-    animals.length === 0 ||
+    (isBatchMode ? batches.length === 0 : animals.length === 0) ||
     feedTypes.length === 0 ||
     (requireUserSelection &&
       (isUsersLoading || users.length === 0 || usersErrorMessage.length > 0))
@@ -156,23 +166,60 @@ function FeedingForm({
   return (
     <form className="animal-form" onSubmit={handleSubmit}>
       <div className="animal-form__grid">
-        <label className="animal-form__field">
-          <span>{t('feeding.form.animal')}</span>
-          <select
-            name="animalId"
-            value={formData.animalId}
-            onChange={handleChange}
-            required
-            disabled={isFormDisabled}
-          >
-            <option value="">{t('feeding.form.selectAnimal')}</option>
-            {animals.map((animal) => (
-              <option key={animal.id} value={animal.id}>
-                {animal.tag}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!onCancel && (
+          <label className="animal-form__field">
+            <span>{t('feeding.form.operationMode')}</span>
+            <select
+              name="operationMode"
+              value={formData.operationMode}
+              onChange={handleChange}
+              disabled={isSubmitting}
+            >
+              <option value="INDIVIDUAL">{t('feeding.form.operationOptions.individual')}</option>
+              <option value="BATCH">{t('feeding.form.operationOptions.batch')}</option>
+            </select>
+          </label>
+        )}
+
+        {!isBatchMode && (
+          <label className="animal-form__field">
+            <span>{t('feeding.form.animal')}</span>
+            <select
+              name="animalId"
+              value={formData.animalId}
+              onChange={handleChange}
+              required
+              disabled={isFormDisabled}
+            >
+              <option value="">{t('feeding.form.selectAnimal')}</option>
+              {animals.map((animal) => (
+                <option key={animal.id} value={animal.id}>
+                  {animal.tag}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {isBatchMode && (
+          <label className="animal-form__field">
+            <span>{t('feeding.form.batch')}</span>
+            <select
+              name="batchId"
+              value={formData.batchId}
+              onChange={handleChange}
+              required
+              disabled={isFormDisabled}
+            >
+              <option value="">{t('feeding.form.selectBatch')}</option>
+              {batches.map((batch) => (
+                <option key={batch.id} value={batch.id}>
+                  {`${batch.name} (${batch.animals.length})`}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className="animal-form__field">
           <span>{t('feeding.form.feedType')}</span>
