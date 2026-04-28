@@ -29,6 +29,26 @@ const enTranslations = {
       settings: 'Settings',
     },
   },
+  measurementUnits: {
+    productionLabel: 'Production unit',
+    feedingLabel: 'Feeding unit',
+    options: {
+      LITER: 'Liters (L)',
+      MILLILITER: 'Milliliters (mL)',
+      KILOGRAM: 'Kilograms (kg)',
+      GRAM: 'Grams (g)',
+    },
+    short: {
+      LITER: 'L',
+      MILLILITER: 'mL',
+      KILOGRAM: 'kg',
+      GRAM: 'g',
+    },
+    errors: {
+      productionStep: 'When using milliliters, enter values in 10 mL increments.',
+      feedingStep: 'When using grams, enter values in 10 g increments.',
+    },
+  },
   common: {
     loading: 'Loading...',
     saving: 'Saving...',
@@ -38,6 +58,9 @@ const enTranslations = {
     exportError: 'Unable to export CSV.',
     selectAnimal: 'Select an animal',
     selectUser: 'Select a user',
+    placeholders: {
+      numericValue: '0',
+    },
     pagination: {
       previous: 'Previous',
       next: 'Next',
@@ -374,6 +397,7 @@ const enTranslations = {
       loadDetails: 'Unable to load feeding details.',
       selectAnimal: 'Select an animal before creating the feeding record.',
       selectFeedType: 'Select a feed type before creating the feeding record.',
+      quantity: 'Quantity must be greater than zero.',
       quantityPrecision: 'Quantity must have at most 2 decimal places.',
       userRequired: 'User is required.',
       loadUsers: 'Unable to load users.',
@@ -610,6 +634,26 @@ const ptBRTranslations = {
       settings: 'Configurações',
     },
   },
+  measurementUnits: {
+    productionLabel: 'Unidade da produção',
+    feedingLabel: 'Unidade da alimentação',
+    options: {
+      LITER: 'Litros (L)',
+      MILLILITER: 'Mililitros (mL)',
+      KILOGRAM: 'Quilogramas (kg)',
+      GRAM: 'Gramas (g)',
+    },
+    short: {
+      LITER: 'L',
+      MILLILITER: 'mL',
+      KILOGRAM: 'kg',
+      GRAM: 'g',
+    },
+    errors: {
+      productionStep: 'Ao usar mililitros, informe valores em múltiplos de 10 mL.',
+      feedingStep: 'Ao usar gramas, informe valores em múltiplos de 10 g.',
+    },
+  },
   common: {
     loading: 'Carregando...',
     saving: 'Salvando...',
@@ -619,6 +663,9 @@ const ptBRTranslations = {
     exportError: 'Não foi possível exportar o CSV.',
     selectAnimal: 'Selecione um animal',
     selectUser: 'Selecione um usuário',
+    placeholders: {
+      numericValue: '0',
+    },
     pagination: {
       previous: 'Anterior',
       next: 'Próxima',
@@ -955,6 +1002,7 @@ const ptBRTranslations = {
       loadDetails: 'Não foi possível carregar os detalhes da alimentação.',
       selectAnimal: 'Selecione um animal antes de criar o registro de alimentação.',
       selectFeedType: 'Selecione um tipo de ração antes de criar o registro de alimentação.',
+      quantity: 'A quantidade deve ser maior que zero.',
       quantityPrecision: 'A quantidade deve ter no máximo 2 casas decimais.',
       userRequired: 'Usuário é obrigatório.',
       loadUsers: 'Não foi possível carregar os usuários.',

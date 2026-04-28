@@ -210,7 +210,7 @@ function ProductionForm({
             step={getMeasurementInputStep(productionUnit)}
             value={displayQuantity}
             onChange={handleChange}
-            placeholder="0"
+            placeholder={t('common.placeholders.numericValue')}
             required
           />
         </label>

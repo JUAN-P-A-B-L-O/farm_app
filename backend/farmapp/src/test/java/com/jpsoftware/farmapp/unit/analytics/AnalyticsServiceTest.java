@@ -107,8 +107,8 @@ class AnalyticsServiceTest {
 
         assertEquals(
                 """
-period,production,feedingCost,revenue,profit
-2026-04-14,10.0,50.0,320.0,270.0
+period,production,productionUnit,feedingCost,revenue,profit
+2026-04-14,10.0,L,50.0,320.0,270.0
 """,
                 csv);
     }

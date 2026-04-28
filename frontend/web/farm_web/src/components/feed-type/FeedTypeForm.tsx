@@ -79,7 +79,7 @@ function FeedTypeForm({
             step="0.01"
             value={formData.costPerKg}
             onChange={handleChange}
-            placeholder="0"
+            placeholder={t('common.placeholders.numericValue')}
             required
           />
         </label>

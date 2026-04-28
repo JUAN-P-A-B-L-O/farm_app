@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { getAnimalOriginLabel, getAnimalStatusLabel } from '../../i18n/domainLabels'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
@@ -138,7 +139,7 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
               </div>
               <div className="animal-details-grid__item">
                 <dt>{t('animals.table.origin')}</dt>
-                <dd>{t(`animals.origins.${animal.origin}`)}</dd>
+                <dd>{getAnimalOriginLabel(t, animal.origin)}</dd>
               </div>
               <div className="animal-details-grid__item">
                 <dt>{appendCurrencyCode(t('animals.form.acquisitionCost'), currency)}</dt>
@@ -158,7 +159,7 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                   <span
                     className={`animals-table__status animals-table__status--${animal.status.toLowerCase()}`}
                   >
-                    {t(`animals.statuses.${animal.status}`)}
+                    {getAnimalStatusLabel(t, animal.status)}
                   </span>
                 </dd>
               </div>

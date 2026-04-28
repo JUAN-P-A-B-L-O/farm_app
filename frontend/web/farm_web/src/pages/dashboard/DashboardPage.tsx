@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useState, type ChangeEvent } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import StatCard from '../../components/dashboard/StatCard'
+import { ANIMAL_STATUSES, getAnimalStatusLabel } from '../../i18n/domainLabels'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
@@ -39,7 +40,7 @@ function createInitialFilters(): DashboardFilters {
   }
 }
 
-const animalStatusOptions: AnimalStatus[] = ['ACTIVE', 'SOLD', 'DEAD', 'INACTIVE']
+const animalStatusOptions: AnimalStatus[] = [...ANIMAL_STATUSES]
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
   if (axios.isAxiosError<ApiErrorResponse>(error)) {
@@ -296,7 +297,7 @@ function DashboardPage() {
               <option value="">{t('dashboard.filters.allStatuses')}</option>
               {animalStatusOptions.map((status) => (
                 <option key={status} value={status}>
-                  {t(`animals.statuses.${status}`)}
+                  {getAnimalStatusLabel(t, status)}
                 </option>
               ))}
             </select>

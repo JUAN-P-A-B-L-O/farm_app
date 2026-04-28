@@ -1,31 +1,53 @@
-Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
-Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
-Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
-Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
-[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m7[m, [1;31mFailures: [0;1;31m1[m, Errors: 0, Skipped: 0, Time elapsed: 6.650 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
-[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldLocalizeDefaultErrorAttributesForMissingProtectedRoutes -- Time elapsed: 0.294 s <<< FAILURE!
-java.lang.AssertionError: Status expected:<404> but was:<500>
-	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
-	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
-	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:640)
-	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/home/juaneugenio/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m10[m, [1;31mFailures: [0;1;31m1[m, Errors: 0, Skipped: 0, Time elapsed: 1.178 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+[[1;31mERROR[m] com.jpsoftware.farmapp.unit.dashboard.DashboardServiceTest.shouldExportDashboardAsCsv -- Time elapsed: 0.008 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+expected: <totalProduction,totalFeedingCost,totalRevenue,totalProfit,animalCount
+100.0,40.0,500.0,410.0,2
+> but was: <totalProduction,totalProductionUnit,totalFeedingCost,totalRevenue,totalProfit,animalCount
+100.0,L,40.0,500.0,410.0,2
+--
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m22[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.035 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m7[m, [1;31mFailures: [0;1;31m1[m, Errors: 0, Skipped: 0, Time elapsed: 0.035 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+[[1;31mERROR[m] com.jpsoftware.farmapp.unit.analytics.AnalyticsServiceTest.shouldExportProfitSeriesAsCsv -- Time elapsed: 0.005 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+expected: <period,production,feedingCost,revenue,profit
+2026-04-14,10.0,50.0,320.0,270.0
+> but was: <period,production,productionUnit,feedingCost,revenue,profit
+2026-04-14,10.0,L,50.0,320.0,270.0
 --
 Hibernate: select count(*) from users ue1_0
-[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.669 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.752 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
 [[1;34mINFO[m] 
 [[1;34mINFO[m] Results:
 [[1;34mINFO[m] 
 [[1;31mERROR[m] [1;31mFailures: [m
-[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldLocalizeDefaultErrorAttributesForMissingProtectedRoutes:186 Status expected:<404> but was:<500>[m
+[[1;31mERROR[m] [1;31m  AnalyticsServiceTest.shouldExportProfitSeriesAsCsv:108 expected: <period,production,feedingCost,revenue,profit
+2026-04-14,10.0,50.0,320.0,270.0
+> but was: <period,production,productionUnit,feedingCost,revenue,profit
+2026-04-14,10.0,L,50.0,320.0,270.0
+>[m
+[[1;31mERROR[m] [1;31m  DashboardServiceTest.shouldExportDashboardAsCsv:82 expected: <totalProduction,totalFeedingCost,totalRevenue,totalProfit,animalCount
+100.0,40.0,500.0,410.0,2
+> but was: <totalProduction,totalProductionUnit,totalFeedingCost,totalRevenue,totalProfit,animalCount
+100.0,L,40.0,500.0,410.0,2
+>[m
 [[1;34mINFO[m] 
-[[1;31mERROR[m] [1;31mTests run: 216, Failures: 1, Errors: 0, Skipped: 0[m
+[[1;31mERROR[m] [1;31mTests run: 234, Failures: 2, Errors: 0, Skipped: 0[m
 [[1;34mINFO[m] 
 [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
 [[1;34mINFO[m] [1;31mBUILD FAILURE[m
 [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
-[[1;34mINFO[m] Total time:  18.397 s
-[[1;34mINFO[m] Finished at: 2026-04-27T15:23:25-03:00
+[[1;34mINFO[m] Total time:  20.719 s
+[[1;34mINFO[m] Finished at: 2026-04-27T18:28:41-03:00
 [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
 [[1;31mERROR[m] Failed to execute goal [32morg.apache.maven.plugins:maven-surefire-plugin:3.5.2:test[m [1m(default-test)[m on project [36mfarmapp[m: [1;31mThere are test failures.[m
 [[1;31mERROR[m] [1;31m[m

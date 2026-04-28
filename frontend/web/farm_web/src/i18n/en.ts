@@ -58,6 +58,9 @@ const en = {
     exportError: 'Unable to export CSV.',
     selectAnimal: 'Select an animal',
     selectUser: 'Select a user',
+    placeholders: {
+      numericValue: '0',
+    },
     pagination: {
       previous: 'Previous',
       next: 'Next',

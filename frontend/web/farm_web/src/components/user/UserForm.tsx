@@ -1,9 +1,8 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { USER_ROLES, getUserRoleLabel } from '../../i18n/domainLabels'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { Farm } from '../../types/farm'
 import type { UserFormData } from '../../types/user'
-
-const roleOptions = ['MANAGER', 'WORKER']
 
 interface UserFormProps {
   initialValues: UserFormData
@@ -83,10 +82,10 @@ function UserForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const payload = {
+    const payload: UserFormData = {
       name: formData.name.trim(),
       email: formData.email.trim(),
-      role: formData.role.trim(),
+      role: formData.role,
       password: formData.password.trim(),
       active: formData.active,
       avatarUrl: formData.avatarUrl.trim(),
@@ -153,9 +152,9 @@ function UserForm({
           <span>{t('accessControl.form.role')}</span>
           <select name="role" value={formData.role} onChange={handleChange} required>
             <option value="">{t('accessControl.form.selectRole')}</option>
-            {roleOptions.map((role) => (
+            {USER_ROLES.map((role) => (
               <option key={role} value={role}>
-                {t(`accessControl.roles.${role}`)}
+                {getUserRoleLabel(t, role)}
               </option>
             ))}
           </select>

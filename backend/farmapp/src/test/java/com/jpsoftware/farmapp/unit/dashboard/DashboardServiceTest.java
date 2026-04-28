@@ -81,8 +81,8 @@ class DashboardServiceTest {
 
         assertEquals(
                 """
-totalProduction,totalFeedingCost,totalRevenue,totalProfit,animalCount
-100.0,40.0,500.0,410.0,2
+totalProduction,totalProductionUnit,totalFeedingCost,totalRevenue,totalProfit,animalCount
+100.0,L,40.0,500.0,410.0,2
 """,
                 csv);
     }

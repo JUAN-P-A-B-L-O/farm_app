@@ -4,6 +4,7 @@ import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import PaginationControls from '../../components/common/PaginationControls'
 import UserForm from '../../components/user/UserForm'
+import { USER_ROLES, getUserActiveLabel, getUserRoleLabel } from '../../i18n/domainLabels'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAccessibleFarms } from '../../services/farmService'
 import {
@@ -397,11 +398,13 @@ function UsersPage() {
                 id: 'users-role-filter',
                 label: t('accessControl.filters.roleLabel'),
                 value: filters.role,
-                onChange: (value) => setFilters((current) => ({ ...current, role: value })),
+                onChange: (value) => setFilters((current) => ({ ...current, role: value as UserListFilters['role'] })),
                 options: [
                   { value: '', label: t('accessControl.filters.allRoles') },
-                  { value: 'MANAGER', label: t('accessControl.roles.MANAGER') },
-                  { value: 'WORKER', label: t('accessControl.roles.WORKER') },
+                  ...USER_ROLES.map((role) => ({
+                    value: role,
+                    label: getUserRoleLabel(t, role),
+                  })),
                 ],
               },
             ]}
@@ -484,10 +487,10 @@ function UsersPage() {
                         </div>
                       </td>
                       <td>{user.email}</td>
-                      <td>{t(`accessControl.roles.${user.role}`)}</td>
+                      <td>{getUserRoleLabel(t, user.role)}</td>
                       <td>
                         <span className={`animals-table__status animals-table__status--${user.active ? 'active' : 'inactive'}`}>
-                          {user.active ? t('accessControl.status.active') : t('accessControl.status.inactive')}
+                          {getUserActiveLabel(t, user.active)}
                         </span>
                       </td>
                       <td>{resolveFarmNames(user.farmIds)}</td>

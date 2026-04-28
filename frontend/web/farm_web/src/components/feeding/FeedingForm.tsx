@@ -236,7 +236,7 @@ function FeedingForm({
             step={getMeasurementInputStep(feedingUnit)}
             value={displayQuantity}
             onChange={handleChange}
-            placeholder="0"
+            placeholder={t('common.placeholders.numericValue')}
             required
           />
         </label>

@@ -4,6 +4,7 @@ import AnimalForm from '../../components/animal/AnimalForm'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import PaginationControls from '../../components/common/PaginationControls'
+import { ANIMAL_ORIGINS, ANIMAL_STATUSES, getAnimalOriginLabel, getAnimalStatusLabel } from '../../i18n/domainLabels'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -440,10 +441,10 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                 onChange: (value) => setFilters((current) => ({ ...current, status: value as AnimalListFilters['status'] })),
                 options: [
                   { value: '', label: t('animals.filters.allStatuses') },
-                  { value: 'ACTIVE', label: t('animals.statuses.ACTIVE') },
-                  { value: 'SOLD', label: t('animals.statuses.SOLD') },
-                  { value: 'DEAD', label: t('animals.statuses.DEAD') },
-                  { value: 'INACTIVE', label: t('animals.statuses.INACTIVE') },
+                  ...ANIMAL_STATUSES.map((status) => ({
+                    value: status,
+                    label: getAnimalStatusLabel(t, status),
+                  })),
                 ],
               },
               {
@@ -453,8 +454,10 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                 onChange: (value) => setFilters((current) => ({ ...current, origin: value as AnimalListFilters['origin'] })),
                 options: [
                   { value: '', label: t('animals.filters.allOrigins') },
-                  { value: 'BORN', label: t('animals.origins.BORN') },
-                  { value: 'PURCHASED', label: t('animals.origins.PURCHASED') },
+                  ...ANIMAL_ORIGINS.map((origin) => ({
+                    value: origin,
+                    label: getAnimalOriginLabel(t, origin),
+                  })),
                 ],
               },
             ]}
@@ -492,12 +495,12 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                       <td>{animal.tag}</td>
                       <td>{animal.breed}</td>
                       <td>{animal.birthDate}</td>
-                      <td>{t(`animals.origins.${animal.origin}`)}</td>
+                      <td>{getAnimalOriginLabel(t, animal.origin)}</td>
                       <td>
                         <span
                           className={`animals-table__status animals-table__status--${animal.status.toLowerCase()}`}
                         >
-                          {t(`animals.statuses.${animal.status}`)}
+                          {getAnimalStatusLabel(t, animal.status)}
                         </span>
                       </td>
                       <td className="animals-table__actions">
