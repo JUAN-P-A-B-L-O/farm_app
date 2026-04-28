@@ -1,0 +1,16 @@
+frontend/web/farm_web/src/App.css
+frontend/web/farm_web/src/components/common/FilterFields.tsx
+frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx
+frontend/web/farm_web/src/i18n/en.ts
+frontend/web/farm_web/src/i18n/pt-BR.ts
+frontend/web/farm_web/src/pages/analytics/AnalyticsPage.tsx
+frontend/web/farm_web/src/pages/animals/AnimalsPage.tsx
+frontend/web/farm_web/src/pages/dashboard/DashboardPage.tsx
+frontend/web/farm_web/src/pages/feed-type/FeedTypePage.tsx
+frontend/web/farm_web/src/pages/feeding/FeedingPage.tsx
+frontend/web/farm_web/src/pages/milk-price/MilkPricePage.tsx
+frontend/web/farm_web/src/pages/production/ProductionPage.tsx
+frontend/web/farm_web/src/pages/users/UsersPage.tsx
+workspace/logs/add-medida-selection_mvn_attempt_2.log
+workspace/logs/improve-filters_dev.log
+workspace/pipeline_summary.md

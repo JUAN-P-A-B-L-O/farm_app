@@ -1,0 +1,300 @@
+--- a/frontend/web/farm_web/src/App.css
++++ b/frontend/web/farm_web/src/App.css
++.listing-filters__controls select[multiple] {
++  min-height: 156px;
++}
++
++.listing-filters__help {
++  margin: 0;
++  font-size: 0.82rem;
++  font-weight: 500;
++  color: #617080;
++}
++
++.listing-filters__checkbox {
++  display: grid;
++  gap: 8px;
++  align-content: start;
++}
++
++.listing-filters__checkbox-control {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  min-height: 48px;
++}
++
++.listing-filters__checkbox-control input {
++  width: auto;
++  margin: 0;
++  padding: 0;
++  border: 0;
++}
++
+--- /dev/null
++++ b/frontend/web/farm_web/src/components/common/FilterFields.tsx
++import type { ReactNode } from 'react'
++
++export interface FilterOption {
++  value: string
++  label: string
++}
++
++interface BaseFilterFieldProps {
++  id: string
++  label: string
++  disabled?: boolean
++  helpText?: string
++}
++
++interface FilterFieldLabelProps extends BaseFilterFieldProps {
++  className?: string
++  children: ReactNode
++}
++
++interface SearchFilterFieldProps extends BaseFilterFieldProps {
++  value: string
++  placeholder: string
++  onChange: (value: string) => void
++}
++
++interface SelectFilterFieldProps extends BaseFilterFieldProps {
++  value: string
++  options: FilterOption[]
++  onChange: (value: string) => void
++}
++
++interface DateFilterFieldProps extends BaseFilterFieldProps {
++  value: string
++  min?: string
++  max?: string
++  onChange: (value: string) => void
++}
++
++interface MultiSelectFilterFieldProps extends BaseFilterFieldProps {
++  value: string[]
++  options: FilterOption[]
++  size?: number
++  onChange: (value: string[]) => void
++}
++
++interface CheckboxFilterFieldProps extends BaseFilterFieldProps {
++  checked: boolean
++  onChange: (checked: boolean) => void
++}
++
++function FilterFieldLabel({
++  id,
++  label,
++  helpText,
++  className,
++  children,
++}: FilterFieldLabelProps) {
++  return (
++    <label htmlFor={id} className={className}>
++      <span>{label}</span>
++      {children}
++      {helpText ? <small className="listing-filters__help">{helpText}</small> : null}
++    </label>
++  )
++}
++
++export function SearchFilterField({
++  id,
++  label,
++  value,
++  placeholder,
++  disabled,
++  helpText,
++  onChange,
++}: SearchFilterFieldProps) {
++  return (
++    <FilterFieldLabel id={id} label={label} disabled={disabled} helpText={helpText}>
++      <input
++        id={id}
++        type="search"
++        value={value}
++        disabled={disabled}
++        placeholder={placeholder}
++        onChange={(event) => onChange(event.target.value)}
++      />
++    </FilterFieldLabel>
++  )
++}
++
++export function SelectFilterField({
++  id,
++  label,
++  value,
++  options,
++  disabled,
++  helpText,
++  onChange,
++}: SelectFilterFieldProps) {
++  return (
++    <FilterFieldLabel id={id} label={label} disabled={disabled} helpText={helpText}>
++      <select
++        id={id}
++        value={value}
++        disabled={disabled}
++        onChange={(event) => onChange(event.target.value)}
++      >
++        {options.map((option) => (
++          <option key={option.value} value={option.value}>
++            {option.label}
++          </option>
++        ))}
++      </select>
++    </FilterFieldLabel>
++  )
++}
++
++export function DateFilterField({
++  id,
++  label,
++  value,
++  min,
++  max,
++  disabled,
++  helpText,
++  onChange,
++}: DateFilterFieldProps) {
++  return (
++    <FilterFieldLabel id={id} label={label} disabled={disabled} helpText={helpText}>
++      <input
++        id={id}
++        type="date"
++        value={value}
++        min={min}
++        max={max}
++        disabled={disabled}
++        onChange={(event) => onChange(event.target.value)}
++      />
++    </FilterFieldLabel>
++  )
++}
++
++export function MultiSelectFilterField({
++  id,
++  label,
++  value,
++  options,
++  size = 4,
++  disabled,
++  helpText,
++  onChange,
++}: MultiSelectFilterFieldProps) {
++  return (
++    <FilterFieldLabel id={id} label={label} disabled={disabled} helpText={helpText}>
++      <select
++        id={id}
++        multiple
++        size={size}
++        value={value}
++        disabled={disabled}
++        onChange={(event) => onChange(Array.from(event.target.selectedOptions, (option) => option.value))}
++      >
++        {options.map((option) => (
++          <option key={option.value} value={option.value}>
++            {option.label}
++          </option>
++        ))}
++      </select>
++    </FilterFieldLabel>
++  )
++}
++
++export function CheckboxFilterField({
++  id,
++  label,
++  checked,
++  disabled,
++  helpText,
++  onChange,
++}: CheckboxFilterFieldProps) {
++  return (
++    <label htmlFor={id} className="listing-filters__checkbox">
++      <span className="listing-filters__checkbox-control">
++        <input
++          id={id}
++          type="checkbox"
++          checked={checked}
++          disabled={disabled}
++          onChange={(event) => onChange(event.target.checked)}
++        />
++        <span>{label}</span>
++      </span>
++      {helpText ? <small className="listing-filters__help">{helpText}</small> : null}
++    </label>
++  )
++}
+--- a/frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx
++++ b/frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx
+-interface FilterOption {
+-  value: string
++import {
++  CheckboxFilterField,
++  DateFilterField,
++  MultiSelectFilterField,
++  SearchFilterField,
++  SelectFilterField,
++  type FilterOption,
++} from './FilterFields'
++
++interface SearchFilterConfig {
++  id: string
++  value: string
++  placeholder: string
++  disabled?: boolean
++  helpText?: string
++  onChange: (value: string) => void
+-  value: string
+-  onChange: (value: string) => void
++  disabled?: boolean
++  helpText?: string
++  type: 'select'
++  value: string
++  onChange: (value: string) => void
++  type: 'date'
++  value: string
++  min?: string
++  onChange: (value: string) => void
++interface MultiSelectFilterConfig extends BaseFilterConfig {
++  type: 'multiselect'
++  value: string[]
++  options: FilterOption[]
++  size?: number
++  onChange: (value: string[]) => void
++}
++
++interface CheckboxFilterConfig extends BaseFilterConfig {
++  type: 'checkbox'
++  checked: boolean
++  onChange: (checked: boolean) => void
++}
++
++type ListingFilterConfig =
++  | SelectFilterConfig
++  | DateFilterConfig
++  | MultiSelectFilterConfig
++  | CheckboxFilterConfig
++
+-  searchId: string
+-  searchLabel: string
+-  searchPlaceholder: string
+-  searchValue: string
+-  onSearchChange: (value: string) => void
++  search?: SearchFilterConfig
+-  filters?: Array<SelectFilterConfig | DateFilterConfig>
++  filters?: ListingFilterConfig[]
+-  searchId,
+-  searchLabel,
+-  searchPlaceholder,
+-  searchValue,
+-  onSearchChange,
++  search,
+-      <div className="listing-filters__controls">
+-        <label htmlFor={searchId}>
+-          {searchLabel}
+-          <input
+-            id={searchId}

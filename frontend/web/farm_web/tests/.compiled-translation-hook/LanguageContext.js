@@ -47,6 +47,7 @@ const enTranslations = {
     errors: {
       productionStep: 'When using milliliters, enter values in 10 mL increments.',
       feedingStep: 'When using grams, enter values in 10 g increments.',
+      feedCostStep: 'When using grams, enter the cost in 0.00001-per-g increments.',
     },
   },
   common: {
@@ -423,12 +424,12 @@ const enTranslations = {
     confirmDelete: 'Are you sure you want to delete this feed type?',
     table: {
       name: 'Name',
-      costPerKg: 'Cost per kg',
+      costPerKg: 'Cost per unit',
       actions: 'Actions',
     },
     form: {
       name: 'Name',
-      costPerKg: 'Cost per kg',
+      costPerKg: 'Cost per unit',
       placeholders: {
         name: 'Corn silage',
       },
@@ -447,8 +448,8 @@ const enTranslations = {
       update: 'Unable to update feed type.',
       create: 'Unable to create feed type.',
       delete: 'Unable to delete feed type.',
-      costPerKg: 'Cost per kg must be greater than zero.',
-      costPrecision: 'Cost per kg must have at most 2 decimal places.',
+      costPerKg: 'Cost per unit must be greater than zero.',
+      costPrecision: 'Cost per unit must have at most 2 decimal places.',
     },
   },
   accessControl: {
@@ -584,6 +585,7 @@ const enTranslations = {
     groupByMonth: 'Monthly',
     includeAcquisitionCost: 'Include acquisition cost in profit',
     applyFilters: 'Apply filters',
+    clearFilters: 'Clear filters',
     loadingAnimals: 'Loading animals...',
     emptyAnimals: 'No animals available.',
     loadingCharts: 'Loading analytics...',
@@ -652,6 +654,7 @@ const ptBRTranslations = {
     errors: {
       productionStep: 'Ao usar mililitros, informe valores em múltiplos de 10 mL.',
       feedingStep: 'Ao usar gramas, informe valores em múltiplos de 10 g.',
+      feedCostStep: 'Ao usar gramas, informe o custo em incrementos de 0,00001 por g.',
     },
   },
   common: {
@@ -1028,12 +1031,12 @@ const ptBRTranslations = {
     confirmDelete: 'Tem certeza de que deseja excluir este tipo de ração?',
     table: {
       name: 'Nome',
-      costPerKg: 'Custo por kg',
+      costPerKg: 'Custo por unidade',
       actions: 'Ações',
     },
     form: {
       name: 'Nome',
-      costPerKg: 'Custo por kg',
+      costPerKg: 'Custo por unidade',
       placeholders: {
         name: 'Silagem de milho',
       },
@@ -1052,8 +1055,8 @@ const ptBRTranslations = {
       update: 'Não foi possível atualizar o tipo de ração.',
       create: 'Não foi possível criar o tipo de ração.',
       delete: 'Não foi possível excluir o tipo de ração.',
-      costPerKg: 'O custo por kg deve ser maior que zero.',
-      costPrecision: 'O custo por kg deve ter no máximo 2 casas decimais.',
+      costPerKg: 'O custo por unidade deve ser maior que zero.',
+      costPrecision: 'O custo por unidade deve ter no máximo 2 casas decimais.',
     },
   },
   accessControl: {
@@ -1189,6 +1192,7 @@ const ptBRTranslations = {
     groupByMonth: 'Mensal',
     includeAcquisitionCost: 'Incluir custo de aquisição no lucro',
     applyFilters: 'Aplicar filtros',
+    clearFilters: 'Limpar filtros',
     loadingAnimals: 'Carregando animais...',
     emptyAnimals: 'Nenhum animal disponível.',
     loadingCharts: 'Carregando análises...',

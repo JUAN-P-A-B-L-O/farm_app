@@ -101,12 +101,17 @@ test('returns translated placeholders and details-section labels for both suppor
   assert.equal(translation.t('layout.navigation.dashboard'), 'Painel')
   assert.equal(translation.t('auth.title'), 'Entrar')
   assert.equal(translation.t('dashboard.title'), 'Painel')
+  assert.equal(
+    translation.t('dashboard.filters.allAnimalsHint'),
+    'Deixe vazio para incluir todos os animais. A seleção múltipla é suportada.',
+  )
   assert.equal(translation.t('animals.form.placeholders.tag'), 'A-102')
   assert.equal(translation.t('animals.form.placeholders.farmId'), 'fazenda-001')
   assert.equal(translation.t('accessControl.form.placeholders.password'), 'farmapp@123')
   assert.equal(translation.t('animals.detailsSections.productionTitle'), 'Histórico de produção')
   assert.equal(translation.t('animals.detailsSections.feedingEmpty'), 'Nenhum registro de alimentação encontrado para este animal.')
   assert.equal(translation.t('feedType.confirmDelete'), 'Tem certeza de que deseja excluir este tipo de ração?')
+  assert.equal(translation.t('analytics.includeAcquisitionCost'), 'Incluir custo de aquisição no lucro')
   assert.equal(translation.t('layout.languageOptions.pt-BR'), 'Português')
   assert.equal(translation.t('layout.currencyOptions.USD'), 'Dólar americano (USD)')
 
@@ -115,8 +120,13 @@ test('returns translated placeholders and details-section labels for both suppor
 
   assert.equal(translation.t('animals.form.placeholders.farmId'), 'farm-001')
   assert.equal(translation.t('accessControl.form.placeholders.email'), 'mary.smith@farmapp.com')
+  assert.equal(
+    translation.t('dashboard.filters.allAnimalsHint'),
+    'Leave empty to include every animal. Multiple selection is supported.',
+  )
   assert.equal(translation.t('animals.detailsSections.productionDescription'), 'Production records sorted from most recent to oldest.')
   assert.equal(translation.t('animals.detailsSections.feedingTitle'), 'Feeding History')
+  assert.equal(translation.t('analytics.includeAcquisitionCost'), 'Include acquisition cost in profit')
   assert.equal(translation.t('layout.languageOptions.en'), 'English')
   assert.equal(translation.t('layout.currencyOptions.BRL'), 'Brazilian real (BRL)')
 })
