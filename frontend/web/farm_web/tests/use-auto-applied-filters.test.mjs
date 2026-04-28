@@ -58,6 +58,7 @@ export function createHookHarness(hook) {
     cursor: 0,
     state: [],
     refs: [],
+    callbacks: [],
     effects: [],
     pendingEffects: [],
     result: undefined,
@@ -126,10 +127,19 @@ export function useRef(initialValue) {
   return harness.refs[index]
 }
 
-export function useCallback(callback) {
+export function useCallback(callback, deps) {
   const harness = getHarness()
-  harness.cursor++
-  return callback
+  const index = harness.cursor++
+  const previousCallback = harness.callbacks[index]
+
+  if (!previousCallback || !areHookDepsEqual(previousCallback.deps, deps)) {
+    harness.callbacks[index] = {
+      deps,
+      value: callback,
+    }
+  }
+
+  return harness.callbacks[index].value
 }
 
 export function useEffect(effect, deps) {
@@ -243,5 +253,22 @@ test('useAutoAppliedFilters clones array filters and ignores equivalent array up
   harness.render()
 
   assert.equal(calls.length, 2)
+  harness.unmount()
+})
+
+test('useAutoAppliedFilters keeps action callbacks stable across rerenders with default debounce options', () => {
+  const harness = createHookHarness(() => useAutoAppliedFilters(
+    () => ({ animalIds: [] }),
+  ))
+
+  harness.render()
+
+  const firstSetFilters = harness.result.setFilters
+  const firstResetFilters = harness.result.resetFilters
+
+  harness.render()
+
+  assert.equal(harness.result.setFilters, firstSetFilters)
+  assert.equal(harness.result.resetFilters, firstResetFilters)
   harness.unmount()
 })

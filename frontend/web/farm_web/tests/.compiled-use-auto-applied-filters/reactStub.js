@@ -23,6 +23,7 @@ export function createHookHarness(hook) {
     cursor: 0,
     state: [],
     refs: [],
+    callbacks: [],
     effects: [],
     pendingEffects: [],
     result: undefined,
@@ -91,10 +92,19 @@ export function useRef(initialValue) {
   return harness.refs[index]
 }
 
-export function useCallback(callback) {
+export function useCallback(callback, deps) {
   const harness = getHarness()
-  harness.cursor++
-  return callback
+  const index = harness.cursor++
+  const previousCallback = harness.callbacks[index]
+
+  if (!previousCallback || !areHookDepsEqual(previousCallback.deps, deps)) {
+    harness.callbacks[index] = {
+      deps,
+      value: callback,
+    }
+  }
+
+  return harness.callbacks[index].value
 }
 
 export function useEffect(effect, deps) {

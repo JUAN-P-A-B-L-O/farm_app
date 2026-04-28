@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from './reactStub.js';
+const EMPTY_DEBOUNCE_KEYS = [];
 function resolveFiltersUpdater(updater, currentFilters) {
     return typeof updater === 'function'
         ? updater(currentFilters)
@@ -30,8 +31,13 @@ function areFiltersEqual(left, right) {
     }
     return true;
 }
-export function useAutoAppliedFilters(initialFilters, { debounceKeys = [], debounceMs = 300, onAppliedChange, } = {}) {
-    const createInitialFilters = useCallback(() => cloneFilters(typeof initialFilters === 'function' ? initialFilters() : initialFilters), [initialFilters]);
+export function useAutoAppliedFilters(initialFilters, { debounceKeys = EMPTY_DEBOUNCE_KEYS, debounceMs = 300, onAppliedChange, } = {}) {
+    const effectiveDebounceKeys = (debounceKeys.length === 0 ? EMPTY_DEBOUNCE_KEYS : debounceKeys);
+    const initialFiltersRef = useRef(initialFilters);
+    initialFiltersRef.current = initialFilters;
+    const createInitialFilters = useCallback(() => cloneFilters(typeof initialFiltersRef.current === 'function'
+        ? initialFiltersRef.current()
+        : initialFiltersRef.current), []);
     const initialFiltersValue = createInitialFilters();
     const [filters, setFiltersState] = useState(initialFiltersValue);
     const [appliedFilters, setAppliedFiltersState] = useState(initialFiltersValue);
@@ -62,10 +68,10 @@ export function useAutoAppliedFilters(initialFilters, { debounceKeys = [], debou
             return;
         }
         const changedKeys = Object.keys(nextFilters).filter((key) => !areFilterValuesEqual(currentFilters[key], nextFilters[key]));
-        const hasImmediateChange = changedKeys.some((key) => !debounceKeys.includes(key));
+        const hasImmediateChange = changedKeys.some((key) => !effectiveDebounceKeys.includes(key));
         filtersRef.current = nextFilters;
         setFiltersState(nextFilters);
-        if (hasImmediateChange || debounceKeys.length === 0) {
+        if (hasImmediateChange || effectiveDebounceKeys.length === 0) {
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
                 debounceTimerRef.current = null;
@@ -80,7 +86,7 @@ export function useAutoAppliedFilters(initialFilters, { debounceKeys = [], debou
             debounceTimerRef.current = null;
             applyCommittedFilters(cloneFilters(filtersRef.current));
         }, debounceMs);
-    }, [applyCommittedFilters, debounceKeys, debounceMs]);
+    }, [applyCommittedFilters, debounceMs, effectiveDebounceKeys]);
     const applyFiltersImmediately = useCallback((updater) => {
         if (debounceTimerRef.current) {
             clearTimeout(debounceTimerRef.current);

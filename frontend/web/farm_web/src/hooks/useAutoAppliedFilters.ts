@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 type FiltersUpdater<T> = T | ((currentFilters: T) => T)
 
+const EMPTY_DEBOUNCE_KEYS: PropertyKey[] = []
+
 interface UseAutoAppliedFiltersOptions<T> {
   debounceKeys?: Array<keyof T>
   debounceMs?: number
@@ -54,14 +56,21 @@ function areFiltersEqual<T extends object>(left: T, right: T): boolean {
 export function useAutoAppliedFilters<T extends object>(
   initialFilters: T | (() => T),
   {
-    debounceKeys = [],
+    debounceKeys = EMPTY_DEBOUNCE_KEYS as Array<keyof T>,
     debounceMs = 300,
     onAppliedChange,
   }: UseAutoAppliedFiltersOptions<T> = {},
 ) {
+  const effectiveDebounceKeys = (
+    debounceKeys.length === 0 ? EMPTY_DEBOUNCE_KEYS : debounceKeys
+  ) as Array<keyof T>
+  const initialFiltersRef = useRef(initialFilters)
+  initialFiltersRef.current = initialFilters
   const createInitialFilters = useCallback(() => cloneFilters(
-    typeof initialFilters === 'function' ? (initialFilters as () => T)() : initialFilters,
-  ), [initialFilters])
+    typeof initialFiltersRef.current === 'function'
+      ? (initialFiltersRef.current as () => T)()
+      : initialFiltersRef.current,
+  ), [])
   const initialFiltersValue = createInitialFilters()
   const [filters, setFiltersState] = useState<T>(initialFiltersValue)
   const [appliedFilters, setAppliedFiltersState] = useState<T>(initialFiltersValue)
@@ -102,12 +111,12 @@ export function useAutoAppliedFilters<T extends object>(
       currentFilters[key],
       nextFilters[key],
     ))
-    const hasImmediateChange = changedKeys.some((key) => !debounceKeys.includes(key))
+    const hasImmediateChange = changedKeys.some((key) => !effectiveDebounceKeys.includes(key))
 
     filtersRef.current = nextFilters
     setFiltersState(nextFilters)
 
-    if (hasImmediateChange || debounceKeys.length === 0) {
+    if (hasImmediateChange || effectiveDebounceKeys.length === 0) {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current)
         debounceTimerRef.current = null
@@ -125,7 +134,7 @@ export function useAutoAppliedFilters<T extends object>(
       debounceTimerRef.current = null
       applyCommittedFilters(cloneFilters(filtersRef.current))
     }, debounceMs)
-  }, [applyCommittedFilters, debounceKeys, debounceMs])
+  }, [applyCommittedFilters, debounceMs, effectiveDebounceKeys])
 
   const applyFiltersImmediately = useCallback((updater?: FiltersUpdater<T>) => {
     if (debounceTimerRef.current) {
