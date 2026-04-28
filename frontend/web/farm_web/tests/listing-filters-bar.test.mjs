@@ -99,3 +99,15 @@ test('listing filters now auto-apply across the updated pages', () => {
   assert.match(readSource('src/pages/production/ProductionPage.tsx'), /debounceKeys: debouncedProductionFilterKeys/)
   assert.match(readSource('src/pages/users/UsersPage.tsx'), /debounceKeys: debouncedUserFilterKeys/)
 })
+
+test('App.css keeps action controls stacked on mobile and relaxes them at tablet widths', () => {
+  const appCssSource = readSource('src/App.css')
+
+  assert.match(appCssSource, /\.animals-panel__header--actions \{[\s\S]*flex-direction: column;[\s\S]*align-items: stretch;[\s\S]*\}/)
+  assert.match(appCssSource, /\.animals-panel__header--actions > \* \{\s+min-width: 0;\s+\}/)
+  assert.match(appCssSource, /\.animal-form__actions \{\s+display: grid;\s+grid-template-columns: minmax\(0, 1fr\);\s+gap: 12px;\s+\}/)
+  assert.match(appCssSource, /\.animal-form__actions button,\s+\.animals-table__action-button \{[\s\S]*display: inline-flex;[\s\S]*width: 100%;[\s\S]*max-width: 100%;[\s\S]*text-align: center;[\s\S]*white-space: normal;[\s\S]*\}/)
+  assert.match(appCssSource, /\.listing-filters__actions \{\s+display: grid;\s+grid-template-columns: minmax\(0, 1fr\);\s+gap: 12px;\s+\}/)
+  assert.match(appCssSource, /\.analytics-chart__header > \.animals-table__action-button,\s+\.animals-panel__header--actions > \.animals-table__action-button,\s+\.listing-filters__actions > \.animals-table__action-button,\s+\.listing-filters__actions > button \{\s+width: 100%;\s+\}/)
+  assert.match(appCssSource, /@media \(min-width: 768px\) \{[\s\S]*\.animal-form__actions,\s+\.listing-filters__actions \{\s+display: flex;\s+flex-wrap: wrap;\s+\}[\s\S]*\.animal-form__actions button,\s+\.animals-table__action-button \{\s+width: auto;\s+white-space: nowrap;\s+\}[\s\S]*\.animals-panel__header--actions,[\s\S]*\.analytics-chart__header \{[\s\S]*flex-direction: row;[\s\S]*align-items: flex-start;[\s\S]*\}/)
+})
