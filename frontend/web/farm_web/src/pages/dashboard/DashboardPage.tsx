@@ -256,7 +256,7 @@ function DashboardPage() {
       </section>
 
       <section className="dashboard-layout">
-        <article className="animals-panel">
+        <article className="animals-panel dashboard-panel">
           <div className="animals-panel__header animals-panel__header--actions">
             <div>
               <h2>{t('dashboard.title')}</h2>
@@ -272,6 +272,7 @@ function DashboardPage() {
           </div>
 
           <ListingFiltersBar
+            className="listing-filters--dashboard"
             onClear={clearFilters}
             clearLabel={t('dashboard.filters.clear')}
             filters={[
