@@ -585,6 +585,7 @@ const ptBR = {
     groupByMonth: 'Mensal',
     includeAcquisitionCost: 'Incluir custo de aquisição no lucro',
     applyFilters: 'Aplicar filtros',
+    clearFilters: 'Limpar filtros',
     loadingAnimals: 'Carregando animais...',
     emptyAnimals: 'Nenhum animal disponível.',
     loadingCharts: 'Carregando análises...',

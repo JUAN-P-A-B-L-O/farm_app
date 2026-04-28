@@ -505,6 +505,37 @@
   border-color: #79a67f;
 }
 
+.listing-filters__controls select[multiple] {
+  min-height: 156px;
+}
+
+.listing-filters__help {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #617080;
+}
+
+.listing-filters__checkbox {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.listing-filters__checkbox-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+}
+
+.listing-filters__checkbox-control input {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 .listing-filters__actions {
   display: flex;
   flex-wrap: wrap;

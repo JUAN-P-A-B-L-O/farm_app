@@ -3,6 +3,7 @@ import axios from 'axios'
 import BarChart from '../../components/analytics/BarChart'
 import ChartErrorBoundary from '../../components/analytics/ChartErrorBoundary'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import LineChart from '../../components/analytics/LineChart'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
@@ -46,12 +47,14 @@ function mapAnimalsToOptions(animals: Animal[]) {
   }))
 }
 
-const initialFilters: AnalyticsFilters = {
-  startDate: '',
-  endDate: '',
-  animalId: '',
-  groupBy: 'day',
-  includeAcquisitionCost: true,
+function createInitialFilters(): AnalyticsFilters {
+  return {
+    startDate: '',
+    endDate: '',
+    animalId: '',
+    groupBy: 'day',
+    includeAcquisitionCost: true,
+  }
 }
 
 const emptyDataset: AnalyticsDataset = {
@@ -61,14 +64,22 @@ const emptyDataset: AnalyticsDataset = {
   productionByAnimal: [],
 }
 
+function filterAvailableAnimalId(currentAnimalId: string, nextAnimals: Array<{ id: string; tag: string }>) {
+  if (!currentAnimalId) {
+    return currentAnimalId
+  }
+
+  return nextAnimals.some((animal) => animal.id === currentAnimalId) ? currentAnimalId : ''
+}
+
 function AnalyticsPage() {
   const { t, language } = useTranslation()
   const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
   const { productionUnit } = useMeasurementUnits()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
-  const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters)
-  const [appliedFilters, setAppliedFilters] = useState<AnalyticsFilters>(initialFilters)
+  const [filters, setFilters] = useState<AnalyticsFilters>(createInitialFilters)
+  const [appliedFilters, setAppliedFilters] = useState<AnalyticsFilters>(createInitialFilters)
   const [analytics, setAnalytics] = useState<AnalyticsDataset>(emptyDataset)
   const [isAnimalsLoading, setIsAnimalsLoading] = useState(true)
   const [isChartsLoading, setIsChartsLoading] = useState(false)
@@ -95,7 +106,18 @@ function AnalyticsPage() {
         const data = selectedFarmId ? await getAllAnimals(selectedFarmId) : []
 
         if (isActive) {
-          setAnimals(mapAnimalsToOptions(data))
+          const nextAnimals = mapAnimalsToOptions(data)
+          setAnimals(nextAnimals)
+          setFilters((current) => (
+            current.animalId
+              ? { ...current, animalId: filterAvailableAnimalId(current.animalId, nextAnimals) }
+              : current
+          ))
+          setAppliedFilters((current) => (
+            current.animalId
+              ? { ...current, animalId: filterAvailableAnimalId(current.animalId, nextAnimals) }
+              : current
+          ))
         }
       } catch (error) {
         if (isActive) {
@@ -197,8 +219,18 @@ function AnalyticsPage() {
   }
 
   function applyFilters() {
-    setAppliedFilters(filters)
+    setAppliedFilters({ ...filters })
     setHasAppliedFilters(true)
+  }
+
+  function clearFilters() {
+    const nextFilters = createInitialFilters()
+
+    setFilters(nextFilters)
+    setAppliedFilters(nextFilters)
+    setHasAppliedFilters(false)
+    setAnalytics(emptyDataset)
+    setChartsErrorMessage('')
   }
 
   async function handleExport(
@@ -247,72 +279,58 @@ function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="analytics-controls">
-            <label htmlFor="analytics-start-date">
-              {t('analytics.startDateLabel')}
-              <input
-                id="analytics-start-date"
-                type="date"
-                value={filters.startDate}
-                onChange={(event) => updateFilter('startDate', event.target.value)}
-              />
-            </label>
-
-            <label htmlFor="analytics-end-date">
-              {t('analytics.endDateLabel')}
-              <input
-                id="analytics-end-date"
-                type="date"
-                value={filters.endDate}
-                onChange={(event) => updateFilter('endDate', event.target.value)}
-              />
-            </label>
-
-            <label htmlFor="analytics-animal-select">
-              {t('analytics.animalLabel')}
-              <select
-                id="analytics-animal-select"
-                value={filters.animalId}
-                onChange={(event) => updateFilter('animalId', event.target.value)}
-                disabled={isAnimalsLoading}
-              >
-                <option value="">{t('analytics.allAnimals')}</option>
-                {animals.map((animal) => (
-                  <option key={animal.id} value={animal.id}>
-                    {animal.tag}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label htmlFor="analytics-group-by">
-              {t('analytics.groupByLabel')}
-              <select
-                id="analytics-group-by"
-                value={filters.groupBy}
-                onChange={(event) => updateFilter('groupBy', event.target.value as AnalyticsFilters['groupBy'])}
-              >
-                <option value="day">{t('analytics.groupByDay')}</option>
-                <option value="month">{t('analytics.groupByMonth')}</option>
-              </select>
-            </label>
-
-            <label htmlFor="analytics-include-acquisition-cost" className="analytics-controls__checkbox">
-              <input
-                id="analytics-include-acquisition-cost"
-                type="checkbox"
-                checked={filters.includeAcquisitionCost}
-                onChange={(event) => updateFilter('includeAcquisitionCost', event.target.checked)}
-              />
-              <span>{t('analytics.includeAcquisitionCost')}</span>
-            </label>
-          </div>
-
-          <div className="analytics-actions">
-            <button type="button" className="animals-panel__button" onClick={applyFilters}>
-              {t('analytics.applyFilters')}
-            </button>
-          </div>
+          <ListingFiltersBar
+            onApply={applyFilters}
+            onClear={clearFilters}
+            applyLabel={t('analytics.applyFilters')}
+            clearLabel={t('analytics.clearFilters')}
+            filters={[
+              {
+                type: 'date',
+                id: 'analytics-start-date',
+                label: t('analytics.startDateLabel'),
+                value: filters.startDate,
+                onChange: (value) => updateFilter('startDate', value),
+              },
+              {
+                type: 'date',
+                id: 'analytics-end-date',
+                label: t('analytics.endDateLabel'),
+                value: filters.endDate,
+                onChange: (value) => updateFilter('endDate', value),
+              },
+              {
+                type: 'select',
+                id: 'analytics-animal-select',
+                label: t('analytics.animalLabel'),
+                value: filters.animalId,
+                disabled: isAnimalsLoading,
+                onChange: (value) => updateFilter('animalId', value),
+                options: [
+                  { value: '', label: t('analytics.allAnimals') },
+                  ...animals.map((animal) => ({ value: animal.id, label: animal.tag })),
+                ],
+              },
+              {
+                type: 'select',
+                id: 'analytics-group-by',
+                label: t('analytics.groupByLabel'),
+                value: filters.groupBy,
+                onChange: (value) => updateFilter('groupBy', value as AnalyticsFilters['groupBy']),
+                options: [
+                  { value: 'day', label: t('analytics.groupByDay') },
+                  { value: 'month', label: t('analytics.groupByMonth') },
+                ],
+              },
+              {
+                type: 'checkbox',
+                id: 'analytics-include-acquisition-cost',
+                label: t('analytics.includeAcquisitionCost'),
+                checked: filters.includeAcquisitionCost,
+                onChange: (checked) => updateFilter('includeAcquisitionCost', checked),
+              },
+            ]}
+          />
 
           {isAnimalsLoading && <p className="animals-page__status">{t('analytics.loadingAnimals')}</p>}
 

@@ -424,17 +424,20 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
           </div>
 
           <ListingFiltersBar
-            searchId="animals-search"
-            searchLabel={t('animals.filters.searchLabel')}
-            searchPlaceholder={t('animals.filters.searchPlaceholder')}
-            searchValue={filters.search}
-            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+            search={{
+              id: 'animals-search',
+              label: t('animals.filters.searchLabel'),
+              placeholder: t('animals.filters.searchPlaceholder'),
+              value: filters.search,
+              onChange: (value) => setFilters((current) => ({ ...current, search: value })),
+            }}
             onApply={applyFilters}
             onClear={clearFilters}
             applyLabel={t('animals.filters.apply')}
             clearLabel={t('animals.filters.clear')}
             filters={[
               {
+                type: 'select',
                 id: 'animals-status-filter',
                 label: t('animals.filters.statusLabel'),
                 value: filters.status,
@@ -448,6 +451,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                 ],
               },
               {
+                type: 'select',
                 id: 'animals-origin-filter',
                 label: t('animals.filters.originLabel'),
                 value: filters.origin,

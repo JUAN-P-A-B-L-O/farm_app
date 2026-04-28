@@ -371,17 +371,20 @@ function ProductionPage() {
           </div>
 
           <ListingFiltersBar
-            searchId="production-search"
-            searchLabel={t('production.filters.searchLabel')}
-            searchPlaceholder={t('production.filters.searchPlaceholder')}
-            searchValue={filters.search}
-            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+            search={{
+              id: 'production-search',
+              label: t('production.filters.searchLabel'),
+              placeholder: t('production.filters.searchPlaceholder'),
+              value: filters.search,
+              onChange: (value) => setFilters((current) => ({ ...current, search: value })),
+            }}
             onApply={applyFilters}
             onClear={clearFilters}
             applyLabel={t('production.filters.apply')}
             clearLabel={t('production.filters.clear')}
             filters={[
               {
+                type: 'select',
                 id: 'production-animal-filter',
                 label: t('production.filters.animalLabel'),
                 value: filters.animalId,
@@ -392,6 +395,7 @@ function ProductionPage() {
                 ],
               },
               {
+                type: 'date',
                 id: 'production-date-filter',
                 label: t('production.filters.dateLabel'),
                 value: filters.date,

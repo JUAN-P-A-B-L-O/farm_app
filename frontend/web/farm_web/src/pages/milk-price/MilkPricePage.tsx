@@ -200,17 +200,20 @@ function MilkPricePage() {
           </div>
 
           <ListingFiltersBar
-            searchId="milk-price-search"
-            searchLabel={t('milkPrice.filters.searchLabel')}
-            searchPlaceholder={t('milkPrice.filters.searchPlaceholder')}
-            searchValue={filters.search}
-            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+            search={{
+              id: 'milk-price-search',
+              label: t('milkPrice.filters.searchLabel'),
+              placeholder: t('milkPrice.filters.searchPlaceholder'),
+              value: filters.search,
+              onChange: (value) => setFilters((current) => ({ ...current, search: value })),
+            }}
             onApply={applyFilters}
             onClear={clearFilters}
             applyLabel={t('milkPrice.filters.apply')}
             clearLabel={t('milkPrice.filters.clear')}
             filters={[
               {
+                type: 'date',
                 id: 'milk-price-effective-date-filter',
                 label: t('milkPrice.filters.effectiveDateLabel'),
                 value: filters.effectiveDate,

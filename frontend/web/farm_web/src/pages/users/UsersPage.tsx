@@ -373,17 +373,20 @@ function UsersPage() {
           </div>
 
           <ListingFiltersBar
-            searchId="users-search"
-            searchLabel={t('accessControl.filters.searchLabel')}
-            searchPlaceholder={t('accessControl.filters.searchPlaceholder')}
-            searchValue={filters.search}
-            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+            search={{
+              id: 'users-search',
+              label: t('accessControl.filters.searchLabel'),
+              placeholder: t('accessControl.filters.searchPlaceholder'),
+              value: filters.search,
+              onChange: (value) => setFilters((current) => ({ ...current, search: value })),
+            }}
             onApply={applyFilters}
             onClear={clearFilters}
             applyLabel={t('accessControl.filters.apply')}
             clearLabel={t('accessControl.filters.clear')}
             filters={[
               {
+                type: 'select',
                 id: 'users-status-filter',
                 label: t('accessControl.filters.statusLabel'),
                 value: filters.active,
@@ -395,6 +398,7 @@ function UsersPage() {
                 ],
               },
               {
+                type: 'select',
                 id: 'users-role-filter',
                 label: t('accessControl.filters.roleLabel'),
                 value: filters.role,

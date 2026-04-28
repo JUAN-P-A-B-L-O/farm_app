@@ -585,6 +585,7 @@ const en = {
     groupByMonth: 'Monthly',
     includeAcquisitionCost: 'Include acquisition cost in profit',
     applyFilters: 'Apply filters',
+    clearFilters: 'Clear filters',
     loadingAnimals: 'Loading animals...',
     emptyAnimals: 'No animals available.',
     loadingCharts: 'Loading analytics...',

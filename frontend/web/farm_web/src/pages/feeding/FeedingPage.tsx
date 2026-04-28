@@ -369,17 +369,20 @@ function FeedingPage() {
           </div>
 
           <ListingFiltersBar
-            searchId="feeding-search"
-            searchLabel={t('feeding.filters.searchLabel')}
-            searchPlaceholder={t('feeding.filters.searchPlaceholder')}
-            searchValue={filters.search}
-            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+            search={{
+              id: 'feeding-search',
+              label: t('feeding.filters.searchLabel'),
+              placeholder: t('feeding.filters.searchPlaceholder'),
+              value: filters.search,
+              onChange: (value) => setFilters((current) => ({ ...current, search: value })),
+            }}
             onApply={applyFilters}
             onClear={clearFilters}
             applyLabel={t('feeding.filters.apply')}
             clearLabel={t('feeding.filters.clear')}
             filters={[
               {
+                type: 'select',
                 id: 'feeding-animal-filter',
                 label: t('feeding.filters.animalLabel'),
                 value: filters.animalId,
@@ -390,6 +393,7 @@ function FeedingPage() {
                 ],
               },
               {
+                type: 'select',
                 id: 'feeding-feed-type-filter',
                 label: t('feeding.filters.feedTypeLabel'),
                 value: filters.feedTypeId,
@@ -400,6 +404,7 @@ function FeedingPage() {
                 ],
               },
               {
+                type: 'date',
                 id: 'feeding-date-filter',
                 label: t('feeding.filters.dateLabel'),
                 value: filters.date,

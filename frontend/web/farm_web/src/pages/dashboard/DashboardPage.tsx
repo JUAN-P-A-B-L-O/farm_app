@@ -1,6 +1,7 @@
-import { useEffect, useEffectEvent, useState, type ChangeEvent } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import StatCard from '../../components/dashboard/StatCard'
 import { ANIMAL_STATUSES, getAnimalStatusLabel } from '../../i18n/domainLabels'
 import { useCurrency } from '../../hooks/useCurrency'
@@ -31,12 +32,17 @@ const dashboardStats: Array<{
   { key: 'animalCount', titleKey: 'dashboard.stats.animalCount', format: 'number' },
 ]
 
-function createInitialFilters(): DashboardFilters {
+interface DashboardFilterState extends DashboardFilters {
+  includeAcquisitionCost: boolean
+}
+
+function createInitialFilters(): DashboardFilterState {
   return {
     startDate: '',
     endDate: '',
     animalIds: [],
     status: '',
+    includeAcquisitionCost: true,
   }
 }
 
@@ -73,16 +79,24 @@ function filterAvailableAnimalIds(
   return currentAnimalIds.filter((animalId) => availableAnimalIds.has(animalId))
 }
 
+function buildDashboardFilters(filters: DashboardFilterState): DashboardFilters {
+  return {
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    animalIds: [...filters.animalIds],
+    status: filters.status,
+  }
+}
+
 function DashboardPage() {
   const { t } = useTranslation()
   const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
   const { productionUnit } = useMeasurementUnits()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
-  const [filters, setFilters] = useState<DashboardFilters>(createInitialFilters)
-  const [appliedFilters, setAppliedFilters] = useState<DashboardFilters>(createInitialFilters)
+  const [filters, setFilters] = useState<DashboardFilterState>(createInitialFilters)
+  const [appliedFilters, setAppliedFilters] = useState<DashboardFilterState>(createInitialFilters)
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
-  const [includeAcquisitionCost, setIncludeAcquisitionCost] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [isAnimalsLoading, setIsAnimalsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
@@ -154,7 +168,12 @@ function DashboardPage() {
       }
 
       try {
-        const data = await fetchDashboard(selectedFarmId, includeAcquisitionCost, currency, appliedFilters)
+        const data = await fetchDashboard(
+          selectedFarmId,
+          appliedFilters.includeAcquisitionCost,
+          currency,
+          buildDashboardFilters(appliedFilters),
+        )
 
         if (isActive) {
           setSummary(data)
@@ -175,17 +194,13 @@ function DashboardPage() {
     return () => {
       isActive = false
     }
-  }, [appliedFilters, currency, includeAcquisitionCost, selectedFarmId])
+  }, [appliedFilters, currency, selectedFarmId])
 
-  function updateFilter<Key extends keyof DashboardFilters>(key: Key, value: DashboardFilters[Key]) {
+  function updateFilter<Key extends keyof DashboardFilterState>(key: Key, value: DashboardFilterState[Key]) {
     setFilters((currentFilters) => ({
       ...currentFilters,
       [key]: value,
     }))
-  }
-
-  function updateSelectedAnimals(event: ChangeEvent<HTMLSelectElement>) {
-    updateFilter('animalIds', Array.from(event.target.selectedOptions, (option) => option.value))
   }
 
   function applyFilters() {
@@ -211,9 +226,9 @@ function DashboardPage() {
     try {
       await exportDashboardCsv(
         selectedFarmId,
-        includeAcquisitionCost,
+        appliedFilters.includeAcquisitionCost,
         currency,
-        appliedFilters,
+        buildDashboardFilters(appliedFilters),
         productionUnit,
       )
     } catch (error) {
@@ -247,85 +262,60 @@ function DashboardPage() {
             disabled={!selectedFarmId || isLoading || !summary}
           />
         </div>
-        <div className="analytics-controls">
-          <label htmlFor="dashboard-start-date">
-            {t('dashboard.filters.startDateLabel')}
-            <input
-              id="dashboard-start-date"
-              type="date"
-              value={filters.startDate}
-              onChange={(event) => updateFilter('startDate', event.target.value)}
-            />
-          </label>
-
-          <label htmlFor="dashboard-end-date">
-            {t('dashboard.filters.endDateLabel')}
-            <input
-              id="dashboard-end-date"
-              type="date"
-              value={filters.endDate}
-              onChange={(event) => updateFilter('endDate', event.target.value)}
-            />
-          </label>
-
-          <label htmlFor="dashboard-animal-select">
-            {t('dashboard.filters.animalLabel')}
-            <select
-              id="dashboard-animal-select"
-              value={filters.animalIds}
-              onChange={updateSelectedAnimals}
-              disabled={isAnimalsLoading || animals.length === 0}
-              multiple
-              size={Math.min(Math.max(animals.length, 2), 6)}
-            >
-              {animals.map((animal) => (
-                <option key={animal.id} value={animal.id}>
-                  {animal.tag}
-                </option>
-              ))}
-            </select>
-            <small>{t('dashboard.filters.allAnimalsHint')}</small>
-          </label>
-
-          <label htmlFor="dashboard-status-select">
-            {t('dashboard.filters.statusLabel')}
-            <select
-              id="dashboard-status-select"
-              value={filters.status}
-              onChange={(event) => updateFilter('status', event.target.value as DashboardFilters['status'])}
-            >
-              <option value="">{t('dashboard.filters.allStatuses')}</option>
-              {animalStatusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {getAnimalStatusLabel(t, status)}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label htmlFor="dashboard-include-acquisition-cost" className="analytics-controls__checkbox">
-            <input
-              id="dashboard-include-acquisition-cost"
-              type="checkbox"
-              checked={includeAcquisitionCost}
-              onChange={(event) => setIncludeAcquisitionCost(event.target.checked)}
-            />
-            <span>{t('dashboard.includeAcquisitionCost')}</span>
-          </label>
-        </div>
-
-        <div className="analytics-actions">
-          <button type="button" className="animals-table__action-button" onClick={applyFilters}>
-            {t('dashboard.filters.apply')}
-          </button>
-          <button
-            type="button"
-            className="animals-table__action-button animals-table__action-button--secondary"
-            onClick={clearFilters}
-          >
-            {t('dashboard.filters.clear')}
-          </button>
-        </div>
+        <ListingFiltersBar
+          onApply={applyFilters}
+          onClear={clearFilters}
+          applyLabel={t('dashboard.filters.apply')}
+          clearLabel={t('dashboard.filters.clear')}
+          filters={[
+            {
+              type: 'date',
+              id: 'dashboard-start-date',
+              label: t('dashboard.filters.startDateLabel'),
+              value: filters.startDate,
+              onChange: (value) => updateFilter('startDate', value),
+            },
+            {
+              type: 'date',
+              id: 'dashboard-end-date',
+              label: t('dashboard.filters.endDateLabel'),
+              value: filters.endDate,
+              onChange: (value) => updateFilter('endDate', value),
+            },
+            {
+              type: 'multiselect',
+              id: 'dashboard-animal-select',
+              label: t('dashboard.filters.animalLabel'),
+              value: filters.animalIds,
+              disabled: isAnimalsLoading || animals.length === 0,
+              helpText: t('dashboard.filters.allAnimalsHint'),
+              size: Math.min(Math.max(animals.length, 2), 6),
+              onChange: (value) => updateFilter('animalIds', value),
+              options: animals.map((animal) => ({ value: animal.id, label: animal.tag })),
+            },
+            {
+              type: 'select',
+              id: 'dashboard-status-select',
+              label: t('dashboard.filters.statusLabel'),
+              value: filters.status,
+              onChange: (value) => updateFilter('status', value as DashboardFilterState['status']),
+              options: [
+                { value: '', label: t('dashboard.filters.allStatuses') },
+                ...animalStatusOptions.map((status) => ({
+                  value: status,
+                  label: getAnimalStatusLabel(t, status),
+                })),
+              ],
+            },
+            {
+              type: 'checkbox',
+              id: 'dashboard-include-acquisition-cost',
+              label: t('dashboard.includeAcquisitionCost'),
+              checked: filters.includeAcquisitionCost,
+              onChange: (checked) => updateFilter('includeAcquisitionCost', checked),
+            },
+          ]}
+        />
       </section>
 
       {isAnimalsLoading && <p className="dashboard-page__status">{t('dashboard.loadingAnimals')}</p>}

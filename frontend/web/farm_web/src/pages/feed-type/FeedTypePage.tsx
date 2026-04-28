@@ -292,11 +292,13 @@ function FeedTypePage() {
           </div>
 
           <ListingFiltersBar
-            searchId="feed-type-search"
-            searchLabel={t('feedType.filters.searchLabel')}
-            searchPlaceholder={t('feedType.filters.searchPlaceholder')}
-            searchValue={filters.search}
-            onSearchChange={(value) => setFilters({ search: value })}
+            search={{
+              id: 'feed-type-search',
+              label: t('feedType.filters.searchLabel'),
+              placeholder: t('feedType.filters.searchPlaceholder'),
+              value: filters.search,
+              onChange: (value) => setFilters({ search: value }),
+            }}
             onApply={applyFilters}
             onClear={clearFilters}
             applyLabel={t('feedType.filters.apply')}
