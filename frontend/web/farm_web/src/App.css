@@ -356,6 +356,10 @@
   align-items: stretch;
 }
 
+.animals-panel__header--actions > * {
+  min-width: 0;
+}
+
 .animals-panel__header h2 {
   margin: 0 0 8px;
   font-size: 1.35rem;
@@ -437,20 +441,26 @@
 }
 
 .animal-form__actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
 .animal-form__actions button,
 .animals-table__action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
   border: 0;
   border-radius: 999px;
   padding: 11px 18px;
   min-height: 44px;
   font: inherit;
   font-weight: 700;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
   cursor: pointer;
   transition: transform 120ms ease, opacity 120ms ease, background-color 120ms ease;
 }
@@ -590,10 +600,12 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
+  align-items: start;
 }
 
 .listing-filters__controls label {
   display: grid;
+  min-width: 0;
   gap: 8px;
   font-size: 0.95rem;
   font-weight: 600;
@@ -651,8 +663,8 @@
 }
 
 .listing-filters__actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -937,6 +949,13 @@
   min-width: 0;
 }
 
+.analytics-chart__header > .animals-table__action-button,
+.animals-panel__header--actions > .animals-table__action-button,
+.listing-filters__actions > .animals-table__action-button,
+.listing-filters__actions > button {
+  width: 100%;
+}
+
 .analytics-chart__header h2 {
   margin: 0 0 8px;
   font-size: 1.35rem;
@@ -979,6 +998,18 @@
   .listing-filters__controls,
   .analytics-controls {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .animal-form__actions,
+  .listing-filters__actions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .animal-form__actions button,
+  .animals-table__action-button {
+    width: auto;
+    white-space: nowrap;
   }
 
   .dashboard-grid {
