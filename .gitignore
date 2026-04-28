@@ -1,1 +1,8 @@
 prompt.txt
+workspace/logs/
+workspace/failures/
+workspace/pipeline_summary.md
+workspace/diff*.txt
+workspace/files.txt
+workspace/mvn.log
+workspace/error_focus.txt
