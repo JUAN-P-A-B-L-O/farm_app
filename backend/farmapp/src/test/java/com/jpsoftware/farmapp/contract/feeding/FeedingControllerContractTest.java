@@ -103,6 +103,8 @@ class FeedingControllerContractTest {
                 .andExpect(jsonPath("$[1].animalId").value("animal-2"))
                 .andExpect(jsonPath("$[0].feedTypeId").value("feed-type-1"))
                 .andExpect(jsonPath("$[1].feedTypeId").value("feed-type-1"));
+
+        org.junit.jupiter.api.Assertions.assertEquals("farm-1", feedingService.lastBatchCreateFarmId);
     }
 
     @Test
@@ -269,6 +271,27 @@ class FeedingControllerContractTest {
                 .andExpect(jsonPath("$.path").value("/feedings/batch"));
     }
 
+    @Test
+    void shouldFailWhenFarmIdIsMissingOnBatchCreate() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": "batch-1",
+                  "feedTypeId": "feed-type-1",
+                  "date": "2026-03-24",
+                  "quantity": 8.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        mockMvc.perform(post("/feedings/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("O parâmetro 'farmId' é obrigatório."))
+                .andExpect(jsonPath("$.path").value("/feedings/batch"));
+    }
+
     private FeedingResponse buildResponse() {
         return new FeedingResponse(
                 "feeding-1",
@@ -282,6 +305,7 @@ class FeedingControllerContractTest {
 
         private FeedingResponse createResponse;
         private List<FeedingResponse> batchCreateResponse = List.of();
+        private String lastBatchCreateFarmId;
         private List<FeedingResponse> findAllResponse = List.of();
         private PaginatedResponse<FeedingResponse> paginatedResponse;
         private FeedingResponse findByIdResponse;
@@ -309,6 +333,7 @@ class FeedingControllerContractTest {
 
         @Override
         public List<FeedingResponse> createBatch(CreateBatchFeedingRequest request, String farmId) {
+            lastBatchCreateFarmId = farmId;
             return batchCreateResponse;
         }
 

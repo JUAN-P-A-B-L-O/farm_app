@@ -61,6 +61,22 @@ class AnimalBatchControllerContractTest {
     }
 
     @Test
+    void shouldFailWhenFarmIdIsMissingOnCreate() throws Exception {
+        mockMvc.perform(post("/animal-batches")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Lote A",
+                                  "animalIds": ["animal-1", "animal-2"]
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("O parâmetro 'farmId' é obrigatório."))
+                .andExpect(jsonPath("$.path").value("/animal-batches"));
+    }
+
+    @Test
     void shouldReturnPaginatedAnimalBatches() throws Exception {
         when(animalBatchService.findAllPaginated(null, "farm-1", 0, 10)).thenReturn(new PaginatedResponse<>(
                 List.of(buildResponse()),

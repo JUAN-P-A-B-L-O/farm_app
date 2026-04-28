@@ -179,6 +179,8 @@ class ProductionControllerContractTest {
                 .andExpect(jsonPath("$[1].animalId").value("animal-2"))
                 .andExpect(jsonPath("$[0].quantity").value(12.5))
                 .andExpect(jsonPath("$[1].quantity").value(12.5));
+
+        org.junit.jupiter.api.Assertions.assertEquals("farm-1", productionService.lastBatchCreateFarmId);
     }
 
     @Test
@@ -219,6 +221,26 @@ class ProductionControllerContractTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.error").value("Selecione um lote."))
+                .andExpect(jsonPath("$.path").value("/productions/batch"));
+    }
+
+    @Test
+    void shouldFailWhenFarmIdIsMissingOnBatchCreate() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": "batch-1",
+                  "date": "2026-03-20",
+                  "quantity": 12.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        mockMvc.perform(post("/productions/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("O parâmetro 'farmId' é obrigatório."))
                 .andExpect(jsonPath("$.path").value("/productions/batch"));
     }
 
@@ -332,6 +354,7 @@ class ProductionControllerContractTest {
 
         private ProductionResponse createResponse;
         private List<ProductionResponse> batchCreateResponse = List.of();
+        private String lastBatchCreateFarmId;
         private RuntimeException createException;
         private List<ProductionResponse> findAllResponse = List.of();
         private PaginatedResponse<ProductionResponse> paginatedResponse;
@@ -407,6 +430,7 @@ class ProductionControllerContractTest {
 
         @Override
         public List<ProductionResponse> createBatch(CreateBatchProductionRequest request, String farmId) {
+            lastBatchCreateFarmId = farmId;
             return batchCreateResponse;
         }
 
