@@ -161,3 +161,29 @@ echo "===================================="
 echo "🎉 PIPELINE FINISHED"
 echo "===================================="
 cat "$SUMMARY_FILE"
+
+
+echo ""
+echo "===================================="
+echo "📊 TOKEN USAGE SUMMARY"
+echo "===================================="
+
+TOTAL_TOKENS=$(grep -Rho "tokens used[[:space:]]*[0-9,]*" workspace/logs 2>/dev/null \
+  | awk '{gsub(",", "", $3); sum += $3} END {print sum + 0}')
+
+echo "Total tokens used: $TOTAL_TOKENS"
+
+if [ "$TOTAL_TOKENS" -lt 50000 ]; then
+  COST_LEVEL="LOW"
+elif [ "$TOTAL_TOKENS" -lt 150000 ]; then
+  COST_LEVEL="MEDIUM"
+else
+  COST_LEVEL="HIGH"
+fi
+
+echo "Cost level: $COST_LEVEL"
+
+echo "" >> "$SUMMARY_FILE"
+echo "## Token Usage" >> "$SUMMARY_FILE"
+echo "- Total tokens used: $TOTAL_TOKENS" >> "$SUMMARY_FILE"
+echo "- Cost level: $COST_LEVEL" >> "$SUMMARY_FILE"
