@@ -664,6 +664,19 @@
   gap: 24px;
 }
 
+.dashboard-layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  gap: 24px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+}
+
 .analytics-panel {
   padding: 24px;
   border: 1px solid #d7e1d8;

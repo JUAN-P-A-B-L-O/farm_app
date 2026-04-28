@@ -246,112 +246,119 @@ function DashboardPage() {
   )
 
   return (
-    <main className="dashboard-page">
-      <section className="dashboard-page__header">
-        <div className="dashboard-page__header-actions">
-          <div>
-            <p className="dashboard-page__eyebrow">{t('dashboard.eyebrow')}</p>
-            <h1>{t('dashboard.title')}</h1>
-            <p className="dashboard-page__description">
-              {t('dashboard.description')}
-            </p>
-          </div>
-          <ExportCsvButton
-            onClick={() => void handleExport()}
-            label={t('common.exportCsv')}
-            loadingLabel={t('common.exportingCsv')}
-            isLoading={isExporting}
-            disabled={!selectedFarmId || isLoading || !summary}
-          />
-        </div>
-        <ListingFiltersBar
-          onClear={clearFilters}
-          clearLabel={t('dashboard.filters.clear')}
-          filters={[
-            {
-              type: 'date',
-              id: 'dashboard-start-date',
-              label: t('dashboard.filters.startDateLabel'),
-              value: filters.startDate,
-              onChange: (value) => updateFilter('startDate', value),
-            },
-            {
-              type: 'date',
-              id: 'dashboard-end-date',
-              label: t('dashboard.filters.endDateLabel'),
-              value: filters.endDate,
-              onChange: (value) => updateFilter('endDate', value),
-            },
-            {
-              type: 'multiselect',
-              id: 'dashboard-animal-select',
-              label: t('dashboard.filters.animalLabel'),
-              value: filters.animalIds,
-              disabled: isAnimalsLoading || animals.length === 0,
-              helpText: t('dashboard.filters.allAnimalsHint'),
-              size: Math.min(Math.max(animals.length, 2), 6),
-              onChange: (value) => updateFilter('animalIds', value),
-              options: animals.map((animal) => ({ value: animal.id, label: animal.tag })),
-            },
-            {
-              type: 'select',
-              id: 'dashboard-status-select',
-              label: t('dashboard.filters.statusLabel'),
-              value: filters.status,
-              onChange: (value) => updateFilter('status', value as DashboardFilterState['status']),
-              options: [
-                { value: '', label: t('dashboard.filters.allStatuses') },
-                ...animalStatusOptions.map((status) => ({
-                  value: status,
-                  label: getAnimalStatusLabel(t, status),
-                })),
-              ],
-            },
-            {
-              type: 'checkbox',
-              id: 'dashboard-include-acquisition-cost',
-              label: t('dashboard.includeAcquisitionCost'),
-              checked: filters.includeAcquisitionCost,
-              onChange: (checked) => updateFilter('includeAcquisitionCost', checked),
-            },
-          ]}
-        />
+    <main className="animals-page dashboard-page">
+      <section className="animals-page__header">
+        <p className="animals-page__eyebrow">{t('dashboard.eyebrow')}</p>
+        <h1>{t('dashboard.title')}</h1>
+        <p className="animals-page__description">
+          {t('dashboard.description')}
+        </p>
       </section>
 
-      {isAnimalsLoading && <p className="dashboard-page__status">{t('dashboard.loadingAnimals')}</p>}
-
-      {animalsErrorMessage && (
-        <p className="dashboard-page__status dashboard-page__status--error">
-          {animalsErrorMessage}
-        </p>
-      )}
-
-      {isLoading && <p className="dashboard-page__status">{t('dashboard.loading')}</p>}
-
-      {summaryErrorMessage && (
-        <p className="dashboard-page__status dashboard-page__status--error">
-          {summaryErrorMessage}
-        </p>
-      )}
-
-      {summary && !isLoading && !summaryErrorMessage && (
-        <section className="dashboard-grid" aria-label={t('dashboard.ariaSummary')}>
-          {dashboardStats.map((stat) => (
-            <StatCard
-              key={stat.key}
-              title={stat.key === 'totalProduction'
-                ? productionTitle
-                : stat.format === 'currency'
-                  ? appendCurrencyCode(t(stat.titleKey), currency)
-                  : t(stat.titleKey)}
-              value={stat.key === 'totalProduction'
-                ? convertMeasurementFromBase(summary.totalProduction, productionUnit)
-                : summary[stat.key] ?? 0}
-              format={stat.format}
+      <section className="dashboard-layout">
+        <article className="animals-panel">
+          <div className="animals-panel__header animals-panel__header--actions">
+            <div>
+              <h2>{t('dashboard.title')}</h2>
+              <p>{t('dashboard.description')}</p>
+            </div>
+            <ExportCsvButton
+              onClick={() => void handleExport()}
+              label={t('common.exportCsv')}
+              loadingLabel={t('common.exportingCsv')}
+              isLoading={isExporting}
+              disabled={!selectedFarmId || isLoading || !summary}
             />
-          ))}
-        </section>
-      )}
+          </div>
+
+          <ListingFiltersBar
+            onClear={clearFilters}
+            clearLabel={t('dashboard.filters.clear')}
+            filters={[
+              {
+                type: 'date',
+                id: 'dashboard-start-date',
+                label: t('dashboard.filters.startDateLabel'),
+                value: filters.startDate,
+                onChange: (value) => updateFilter('startDate', value),
+              },
+              {
+                type: 'date',
+                id: 'dashboard-end-date',
+                label: t('dashboard.filters.endDateLabel'),
+                value: filters.endDate,
+                onChange: (value) => updateFilter('endDate', value),
+              },
+              {
+                type: 'multiselect',
+                id: 'dashboard-animal-select',
+                label: t('dashboard.filters.animalLabel'),
+                value: filters.animalIds,
+                disabled: isAnimalsLoading || animals.length === 0,
+                helpText: t('dashboard.filters.allAnimalsHint'),
+                onChange: (value) => updateFilter('animalIds', value),
+                options: animals.map((animal) => ({ value: animal.id, label: animal.tag })),
+              },
+              {
+                type: 'select',
+                id: 'dashboard-status-select',
+                label: t('dashboard.filters.statusLabel'),
+                value: filters.status,
+                onChange: (value) => updateFilter('status', value as DashboardFilterState['status']),
+                options: [
+                  { value: '', label: t('dashboard.filters.allStatuses') },
+                  ...animalStatusOptions.map((status) => ({
+                    value: status,
+                    label: getAnimalStatusLabel(t, status),
+                  })),
+                ],
+              },
+              {
+                type: 'checkbox',
+                id: 'dashboard-include-acquisition-cost',
+                label: t('dashboard.includeAcquisitionCost'),
+                checked: filters.includeAcquisitionCost,
+                onChange: (checked) => updateFilter('includeAcquisitionCost', checked),
+              },
+            ]}
+          />
+
+          {isAnimalsLoading && <p className="animals-page__status">{t('dashboard.loadingAnimals')}</p>}
+
+          {animalsErrorMessage && (
+            <p className="animals-page__status animals-page__status--error">
+              {animalsErrorMessage}
+            </p>
+          )}
+
+          {isLoading && <p className="animals-page__status">{t('dashboard.loading')}</p>}
+
+          {summaryErrorMessage && (
+            <p className="animals-page__status animals-page__status--error">
+              {summaryErrorMessage}
+            </p>
+          )}
+        </article>
+
+        {summary && !isLoading && !summaryErrorMessage && (
+          <section className="dashboard-grid" aria-label={t('dashboard.ariaSummary')}>
+            {dashboardStats.map((stat) => (
+              <StatCard
+                key={stat.key}
+                title={stat.key === 'totalProduction'
+                  ? productionTitle
+                  : stat.format === 'currency'
+                    ? appendCurrencyCode(t(stat.titleKey), currency)
+                    : t(stat.titleKey)}
+                value={stat.key === 'totalProduction'
+                  ? convertMeasurementFromBase(summary.totalProduction, productionUnit)
+                  : summary[stat.key] ?? 0}
+                format={stat.format}
+              />
+            ))}
+          </section>
+        )}
+      </section>
     </main>
   )
 }
