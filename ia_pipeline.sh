@@ -2,13 +2,21 @@
 
 set -u
 
-mkdir -p workspace/logs workspace/failures
+RUN_ID=$(date +"%Y%m%d_%H%M%S")
+LOG_DIR="workspace/logs/$RUN_ID"
+FAIL_DIR="workspace/failures/$RUN_ID"
+
+mkdir -p "$LOG_DIR" "$FAIL_DIR"
 
 echo "===================================="
 echo "🚀 AI PIPELINE START"
+echo "Run ID: $RUN_ID"
 echo "===================================="
 
-CONTEXT_FILE="AI_CONTEXT.md"
+CONTEXT_FILE="contextAi.md"
+if [ ! -f "$CONTEXT_FILE" ]; then
+  CONTEXT_FILE="AI_CONTEXT.md"
+fi
 
 AI_CONTEXT=$(cat "$CONTEXT_FILE")
 DEV_SKILL=$(cat skills/dev.md)
@@ -59,8 +67,16 @@ FEATURE_TOKEN_COUNT() {
 
 echo "# AI Pipeline Summary" > "$SUMMARY_FILE"
 echo "" >> "$SUMMARY_FILE"
+echo "- Run ID: $RUN_ID" >> "$SUMMARY_FILE"
+echo "- Context file: $CONTEXT_FILE" >> "$SUMMARY_FILE"
+echo "" >> "$SUMMARY_FILE"
 
 for FILE in workspace/features/*.md; do
+  [ -e "$FILE" ] || {
+    echo "⚠️ No feature files found in workspace/features"
+    break
+  }
+
   FEATURE_NAME=$(basename "$FILE" .md)
   SAFE_NAME=$(echo "$FEATURE_NAME" | tr ' /' '__')
 
@@ -81,8 +97,7 @@ for FILE in workspace/features/*.md; do
   echo "👨‍💻 Running DEV..."
 
   DEV_PROMPT="$AI_CONTEXT"$'\n\n'"$DEV_SKILL"$'\n\n'"$FEATURE"
-
-  DEV_LOG="workspace/logs/${SAFE_NAME}_dev.log"
+  DEV_LOG="$LOG_DIR/${SAFE_NAME}_dev.log"
 
   if ! codex exec "$DEV_PROMPT" > "$DEV_LOG" 2>&1; then
     if CHECK_TOKEN_LIMIT "$DEV_LOG"; then
@@ -94,7 +109,7 @@ for FILE in workspace/features/*.md; do
 
     echo "❌ DEV failed for $FEATURE_NAME"
     echo "- ❌ $FEATURE_NAME: DEV failed" >> "$SUMMARY_FILE"
-    cp "$DEV_LOG" "workspace/failures/${SAFE_NAME}_dev_failed.log" 2>/dev/null || true
+    cp "$DEV_LOG" "$FAIL_DIR/${SAFE_NAME}_dev_failed.log" 2>/dev/null || true
     continue
   fi
 
@@ -111,11 +126,11 @@ for FILE in workspace/features/*.md; do
   # =====================
   # DIFF
   # =====================
-  git diff "$BASE_COMMIT" HEAD > "workspace/logs/${SAFE_NAME}_diff_full.txt"
-  git diff --name-only "$BASE_COMMIT" HEAD > "workspace/logs/${SAFE_NAME}_files.txt"
-  git diff "$BASE_COMMIT" HEAD | grep -E "^[+-]" | head -n "$DIFF_LINES" > "workspace/logs/${SAFE_NAME}_diff.txt" || true
+  git diff "$BASE_COMMIT" HEAD > "$LOG_DIR/${SAFE_NAME}_diff_full.txt"
+  git diff --name-only "$BASE_COMMIT" HEAD > "$LOG_DIR/${SAFE_NAME}_files.txt"
+  git diff "$BASE_COMMIT" HEAD | grep -E "^[+-]" | head -n "$DIFF_LINES" > "$LOG_DIR/${SAFE_NAME}_diff.txt" || true
 
-  if [ ! -s "workspace/logs/${SAFE_NAME}_files.txt" ]; then
+  if [ ! -s "$LOG_DIR/${SAFE_NAME}_files.txt" ]; then
     echo "⚠️ No changes detected for $FEATURE_NAME"
     echo "- ⚠️ $FEATURE_NAME: no changes detected" >> "$SUMMARY_FILE"
     continue
@@ -129,10 +144,10 @@ for FILE in workspace/features/*.md; do
   TESTER_INPUT="Update or add tests only for the changed behavior.
 
 Changed files:
-$(cat "workspace/logs/${SAFE_NAME}_files.txt")
+$(cat "$LOG_DIR/${SAFE_NAME}_files.txt")
 
 Diff excerpt:
-$(cat "workspace/logs/${SAFE_NAME}_diff.txt")
+$(cat "$LOG_DIR/${SAFE_NAME}_diff.txt")
 
 Rules:
 - Focus only on changed files and behavior.
@@ -141,8 +156,7 @@ Rules:
 - Keep test changes minimal."
 
   TESTER_PROMPT="$TESTER_SKILL"$'\n\n'"$TESTER_INPUT"
-
-  TESTER_LOG="workspace/logs/${SAFE_NAME}_tester.log"
+  TESTER_LOG="$LOG_DIR/${SAFE_NAME}_tester.log"
 
   if ! codex exec "$TESTER_PROMPT" > "$TESTER_LOG" 2>&1; then
     if CHECK_TOKEN_LIMIT "$TESTER_LOG"; then
@@ -176,7 +190,7 @@ Rules:
   while [ "$ATTEMPT" -le "$MAX_FIX_ATTEMPTS" ]; do
     echo "➡️ Test attempt $ATTEMPT..."
 
-    MVN_LOG="workspace/logs/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log"
+    MVN_LOG="$LOG_DIR/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log"
 
     if (cd backend/farmapp && mvn test > "../../$MVN_LOG" 2>&1); then
       echo "✅ Tests passed for $FEATURE_NAME"
@@ -186,7 +200,7 @@ Rules:
 
     echo "❌ Tests failed for $FEATURE_NAME"
 
-    ERROR_FOCUS="workspace/logs/${SAFE_NAME}_error_focus.txt"
+    ERROR_FOCUS="$LOG_DIR/${SAFE_NAME}_error_focus.txt"
 
     grep -A "$ERROR_LINES_AROUND" -B "$ERROR_LINES_AROUND" \
       "ERROR\|FAILURE\|Failures:\|expected:<.*> but was:<.*>\|method does not override" \
@@ -210,8 +224,7 @@ Rules:
 - If unsure, make the smallest safe correction."
 
     FIXER_PROMPT="$FIXER_SKILL"$'\n\n'"$FIXER_INPUT"
-
-    FIXER_LOG="workspace/logs/${SAFE_NAME}_fixer_attempt_${ATTEMPT}.log"
+    FIXER_LOG="$LOG_DIR/${SAFE_NAME}_fixer_attempt_${ATTEMPT}.log"
 
     if ! codex exec "$FIXER_PROMPT" > "$FIXER_LOG" 2>&1; then
       if CHECK_TOKEN_LIMIT "$FIXER_LOG"; then
@@ -257,11 +270,11 @@ Rules:
     echo "- ✅ $FEATURE_NAME: completed" >> "$SUMMARY_FILE"
   else
     echo "❌ Feature failed but pipeline will continue: $FEATURE_NAME"
-    echo "- ❌ $FEATURE_NAME: failed, check workspace/logs/${SAFE_NAME}_*" >> "$SUMMARY_FILE"
-    cp "workspace/logs/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log" "workspace/failures/${SAFE_NAME}_failed.log" 2>/dev/null || true
+    echo "- ❌ $FEATURE_NAME: failed, check $LOG_DIR/${SAFE_NAME}_*" >> "$SUMMARY_FILE"
+    cp "$LOG_DIR/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log" "$FAIL_DIR/${SAFE_NAME}_failed.log" 2>/dev/null || true
   fi
 
-  FEATURE_TOKENS=$(FEATURE_TOKEN_COUNT "workspace/logs/${SAFE_NAME}_*.log")
+  FEATURE_TOKENS=$(FEATURE_TOKEN_COUNT "$LOG_DIR/${SAFE_NAME}_*.log")
 
   echo "🔢 Tokens for $FEATURE_NAME: $FEATURE_TOKENS"
   echo "  - Tokens: $FEATURE_TOKENS" >> "$SUMMARY_FILE"
@@ -278,7 +291,7 @@ echo "===================================="
 echo "📊 TOKEN USAGE SUMMARY"
 echo "===================================="
 
-TOTAL_TOKENS=$(FEATURE_TOKEN_COUNT "workspace/logs/*.log")
+TOTAL_TOKENS=$(FEATURE_TOKEN_COUNT "$LOG_DIR/*.log")
 
 echo "Total tokens used: $TOTAL_TOKENS"
 
