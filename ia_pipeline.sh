@@ -8,13 +8,27 @@ echo "===================================="
 echo "🚀 AI PIPELINE START"
 echo "===================================="
 
-AI_CONTEXT=$(cat AI_CONTEXT.md)
+CONTEXT_FILE="AI_CONTEXT.md"
+
+AI_CONTEXT=$(cat "$CONTEXT_FILE")
 DEV_SKILL=$(cat skills/dev.md)
 TESTER_SKILL=$(cat skills/tester.md)
 FIXER_SKILL=$(cat skills/fixer.md)
 
 MAX_FIX_ATTEMPTS=2
 SUMMARY_FILE="workspace/pipeline_summary.md"
+
+GIT_ADD_SAFE() {
+  git add -A \
+    ':!workspace/logs' \
+    ':!workspace/failures' \
+    ':!workspace/pipeline_summary.md' \
+    ':!workspace/diff.txt' \
+    ':!workspace/diff_full.txt' \
+    ':!workspace/files.txt' \
+    ':!workspace/mvn.log' \
+    ':!workspace/error_focus.txt'
+}
 
 echo "# AI Pipeline Summary" > "$SUMMARY_FILE"
 echo "" >> "$SUMMARY_FILE"
@@ -31,6 +45,7 @@ for FILE in workspace/features/*.md; do
   BASE_COMMIT=$(git rev-parse HEAD)
 
   FEATURE_FAILED=false
+  TESTS_PASSED=false
 
   # =====================
   # DEV
@@ -42,11 +57,11 @@ for FILE in workspace/features/*.md; do
   if ! codex exec "$DEV_PROMPT" > "workspace/logs/${SAFE_NAME}_dev.log" 2>&1; then
     echo "❌ DEV failed for $FEATURE_NAME"
     echo "- ❌ $FEATURE_NAME: DEV failed" >> "$SUMMARY_FILE"
-    cp "workspace/logs/${SAFE_NAME}_dev.log" "workspace/failures/${SAFE_NAME}_dev_failed.log"
+    cp "workspace/logs/${SAFE_NAME}_dev.log" "workspace/failures/${SAFE_NAME}_dev_failed.log" 2>/dev/null || true
     continue
   fi
 
-  git add .
+  GIT_ADD_SAFE
   git commit -m "feat(ai): $FEATURE_NAME" || echo "⚠️ Nothing to commit after DEV"
 
   # =====================
@@ -82,10 +97,10 @@ Keep changes minimal. Do not rewrite unrelated tests."
   if ! codex exec "$TESTER_PROMPT" > "workspace/logs/${SAFE_NAME}_tester.log" 2>&1; then
     echo "⚠️ TESTER failed for $FEATURE_NAME, continuing to validation"
     FEATURE_FAILED=true
+  else
+    GIT_ADD_SAFE
+    git commit -m "test(ai): update tests for $FEATURE_NAME" || echo "⚠️ No test changes"
   fi
-
-  git add .
-  git commit -m "test(ai): update tests for $FEATURE_NAME" || echo "⚠️ No test changes"
 
   # =====================
   # TEST + FIX LOOP
@@ -93,7 +108,6 @@ Keep changes minimal. Do not rewrite unrelated tests."
   echo "🧪 Running backend tests..."
 
   ATTEMPT=1
-  TESTS_PASSED=false
 
   while [ "$ATTEMPT" -le "$MAX_FIX_ATTEMPTS" ]; do
     echo "➡️ Test attempt $ATTEMPT..."
@@ -106,7 +120,9 @@ Keep changes minimal. Do not rewrite unrelated tests."
 
     echo "❌ Tests failed for $FEATURE_NAME"
 
-    grep -A 8 -B 8 "ERROR\|FAILURE\|Failures:" "workspace/logs/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log" > "workspace/logs/${SAFE_NAME}_error_focus.txt" || true
+    grep -A 8 -B 8 "ERROR\|FAILURE\|Failures:\|expected:<.*> but was:<.*>\|method does not override" \
+      "workspace/logs/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log" \
+      > "workspace/logs/${SAFE_NAME}_error_focus.txt" || true
 
     echo "🛠 Running FIXER..."
 
@@ -123,24 +139,27 @@ Rules:
 - Do NOT refactor unrelated code
 - Keep the fix minimal
 - If the issue is a test expectation mismatch, align the correct side with the existing system contract
+- If the issue is a message/contract mismatch, fix only the smallest related contract/message handling code
 - If unsure, make the smallest safe correction"
 
     FIXER_PROMPT="$FIXER_SKILL"$'\n\n'"$FIXER_INPUT"
 
     if ! codex exec "$FIXER_PROMPT" > "workspace/logs/${SAFE_NAME}_fixer_attempt_${ATTEMPT}.log" 2>&1; then
       echo "⚠️ FIXER failed on attempt $ATTEMPT"
-    fi
-
-    FILES_CHANGED=$(git diff --name-only | wc -l)
-    CHANGED_LINES=$(git diff --numstat | awk '{ added += $1; deleted += $2 } END { print added + deleted + 0 }')
-
-    if [ "$FILES_CHANGED" -gt 8 ] || [ "$CHANGED_LINES" -gt 500 ]; then
-      echo "⚠️ Fix too large (${FILES_CHANGED} files, ${CHANGED_LINES} lines). Keeping changes but marking feature as failed."
       FEATURE_FAILED=true
       break
     fi
 
-    git add .
+    FILES_CHANGED=$(git diff --name-only | grep -v '^workspace/' | wc -l)
+    CHANGED_LINES=$(git diff --numstat -- . ':!workspace' | awk '{ added += $1; deleted += $2 } END { print added + deleted + 0 }')
+
+    if [ "$FILES_CHANGED" -gt 8 ] || [ "$CHANGED_LINES" -gt 500 ]; then
+      echo "⚠️ Fix too large (${FILES_CHANGED} files, ${CHANGED_LINES} lines). Marking feature as failed and continuing."
+      FEATURE_FAILED=true
+      break
+    fi
+
+    GIT_ADD_SAFE
     git commit -m "fix(ai): auto-fix $FEATURE_NAME attempt $ATTEMPT" || echo "⚠️ No fix changes"
 
     ATTEMPT=$((ATTEMPT + 1))
@@ -155,6 +174,18 @@ Rules:
     cp "workspace/logs/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log" "workspace/failures/${SAFE_NAME}_failed.log" 2>/dev/null || true
   fi
 
+  FEATURE_TOKENS=$(awk '
+    /tokens used/ {
+      getline
+      gsub(",", "", $1)
+      sum += $1
+    }
+    END { print sum + 0 }
+  ' workspace/logs/${SAFE_NAME}_*.log 2>/dev/null)
+
+  echo "🔢 Tokens for $FEATURE_NAME: $FEATURE_TOKENS"
+  echo "  - Tokens: $FEATURE_TOKENS" >> "$SUMMARY_FILE"
+
 done
 
 echo "===================================="
@@ -162,14 +193,19 @@ echo "🎉 PIPELINE FINISHED"
 echo "===================================="
 cat "$SUMMARY_FILE"
 
-
 echo ""
 echo "===================================="
 echo "📊 TOKEN USAGE SUMMARY"
 echo "===================================="
 
-TOTAL_TOKENS=$(grep -Rho "tokens used[[:space:]]*[0-9,]*" workspace/logs 2>/dev/null \
-  | awk '{gsub(",", "", $3); sum += $3} END {print sum + 0}')
+TOTAL_TOKENS=$(awk '
+  /tokens used/ {
+    getline
+    gsub(",", "", $1)
+    sum += $1
+  }
+  END { print sum + 0 }
+' workspace/logs/*.log 2>/dev/null)
 
 echo "Total tokens used: $TOTAL_TOKENS"
 
