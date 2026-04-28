@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jpsoftware.farmapp.production.controller.ProductionController;
+import com.jpsoftware.farmapp.production.dto.CreateBatchProductionRequest;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
@@ -154,6 +155,33 @@ class ProductionControllerContractTest {
     }
 
     @Test
+    void shouldCreateBatchProductionSuccessfully() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": "batch-1",
+                  "date": "2026-03-20",
+                  "quantity": 12.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        productionService.batchCreateResponse = List.of(
+                buildResponse(),
+                new ProductionResponse("production-2", "animal-2", LocalDate.of(2026, 3, 20), 12.5));
+
+        mockMvc.perform(post("/productions/batch")
+                        .param("farmId", "farm-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].animalId").value("animal-1"))
+                .andExpect(jsonPath("$[1].animalId").value("animal-2"))
+                .andExpect(jsonPath("$[0].quantity").value(12.5))
+                .andExpect(jsonPath("$[1].quantity").value(12.5));
+    }
+
+    @Test
     void shouldFailWhenQuantityIsInvalid() throws Exception {
         String requestBody = """
                 {
@@ -171,6 +199,27 @@ class ProductionControllerContractTest {
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.error").value("O valor deve ser maior que zero."))
                 .andExpect(jsonPath("$.path").value("/productions"));
+    }
+
+    @Test
+    void shouldFailWhenBatchIdIsMissingOnBatchCreate() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": " ",
+                  "date": "2026-03-20",
+                  "quantity": 12.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        mockMvc.perform(post("/productions/batch")
+                        .param("farmId", "farm-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Selecione um lote."))
+                .andExpect(jsonPath("$.path").value("/productions/batch"));
     }
 
     @Test
@@ -282,6 +331,7 @@ class ProductionControllerContractTest {
     private static class TestProductionService extends ProductionService {
 
         private ProductionResponse createResponse;
+        private List<ProductionResponse> batchCreateResponse = List.of();
         private RuntimeException createException;
         private List<ProductionResponse> findAllResponse = List.of();
         private PaginatedResponse<ProductionResponse> paginatedResponse;
@@ -353,6 +403,11 @@ class ProductionControllerContractTest {
                 throw createException;
             }
             return createResponse;
+        }
+
+        @Override
+        public List<ProductionResponse> createBatch(CreateBatchProductionRequest request, String farmId) {
+            return batchCreateResponse;
         }
 
         @Override

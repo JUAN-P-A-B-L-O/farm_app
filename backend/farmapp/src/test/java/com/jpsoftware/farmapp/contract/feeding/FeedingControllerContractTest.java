@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.controller.FeedingController;
+import com.jpsoftware.farmapp.feeding.dto.CreateBatchFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
 import com.jpsoftware.farmapp.feeding.dto.UpdateFeedingRequest;
@@ -74,6 +75,34 @@ class FeedingControllerContractTest {
                 .andExpect(jsonPath("$.date[1]").value(3))
                 .andExpect(jsonPath("$.date[2]").value(24))
                 .andExpect(jsonPath("$.quantity").value(8.5));
+    }
+
+    @Test
+    void shouldCreateBatchFeedingSuccessfully() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": "batch-1",
+                  "feedTypeId": "feed-type-1",
+                  "date": "2026-03-24",
+                  "quantity": 8.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        feedingService.batchCreateResponse = List.of(
+                buildResponse(),
+                new FeedingResponse("feeding-2", "animal-2", "feed-type-1", LocalDate.of(2026, 3, 24), 8.5));
+
+        mockMvc.perform(post("/feedings/batch")
+                        .param("farmId", "farm-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].animalId").value("animal-1"))
+                .andExpect(jsonPath("$[1].animalId").value("animal-2"))
+                .andExpect(jsonPath("$[0].feedTypeId").value("feed-type-1"))
+                .andExpect(jsonPath("$[1].feedTypeId").value("feed-type-1"));
     }
 
     @Test
@@ -218,6 +247,28 @@ class FeedingControllerContractTest {
                 .andExpect(jsonPath("$.path").value("/feedings"));
     }
 
+    @Test
+    void shouldFailWhenBatchIdIsMissingOnBatchCreate() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": " ",
+                  "feedTypeId": "feed-type-1",
+                  "date": "2026-03-24",
+                  "quantity": 8.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        mockMvc.perform(post("/feedings/batch")
+                        .param("farmId", "farm-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Selecione um lote."))
+                .andExpect(jsonPath("$.path").value("/feedings/batch"));
+    }
+
     private FeedingResponse buildResponse() {
         return new FeedingResponse(
                 "feeding-1",
@@ -230,6 +281,7 @@ class FeedingControllerContractTest {
     private static class TestFeedingService extends FeedingService {
 
         private FeedingResponse createResponse;
+        private List<FeedingResponse> batchCreateResponse = List.of();
         private List<FeedingResponse> findAllResponse = List.of();
         private PaginatedResponse<FeedingResponse> paginatedResponse;
         private FeedingResponse findByIdResponse;
@@ -253,6 +305,11 @@ class FeedingControllerContractTest {
         @Override
         public FeedingResponse create(CreateFeedingRequest request, String farmId) {
             return createResponse;
+        }
+
+        @Override
+        public List<FeedingResponse> createBatch(CreateBatchFeedingRequest request, String farmId) {
+            return batchCreateResponse;
         }
 
         @Override
