@@ -335,3 +335,17 @@ test('feed-type export preserves the selected feeding measurement unit', async (
     'feed-types.csv',
   ])
 })
+
+test('feed-type export omits measurementUnit when it is not selected', async () => {
+  await feedTypeService.exportFeedTypesCsv('farm-1', 'USD', { search: 'Silage' })
+
+  assert.deepEqual(downloadCsvCalls[0], [
+    '/feed-types/export',
+    {
+      farmId: 'farm-1',
+      search: 'Silage',
+      currency: 'USD',
+    },
+    'feed-types.csv',
+  ])
+})

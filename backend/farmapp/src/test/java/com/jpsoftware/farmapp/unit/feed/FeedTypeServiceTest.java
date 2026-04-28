@@ -136,6 +136,17 @@ class FeedTypeServiceTest {
     }
 
     @Test
+    void shouldExportFeedTypesWithConvertedMeasurementUnitAndCurrencyPrecision() {
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
+
+        String csv = feedTypeService.exportAll("farm-1", null, "USD", "GRAM");
+
+        assertEquals(
+                "id,name,costPerUnit,costUnit,active\nfeed-type-1,Corn Silage,0.00035,g,true\n",
+                csv);
+    }
+
+    @Test
     void shouldRejectInvalidMeasurementUnitWhenExportingFeedTypes() {
         ValidationException exception = assertThrows(
                 ValidationException.class,

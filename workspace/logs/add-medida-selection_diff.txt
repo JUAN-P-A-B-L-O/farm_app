@@ -1,0 +1,300 @@
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feed/controller/FeedTypeController.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feed/controller/FeedTypeController.java
+-            @RequestParam(required = false) String currency) {
++            @RequestParam(required = false) String currency,
++            @RequestParam(required = false) String measurementUnit) {
+-                feedTypeService.exportAll(farmId, search, StringUtils.hasText(currency) ? currency : null));
++                StringUtils.hasText(measurementUnit)
++                        ? feedTypeService.exportAll(
++                                farmId,
++                                search,
++                                StringUtils.hasText(currency) ? currency : null,
++                                measurementUnit)
++                        : feedTypeService.exportAll(farmId, search, StringUtils.hasText(currency) ? currency : null));
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feed/service/FeedTypeService.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feed/service/FeedTypeService.java
++import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
++import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
++    private static final int DEFAULT_MONEY_SCALE = 2;
++    private static final int FEED_RATE_EXPORT_SCALE = 5;
+-        return CsvExportUtils.write(findAll(farmId, search).stream()
++        return exportAll(farmId, search, currency, null);
++    }
++
++    @Transactional(readOnly = true)
++    public String exportAll(String farmId, String search, String currency, String measurementUnitParam) {
++        MeasurementUnit measurementUnit = MeasurementUnit.fromFeedingParam(measurementUnitParam, "measurementUnit");
++        int monetaryScale = measurementUnit == MeasurementUnit.GRAM ? FEED_RATE_EXPORT_SCALE : DEFAULT_MONEY_SCALE;
++        List<FeedTypeResponse> rows = findAll(farmId, search).stream()
+-                        CurrencyConversionUtils.convertMonetaryValue(feedType.getCostPerKg(), currency),
++                        CurrencyConversionUtils.convertMonetaryValue(
++                                MeasurementUnitConverter.convertRateFromBase(
++                                        feedType.getCostPerKg(),
++                                        measurementUnit,
++                                        monetaryScale),
++                                currency,
++                                monetaryScale),
+-                .toList(), List.of(
++                .toList();
++
++        if (!StringUtils.hasText(measurementUnitParam)) {
++            return CsvExportUtils.write(rows, List.of(
++        }
++
++        return CsvExportUtils.write(rows, List.of(
++                new CsvColumn<>("id", FeedTypeResponse::getId),
++                new CsvColumn<>("name", FeedTypeResponse::getName),
++                new CsvColumn<>("costPerUnit", FeedTypeResponse::getCostPerKg),
++                new CsvColumn<>("costUnit", row -> measurementUnit.getSymbol()),
++                new CsvColumn<>("active", FeedTypeResponse::getActive)));
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/currency/CurrencyConversionUtils.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/currency/CurrencyConversionUtils.java
++        return convertMonetaryValue(value, currencyCode, 2);
++    }
++
++    public static Double convertMonetaryValue(Double value, String currencyCode, int scale) {
+-            return DecimalScaleUtils.normalize(value);
++            return DecimalScaleUtils.normalize(value, scale);
+-        return DecimalScaleUtils.multiply(value, currency.getConversionRateFromBase());
++        return DecimalScaleUtils.multiply(value, currency.getConversionRateFromBase(), scale);
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
+-            case "costPerKg" -> "O custo por kg é obrigatório.";
++            case "costPerKg" -> "O custo por unidade é obrigatório.";
+-            case "costPerKg" -> "O custo por kg deve ser maior que zero.";
++            case "costPerKg" -> "O custo por unidade deve ser maior que zero.";
+-            case "costPerKg" -> "O custo por kg deve ter no máximo 2 casas decimais.";
++            case "costPerKg" -> "O custo por unidade deve ter no máximo 2 casas decimais.";
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnitConverter.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnitConverter.java
++
++    public static Double convertRateFromBase(Double value, MeasurementUnit unit, int scale) {
++        if (value == null) {
++            return null;
++        }
++
++        if (unit == MeasurementUnit.GRAM || unit == MeasurementUnit.MILLILITER) {
++            return DecimalScaleUtils.normalize(value / unit.getUnitsPerBaseUnit(), scale);
++        }
++
++        return DecimalScaleUtils.normalize(value, scale);
++    }
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java
++        return normalize(value, SCALE);
++    }
++
++    public static Double normalize(Double value, int scale) {
+-                .setScale(SCALE, RoundingMode.HALF_UP)
++                .setScale(scale, RoundingMode.HALF_UP)
++        return multiply(left, right, SCALE);
++    }
++
++    public static Double multiply(Double left, Double right, int scale) {
+-                .setScale(SCALE, RoundingMode.HALF_UP)
++                .setScale(scale, RoundingMode.HALF_UP)
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java
++    @Test
++    void shouldExportFeedTypesWithMeasurementUnit() throws Exception {
++        feedTypeService.exportResponseWithMeasurementUnit = "id,name,costPerUnit,costUnit\nfeed-type-1,Corn Silage,0.00175,g\n";
++
++        mockMvc.perform(get("/feed-types/export")
++                        .queryParam("farmId", "farm-1")
++                        .queryParam("measurementUnit", "GRAM"))
++                .andExpect(status().isOk())
++                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
++                .andExpect(header().string("Content-Disposition", Matchers.containsString("feed-types.csv")))
++                .andExpect(content().string("id,name,costPerUnit,costUnit\nfeed-type-1,Corn Silage,0.00175,g\n"));
++    }
++
++        private String exportResponseWithMeasurementUnit = "";
++        @Override
++        public String exportAll(String farmId, String search, String currency, String measurementUnitParam) {
++            return exportResponseWithMeasurementUnit;
++        }
++
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feed/FeedTypeServiceTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feed/FeedTypeServiceTest.java
++    @Test
++    void shouldExportFeedTypesWithConvertedMeasurementUnit() {
++        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
++
++        String csv = feedTypeService.exportAll("farm-1", null, null, "GRAM");
++
++        assertEquals(
++                "id,name,costPerUnit,costUnit,active\nfeed-type-1,Corn Silage,0.00175,g,true\n",
++                csv);
++    }
++
++    @Test
++    void shouldRejectInvalidMeasurementUnitWhenExportingFeedTypes() {
++        ValidationException exception = assertThrows(
++                ValidationException.class,
++                () -> feedTypeService.exportAll("farm-1", null, null, "LITER"));
++
++        assertEquals("measurementUnit must be KILOGRAM or GRAM", exception.getMessage());
++    }
++
+--- a/frontend/web/farm_web/src/components/feed-type/FeedTypeForm.tsx
++++ b/frontend/web/farm_web/src/components/feed-type/FeedTypeForm.tsx
+-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
++import { useState, type ChangeEvent, type FormEvent } from 'react'
++import { useCurrency } from '../../hooks/useCurrency'
++import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
++import { appendCurrencyCode } from '../../utils/currency'
++import {
++  convertFeedCostFromBase,
++  convertFeedCostToBase,
++  getFeedCostInputStep,
++  getMeasurementUnitShortLabelKey,
++} from '../../utils/measurementUnits'
+-  const [formData, setFormData] = useState<FeedTypeFormData>(initialValues)
++  const { currency } = useCurrency()
++  const { feedingUnit } = useMeasurementUnits()
++  const [formData, setFormData] = useState<FeedTypeFormData>(() => initialValues)
+-  useEffect(() => {
+-    setFormData(initialValues)
+-    setValidationMessage('')
+-  }, [initialValues])
+-
+-    setFormData((currentData) => ({
+-      ...currentData,
+-      [name]: name === 'costPerKg' ? parseTwoDecimalInput(value, currentData.costPerKg) : value,
+-    }))
++    setFormData((currentData) => {
++      if (name !== 'costPerKg') {
++        return {
++          ...currentData,
++          [name]: value,
++        }
++      }
++
++      const currentDisplayCost = convertFeedCostFromBase(currentData.costPerKg, feedingUnit)
++      const nextDisplayCost = feedingUnit === 'GRAM'
++        ? value === ''
++          ? 0
++          : Number.isFinite(Number(value))
++            ? Number(value)
++            : currentDisplayCost
++        : parseTwoDecimalInput(value, currentDisplayCost)
++
++      return {
++        ...currentData,
++        costPerKg: convertFeedCostToBase(nextDisplayCost, feedingUnit),
++      }
++    })
+-      setValidationMessage(t('feedType.errors.costPrecision'))
++      setValidationMessage(
++        feedingUnit === 'GRAM'
++          ? t('measurementUnits.errors.feedCostStep')
++          : t('feedType.errors.costPrecision'),
++      )
++  const unitLabel = t(getMeasurementUnitShortLabelKey(feedingUnit))
++  const costLabel = `${appendCurrencyCode(t('feedType.form.costPerKg'), currency)} / ${unitLabel}`
++  const displayCost = convertFeedCostFromBase(formData.costPerKg, feedingUnit)
++
+-          <span>{t('feedType.form.costPerKg')}</span>
++          <span>{costLabel}</span>
+-            step="0.01"
+-            value={formData.costPerKg}
++            step={getFeedCostInputStep(feedingUnit)}
++            value={displayCost}
+--- a/frontend/web/farm_web/src/i18n/en.ts
++++ b/frontend/web/farm_web/src/i18n/en.ts
++      feedCostStep: 'When using grams, enter the cost in 0.00001-per-g increments.',
+-      costPerKg: 'Cost per kg',
++      costPerKg: 'Cost per unit',
+-      costPerKg: 'Cost per kg',
++      costPerKg: 'Cost per unit',
+-      costPerKg: 'Cost per kg must be greater than zero.',
+-      costPrecision: 'Cost per kg must have at most 2 decimal places.',
++      costPerKg: 'Cost per unit must be greater than zero.',
++      costPrecision: 'Cost per unit must have at most 2 decimal places.',
+--- a/frontend/web/farm_web/src/i18n/pt-BR.ts
++++ b/frontend/web/farm_web/src/i18n/pt-BR.ts
++      feedCostStep: 'Ao usar gramas, informe o custo em incrementos de 0,00001 por g.',
+-      costPerKg: 'Custo por kg',
++      costPerKg: 'Custo por unidade',
+-      costPerKg: 'Custo por kg',
++      costPerKg: 'Custo por unidade',
+-      costPerKg: 'O custo por kg deve ser maior que zero.',
+-      costPrecision: 'O custo por kg deve ter no máximo 2 casas decimais.',
++      costPerKg: 'O custo por unidade deve ser maior que zero.',
++      costPrecision: 'O custo por unidade deve ter no máximo 2 casas decimais.',
+--- a/frontend/web/farm_web/src/pages/feed-type/FeedTypePage.tsx
++++ b/frontend/web/farm_web/src/pages/feed-type/FeedTypePage.tsx
++import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
++import {
++  convertFeedCostFromBase,
++  getMeasurementUnitShortLabelKey,
++} from '../../utils/measurementUnits'
++  const { feedingUnit } = useMeasurementUnits()
+-      await exportFeedTypesCsv(selectedFarmId, currency, appliedFilters)
++      await exportFeedTypesCsv(selectedFarmId, currency, appliedFilters, feedingUnit)
++  const unitLabel = t(getMeasurementUnitShortLabelKey(feedingUnit))
++  const costLabel = `${appendCurrencyCode(t('feedType.table.costPerKg'), currency)} / ${unitLabel}`
++  const currencyFormatOptions = feedingUnit === 'GRAM'
++    ? { minimumFractionDigits: 5, maximumFractionDigits: 5, conversionPrecision: 5 }
++    : { minimumFractionDigits: 2, maximumFractionDigits: 2, conversionPrecision: 2 }
++
++            key={editingFeedTypeId ?? 'new'}
+-                    <th>{appendCurrencyCode(t('feedType.table.costPerKg'), currency)}</th>
++                    <th>{costLabel}</th>
+-                      <td>{formatDisplayMoney(feedType.costPerKg, language, currency)}</td>
++                      <td>{formatDisplayMoney(
++                        convertFeedCostFromBase(feedType.costPerKg, feedingUnit),
++                        language,
++                        currency,
++                        currencyFormatOptions,
++                      )}</td>
+--- a/frontend/web/farm_web/src/services/feedTypeService.ts
++++ b/frontend/web/farm_web/src/services/feedTypeService.ts
++import type { FeedingUnit } from '../utils/measurementUnits'
++  measurementUnit?: FeedingUnit,
+-  await downloadCsv('/feed-types/export', buildFeedTypeListParams(farmId, filters, currency), 'feed-types.csv')
++  await downloadCsv(
++    '/feed-types/export',
++    {
++      ...buildFeedTypeListParams(farmId, filters, currency),
++      ...(measurementUnit ? { measurementUnit } : {}),
++    },
++    'feed-types.csv',
++  )
+--- a/frontend/web/farm_web/src/utils/currency.ts
++++ b/frontend/web/farm_web/src/utils/currency.ts
+-function normalizeMonetaryValue(value: number): number {
+-  return Math.round((value + Number.EPSILON) * 100) / 100
++interface CurrencyFormatOptions {
++  minimumFractionDigits?: number
++  maximumFractionDigits?: number
++  conversionPrecision?: number
++}
++
++function normalizeMonetaryValue(value: number, precision = 2): number {
++  const factor = 10 ** precision
++  return Math.round((value + Number.EPSILON) * factor) / factor
+-export function convertMonetaryValue(value: number | null | undefined, currency: CurrencyCode): number | null {
++export function convertMonetaryValue(
++  value: number | null | undefined,
++  currency: CurrencyCode,
++  precision = 2,
++): number | null {
+-  return normalizeMonetaryValue(value * DISPLAY_RATES[currency])
++  return normalizeMonetaryValue(value * DISPLAY_RATES[currency], precision)
+-export function formatCurrencyValue(value: number, language: Language, currency: CurrencyCode): string {
++export function formatCurrencyValue(
++  value: number,
++  language: Language,
++  currency: CurrencyCode,
++  options: CurrencyFormatOptions = {},
++): string {
++  const minimumFractionDigits = options.minimumFractionDigits ?? (hasDecimals ? 2 : 0)
++  const maximumFractionDigits = options.maximumFractionDigits ?? 2
+-    minimumFractionDigits: hasDecimals ? 2 : 0,
+-    maximumFractionDigits: 2,
++    minimumFractionDigits,
++    maximumFractionDigits,
++  options: CurrencyFormatOptions = {},
+-  const convertedValue = convertMonetaryValue(value, currency)
++  const convertedValue = convertMonetaryValue(

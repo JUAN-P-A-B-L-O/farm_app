@@ -21,6 +21,16 @@ class ErrorMessageTranslatorTest {
     }
 
     @Test
+    void shouldTranslateFeedTypeCostValidationMessagesUsingUnitLabel() {
+        assertEquals(
+                "O custo por unidade deve ser maior que zero.",
+                ErrorMessageTranslator.translate("costPerKg must be greater than zero"));
+        assertEquals(
+                "O custo por unidade deve ter no máximo 2 casas decimais.",
+                ErrorMessageTranslator.translate("costPerKg must have at most 2 decimal places"));
+    }
+
+    @Test
     void shouldTranslateEmptyFieldValidationMessages() {
         assertEquals("O nome é obrigatório.", ErrorMessageTranslator.translate("name must not be empty"));
     }
