@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import FeedTypeForm from '../../components/feed-type/FeedTypeForm'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrency } from '../../hooks/useCurrency'
@@ -34,6 +35,8 @@ const emptyFeedTypeForm: FeedTypeFormData = {
 const defaultFilters: FeedTypeListFilters = {
   search: '',
 }
+
+const debouncedFeedTypeFilterKeys: Array<keyof FeedTypeListFilters> = ['search']
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<FeedTypeApiErrorResponse>(error)) {
@@ -79,8 +82,14 @@ function FeedTypePage() {
   const [editingFeedTypeId, setEditingFeedTypeId] = useState<string | null>(null)
   const [formInitialValues, setFormInitialValues] = useState<FeedTypeFormData>(emptyFeedTypeForm)
   const [isExporting, setIsExporting] = useState(false)
-  const [filters, setFilters] = useState<FeedTypeListFilters>(defaultFilters)
-  const [appliedFilters, setAppliedFilters] = useState<FeedTypeListFilters>(defaultFilters)
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
+    debounceKeys: debouncedFeedTypeFilterKeys,
+    onAppliedChange: (nextFilters) => {
+      setPage(0)
+      void loadFeedTypes(nextFilters, 0, pageSize)
+    },
+  })
 
   async function loadFeedTypes(
     nextFilters: FeedTypeListFilters = appliedFilters,
@@ -119,11 +128,14 @@ function FeedTypePage() {
   }
 
   useEffect(() => {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
+      return
+    }
+
+    previousSelectedFarmIdRef.current = selectedFarmId
     setPage(0)
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    void loadFeedTypes(defaultFilters, 0, pageSize)
-  }, [selectedFarmId])
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
 
   function handlePageChange(nextPage: number) {
     if (nextPage === page) {
@@ -223,17 +235,9 @@ function FeedTypePage() {
     }
   }
 
-  function applyFilters() {
-    setAppliedFilters(filters)
-    setPage(0)
-    void loadFeedTypes(filters, 0, pageSize)
-  }
-
   function clearFilters() {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
     setPage(0)
-    void loadFeedTypes(defaultFilters, 0, pageSize)
+    resetFilters()
   }
 
   const unitLabel = t(getMeasurementUnitShortLabelKey(feedingUnit))
@@ -299,9 +303,7 @@ function FeedTypePage() {
               value: filters.search,
               onChange: (value) => setFilters({ search: value }),
             }}
-            onApply={applyFilters}
             onClear={clearFilters}
-            applyLabel={t('feedType.filters.apply')}
             clearLabel={t('feedType.filters.clear')}
           />
 

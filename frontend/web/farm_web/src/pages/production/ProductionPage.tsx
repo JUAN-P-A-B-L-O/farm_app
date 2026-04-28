@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
 import ProductionForm from '../../components/production/ProductionForm'
 import { useAuth } from '../../hooks/useAuth'
@@ -52,6 +53,8 @@ const defaultFilters: ProductionListFilters = {
   animalId: '',
   date: '',
 }
+
+const debouncedProductionFilterKeys: Array<keyof ProductionListFilters> = ['search']
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<ProductionApiErrorResponse>(error)) {
@@ -109,8 +112,14 @@ function ProductionPage() {
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingProductionId, setEditingProductionId] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
-  const [filters, setFilters] = useState<ProductionListFilters>(defaultFilters)
-  const [appliedFilters, setAppliedFilters] = useState<ProductionListFilters>(defaultFilters)
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
+    debounceKeys: debouncedProductionFilterKeys,
+    onAppliedChange: (nextFilters) => {
+      setPage(0)
+      void loadProductions(nextFilters, 0, pageSize)
+    },
+  })
 
   async function loadProductions(
     nextFilters: ProductionListFilters = appliedFilters,
@@ -175,10 +184,18 @@ function ProductionPage() {
   }
 
   useEffect(() => {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    void Promise.all([loadProductions(defaultFilters), loadAnimals()])
+    void loadAnimals()
   }, [selectedFarmId])
+
+  useEffect(() => {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
+      return
+    }
+
+    previousSelectedFarmIdRef.current = selectedFarmId
+    setPage(0)
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
 
   function handlePageChange(nextPage: number) {
     if (nextPage === page) {
@@ -316,17 +333,9 @@ function ProductionPage() {
     }
   }
 
-  function applyFilters() {
-    setAppliedFilters(filters)
-    setPage(0)
-    void loadProductions(filters, 0, pageSize)
-  }
-
   function clearFilters() {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
     setPage(0)
-    void loadProductions(defaultFilters, 0, pageSize)
+    resetFilters()
   }
 
   const quantityLabel = appendUnitToLabel(
@@ -402,9 +411,7 @@ function ProductionPage() {
               value: filters.search,
               onChange: (value) => setFilters((current) => ({ ...current, search: value })),
             }}
-            onApply={applyFilters}
             onClear={clearFilters}
-            applyLabel={t('production.filters.apply')}
             clearLabel={t('production.filters.clear')}
             filters={[
               {

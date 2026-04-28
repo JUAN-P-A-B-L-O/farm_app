@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
 import FeedingForm from '../../components/feeding/FeedingForm'
 import { useAuth } from '../../hooks/useAuth'
@@ -56,6 +57,8 @@ const defaultFilters: FeedingListFilters = {
   feedTypeId: '',
   date: '',
 }
+
+const debouncedFeedingFilterKeys: Array<keyof FeedingListFilters> = ['search']
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<FeedingApiErrorResponse>(error)) {
@@ -114,8 +117,14 @@ function FeedingPage() {
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingFeedingId, setEditingFeedingId] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
-  const [filters, setFilters] = useState<FeedingListFilters>(defaultFilters)
-  const [appliedFilters, setAppliedFilters] = useState<FeedingListFilters>(defaultFilters)
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
+    debounceKeys: debouncedFeedingFilterKeys,
+    onAppliedChange: (nextFilters) => {
+      setPage(0)
+      void loadFeedings(nextFilters, 0, pageSize)
+    },
+  })
 
   async function loadFeedings(
     nextFilters: FeedingListFilters = appliedFilters,
@@ -184,10 +193,18 @@ function FeedingPage() {
   }
 
   useEffect(() => {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    void Promise.all([loadFeedings(defaultFilters), loadFormOptions()])
+    void loadFormOptions()
   }, [selectedFarmId])
+
+  useEffect(() => {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
+      return
+    }
+
+    previousSelectedFarmIdRef.current = selectedFarmId
+    setPage(0)
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
 
   function handlePageChange(nextPage: number) {
     if (nextPage === page) {
@@ -304,17 +321,9 @@ function FeedingPage() {
     }
   }
 
-  function applyFilters() {
-    setAppliedFilters(filters)
-    setPage(0)
-    void loadFeedings(filters, 0, pageSize)
-  }
-
   function clearFilters() {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
     setPage(0)
-    void loadFeedings(defaultFilters, 0, pageSize)
+    resetFilters()
   }
 
   const quantityLabel = appendUnitToLabel(
@@ -395,9 +404,7 @@ function FeedingPage() {
               value: filters.search,
               onChange: (value) => setFilters((current) => ({ ...current, search: value })),
             }}
-            onApply={applyFilters}
             onClear={clearFilters}
-            applyLabel={t('feeding.filters.apply')}
             clearLabel={t('feeding.filters.clear')}
             filters={[
               {

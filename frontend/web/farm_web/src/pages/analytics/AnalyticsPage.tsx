@@ -1,10 +1,11 @@
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import axios from 'axios'
 import BarChart from '../../components/analytics/BarChart'
 import ChartErrorBoundary from '../../components/analytics/ChartErrorBoundary'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import LineChart from '../../components/analytics/LineChart'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
@@ -78,15 +79,14 @@ function AnalyticsPage() {
   const { selectedFarmId } = useFarm()
   const { productionUnit } = useMeasurementUnits()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
-  const [filters, setFilters] = useState<AnalyticsFilters>(createInitialFilters)
-  const [appliedFilters, setAppliedFilters] = useState<AnalyticsFilters>(createInitialFilters)
   const [analytics, setAnalytics] = useState<AnalyticsDataset>(emptyDataset)
   const [isAnimalsLoading, setIsAnimalsLoading] = useState(true)
   const [isChartsLoading, setIsChartsLoading] = useState(false)
   const [exportingKey, setExportingKey] = useState<string | null>(null)
-  const [hasAppliedFilters, setHasAppliedFilters] = useState(false)
   const [animalsErrorMessage, setAnimalsErrorMessage] = useState('')
   const [chartsErrorMessage, setChartsErrorMessage] = useState('')
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(createInitialFilters)
   const resolveErrorMessage = useEffectEvent((error: unknown, fallbackKey: string) =>
     getErrorMessage(error, t(fallbackKey)),
   )
@@ -108,16 +108,16 @@ function AnalyticsPage() {
         if (isActive) {
           const nextAnimals = mapAnimalsToOptions(data)
           setAnimals(nextAnimals)
-          setFilters((current) => (
-            current.animalId
-              ? { ...current, animalId: filterAvailableAnimalId(current.animalId, nextAnimals) }
-              : current
-          ))
-          setAppliedFilters((current) => (
-            current.animalId
-              ? { ...current, animalId: filterAvailableAnimalId(current.animalId, nextAnimals) }
-              : current
-          ))
+          setFilters((current) => {
+            if (!current.animalId) {
+              return current
+            }
+
+            const nextAnimalId = filterAvailableAnimalId(current.animalId, nextAnimals)
+            return nextAnimalId === current.animalId
+              ? current
+              : { ...current, animalId: nextAnimalId }
+          })
         }
       } catch (error) {
         if (isActive) {
@@ -135,13 +135,18 @@ function AnalyticsPage() {
     return () => {
       isActive = false
     }
-  }, [selectedFarmId])
+  }, [selectedFarmId, setFilters])
 
   useEffect(() => {
-    if (!hasAppliedFilters) {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
       return
     }
 
+    previousSelectedFarmIdRef.current = selectedFarmId
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
+
+  useEffect(() => {
     let isActive = true
 
     async function loadAnalytics() {
@@ -182,10 +187,9 @@ function AnalyticsPage() {
     return () => {
       isActive = false
     }
-  }, [appliedFilters, currency, hasAppliedFilters, selectedFarmId])
+  }, [appliedFilters, currency, selectedFarmId])
 
-  const showCharts = hasAppliedFilters && !isChartsLoading && !errorMessage
-  const shouldShowInitialState = !hasAppliedFilters && !isChartsLoading && !errorMessage
+  const showCharts = !isChartsLoading && !errorMessage
   const formatChartCurrency = (value: number) => formatCurrencyValue(value, language, currency)
   const formatChartProduction = (value: number) => (
     `${formatConvertedMeasurementValue(value, language)} ${t(getMeasurementUnitShortLabelKey(productionUnit))}`
@@ -218,25 +222,14 @@ function AnalyticsPage() {
     }))
   }
 
-  function applyFilters() {
-    setAppliedFilters({ ...filters })
-    setHasAppliedFilters(true)
-  }
-
   function clearFilters() {
-    const nextFilters = createInitialFilters()
-
-    setFilters(nextFilters)
-    setAppliedFilters(nextFilters)
-    setHasAppliedFilters(false)
-    setAnalytics(emptyDataset)
-    setChartsErrorMessage('')
+    resetFilters()
   }
 
   async function handleExport(
     key: 'production' | 'feeding' | 'profit' | 'productionByAnimal',
   ) {
-    if (!selectedFarmId || !hasAppliedFilters) {
+    if (!selectedFarmId) {
       return
     }
 
@@ -280,9 +273,7 @@ function AnalyticsPage() {
           </div>
 
           <ListingFiltersBar
-            onApply={applyFilters}
             onClear={clearFilters}
-            applyLabel={t('analytics.applyFilters')}
             clearLabel={t('analytics.clearFilters')}
             filters={[
               {
@@ -361,8 +352,6 @@ function AnalyticsPage() {
               />
             </div>
 
-            {shouldShowInitialState && renderChartEmptyState()}
-
             {showCharts && productionSeries.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
                 <LineChart
@@ -373,7 +362,7 @@ function AnalyticsPage() {
               </ChartErrorBoundary>
             )}
 
-            {showCharts && productionSeries.length === 0 && (
+            {!isChartsLoading && !errorMessage && productionSeries.length === 0 && (
               renderChartEmptyState()
             )}
           </article>
@@ -393,8 +382,6 @@ function AnalyticsPage() {
               />
             </div>
 
-            {shouldShowInitialState && renderChartEmptyState()}
-
             {showCharts && analytics.feedingCostSeries.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
                 <LineChart
@@ -405,7 +392,7 @@ function AnalyticsPage() {
               </ChartErrorBoundary>
             )}
 
-            {showCharts && analytics.feedingCostSeries.length === 0 && (
+            {!isChartsLoading && !errorMessage && analytics.feedingCostSeries.length === 0 && (
               renderChartEmptyState()
             )}
           </article>
@@ -425,8 +412,6 @@ function AnalyticsPage() {
               />
             </div>
 
-            {shouldShowInitialState && renderChartEmptyState()}
-
             {showCharts && analytics.profitSeries.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
                 <LineChart
@@ -437,7 +422,7 @@ function AnalyticsPage() {
               </ChartErrorBoundary>
             )}
 
-            {showCharts && analytics.profitSeries.length === 0 && (
+            {!isChartsLoading && !errorMessage && analytics.profitSeries.length === 0 && (
               renderChartEmptyState()
             )}
           </article>
@@ -457,8 +442,6 @@ function AnalyticsPage() {
               />
             </div>
 
-            {shouldShowInitialState && renderChartEmptyState()}
-
             {showCharts && productionByAnimal.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
                 <BarChart
@@ -469,7 +452,7 @@ function AnalyticsPage() {
               </ChartErrorBoundary>
             )}
 
-            {showCharts && productionByAnimal.length === 0 && (
+            {!isChartsLoading && !errorMessage && productionByAnimal.length === 0 && (
               renderChartEmptyState()
             )}
           </article>

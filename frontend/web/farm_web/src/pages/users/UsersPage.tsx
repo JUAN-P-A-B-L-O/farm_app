@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
 import UserForm from '../../components/user/UserForm'
 import { USER_ROLES, getUserActiveLabel, getUserRoleLabel } from '../../i18n/domainLabels'
@@ -36,6 +37,8 @@ const defaultFilters: UserListFilters = {
   active: '',
   role: '',
 }
+
+const debouncedUserFilterKeys: Array<keyof UserListFilters> = ['search']
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<UserApiErrorResponse>(error)) {
@@ -86,11 +89,16 @@ function UsersPage() {
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [formInitialValues, setFormInitialValues] = useState<UserFormData>(emptyUserForm)
-  const [filters, setFilters] = useState<UserListFilters>(defaultFilters)
-  const [appliedFilters, setAppliedFilters] = useState<UserListFilters>(defaultFilters)
   const [activationUserId, setActivationUserId] = useState<string | null>(null)
   const [activationPassword, setActivationPassword] = useState('')
   const [isExporting, setIsExporting] = useState(false)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
+    debounceKeys: debouncedUserFilterKeys,
+    onAppliedChange: (nextFilters) => {
+      setPage(0)
+      void loadUsers(nextFilters, 0, pageSize)
+    },
+  })
 
   async function loadUsers(
     nextFilters: UserListFilters = appliedFilters,
@@ -133,7 +141,6 @@ function UsersPage() {
   }
 
   useEffect(() => {
-    void loadUsers(defaultFilters, 0, pageSize)
     void loadFarms()
   }, [])
 
@@ -289,17 +296,9 @@ function UsersPage() {
     }
   }
 
-  function applyFilters() {
-    setAppliedFilters(filters)
-    setPage(0)
-    void loadUsers(filters, 0, pageSize)
-  }
-
   function clearFilters() {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
     setPage(0)
-    void loadUsers(defaultFilters, 0, pageSize)
+    resetFilters()
   }
 
   async function handleExport() {
@@ -380,9 +379,7 @@ function UsersPage() {
               value: filters.search,
               onChange: (value) => setFilters((current) => ({ ...current, search: value })),
             }}
-            onApply={applyFilters}
             onClear={clearFilters}
-            applyLabel={t('accessControl.filters.apply')}
             clearLabel={t('accessControl.filters.clear')}
             filters={[
               {

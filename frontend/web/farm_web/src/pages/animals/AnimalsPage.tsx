@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import AnimalForm from '../../components/animal/AnimalForm'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
 import { ANIMAL_ORIGINS, ANIMAL_STATUSES, getAnimalOriginLabel, getAnimalStatusLabel } from '../../i18n/domainLabels'
 import { useAuth } from '../../hooks/useAuth'
@@ -40,6 +41,8 @@ const defaultFilters: AnimalListFilters = {
   status: '',
   origin: '',
 }
+
+const debouncedAnimalFilterKeys: Array<keyof AnimalListFilters> = ['search']
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<ApiErrorResponse>(error)) {
@@ -84,8 +87,14 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const [formInitialValues, setFormInitialValues] = useState<AnimalFormData>(emptyAnimalForm)
   const [salePrice, setSalePrice] = useState('')
   const [saleDate, setSaleDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [filters, setFilters] = useState<AnimalListFilters>(defaultFilters)
-  const [appliedFilters, setAppliedFilters] = useState<AnimalListFilters>(defaultFilters)
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
+    debounceKeys: debouncedAnimalFilterKeys,
+    onAppliedChange: (nextFilters) => {
+      setPage(0)
+      void loadAnimals(nextFilters, 0, pageSize)
+    },
+  })
 
   async function loadAnimals(
     nextFilters: AnimalListFilters = appliedFilters,
@@ -124,11 +133,14 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   }
 
   useEffect(() => {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
+      return
+    }
+
+    previousSelectedFarmIdRef.current = selectedFarmId
     setPage(0)
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    void loadAnimals(defaultFilters, 0, pageSize)
-  }, [selectedFarmId])
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
 
   function handlePageChange(nextPage: number) {
     if (nextPage === page) {
@@ -299,17 +311,9 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
     }
   }
 
-  function applyFilters() {
-    setAppliedFilters(filters)
-    setPage(0)
-    void loadAnimals(filters, 0, pageSize)
-  }
-
   function clearFilters() {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
     setPage(0)
-    void loadAnimals(defaultFilters, 0, pageSize)
+    resetFilters()
   }
 
   return (
@@ -431,9 +435,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
               value: filters.search,
               onChange: (value) => setFilters((current) => ({ ...current, search: value })),
             }}
-            onApply={applyFilters}
             onClear={clearFilters}
-            applyLabel={t('animals.filters.apply')}
             clearLabel={t('animals.filters.clear')}
             filters={[
               {

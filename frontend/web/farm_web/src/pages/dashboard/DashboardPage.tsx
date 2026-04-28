@@ -1,9 +1,10 @@
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import StatCard from '../../components/dashboard/StatCard'
 import { ANIMAL_STATUSES, getAnimalStatusLabel } from '../../i18n/domainLabels'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
 import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
@@ -94,14 +95,14 @@ function DashboardPage() {
   const { selectedFarmId } = useFarm()
   const { productionUnit } = useMeasurementUnits()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
-  const [filters, setFilters] = useState<DashboardFilterState>(createInitialFilters)
-  const [appliedFilters, setAppliedFilters] = useState<DashboardFilterState>(createInitialFilters)
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isAnimalsLoading, setIsAnimalsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [summaryErrorMessage, setSummaryErrorMessage] = useState('')
   const [animalsErrorMessage, setAnimalsErrorMessage] = useState('')
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(createInitialFilters)
   const resolveErrorMessage = useEffectEvent((error: unknown, fallbackKey: string) =>
     getErrorMessage(error, t(fallbackKey)),
   )
@@ -121,16 +122,16 @@ function DashboardPage() {
         if (isActive) {
           const nextAnimals = mapAnimalsToOptions(data)
           setAnimals(nextAnimals)
-          setAppliedFilters((current) => (
-            current.animalIds.length > 0
-              ? { ...current, animalIds: filterAvailableAnimalIds(current.animalIds, nextAnimals) }
-              : current
-          ))
-          setFilters((current) => (
-            current.animalIds.length > 0
-              ? { ...current, animalIds: filterAvailableAnimalIds(current.animalIds, nextAnimals) }
-              : current
-          ))
+          setFilters((current) => {
+            if (current.animalIds.length === 0) {
+              return current
+            }
+
+            const nextAnimalIds = filterAvailableAnimalIds(current.animalIds, nextAnimals)
+            return nextAnimalIds.length === current.animalIds.length
+              ? current
+              : { ...current, animalIds: nextAnimalIds }
+          })
         }
       } catch (error) {
         if (isActive) {
@@ -148,7 +149,16 @@ function DashboardPage() {
     return () => {
       isActive = false
     }
-  }, [selectedFarmId])
+  }, [selectedFarmId, setFilters])
+
+  useEffect(() => {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
+      return
+    }
+
+    previousSelectedFarmIdRef.current = selectedFarmId
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
 
   useEffect(() => {
     let isActive = true
@@ -203,16 +213,8 @@ function DashboardPage() {
     }))
   }
 
-  function applyFilters() {
-    setAppliedFilters({
-      ...filters,
-      animalIds: [...filters.animalIds],
-    })
-  }
-
   function clearFilters() {
-    setFilters(createInitialFilters())
-    setAppliedFilters(createInitialFilters())
+    resetFilters()
   }
 
   async function handleExport() {
@@ -263,9 +265,7 @@ function DashboardPage() {
           />
         </div>
         <ListingFiltersBar
-          onApply={applyFilters}
           onClear={clearFilters}
-          applyLabel={t('dashboard.filters.apply')}
           clearLabel={t('dashboard.filters.clear')}
           filters={[
             {

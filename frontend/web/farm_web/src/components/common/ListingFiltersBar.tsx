@@ -61,18 +61,14 @@ type ListingFilterConfig =
 
 interface ListingFiltersBarProps {
   search?: SearchFilterConfig
-  onApply: () => void
   onClear: () => void
-  applyLabel: string
   clearLabel: string
   filters?: ListingFilterConfig[]
 }
 
 function ListingFiltersBar({
   search,
-  onApply,
   onClear,
-  applyLabel,
   clearLabel,
   filters = [],
 }: ListingFiltersBarProps) {
@@ -156,9 +152,6 @@ function ListingFiltersBar({
       )}
 
       <div className="listing-filters__actions">
-        <button type="button" className="animals-table__action-button" onClick={onApply}>
-          {applyLabel}
-        </button>
         <button
           type="button"
           className="animals-table__action-button animals-table__action-button--secondary"
