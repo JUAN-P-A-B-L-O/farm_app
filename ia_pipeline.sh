@@ -15,7 +15,10 @@ DEV_SKILL=$(cat skills/dev.md)
 TESTER_SKILL=$(cat skills/tester.md)
 FIXER_SKILL=$(cat skills/fixer.md)
 
-MAX_FIX_ATTEMPTS=2
+MAX_FIX_ATTEMPTS=1
+DIFF_LINES=120
+ERROR_LINES_AROUND=5
+
 SUMMARY_FILE="workspace/pipeline_summary.md"
 
 GIT_ADD_SAFE() {
@@ -28,6 +31,30 @@ GIT_ADD_SAFE() {
     ':!workspace/files.txt' \
     ':!workspace/mvn.log' \
     ':!workspace/error_focus.txt'
+}
+
+CHECK_TOKEN_LIMIT() {
+  local LOG_FILE="$1"
+
+  if grep -qiE "5h limit|weekly limit|rate limit|quota|tokens.*left|usage limit|limit reached|exceeded" "$LOG_FILE"; then
+    echo "🚫 Token/rate limit detected in $LOG_FILE"
+    return 0
+  fi
+
+  return 1
+}
+
+FEATURE_TOKEN_COUNT() {
+  local PATTERN="$1"
+
+  awk '
+    /tokens used/ {
+      getline
+      gsub(",", "", $1)
+      sum += $1
+    }
+    END { print sum + 0 }
+  ' $PATTERN 2>/dev/null
 }
 
 echo "# AI Pipeline Summary" > "$SUMMARY_FILE"
@@ -46,6 +73,7 @@ for FILE in workspace/features/*.md; do
 
   FEATURE_FAILED=false
   TESTS_PASSED=false
+  STOP_DUE_LIMIT=false
 
   # =====================
   # DEV
@@ -54,11 +82,27 @@ for FILE in workspace/features/*.md; do
 
   DEV_PROMPT="$AI_CONTEXT"$'\n\n'"$DEV_SKILL"$'\n\n'"$FEATURE"
 
-  if ! codex exec "$DEV_PROMPT" > "workspace/logs/${SAFE_NAME}_dev.log" 2>&1; then
+  DEV_LOG="workspace/logs/${SAFE_NAME}_dev.log"
+
+  if ! codex exec "$DEV_PROMPT" > "$DEV_LOG" 2>&1; then
+    if CHECK_TOKEN_LIMIT "$DEV_LOG"; then
+      echo "⏸️ Stopping pipeline due to token/rate limit."
+      echo "- ⏸️ $FEATURE_NAME: stopped due to token/rate limit" >> "$SUMMARY_FILE"
+      STOP_DUE_LIMIT=true
+      break
+    fi
+
     echo "❌ DEV failed for $FEATURE_NAME"
     echo "- ❌ $FEATURE_NAME: DEV failed" >> "$SUMMARY_FILE"
-    cp "workspace/logs/${SAFE_NAME}_dev.log" "workspace/failures/${SAFE_NAME}_dev_failed.log" 2>/dev/null || true
+    cp "$DEV_LOG" "workspace/failures/${SAFE_NAME}_dev_failed.log" 2>/dev/null || true
     continue
+  fi
+
+  if CHECK_TOKEN_LIMIT "$DEV_LOG"; then
+    echo "⏸️ Stopping pipeline due to token/rate limit."
+    echo "- ⏸️ $FEATURE_NAME: stopped due to token/rate limit" >> "$SUMMARY_FILE"
+    STOP_DUE_LIMIT=true
+    break
   fi
 
   GIT_ADD_SAFE
@@ -69,7 +113,7 @@ for FILE in workspace/features/*.md; do
   # =====================
   git diff "$BASE_COMMIT" HEAD > "workspace/logs/${SAFE_NAME}_diff_full.txt"
   git diff --name-only "$BASE_COMMIT" HEAD > "workspace/logs/${SAFE_NAME}_files.txt"
-  git diff "$BASE_COMMIT" HEAD | grep -E "^[+-]" | head -n 300 > "workspace/logs/${SAFE_NAME}_diff.txt" || true
+  git diff "$BASE_COMMIT" HEAD | grep -E "^[+-]" | head -n "$DIFF_LINES" > "workspace/logs/${SAFE_NAME}_diff.txt" || true
 
   if [ ! -s "workspace/logs/${SAFE_NAME}_files.txt" ]; then
     echo "⚠️ No changes detected for $FEATURE_NAME"
@@ -82,24 +126,44 @@ for FILE in workspace/features/*.md; do
   # =====================
   echo "🧪 Running TESTER..."
 
-  TESTER_INPUT="Analyze the following changes and update tests accordingly.
+  TESTER_INPUT="Update or add tests only for the changed behavior.
 
 Changed files:
 $(cat "workspace/logs/${SAFE_NAME}_files.txt")
 
-Relevant diff:
+Diff excerpt:
 $(cat "workspace/logs/${SAFE_NAME}_diff.txt")
 
-Keep changes minimal. Do not rewrite unrelated tests."
+Rules:
+- Focus only on changed files and behavior.
+- Do not rewrite unrelated tests.
+- Do not add broad test suites.
+- Keep test changes minimal."
 
   TESTER_PROMPT="$TESTER_SKILL"$'\n\n'"$TESTER_INPUT"
 
-  if ! codex exec "$TESTER_PROMPT" > "workspace/logs/${SAFE_NAME}_tester.log" 2>&1; then
+  TESTER_LOG="workspace/logs/${SAFE_NAME}_tester.log"
+
+  if ! codex exec "$TESTER_PROMPT" > "$TESTER_LOG" 2>&1; then
+    if CHECK_TOKEN_LIMIT "$TESTER_LOG"; then
+      echo "⏸️ Stopping pipeline due to token/rate limit."
+      echo "- ⏸️ $FEATURE_NAME: stopped during tester due to token/rate limit" >> "$SUMMARY_FILE"
+      STOP_DUE_LIMIT=true
+      break
+    fi
+
     echo "⚠️ TESTER failed for $FEATURE_NAME, continuing to validation"
     FEATURE_FAILED=true
   else
     GIT_ADD_SAFE
     git commit -m "test(ai): update tests for $FEATURE_NAME" || echo "⚠️ No test changes"
+  fi
+
+  if CHECK_TOKEN_LIMIT "$TESTER_LOG"; then
+    echo "⏸️ Stopping pipeline due to token/rate limit."
+    echo "- ⏸️ $FEATURE_NAME: stopped during tester due to token/rate limit" >> "$SUMMARY_FILE"
+    STOP_DUE_LIMIT=true
+    break
   fi
 
   # =====================
@@ -112,7 +176,9 @@ Keep changes minimal. Do not rewrite unrelated tests."
   while [ "$ATTEMPT" -le "$MAX_FIX_ATTEMPTS" ]; do
     echo "➡️ Test attempt $ATTEMPT..."
 
-    if (cd backend/farmapp && mvn test > "../../workspace/logs/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log" 2>&1); then
+    MVN_LOG="workspace/logs/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log"
+
+    if (cd backend/farmapp && mvn test > "../../$MVN_LOG" 2>&1); then
       echo "✅ Tests passed for $FEATURE_NAME"
       TESTS_PASSED=true
       break
@@ -120,40 +186,57 @@ Keep changes minimal. Do not rewrite unrelated tests."
 
     echo "❌ Tests failed for $FEATURE_NAME"
 
-    grep -A 8 -B 8 "ERROR\|FAILURE\|Failures:\|expected:<.*> but was:<.*>\|method does not override" \
-      "workspace/logs/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log" \
-      > "workspace/logs/${SAFE_NAME}_error_focus.txt" || true
+    ERROR_FOCUS="workspace/logs/${SAFE_NAME}_error_focus.txt"
+
+    grep -A "$ERROR_LINES_AROUND" -B "$ERROR_LINES_AROUND" \
+      "ERROR\|FAILURE\|Failures:\|expected:<.*> but was:<.*>\|method does not override" \
+      "$MVN_LOG" > "$ERROR_FOCUS" || true
 
     echo "🛠 Running FIXER..."
 
-    FIXER_INPUT="Fix ONLY the specific test or compilation failure below.
+    FIXER_INPUT="Fix only the specific test or compilation failure below.
 
 Feature:
 $FEATURE_NAME
 
 Relevant error:
-$(cat "workspace/logs/${SAFE_NAME}_error_focus.txt")
+$(cat "$ERROR_FOCUS")
 
 Rules:
-- Do NOT delete, disable, or skip tests
-- Do NOT refactor unrelated code
-- Keep the fix minimal
-- If the issue is a test expectation mismatch, align the correct side with the existing system contract
-- If the issue is a message/contract mismatch, fix only the smallest related contract/message handling code
-- If unsure, make the smallest safe correction"
+- Do not delete, disable, or skip tests.
+- Do not refactor unrelated code.
+- Keep the fix minimal.
+- If this is a test expectation mismatch, align the correct side with the existing system contract.
+- If unsure, make the smallest safe correction."
 
     FIXER_PROMPT="$FIXER_SKILL"$'\n\n'"$FIXER_INPUT"
 
-    if ! codex exec "$FIXER_PROMPT" > "workspace/logs/${SAFE_NAME}_fixer_attempt_${ATTEMPT}.log" 2>&1; then
+    FIXER_LOG="workspace/logs/${SAFE_NAME}_fixer_attempt_${ATTEMPT}.log"
+
+    if ! codex exec "$FIXER_PROMPT" > "$FIXER_LOG" 2>&1; then
+      if CHECK_TOKEN_LIMIT "$FIXER_LOG"; then
+        echo "⏸️ Stopping pipeline due to token/rate limit."
+        echo "- ⏸️ $FEATURE_NAME: stopped during fixer due to token/rate limit" >> "$SUMMARY_FILE"
+        STOP_DUE_LIMIT=true
+        break
+      fi
+
       echo "⚠️ FIXER failed on attempt $ATTEMPT"
       FEATURE_FAILED=true
+      break
+    fi
+
+    if CHECK_TOKEN_LIMIT "$FIXER_LOG"; then
+      echo "⏸️ Stopping pipeline due to token/rate limit."
+      echo "- ⏸️ $FEATURE_NAME: stopped during fixer due to token/rate limit" >> "$SUMMARY_FILE"
+      STOP_DUE_LIMIT=true
       break
     fi
 
     FILES_CHANGED=$(git diff --name-only | grep -v '^workspace/' | wc -l)
     CHANGED_LINES=$(git diff --numstat -- . ':!workspace' | awk '{ added += $1; deleted += $2 } END { print added + deleted + 0 }')
 
-    if [ "$FILES_CHANGED" -gt 8 ] || [ "$CHANGED_LINES" -gt 500 ]; then
+    if [ "$FILES_CHANGED" -gt 6 ] || [ "$CHANGED_LINES" -gt 300 ]; then
       echo "⚠️ Fix too large (${FILES_CHANGED} files, ${CHANGED_LINES} lines). Marking feature as failed and continuing."
       FEATURE_FAILED=true
       break
@@ -165,6 +248,10 @@ Rules:
     ATTEMPT=$((ATTEMPT + 1))
   done
 
+  if [ "$STOP_DUE_LIMIT" = true ]; then
+    break
+  fi
+
   if [ "$TESTS_PASSED" = true ] && [ "$FEATURE_FAILED" = false ]; then
     echo "✅ Feature completed: $FEATURE_NAME"
     echo "- ✅ $FEATURE_NAME: completed" >> "$SUMMARY_FILE"
@@ -174,14 +261,7 @@ Rules:
     cp "workspace/logs/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log" "workspace/failures/${SAFE_NAME}_failed.log" 2>/dev/null || true
   fi
 
-  FEATURE_TOKENS=$(awk '
-    /tokens used/ {
-      getline
-      gsub(",", "", $1)
-      sum += $1
-    }
-    END { print sum + 0 }
-  ' workspace/logs/${SAFE_NAME}_*.log 2>/dev/null)
+  FEATURE_TOKENS=$(FEATURE_TOKEN_COUNT "workspace/logs/${SAFE_NAME}_*.log")
 
   echo "🔢 Tokens for $FEATURE_NAME: $FEATURE_TOKENS"
   echo "  - Tokens: $FEATURE_TOKENS" >> "$SUMMARY_FILE"
@@ -198,14 +278,7 @@ echo "===================================="
 echo "📊 TOKEN USAGE SUMMARY"
 echo "===================================="
 
-TOTAL_TOKENS=$(awk '
-  /tokens used/ {
-    getline
-    gsub(",", "", $1)
-    sum += $1
-  }
-  END { print sum + 0 }
-' workspace/logs/*.log 2>/dev/null)
+TOTAL_TOKENS=$(FEATURE_TOKEN_COUNT "workspace/logs/*.log")
 
 echo "Total tokens used: $TOTAL_TOKENS"
 
