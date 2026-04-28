@@ -137,6 +137,13 @@ test('every translation key referenced by the frontend exists in both catalogs',
   assert.deepEqual(missingEn, [])
 })
 
+test('layout navigation labels include the mobile menu affordances in both catalogs', () => {
+  assert.equal(translations['pt-BR'].layout.openNavigation, 'Menu')
+  assert.equal(translations['pt-BR'].layout.closeNavigation, 'Fechar')
+  assert.equal(translations.en.layout.openNavigation, 'Menu')
+  assert.equal(translations.en.layout.closeNavigation, 'Close')
+})
+
 test('domain label helpers centralize enum and boolean display labels with safe fallback', () => {
   const translatePt = createTranslator('pt-BR')
   const translateEn = createTranslator('en')

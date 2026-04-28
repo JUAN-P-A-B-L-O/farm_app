@@ -8,6 +8,8 @@ const enTranslations = {
     loadingFarms: 'Loading farms...',
     languageLabel: 'Language',
     currencyLabel: 'Display currency',
+    openNavigation: 'Menu',
+    closeNavigation: 'Close',
     logout: 'Logout',
     languageOptions: {
       'pt-BR': 'Portuguese',
@@ -684,6 +686,8 @@ const ptBRTranslations = {
     loadingFarms: 'Carregando fazendas...',
     languageLabel: 'Idioma',
     currencyLabel: 'Moeda exibida',
+    openNavigation: 'Menu',
+    closeNavigation: 'Fechar',
     logout: 'Sair',
     languageOptions: {
       'pt-BR': 'Português',
