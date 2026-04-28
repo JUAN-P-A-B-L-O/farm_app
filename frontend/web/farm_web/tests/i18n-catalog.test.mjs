@@ -110,6 +110,9 @@ const translationsModuleUrl = `${pathToFileURL(path.join(compiledRoot, 'translat
 const domainLabelsModuleUrl = `${pathToFileURL(path.join(compiledRoot, 'domainLabels.js')).href}?t=${Date.now()}`
 const { translations } = await import(translationsModuleUrl)
 const {
+  ANIMAL_ORIGINS,
+  ANIMAL_STATUSES,
+  USER_ROLES,
   getAnimalOriginLabel,
   getAnimalStatusLabel,
   getUserActiveLabel,
@@ -138,11 +141,26 @@ test('domain label helpers centralize enum and boolean display labels with safe 
   const translatePt = createTranslator('pt-BR')
   const translateEn = createTranslator('en')
 
+  assert.deepEqual(USER_ROLES, ['MANAGER', 'WORKER'])
+  assert.deepEqual(ANIMAL_STATUSES, ['ACTIVE', 'SOLD', 'DEAD', 'INACTIVE'])
+  assert.deepEqual(ANIMAL_ORIGINS, ['BORN', 'PURCHASED'])
+
   assert.equal(getUserRoleLabel(translatePt, 'MANAGER'), 'Gerente')
   assert.equal(getUserRoleLabel(translateEn, 'WORKER'), 'Worker')
   assert.equal(getUserActiveLabel(translatePt, true), 'Ativo')
   assert.equal(getAnimalStatusLabel(translatePt, 'SOLD'), 'Vendido')
   assert.equal(getAnimalOriginLabel(translateEn, 'PURCHASED'), 'Purchased')
+  assert.equal(getUserRoleLabel(translatePt, 'WORKER'), 'Trabalhador')
+  assert.equal(getUserRoleLabel(translateEn, 'MANAGER'), 'Manager')
+  assert.equal(getAnimalStatusLabel(translatePt, 'ACTIVE'), 'Ativo')
+  assert.equal(getAnimalStatusLabel(translatePt, 'DEAD'), 'Morto')
+  assert.equal(getAnimalStatusLabel(translatePt, 'INACTIVE'), 'Inativo')
+  assert.equal(getAnimalStatusLabel(translateEn, 'ACTIVE'), 'Active')
+  assert.equal(getAnimalStatusLabel(translateEn, 'DEAD'), 'Dead')
+  assert.equal(getAnimalStatusLabel(translateEn, 'INACTIVE'), 'Inactive')
+  assert.equal(getAnimalOriginLabel(translatePt, 'BORN'), 'Nascido')
+  assert.equal(getAnimalOriginLabel(translatePt, 'PURCHASED'), 'Comprado')
+  assert.equal(getAnimalOriginLabel(translateEn, 'BORN'), 'Born')
   assert.equal(getUserRoleLabel(translatePt, 'OWNER'), 'OWNER')
   assert.equal(getAnimalStatusLabel(translatePt, 'ARCHIVED'), 'ARCHIVED')
 })

@@ -1,0 +1,300 @@
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
+-            Map.entry("Full authentication is required to access this resource", "É necessário autenticação para acessar este recurso."),
++            Map.entry("Full authentication is required to access this resource", "É necessário estar autenticado para acessar este recurso."),
+-            Map.entry("Authenticated manager is required", "Gerente autenticado obrigatório."),
+-            Map.entry("Authenticated user is required", "Usuário autenticado obrigatório."),
++            Map.entry("Authenticated manager is required", "É necessário estar autenticado como gerente."),
++            Map.entry("Authenticated user is required", "É necessário estar autenticado."),
++            case "status" -> "O status do animal é obrigatório.";
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java
+-                "É necessário autenticação para acessar este recurso.",
++                "É necessário estar autenticado para acessar este recurso.",
++        assertEquals(
++                "É necessário estar autenticado como gerente.",
++                ErrorMessageTranslator.translate("Authenticated manager is required"));
++        assertEquals(
++                "É necessário estar autenticado.",
++                ErrorMessageTranslator.translate("Authenticated user is required"));
++    @Test
++    void shouldTranslateAnimalFieldValidationMessagesWithDomainPrefixes() {
++        assertEquals(
++                "A data de nascimento do animal é obrigatória.",
++                ErrorMessageTranslator.translate("Animal birthDate must not be null"));
++        assertEquals(
++                "O status do animal é obrigatório.",
++                ErrorMessageTranslator.translate("Animal status must not be blank"));
++        assertEquals(
++                "O valor da venda deve ser maior que zero.",
++                ErrorMessageTranslator.translate("Animal salePrice must be greater than zero"));
++    }
++
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java
+-period,production,feedingCost,revenue,profit
+-2026-04-14,10.0,50.0,320.0,270.0
++period,production,productionUnit,feedingCost,revenue,profit
++2026-04-14,10.0,L,50.0,320.0,270.0
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java
+-totalProduction,totalFeedingCost,totalRevenue,totalProfit,animalCount
+-100.0,40.0,500.0,410.0,2
++totalProduction,totalProductionUnit,totalFeedingCost,totalRevenue,totalProfit,animalCount
++100.0,L,40.0,500.0,410.0,2
+--- a/frontend/web/farm_web/src/components/animal/AnimalForm.tsx
++++ b/frontend/web/farm_web/src/components/animal/AnimalForm.tsx
++import { ANIMAL_STATUSES, getAnimalOriginLabel, getAnimalStatusLabel } from '../../i18n/domainLabels'
+-    ? ['ACTIVE', 'SOLD', 'DEAD', 'INACTIVE'] as const
+-    : ['ACTIVE', 'DEAD', 'INACTIVE'] as const
++    ? ANIMAL_STATUSES
++    : ANIMAL_STATUSES.filter((status) => status !== 'SOLD')
+-            <option value="BORN">{t('animals.origins.BORN')}</option>
+-            <option value="PURCHASED">{t('animals.origins.PURCHASED')}</option>
++            <option value="BORN">{getAnimalOriginLabel(t, 'BORN')}</option>
++            <option value="PURCHASED">{getAnimalOriginLabel(t, 'PURCHASED')}</option>
+-                <option key={status} value={status}>{t(`animals.statuses.${status}`)}</option>
++                <option key={status} value={status}>{getAnimalStatusLabel(t, status)}</option>
+--- a/frontend/web/farm_web/src/components/feed-type/FeedTypeForm.tsx
++++ b/frontend/web/farm_web/src/components/feed-type/FeedTypeForm.tsx
+-            placeholder="0"
++            placeholder={t('common.placeholders.numericValue')}
+--- a/frontend/web/farm_web/src/components/feeding/FeedingForm.tsx
++++ b/frontend/web/farm_web/src/components/feeding/FeedingForm.tsx
+-            placeholder="0"
++            placeholder={t('common.placeholders.numericValue')}
+--- a/frontend/web/farm_web/src/components/production/ProductionForm.tsx
++++ b/frontend/web/farm_web/src/components/production/ProductionForm.tsx
+-            placeholder="0"
++            placeholder={t('common.placeholders.numericValue')}
+--- a/frontend/web/farm_web/src/components/user/UserForm.tsx
++++ b/frontend/web/farm_web/src/components/user/UserForm.tsx
++import { USER_ROLES, getUserRoleLabel } from '../../i18n/domainLabels'
+-const roleOptions = ['MANAGER', 'WORKER']
+-
+-    const payload = {
++    const payload: UserFormData = {
+-      role: formData.role.trim(),
++      role: formData.role,
+-            {roleOptions.map((role) => (
++            {USER_ROLES.map((role) => (
+-                {t(`accessControl.roles.${role}`)}
++                {getUserRoleLabel(t, role)}
+--- a/frontend/web/farm_web/src/context/FarmContext.tsx
++++ b/frontend/web/farm_web/src/context/FarmContext.tsx
+-      setErrorMessage('Unable to load farms.')
++      setErrorMessage('farm.loadError')
+--- /dev/null
++++ b/frontend/web/farm_web/src/i18n/domainLabels.ts
++import type { AnimalOrigin, AnimalStatus } from '../types/animal'
++import type { UserRole } from '../types/user'
++
++type Translate = (key: string) => string
++
++const USER_ROLES: UserRole[] = ['MANAGER', 'WORKER']
++const ANIMAL_STATUSES: AnimalStatus[] = ['ACTIVE', 'SOLD', 'DEAD', 'INACTIVE']
++const ANIMAL_ORIGINS: AnimalOrigin[] = ['BORN', 'PURCHASED']
++
++function hasValue<Option extends string>(options: readonly Option[], value: string): value is Option {
++  return options.includes(value as Option)
++}
++
++export { ANIMAL_ORIGINS, ANIMAL_STATUSES, USER_ROLES }
++
++export function getUserRoleLabel(t: Translate, role: string) {
++  return hasValue(USER_ROLES, role) ? t(`accessControl.roles.${role}`) : role
++}
++
++export function getUserActiveLabel(t: Translate, active: boolean) {
++  return active ? t('accessControl.status.active') : t('accessControl.status.inactive')
++}
++
++export function getAnimalStatusLabel(t: Translate, status: string) {
++  return hasValue(ANIMAL_STATUSES, status) ? t(`animals.statuses.${status}`) : status
++}
++
++export function getAnimalOriginLabel(t: Translate, origin: string) {
++  return hasValue(ANIMAL_ORIGINS, origin) ? t(`animals.origins.${origin}`) : origin
++}
+--- a/frontend/web/farm_web/src/i18n/en.ts
++++ b/frontend/web/farm_web/src/i18n/en.ts
++    placeholders: {
++      numericValue: '0',
++    },
+--- a/frontend/web/farm_web/src/i18n/pt-BR.ts
++++ b/frontend/web/farm_web/src/i18n/pt-BR.ts
+-    productionLabel: 'Unidade da producao',
+-    feedingLabel: 'Unidade da alimentacao',
++    productionLabel: 'Unidade da produção',
++    feedingLabel: 'Unidade da alimentação',
+-      productionStep: 'Ao usar mililitros, informe valores em multiplos de 10 mL.',
+-      feedingStep: 'Ao usar gramas, informe valores em multiplos de 10 g.',
++      productionStep: 'Ao usar mililitros, informe valores em múltiplos de 10 mL.',
++      feedingStep: 'Ao usar gramas, informe valores em múltiplos de 10 g.',
++    placeholders: {
++      numericValue: '0',
++    },
+--- a/frontend/web/farm_web/src/layout/AppLayout.tsx
++++ b/frontend/web/farm_web/src/layout/AppLayout.tsx
+-            <p className="animals-page__status animals-page__status--error">{t('farm.loadError')}</p>
++            <p className="animals-page__status animals-page__status--error">{t(farmsErrorMessage)}</p>
+--- a/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
++++ b/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
++import { getAnimalOriginLabel, getAnimalStatusLabel } from '../../i18n/domainLabels'
+-                <dd>{t(`animals.origins.${animal.origin}`)}</dd>
++                <dd>{getAnimalOriginLabel(t, animal.origin)}</dd>
+-                    {t(`animals.statuses.${animal.status}`)}
++                    {getAnimalStatusLabel(t, animal.status)}
+--- a/frontend/web/farm_web/src/pages/animals/AnimalsPage.tsx
++++ b/frontend/web/farm_web/src/pages/animals/AnimalsPage.tsx
++import { ANIMAL_ORIGINS, ANIMAL_STATUSES, getAnimalOriginLabel, getAnimalStatusLabel } from '../../i18n/domainLabels'
+-                  { value: 'ACTIVE', label: t('animals.statuses.ACTIVE') },
+-                  { value: 'SOLD', label: t('animals.statuses.SOLD') },
+-                  { value: 'DEAD', label: t('animals.statuses.DEAD') },
+-                  { value: 'INACTIVE', label: t('animals.statuses.INACTIVE') },
++                  ...ANIMAL_STATUSES.map((status) => ({
++                    value: status,
++                    label: getAnimalStatusLabel(t, status),
++                  })),
+-                  { value: 'BORN', label: t('animals.origins.BORN') },
+-                  { value: 'PURCHASED', label: t('animals.origins.PURCHASED') },
++                  ...ANIMAL_ORIGINS.map((origin) => ({
++                    value: origin,
++                    label: getAnimalOriginLabel(t, origin),
++                  })),
+-                      <td>{t(`animals.origins.${animal.origin}`)}</td>
++                      <td>{getAnimalOriginLabel(t, animal.origin)}</td>
+-                          {t(`animals.statuses.${animal.status}`)}
++                          {getAnimalStatusLabel(t, animal.status)}
+--- a/frontend/web/farm_web/src/pages/dashboard/DashboardPage.tsx
++++ b/frontend/web/farm_web/src/pages/dashboard/DashboardPage.tsx
++import { ANIMAL_STATUSES, getAnimalStatusLabel } from '../../i18n/domainLabels'
+-const animalStatusOptions: AnimalStatus[] = ['ACTIVE', 'SOLD', 'DEAD', 'INACTIVE']
++const animalStatusOptions: AnimalStatus[] = [...ANIMAL_STATUSES]
+-                  {t(`animals.statuses.${status}`)}
++                  {getAnimalStatusLabel(t, status)}
+--- a/frontend/web/farm_web/src/pages/users/UsersPage.tsx
++++ b/frontend/web/farm_web/src/pages/users/UsersPage.tsx
++import { USER_ROLES, getUserActiveLabel, getUserRoleLabel } from '../../i18n/domainLabels'
+-                onChange: (value) => setFilters((current) => ({ ...current, role: value })),
++                onChange: (value) => setFilters((current) => ({ ...current, role: value as UserListFilters['role'] })),
+-                  { value: 'MANAGER', label: t('accessControl.roles.MANAGER') },
+-                  { value: 'WORKER', label: t('accessControl.roles.WORKER') },
++                  ...USER_ROLES.map((role) => ({
++                    value: role,
++                    label: getUserRoleLabel(t, role),
++                  })),
+-                      <td>{t(`accessControl.roles.${user.role}`)}</td>
++                      <td>{getUserRoleLabel(t, user.role)}</td>
+-                          {user.active ? t('accessControl.status.active') : t('accessControl.status.inactive')}
++                          {getUserActiveLabel(t, user.active)}
+--- a/frontend/web/farm_web/src/types/user.ts
++++ b/frontend/web/farm_web/src/types/user.ts
++export type UserRole = 'MANAGER' | 'WORKER'
++
+-  role: string
++  role: UserRole
+-  role: string
++  role: UserRole | ''
+-  role: string
++  role: UserRole | ''
+--- /dev/null
++++ b/frontend/web/farm_web/tests/.compiled-i18n-catalog/domainLabels.js
++
++const USER_ROLES = ['MANAGER', 'WORKER']
++const ANIMAL_STATUSES = ['ACTIVE', 'SOLD', 'DEAD', 'INACTIVE']
++const ANIMAL_ORIGINS = ['BORN', 'PURCHASED']
++
++function hasValue(options, value) {
++  return options.includes(value)
++}
++
++export { ANIMAL_ORIGINS, ANIMAL_STATUSES, USER_ROLES }
++
++export function getUserRoleLabel(t, role) {
++  return hasValue(USER_ROLES, role) ? t(`accessControl.roles.${role}`) : role
++}
++
++export function getUserActiveLabel(t, active) {
++  return active ? t('accessControl.status.active') : t('accessControl.status.inactive')
++}
++
++export function getAnimalStatusLabel(t, status) {
++  return hasValue(ANIMAL_STATUSES, status) ? t(`animals.statuses.${status}`) : status
++}
++
++export function getAnimalOriginLabel(t, origin) {
++  return hasValue(ANIMAL_ORIGINS, origin) ? t(`animals.origins.${origin}`) : origin
++}
+--- /dev/null
++++ b/frontend/web/farm_web/tests/.compiled-i18n-catalog/translations.js
++const enTranslations = {
++  layout: {
++    ariaLabel: 'Primary',
++    brandEyebrow: 'Farm App',
++    brandTitle: 'Management',
++    farmLabel: 'Farm',
++    selectFarm: 'Select a farm',
++    loadingFarms: 'Loading farms...',
++    languageLabel: 'Language',
++    currencyLabel: 'Display currency',
++    logout: 'Logout',
++    languageOptions: {
++      'pt-BR': 'Portuguese',
++      en: 'English',
++    },
++    currencyOptions: {
++      BRL: 'Brazilian real (BRL)',
++      USD: 'US dollar (USD)',
++    },
++    navigation: {
++      dashboard: 'Dashboard',
++      animals: 'Animals',
++      production: 'Production',
++      milkPrices: 'Milk Prices',
++      feeding: 'Feeding',
++      feedTypes: 'Feed Types',
++      users: 'Users',
++      analytics: 'Analytics',
++      settings: 'Settings',
++    },
++  },
++  measurementUnits: {
++    productionLabel: 'Production unit',
++    feedingLabel: 'Feeding unit',
++    options: {
++      LITER: 'Liters (L)',
++      MILLILITER: 'Milliliters (mL)',
++      KILOGRAM: 'Kilograms (kg)',
++      GRAM: 'Grams (g)',
++    },
++    short: {
++      LITER: 'L',
++      MILLILITER: 'mL',
++      KILOGRAM: 'kg',
++      GRAM: 'g',
++    },
++    errors: {
++      productionStep: 'When using milliliters, enter values in 10 mL increments.',
++      feedingStep: 'When using grams, enter values in 10 g increments.',
++    },
++  },
++  common: {
++    loading: 'Loading...',
++    saving: 'Saving...',
++    cancel: 'Cancel',
++    exportCsv: 'Export CSV',
++    exportingCsv: 'Exporting...',
++    exportError: 'Unable to export CSV.',
++    selectAnimal: 'Select an animal',
++    selectUser: 'Select a user',
++    placeholders: {
++      numericValue: '0',
++    },
++    pagination: {
++      previous: 'Previous',
++      next: 'Next',
++      pageSize: 'Rows per page',
++      page: 'Page {page} of {totalPages}',
++      summary: 'Showing {from}-{to} of {total}',
++    },
