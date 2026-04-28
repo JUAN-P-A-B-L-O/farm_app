@@ -38,10 +38,13 @@ export async function fetchDashboard(farmId, includeAcquisitionCost = true, curr
   return request
 }
 
-export async function exportDashboardCsv(farmId, includeAcquisitionCost = true, currency, filters) {
+export async function exportDashboardCsv(farmId, includeAcquisitionCost = true, currency, filters, productionUnit) {
   await downloadCsv(
     '/dashboard/export',
-    buildDashboardParams(farmId, includeAcquisitionCost, currency, filters),
+    {
+      ...buildDashboardParams(farmId, includeAcquisitionCost, currency, filters),
+      ...(productionUnit ? { productionUnit } : {}),
+    },
     'dashboard-summary.csv',
   )
 }
