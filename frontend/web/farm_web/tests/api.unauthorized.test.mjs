@@ -63,6 +63,8 @@ function compileServices() {
       )
       .replace('type UnauthorizedHandler = () => void\n\n', '')
       .replaceAll(': UnauthorizedHandler | null', '')
+      .replaceAll(': string', '')
+      .replaceAll(': boolean', '')
       .replaceAll(': unknown', ''),
   )
 }

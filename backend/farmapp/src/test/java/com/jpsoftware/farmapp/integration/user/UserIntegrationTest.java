@@ -182,6 +182,29 @@ class UserIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldRejectUnsafeAvatarUrlDuringUserCreation() throws Exception {
+        UserEntity manager = createAuthenticatedUser("MANAGER");
+        FarmEntity farm = createFarmOwnedBy(manager, "North Dairy");
+
+        mockMvc.perform(post("/users")
+                        .header("Authorization", bearerToken(manager))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Worker Unsafe Avatar",
+                                  "email": "worker.unsafe@farm.com",
+                                  "role": "WORKER",
+                                  "password": "farmapp@123",
+                                  "active": true,
+                                  "avatarUrl": "javascript:alert('xss')",
+                                  "farmIds": ["%s"]
+                                }
+                                """.formatted(farm.getId())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Informe uma URL http(s) válida ou uma imagem inline suportada para o avatar."));
+    }
+
+    @Test
     void shouldAllowManagerToUpdateUser() throws Exception {
         UserEntity manager = createAuthenticatedUser("MANAGER");
         FarmEntity farm = createFarmOwnedBy(manager, "North Dairy");

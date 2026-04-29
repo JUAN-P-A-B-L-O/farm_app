@@ -10,18 +10,28 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 import javax.crypto.SecretKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class JwtTokenService implements TokenService {
+
+    static final String DEFAULT_JWT_SECRET =
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenService.class);
 
     private final SecretKey secretKey;
     private final long expirationInMillis;
 
     public JwtTokenService(
             @Value("${app.security.jwt.secret}") String secret,
+            @Value("${app.security.jwt.allow-default-secret:false}") boolean allowDefaultSecret,
             @Value("${app.security.jwt.expiration}") long expirationInMillis) {
+        validateSecret(secret, allowDefaultSecret);
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationInMillis = expirationInMillis;
     }
@@ -41,7 +51,8 @@ public class JwtTokenService implements TokenService {
     @Override
     public boolean validateToken(String token) {
         try {
-            parseClaims(token);
+            Claims claims = parseClaims(token);
+            UUID.fromString(claims.getSubject());
             return true;
         } catch (RuntimeException exception) {
             return false;
@@ -59,5 +70,20 @@ public class JwtTokenService implements TokenService {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    private void validateSecret(String secret, boolean allowDefaultSecret) {
+        if (!StringUtils.hasText(secret)) {
+            throw new IllegalStateException("app.security.jwt.secret must not be blank");
+        }
+
+        if (DEFAULT_JWT_SECRET.equals(secret)) {
+            if (!allowDefaultSecret) {
+                throw new IllegalStateException(
+                        "Default JWT secret is not allowed outside local/test environments");
+            }
+
+            logger.warn("Using the default JWT secret. Restrict this to local/test environments only.");
+        }
     }
 }

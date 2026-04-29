@@ -3,6 +3,11 @@ import { USER_ROLES, getUserRoleLabel } from '../../i18n/domainLabels'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { Farm } from '../../types/farm'
 import type { UserFormData } from '../../types/user'
+import {
+  isAllowedAvatarFileType,
+  isValidAvatarUrl,
+  MAX_AVATAR_FILE_SIZE_BYTES,
+} from '../../utils/avatar'
 
 interface UserFormProps {
   initialValues: UserFormData
@@ -62,12 +67,25 @@ function UserForm({
       return
     }
 
+    if (!isAllowedAvatarFileType(file.type)) {
+      setValidationMessage(t('accessControl.errors.avatarFileTypeInvalid'))
+      event.target.value = ''
+      return
+    }
+
+    if (file.size > MAX_AVATAR_FILE_SIZE_BYTES) {
+      setValidationMessage(t('accessControl.errors.avatarFileTooLarge'))
+      event.target.value = ''
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = () => {
       setFormData((currentData) => ({
         ...currentData,
         avatarUrl: typeof reader.result === 'string' ? reader.result : currentData.avatarUrl,
       }))
+      setValidationMessage('')
     }
     reader.readAsDataURL(file)
   }
@@ -114,6 +132,11 @@ function UserForm({
 
     if (payload.farmIds.length === 0) {
       setValidationMessage(t('accessControl.errors.farmsRequired'))
+      return
+    }
+
+    if (payload.avatarUrl && !isValidAvatarUrl(payload.avatarUrl)) {
+      setValidationMessage(t('accessControl.errors.avatarInvalid'))
       return
     }
 
@@ -204,7 +227,11 @@ function UserForm({
 
         <label className="animal-form__field">
           <span>{t('accessControl.form.avatarUpload')}</span>
-          <input type="file" accept="image/*" onChange={handleAvatarFileChange} />
+          <input
+            type="file"
+            accept=".png,.jpg,.jpeg,.gif,.webp"
+            onChange={handleAvatarFileChange}
+          />
         </label>
 
         <label className="animal-form__field">
@@ -233,7 +260,7 @@ function UserForm({
         </label>
       </div>
 
-      {formData.avatarUrl && (
+      {formData.avatarUrl && isValidAvatarUrl(formData.avatarUrl) && (
         <div className="user-avatar-preview">
           <img
             src={formData.avatarUrl}

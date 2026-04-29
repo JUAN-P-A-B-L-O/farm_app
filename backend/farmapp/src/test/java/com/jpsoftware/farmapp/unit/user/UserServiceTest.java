@@ -186,6 +186,44 @@ class UserServiceTest {
     }
 
     @Test
+    void shouldFailWhenAvatarUrlUsesUnsafeScheme() {
+        CreateUserRequest request = new CreateUserRequest(
+                "Jane Doe",
+                "jane@farm.com",
+                "WORKER",
+                "farmapp@123",
+                true,
+                "javascript:alert('xss')",
+                List.of("farm-1"));
+
+        when(farmRepository.existsByIdAndOwnerId("farm-1", managerId)).thenReturn(true);
+        when(userRepository.findByEmail("jane@farm.com")).thenReturn(Optional.empty());
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> userService.create(request));
+
+        assertEquals("avatarUrl must be a valid http(s) URL or supported image data URL", exception.getMessage());
+    }
+
+    @Test
+    void shouldFailWhenAvatarUrlExceedsMaximumLength() {
+        CreateUserRequest request = new CreateUserRequest(
+                "Jane Doe",
+                "jane@farm.com",
+                "WORKER",
+                "farmapp@123",
+                true,
+                "https://example.com/" + "a".repeat(2_000_001),
+                List.of("farm-1"));
+
+        when(farmRepository.existsByIdAndOwnerId("farm-1", managerId)).thenReturn(true);
+        when(userRepository.findByEmail("jane@farm.com")).thenReturn(Optional.empty());
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> userService.create(request));
+
+        assertEquals("avatarUrl must not exceed 2000000 characters", exception.getMessage());
+    }
+
+    @Test
     void shouldCreateInactiveUserWithoutPassword() {
         CreateUserRequest request = new CreateUserRequest(
                 "Jane Doe",

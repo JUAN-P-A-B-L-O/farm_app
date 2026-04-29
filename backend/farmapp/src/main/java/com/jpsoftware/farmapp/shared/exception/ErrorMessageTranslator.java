@@ -38,6 +38,8 @@ public final class ErrorMessageTranslator {
             Map.entry("Authenticated user is required to register milk price", "É necessário estar autenticado para registrar o preço do leite."),
             Map.entry("currentPassword is incorrect", "A senha atual está incorreta."),
             Map.entry("newPassword must be different from currentPassword", "A nova senha deve ser diferente da senha atual."),
+            Map.entry("avatarUrl must be a valid http(s) URL or supported image data URL", "Informe uma URL http(s) válida ou uma imagem inline suportada para o avatar."),
+            Map.entry("avatarUrl must not exceed 2000000 characters", "O avatar excede o tamanho máximo permitido."),
             Map.entry("farmIds must reference farms owned by the authenticated manager", "Selecione apenas fazendas pertencentes ao gerente autenticado."),
             Map.entry("User with this email already exists", "Já existe um usuário com este e-mail."),
             Map.entry("password must not be blank when active is true", "A senha é obrigatória para usuários ativos."),
