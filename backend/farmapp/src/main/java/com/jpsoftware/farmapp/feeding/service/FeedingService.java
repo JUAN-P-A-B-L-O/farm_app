@@ -238,6 +238,9 @@ public class FeedingService {
                 ? feedingRepository.findByIdAndFarmIdAndStatus(validateId(id), farmId, FeedingEntity.STATUS_ACTIVE)
                 : feedingRepository.findById(validateId(id)))
                 .orElseThrow(() -> new ResourceNotFoundException("Feeding not found"));
+        if (!StringUtils.hasText(farmId)) {
+            validateEntityFarmAccess(feedingEntity.getFarmId(), "Feeding not found");
+        }
 
         return toEnrichedResponse(feedingEntity);
     }
@@ -252,11 +255,11 @@ public class FeedingService {
         ensureFeedingIsActive(feedingEntity, "Inactive feeding cannot be updated");
 
         if (StringUtils.hasText(request.getAnimalId())) {
-            validateAnimalExists(request.getAnimalId(), farmId);
+            validateAnimalExists(request.getAnimalId(), feedingEntity.getFarmId());
             feedingEntity.setAnimalId(request.getAnimalId());
         }
         if (StringUtils.hasText(request.getFeedTypeId())) {
-            validateFeedTypeExists(request.getFeedTypeId(), farmId);
+            validateFeedTypeExists(request.getFeedTypeId(), feedingEntity.getFarmId());
             feedingEntity.setFeedTypeId(request.getFeedTypeId());
         }
         if (request.getDate() != null) {
@@ -419,12 +422,19 @@ public class FeedingService {
             LocalDate date,
             String farmId) {
         String normalizedSearch = normalizeFilter(search);
+        Set<String> accessibleFarmIds = !StringUtils.hasText(farmId) && farmAccessService != null
+                ? farmAccessService.getAccessibleFarmIds().orElse(null)
+                : null;
         Specification<FeedingEntity> specification = Specification.where((root, query, criteriaBuilder) ->
                 criteriaBuilder.equal(root.get("status"), FeedingEntity.STATUS_ACTIVE));
 
         if (StringUtils.hasText(farmId)) {
             specification = specification.and((root, query, criteriaBuilder) ->
                     criteriaBuilder.equal(root.get("farmId"), farmId));
+        } else if (accessibleFarmIds != null) {
+            specification = accessibleFarmIds.isEmpty()
+                    ? specification.and((root, query, criteriaBuilder) -> criteriaBuilder.disjunction())
+                    : specification.and((root, query, criteriaBuilder) -> root.get("farmId").in(accessibleFarmIds));
         }
         if (StringUtils.hasText(animalId)) {
             specification = specification.and((root, query, criteriaBuilder) ->
@@ -464,10 +474,14 @@ public class FeedingService {
 
     private FeedingEntity getFeedingIncludingInactive(String id, String farmId) {
         validateAccessibleFarmIfPresent(farmId);
-        return (StringUtils.hasText(farmId)
+        FeedingEntity feedingEntity = (StringUtils.hasText(farmId)
                 ? feedingRepository.findAnyByIdAndFarmId(validateId(id), farmId)
                 : feedingRepository.findAnyById(validateId(id)))
                 .orElseThrow(() -> new ResourceNotFoundException("Feeding not found"));
+        if (!StringUtils.hasText(farmId)) {
+            validateEntityFarmAccess(feedingEntity.getFarmId(), "Feeding not found");
+        }
+        return feedingEntity;
     }
 
     private void ensureFeedingIsActive(FeedingEntity feedingEntity, String message) {
@@ -483,6 +497,9 @@ public class FeedingService {
         if (animal == null) {
             throw new ResourceNotFoundException("Animal not found");
         }
+        if (!StringUtils.hasText(farmId)) {
+            validateEntityFarmAccess(animal.getFarmId(), "Animal not found");
+        }
         if (!AnimalEntity.STATUS_ACTIVE.equals(animal.getStatus())) {
             throw new ValidationException("Animal must be ACTIVE for feeding operations");
         }
@@ -490,9 +507,14 @@ public class FeedingService {
     }
 
     private void validateFeedTypeExists(String feedTypeId, String farmId) {
-        if (!feedTypeRepository.existsById(feedTypeId)
-                || (StringUtils.hasText(farmId) && !feedTypeRepository.existsByIdAndFarmId(feedTypeId, farmId))) {
+        FeedTypeEntity feedType = StringUtils.hasText(farmId)
+                ? feedTypeRepository.findByIdAndFarmIdAndActiveTrue(feedTypeId, farmId).orElse(null)
+                : feedTypeRepository.findByIdAndActiveTrue(feedTypeId).orElse(null);
+        if (feedType == null) {
             throw new ResourceNotFoundException("Feed type not found");
+        }
+        if (!StringUtils.hasText(farmId)) {
+            validateEntityFarmAccess(feedType.getFarmId(), "Feed type not found");
         }
     }
 
@@ -576,6 +598,12 @@ public class FeedingService {
     private void validateAccessibleFarmIfPresent(String farmId) {
         if (farmAccessService != null) {
             farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        }
+    }
+
+    private void validateEntityFarmAccess(String entityFarmId, String notFoundMessage) {
+        if (farmAccessService != null) {
+            farmAccessService.validateEntityFarmAccess(entityFarmId, notFoundMessage);
         }
     }
 }

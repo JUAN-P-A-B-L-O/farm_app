@@ -269,22 +269,33 @@ public class AnimalService {
 
     private AnimalEntity findAnimal(String id, String farmId) {
         farmAccessService.validateAccessibleFarmIfPresent(farmId);
-        return (StringUtils.hasText(farmId)
+        AnimalEntity animal = (StringUtils.hasText(farmId)
                 ? animalRepository.findByIdAndFarmId(id, farmId)
                 : animalRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Animal not found"));
+        if (!StringUtils.hasText(farmId)) {
+            farmAccessService.validateEntityFarmAccess(animal.getFarmId(), "Animal not found");
+        }
+        return animal;
     }
 
     private Specification<AnimalEntity> buildAnimalSpecification(String farmId, String search, String status, String origin) {
         String normalizedSearch = normalizeFilter(search);
         String normalizedStatus = normalizeOptionalStatus(status);
         String normalizedOrigin = normalizeOptionalOrigin(origin);
+        Set<String> accessibleFarmIds = !StringUtils.hasText(farmId)
+                ? farmAccessService.getAccessibleFarmIds().orElse(null)
+                : null;
 
         Specification<AnimalEntity> specification = Specification.where(null);
 
         if (StringUtils.hasText(farmId)) {
             specification = specification.and((root, query, criteriaBuilder) ->
                     criteriaBuilder.equal(root.get("farmId"), farmId));
+        } else if (accessibleFarmIds != null) {
+            specification = accessibleFarmIds.isEmpty()
+                    ? specification.and((root, query, criteriaBuilder) -> criteriaBuilder.disjunction())
+                    : specification.and((root, query, criteriaBuilder) -> root.get("farmId").in(accessibleFarmIds));
         }
         if (normalizedStatus != null) {
             specification = specification.and((root, query, criteriaBuilder) ->

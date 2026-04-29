@@ -302,13 +302,7 @@ public class DashboardService {
         }
 
         for (String animalId : animalIds) {
-            if (!animalRepository.existsById(animalId)) {
-                throw new ResourceNotFoundException("Animal not found");
-            }
-
-            if (StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId)) {
-                throw new ResourceNotFoundException("Animal not found");
-            }
+            requireAccessibleAnimal(animalId, farmId);
         }
 
         if (StringUtils.hasText(status) && !SUPPORTED_ANIMAL_STATUSES.contains(status)) {
@@ -318,15 +312,20 @@ public class DashboardService {
 
     private List<AnimalEntity> filterAnimals(Collection<String> animalIds, String farmId, String status) {
         List<AnimalEntity> animals;
+        Set<String> accessibleFarmIds = !StringUtils.hasText(farmId)
+                ? farmAccessService.getAccessibleFarmIds().orElse(null)
+                : null;
         if (!animalIds.isEmpty()) {
             LinkedHashSet<String> requestedAnimalIds = new LinkedHashSet<>(animalIds);
             animals = animalRepository.findAllById(requestedAnimalIds).stream()
-                    .filter(animal -> !StringUtils.hasText(farmId) || Objects.equals(animal.getFarmId(), farmId))
+                    .filter(animal -> matchesFarmScope(animal.getFarmId(), farmId, accessibleFarmIds))
                     .toList();
         } else if (StringUtils.hasText(farmId)) {
             animals = animalRepository.findByFarmId(farmId);
         } else {
-            animals = animalRepository.findAll();
+            animals = animalRepository.findAll().stream()
+                    .filter(animal -> matchesFarmScope(animal.getFarmId(), null, accessibleFarmIds))
+                    .toList();
         }
 
         return animals.stream()
@@ -424,6 +423,26 @@ public class DashboardService {
 
     private boolean matchesStatus(String animalStatus, String requestedStatus) {
         return !StringUtils.hasText(requestedStatus) || Objects.equals(animalStatus, requestedStatus);
+    }
+
+    private AnimalEntity requireAccessibleAnimal(String animalId, String farmId) {
+        AnimalEntity animal = StringUtils.hasText(farmId)
+                ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)
+                : animalRepository.findById(animalId).orElse(null);
+        if (animal == null) {
+            throw new ResourceNotFoundException("Animal not found");
+        }
+        if (!StringUtils.hasText(farmId)) {
+            farmAccessService.validateEntityFarmAccess(animal.getFarmId(), "Animal not found");
+        }
+        return animal;
+    }
+
+    private boolean matchesFarmScope(String entityFarmId, String farmId, Set<String> accessibleFarmIds) {
+        if (StringUtils.hasText(farmId)) {
+            return Objects.equals(entityFarmId, farmId);
+        }
+        return accessibleFarmIds == null || accessibleFarmIds.contains(entityFarmId);
     }
 
     private List<String> toAnimalFilterList(String animalId) {
