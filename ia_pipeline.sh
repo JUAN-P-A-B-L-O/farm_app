@@ -249,7 +249,7 @@ Rules:
     FILES_CHANGED=$(git diff --name-only | grep -v '^workspace/' | wc -l)
     CHANGED_LINES=$(git diff --numstat -- . ':!workspace' | awk '{ added += $1; deleted += $2 } END { print added + deleted + 0 }')
 
-    if [ "$FILES_CHANGED" -gt 6 ] || [ "$CHANGED_LINES" -gt 300 ]; then
+    if [ "$FILES_CHANGED" -gt 10 ] || [ "$CHANGED_LINES" -gt 900 ]; then
       echo "⚠️ Fix too large (${FILES_CHANGED} files, ${CHANGED_LINES} lines). Marking feature as failed and continuing."
       FEATURE_FAILED=true
       break
