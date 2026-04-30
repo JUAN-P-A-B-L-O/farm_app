@@ -26,8 +26,12 @@ function shouldHandleUnauthorized(error: unknown) {
   return hasStoredToken && !isLoginRequest && error.response?.status === 401
 }
 
+// const api = axios.create({
+//   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+// });
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+  baseURL: '/api',
 });
 
 console.log('API URL:', import.meta.env.VITE_API_URL);
