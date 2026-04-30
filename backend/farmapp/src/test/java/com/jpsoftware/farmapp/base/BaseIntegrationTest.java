@@ -3,6 +3,8 @@ package com.jpsoftware.farmapp.base;
 import com.jpsoftware.farmapp.auth.service.TokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.animalbatch.repository.AnimalBatchMemberRepository;
+import com.jpsoftware.farmapp.animalbatch.repository.AnimalBatchRepository;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.entity.FarmEntity;
@@ -33,6 +35,12 @@ public abstract class BaseIntegrationTest {
     protected AnimalRepository animalRepository;
 
     @Autowired
+    protected AnimalBatchRepository animalBatchRepository;
+
+    @Autowired
+    protected AnimalBatchMemberRepository animalBatchMemberRepository;
+
+    @Autowired
     protected ProductionRepository productionRepository;
 
     @Autowired
@@ -60,6 +68,8 @@ public abstract class BaseIntegrationTest {
     void resetDatabase() {
         productionRepository.deleteAll();
         feedingRepository.deleteAll();
+        animalBatchMemberRepository.deleteAll();
+        animalBatchRepository.deleteAll();
         animalRepository.deleteAll();
         feedTypeRepository.deleteAll();
         userFarmAssignmentRepository.deleteAll();

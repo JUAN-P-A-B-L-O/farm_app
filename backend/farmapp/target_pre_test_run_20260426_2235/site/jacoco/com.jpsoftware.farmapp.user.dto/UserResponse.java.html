@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.user.dto</a> &gt; <span class="el_source">UserResponse.java</span></div><h1>UserResponse.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.user.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
+import java.util.UUID;
+
+@Schema(description = &quot;User data returned by the API.&quot;)
+public class UserResponse {
+
+    @Schema(description = &quot;User identifier.&quot;, example = &quot;550e8400-e29b-41d4-a716-446655440000&quot;)
+    private UUID id;
+
+    @Schema(description = &quot;User full name.&quot;, example = &quot;Maria Silva&quot;)
+    private String name;
+
+    @Schema(description = &quot;User email address.&quot;, example = &quot;maria.silva@farmapp.com&quot;)
+    private String email;
+
+    @Schema(description = &quot;User role in the system.&quot;, example = &quot;MANAGER&quot;)
+    private String role;
+
+    @Schema(description = &quot;Whether the user can authenticate.&quot;, example = &quot;true&quot;)
+    private Boolean active;
+
+    @Schema(
+            description = &quot;User avatar image as a URL or data URL.&quot;,
+            example = &quot;https://example.com/avatar.png&quot;)
+    private String avatarUrl;
+
+    @Schema(description = &quot;Farm identifiers assigned to the user.&quot;, example = &quot;[\&quot;farm-001\&quot;]&quot;)
+    private List&lt;String&gt; farmIds;
+
+<span class="nc" id="L33">    public UserResponse() {</span>
+<span class="nc" id="L34">    }</span>
+
+    public UserResponse(UUID id, String name, String email, String role) {
+<span class="nc" id="L37">        this(id, name, email, role, null, null, null);</span>
+<span class="nc" id="L38">    }</span>
+
+<span class="fc" id="L40">    public UserResponse(UUID id, String name, String email, String role, Boolean active, String avatarUrl, List&lt;String&gt; farmIds) {</span>
+<span class="fc" id="L41">        this.id = id;</span>
+<span class="fc" id="L42">        this.name = name;</span>
+<span class="fc" id="L43">        this.email = email;</span>
+<span class="fc" id="L44">        this.role = role;</span>
+<span class="fc" id="L45">        this.active = active;</span>
+<span class="fc" id="L46">        this.avatarUrl = avatarUrl;</span>
+<span class="fc" id="L47">        this.farmIds = farmIds;</span>
+<span class="fc" id="L48">    }</span>
+
+    public UUID getId() {
+<span class="fc" id="L51">        return id;</span>
+    }
+
+    public void setId(UUID id) {
+<span class="nc" id="L55">        this.id = id;</span>
+<span class="nc" id="L56">    }</span>
+
+    public String getName() {
+<span class="fc" id="L59">        return name;</span>
+    }
+
+    public void setName(String name) {
+<span class="nc" id="L63">        this.name = name;</span>
+<span class="nc" id="L64">    }</span>
+
+    public String getEmail() {
+<span class="fc" id="L67">        return email;</span>
+    }
+
+    public void setEmail(String email) {
+<span class="nc" id="L71">        this.email = email;</span>
+<span class="nc" id="L72">    }</span>
+
+    public String getRole() {
+<span class="fc" id="L75">        return role;</span>
+    }
+
+    public void setRole(String role) {
+<span class="nc" id="L79">        this.role = role;</span>
+<span class="nc" id="L80">    }</span>
+
+    public Boolean getActive() {
+<span class="fc" id="L83">        return active;</span>
+    }
+
+    public void setActive(Boolean active) {
+<span class="nc" id="L87">        this.active = active;</span>
+<span class="nc" id="L88">    }</span>
+
+    public String getAvatarUrl() {
+<span class="fc" id="L91">        return avatarUrl;</span>
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+<span class="nc" id="L95">        this.avatarUrl = avatarUrl;</span>
+<span class="nc" id="L96">    }</span>
+
+    public List&lt;String&gt; getFarmIds() {
+<span class="fc" id="L99">        return farmIds;</span>
+    }
+
+    public void setFarmIds(List&lt;String&gt; farmIds) {
+<span class="nc" id="L103">        this.farmIds = farmIds;</span>
+<span class="nc" id="L104">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

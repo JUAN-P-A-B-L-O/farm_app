@@ -1,9 +1,8 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { USER_ROLES, getUserRoleLabel } from '../../i18n/domainLabels'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { Farm } from '../../types/farm'
 import type { UserFormData } from '../../types/user'
-
-const roleOptions = ['MANAGER', 'WORKER']
 
 interface UserFormProps {
   initialValues: UserFormData
@@ -83,10 +82,10 @@ function UserForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const payload = {
+    const payload: UserFormData = {
       name: formData.name.trim(),
       email: formData.email.trim(),
-      role: formData.role.trim(),
+      role: formData.role,
       password: formData.password.trim(),
       active: formData.active,
       avatarUrl: formData.avatarUrl.trim(),
@@ -132,7 +131,7 @@ function UserForm({
             type="text"
             value={formData.name}
             onChange={handleChange}
-            placeholder="Maria Silva"
+            placeholder={t('accessControl.form.placeholders.name')}
             required
           />
         </label>
@@ -144,7 +143,7 @@ function UserForm({
             type="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="maria.silva@example.com"
+            placeholder={t('accessControl.form.placeholders.email')}
             required
           />
         </label>
@@ -153,9 +152,9 @@ function UserForm({
           <span>{t('accessControl.form.role')}</span>
           <select name="role" value={formData.role} onChange={handleChange} required>
             <option value="">{t('accessControl.form.selectRole')}</option>
-            {roleOptions.map((role) => (
+            {USER_ROLES.map((role) => (
               <option key={role} value={role}>
-                {role}
+                {getUserRoleLabel(t, role)}
               </option>
             ))}
           </select>
@@ -185,7 +184,7 @@ function UserForm({
               type="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="farmapp@123"
+              placeholder={t('accessControl.form.placeholders.password')}
               required={formData.active}
             />
           </label>
@@ -198,7 +197,7 @@ function UserForm({
             type="url"
             value={formData.avatarUrl}
             onChange={handleChange}
-            placeholder="https://example.com/avatar.png"
+            placeholder={t('accessControl.form.placeholders.avatarUrl')}
           />
           <small>{t('accessControl.form.avatarHint')}</small>
         </label>

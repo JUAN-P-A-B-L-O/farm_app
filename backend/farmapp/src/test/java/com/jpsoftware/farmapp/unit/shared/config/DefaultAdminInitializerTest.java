@@ -47,7 +47,7 @@ class DefaultAdminInitializerTest {
         verify(userRepository).save(userCaptor.capture());
 
         UserEntity savedUser = userCaptor.getValue();
-        assertEquals("Default Admin", savedUser.getName());
+        assertEquals("Administrador padrão", savedUser.getName());
         assertEquals("admin@farmapp.com", savedUser.getEmail());
         assertEquals("MANAGER", savedUser.getRole());
         assertNotEquals("admin123", savedUser.getPassword());
@@ -56,7 +56,7 @@ class DefaultAdminInitializerTest {
 
         ArgumentCaptor<FarmEntity> farmCaptor = ArgumentCaptor.forClass(FarmEntity.class);
         verify(farmRepository).save(farmCaptor.capture());
-        assertEquals("Default Farm", farmCaptor.getValue().getName());
+        assertEquals("Fazenda padrão", farmCaptor.getValue().getName());
         assertEquals(savedUser.getId(), farmCaptor.getValue().getOwnerId());
     }
 

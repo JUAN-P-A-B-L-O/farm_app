@@ -1,94 +1,157 @@
-interface FilterOption {
-  value: string
+import {
+  CheckboxFilterField,
+  DateFilterField,
+  MultiSelectFilterField,
+  SearchFilterField,
+  SelectFilterField,
+  type FilterOption,
+} from './FilterFields'
+
+interface SearchFilterConfig {
+  id: string
   label: string
+  value: string
+  placeholder: string
+  disabled?: boolean
+  helpText?: string
+  onChange: (value: string) => void
 }
 
 interface BaseFilterConfig {
   id: string
   label: string
-  value: string
-  onChange: (value: string) => void
+  disabled?: boolean
+  helpText?: string
 }
 
 interface SelectFilterConfig extends BaseFilterConfig {
+  type: 'select'
+  value: string
   options: FilterOption[]
+  onChange: (value: string) => void
 }
 
 interface DateFilterConfig extends BaseFilterConfig {
+  type: 'date'
+  value: string
+  min?: string
   max?: string
+  onChange: (value: string) => void
 }
 
+interface MultiSelectFilterConfig extends BaseFilterConfig {
+  type: 'multiselect'
+  value: string[]
+  options: FilterOption[]
+  size?: number
+  onChange: (value: string[]) => void
+}
+
+interface CheckboxFilterConfig extends BaseFilterConfig {
+  type: 'checkbox'
+  checked: boolean
+  onChange: (checked: boolean) => void
+}
+
+type ListingFilterConfig =
+  | SelectFilterConfig
+  | DateFilterConfig
+  | MultiSelectFilterConfig
+  | CheckboxFilterConfig
+
 interface ListingFiltersBarProps {
-  searchId: string
-  searchLabel: string
-  searchPlaceholder: string
-  searchValue: string
-  onSearchChange: (value: string) => void
-  onApply: () => void
+  search?: SearchFilterConfig
   onClear: () => void
-  applyLabel: string
   clearLabel: string
-  filters?: Array<SelectFilterConfig | DateFilterConfig>
+  filters?: ListingFilterConfig[]
 }
 
 function ListingFiltersBar({
-  searchId,
-  searchLabel,
-  searchPlaceholder,
-  searchValue,
-  onSearchChange,
-  onApply,
+  search,
   onClear,
-  applyLabel,
   clearLabel,
   filters = [],
 }: ListingFiltersBarProps) {
   return (
     <div className="listing-filters">
-      <div className="listing-filters__controls">
-        <label htmlFor={searchId}>
-          {searchLabel}
-          <input
-            id={searchId}
-            type="search"
-            value={searchValue}
-            placeholder={searchPlaceholder}
-            onChange={(event) => onSearchChange(event.target.value)}
-          />
-        </label>
+      {(search || filters.length > 0) && (
+        <div className="listing-filters__controls">
+          {search ? (
+            <SearchFilterField
+              id={search.id}
+              label={search.label}
+              value={search.value}
+              placeholder={search.placeholder}
+              disabled={search.disabled}
+              helpText={search.helpText}
+              onChange={search.onChange}
+            />
+          ) : null}
 
-        {filters.map((filter) => (
-          <label key={filter.id} htmlFor={filter.id}>
-            {filter.label}
-            {'options' in filter ? (
-              <select
+          {filters.map((filter) => {
+            if (filter.type === 'select') {
+              return (
+                <SelectFilterField
+                  key={filter.id}
+                  id={filter.id}
+                  label={filter.label}
+                  value={filter.value}
+                  options={filter.options}
+                  disabled={filter.disabled}
+                  helpText={filter.helpText}
+                  onChange={filter.onChange}
+                />
+              )
+            }
+
+            if (filter.type === 'date') {
+              return (
+                <DateFilterField
+                  key={filter.id}
+                  id={filter.id}
+                  label={filter.label}
+                  value={filter.value}
+                  min={filter.min}
+                  max={filter.max}
+                  disabled={filter.disabled}
+                  helpText={filter.helpText}
+                  onChange={filter.onChange}
+                />
+              )
+            }
+
+            if (filter.type === 'multiselect') {
+              return (
+                <MultiSelectFilterField
+                  key={filter.id}
+                  id={filter.id}
+                  label={filter.label}
+                  value={filter.value}
+                  options={filter.options}
+                  size={filter.size}
+                  disabled={filter.disabled}
+                  helpText={filter.helpText}
+                  onChange={filter.onChange}
+                />
+              )
+            }
+
+            return (
+              <CheckboxFilterField
+                key={filter.id}
                 id={filter.id}
-                value={filter.value}
-                onChange={(event) => filter.onChange(event.target.value)}
-              >
-                {filter.options.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                id={filter.id}
-                type="date"
-                value={filter.value}
-                max={filter.max}
-                onChange={(event) => filter.onChange(event.target.value)}
+                label={filter.label}
+                checked={filter.checked}
+                disabled={filter.disabled}
+                helpText={filter.helpText}
+                onChange={filter.onChange}
               />
-            )}
-          </label>
-        ))}
-      </div>
+            )
+          })}
+        </div>
+      )}
 
       <div className="listing-filters__actions">
-        <button type="button" className="animals-table__action-button" onClick={onApply}>
-          {applyLabel}
-        </button>
         <button
           type="button"
           className="animals-table__action-button animals-table__action-button--secondary"

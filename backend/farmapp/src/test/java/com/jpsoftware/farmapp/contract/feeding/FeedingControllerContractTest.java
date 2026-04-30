@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.controller.FeedingController;
+import com.jpsoftware.farmapp.feeding.dto.CreateBatchFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
 import com.jpsoftware.farmapp.feeding.dto.UpdateFeedingRequest;
@@ -74,6 +75,36 @@ class FeedingControllerContractTest {
                 .andExpect(jsonPath("$.date[1]").value(3))
                 .andExpect(jsonPath("$.date[2]").value(24))
                 .andExpect(jsonPath("$.quantity").value(8.5));
+    }
+
+    @Test
+    void shouldCreateBatchFeedingSuccessfully() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": "batch-1",
+                  "feedTypeId": "feed-type-1",
+                  "date": "2026-03-24",
+                  "quantity": 8.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        feedingService.batchCreateResponse = List.of(
+                buildResponse(),
+                new FeedingResponse("feeding-2", "animal-2", "feed-type-1", LocalDate.of(2026, 3, 24), 8.5));
+
+        mockMvc.perform(post("/feedings/batch")
+                        .param("farmId", "farm-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].animalId").value("animal-1"))
+                .andExpect(jsonPath("$[1].animalId").value("animal-2"))
+                .andExpect(jsonPath("$[0].feedTypeId").value("feed-type-1"))
+                .andExpect(jsonPath("$[1].feedTypeId").value("feed-type-1"));
+
+        org.junit.jupiter.api.Assertions.assertEquals("farm-1", feedingService.lastBatchCreateFarmId);
     }
 
     @Test
@@ -154,6 +185,17 @@ class FeedingControllerContractTest {
     }
 
     @Test
+    void shouldExportFeedingsWithMeasurementUnit() throws Exception {
+        feedingService.exportWithUnitResponse = "id,quantity,quantityUnit\nfeeding-1,8500.0,g\n";
+
+        mockMvc.perform(get("/feedings/export")
+                        .param("animalId", "animal-1")
+                        .param("measurementUnit", "GRAM"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("id,quantity,quantityUnit\nfeeding-1,8500.0,g\n"));
+    }
+
+    @Test
     void shouldReturnEmptyWhenNoMatch() throws Exception {
         feedingService.findAllResponse = List.of();
 
@@ -182,7 +224,7 @@ class FeedingControllerContractTest {
         mockMvc.perform(get("/feedings/missing-id"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Feeding not found"))
+                .andExpect(jsonPath("$.error").value("Alimentação não encontrada."))
                 .andExpect(jsonPath("$.path").value("/feedings/missing-id"));
     }
 
@@ -203,8 +245,51 @@ class FeedingControllerContractTest {
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("userId must not be blank"))
+                .andExpect(jsonPath("$.error").value("Selecione um usuário."))
                 .andExpect(jsonPath("$.path").value("/feedings"));
+    }
+
+    @Test
+    void shouldFailWhenBatchIdIsMissingOnBatchCreate() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": " ",
+                  "feedTypeId": "feed-type-1",
+                  "date": "2026-03-24",
+                  "quantity": 8.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        mockMvc.perform(post("/feedings/batch")
+                        .param("farmId", "farm-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Selecione um lote."))
+                .andExpect(jsonPath("$.path").value("/feedings/batch"));
+    }
+
+    @Test
+    void shouldFailWhenFarmIdIsMissingOnBatchCreate() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": "batch-1",
+                  "feedTypeId": "feed-type-1",
+                  "date": "2026-03-24",
+                  "quantity": 8.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        mockMvc.perform(post("/feedings/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("O parâmetro 'farmId' é obrigatório."))
+                .andExpect(jsonPath("$.path").value("/feedings/batch"));
     }
 
     private FeedingResponse buildResponse() {
@@ -219,10 +304,13 @@ class FeedingControllerContractTest {
     private static class TestFeedingService extends FeedingService {
 
         private FeedingResponse createResponse;
+        private List<FeedingResponse> batchCreateResponse = List.of();
+        private String lastBatchCreateFarmId;
         private List<FeedingResponse> findAllResponse = List.of();
         private PaginatedResponse<FeedingResponse> paginatedResponse;
         private FeedingResponse findByIdResponse;
         private String exportResponse = "";
+        private String exportWithUnitResponse = "";
         private RuntimeException findByIdException;
         private FeedingResponse updateResponse;
         private RuntimeException updateException;
@@ -244,17 +332,41 @@ class FeedingControllerContractTest {
         }
 
         @Override
-        public List<FeedingResponse> findAll(String animalId, LocalDate date, String farmId) {
+        public List<FeedingResponse> createBatch(CreateBatchFeedingRequest request, String farmId) {
+            lastBatchCreateFarmId = farmId;
+            return batchCreateResponse;
+        }
+
+        @Override
+        public List<FeedingResponse> findAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
             return findAllResponse;
         }
 
         @Override
-        public String exportAll(String animalId, LocalDate date, String farmId) {
+        public String exportAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
             return exportResponse;
         }
 
         @Override
-        public PaginatedResponse<FeedingResponse> findAllPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
+        public String exportAll(
+                String search,
+                String animalId,
+                String feedTypeId,
+                LocalDate date,
+                String farmId,
+                String measurementUnitParam) {
+            return exportWithUnitResponse;
+        }
+
+        @Override
+        public PaginatedResponse<FeedingResponse> findAllPaginated(
+                String search,
+                String animalId,
+                String feedTypeId,
+                LocalDate date,
+                String farmId,
+                int page,
+                int size) {
             return paginatedResponse;
         }
 
@@ -409,7 +521,7 @@ class FeedingControllerContractTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.error").value("Inactive feeding cannot be updated"))
+                .andExpect(jsonPath("$.error").value("Não é possível atualizar uma alimentação inativa."))
                 .andExpect(jsonPath("$.path").value("/feedings/feeding-1"));
     }
 

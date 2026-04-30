@@ -1,6 +1,7 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
 import type { CurrencyCode } from '../context/CurrencyContext'
+import type { FeedingUnit } from '../utils/measurementUnits'
 import type { FeedType, FeedTypeFormData, FeedTypeListFilters } from '../types/feedType'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 import { normalizeToTwoDecimals } from '../utils/decimal'
@@ -69,6 +70,14 @@ export async function exportFeedTypesCsv(
   farmId?: string,
   currency?: CurrencyCode,
   filters?: FeedTypeListFilters,
+  measurementUnit?: FeedingUnit,
 ): Promise<void> {
-  await downloadCsv('/feed-types/export', buildFeedTypeListParams(farmId, filters, currency), 'feed-types.csv')
+  await downloadCsv(
+    '/feed-types/export',
+    {
+      ...buildFeedTypeListParams(farmId, filters, currency),
+      ...(measurementUnit ? { measurementUnit } : {}),
+    },
+    'feed-types.csv',
+  )
 }

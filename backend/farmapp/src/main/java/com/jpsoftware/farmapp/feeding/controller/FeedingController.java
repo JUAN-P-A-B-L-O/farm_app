@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.feeding.controller;
 
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
+import com.jpsoftware.farmapp.feeding.dto.CreateBatchFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
 import com.jpsoftware.farmapp.feeding.dto.UpdateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,6 +57,22 @@ public class FeedingController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PostMapping("/batch")
+    @Operation(summary = "Create feeding batch", description = "Registers feeding events for all animals in a batch.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Feeding batch created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Related resource not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<List<FeedingResponse>> createBatch(
+            @Valid @RequestBody CreateBatchFeedingRequest request,
+            @RequestParam String farmId) {
+        List<FeedingResponse> response = feedingService.createBatch(request, farmId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
     @GetMapping
     @Operation(summary = "List feedings", description = "Returns feeding records, optionally filtered by animal or date.")
     @ApiResponses({
@@ -85,8 +103,13 @@ public class FeedingController {
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String feedTypeId,
             @RequestParam(required = false) LocalDate date,
-            @RequestParam(required = false) String farmId) {
-        return CsvResponseFactory.buildDownload("feedings.csv", feedingService.exportAll(search, animalId, feedTypeId, date, farmId));
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String measurementUnit) {
+        return CsvResponseFactory.buildDownload(
+                "feedings.csv",
+                StringUtils.hasText(measurementUnit)
+                        ? feedingService.exportAll(search, animalId, feedTypeId, date, farmId, measurementUnit)
+                        : feedingService.exportAll(search, animalId, feedTypeId, date, farmId));
     }
 
     @GetMapping("/{id}")

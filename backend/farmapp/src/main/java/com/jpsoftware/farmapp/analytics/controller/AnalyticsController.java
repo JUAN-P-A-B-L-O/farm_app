@@ -52,10 +52,13 @@ public class AnalyticsController {
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String farmId,
             @RequestParam(required = false) String currency,
-            @RequestParam(required = false, defaultValue = "day") String groupBy) {
+            @RequestParam(required = false, defaultValue = "day") String groupBy,
+            @RequestParam(required = false) String productionUnit) {
         return CsvResponseFactory.buildDownload(
                 "analytics-production.csv",
-                analyticsService.exportProductionSeries(startDate, endDate, animalId, groupBy, farmId));
+                StringUtils.hasText(productionUnit)
+                        ? analyticsService.exportProductionSeries(startDate, endDate, animalId, groupBy, farmId, productionUnit)
+                        : analyticsService.exportProductionSeries(startDate, endDate, animalId, groupBy, farmId));
     }
 
     @GetMapping("/feeding")
@@ -131,10 +134,21 @@ public class AnalyticsController {
             @RequestParam(required = false) String farmId,
             @RequestParam(required = false) String currency,
             @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
-            @RequestParam(required = false, defaultValue = "day") String groupBy) {
+            @RequestParam(required = false, defaultValue = "day") String groupBy,
+            @RequestParam(required = false) String productionUnit) {
         return CsvResponseFactory.buildDownload(
                 "analytics-profit.csv",
-                StringUtils.hasText(currency)
+                StringUtils.hasText(productionUnit)
+                        ? analyticsService.exportProfitSeries(
+                                startDate,
+                                endDate,
+                                animalId,
+                                groupBy,
+                                farmId,
+                                includeAcquisitionCost,
+                                currency,
+                                productionUnit)
+                        : StringUtils.hasText(currency)
                         ? analyticsService.exportProfitSeries(
                                 startDate,
                                 endDate,
@@ -173,9 +187,12 @@ public class AnalyticsController {
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) String farmId,
-            @RequestParam(required = false) String currency) {
+            @RequestParam(required = false) String currency,
+            @RequestParam(required = false) String productionUnit) {
         return CsvResponseFactory.buildDownload(
                 "analytics-production-by-animal.csv",
-                analyticsService.exportProductionByAnimal(startDate, endDate, animalId, farmId));
+                StringUtils.hasText(productionUnit)
+                        ? analyticsService.exportProductionByAnimal(startDate, endDate, animalId, farmId, productionUnit)
+                        : analyticsService.exportProductionByAnimal(startDate, endDate, animalId, farmId));
     }
 }

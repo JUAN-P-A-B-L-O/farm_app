@@ -1,8 +1,10 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
 import { normalizeToTwoDecimals } from '../utils/decimal'
+import type { FeedingUnit } from '../utils/measurementUnits'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 import type {
+  CreateBatchFeedingPayload,
   CreateFeedingPayload,
   Feeding,
   FeedingFormData,
@@ -70,6 +72,22 @@ export async function createFeeding(data: FeedingFormData, farmId?: string): Pro
   return response.data
 }
 
+export async function createBatchFeeding(data: FeedingFormData, farmId?: string): Promise<Feeding[]> {
+  const payload: CreateBatchFeedingPayload = {
+    batchId: data.batchId,
+    feedTypeId: data.feedTypeId,
+    quantity: normalizeToTwoDecimals(data.quantity),
+    userId: data.userId,
+    ...(data.date ? { date: data.date } : {}),
+  }
+
+  const response = await api.post<Feeding[]>('/feedings/batch', payload, {
+    params: buildFeedingListParams(farmId),
+  })
+
+  return response.data
+}
+
 export async function getFeedingById(id: string, farmId?: string): Promise<Feeding> {
   const response = await api.get<Feeding>(`/feedings/${id}`, {
     params: buildFeedingListParams(farmId),
@@ -99,6 +117,17 @@ export async function deleteFeeding(id: string, farmId?: string): Promise<void> 
   })
 }
 
-export async function exportFeedingsCsv(farmId?: string, filters?: FeedingListFilters): Promise<void> {
-  await downloadCsv('/feedings/export', buildFeedingListParams(farmId, filters), 'feedings.csv')
+export async function exportFeedingsCsv(
+  farmId?: string,
+  filters?: FeedingListFilters,
+  measurementUnit?: FeedingUnit,
+): Promise<void> {
+  await downloadCsv(
+    '/feedings/export',
+    {
+      ...buildFeedingListParams(farmId, filters),
+      ...(measurementUnit ? { measurementUnit } : {}),
+    },
+    'feedings.csv',
+  )
 }

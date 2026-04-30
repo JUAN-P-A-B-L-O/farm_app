@@ -1,14 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
 import FeedingForm from '../../components/feeding/FeedingForm'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
+import { getAllAnimalBatches } from '../../services/animalBatchService'
 import {
+  createBatchFeeding,
   createFeeding,
   deleteFeeding,
   exportFeedingsCsv,
@@ -18,20 +22,29 @@ import {
   updateFeeding,
 } from '../../services/feedingService'
 import type { Animal } from '../../types/animal'
+import type { AnimalBatch } from '../../types/animalBatch'
 import type {
   Feeding,
   FeedingAnimalOption,
   FeedingApiErrorResponse,
+  FeedingBatchOption,
   FeedingFeedTypeOption,
   FeedingFormData,
   FeedingListFilters,
 } from '../../types/feeding'
 import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { isManager } from '../../utils/authorization'
+import {
+  appendUnitToLabel,
+  formatMeasurementValue,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import '../../App.css'
 
 const emptyFeedingForm: FeedingFormData = {
+  operationMode: 'INDIVIDUAL',
   animalId: '',
+  batchId: '',
   feedTypeId: '',
   date: '',
   quantity: 0,
@@ -44,6 +57,8 @@ const defaultFilters: FeedingListFilters = {
   feedTypeId: '',
   date: '',
 }
+
+const debouncedFeedingFilterKeys: Array<keyof FeedingListFilters> = ['search']
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<FeedingApiErrorResponse>(error)) {
@@ -75,10 +90,15 @@ function mapAnimalsToOptions(animals: Animal[]): FeedingAnimalOption[] {
     }))
 }
 
+function mapBatchesToOptions(batches: AnimalBatch[]): FeedingBatchOption[] {
+  return batches
+}
+
 function FeedingPage() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const { feedingUnit } = useMeasurementUnits()
   const canSelectCreateDate = isManager(user)
   const canDeleteResources = isManager(user)
   const [feedings, setFeedings] = useState<Feeding[]>([])
@@ -86,6 +106,7 @@ function FeedingPage() {
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [animals, setAnimals] = useState<FeedingAnimalOption[]>([])
+  const [batches, setBatches] = useState<FeedingBatchOption[]>([])
   const [feedTypes, setFeedTypes] = useState<FeedingFeedTypeOption[]>([])
   const [formInitialValues, setFormInitialValues] = useState<FeedingFormData>(emptyFeedingForm)
   const [isLoading, setIsLoading] = useState(true)
@@ -96,8 +117,14 @@ function FeedingPage() {
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingFeedingId, setEditingFeedingId] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
-  const [filters, setFilters] = useState<FeedingListFilters>(defaultFilters)
-  const [appliedFilters, setAppliedFilters] = useState<FeedingListFilters>(defaultFilters)
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
+    debounceKeys: debouncedFeedingFilterKeys,
+    onAppliedChange: (nextFilters) => {
+      setPage(0)
+      void loadFeedings(nextFilters, 0, pageSize)
+    },
+  })
 
   async function loadFeedings(
     nextFilters: FeedingListFilters = appliedFilters,
@@ -138,6 +165,7 @@ function FeedingPage() {
   async function loadFormOptions() {
     if (!selectedFarmId) {
       setAnimals([])
+      setBatches([])
       setFeedTypes([])
       setFormErrorMessage('')
       setIsFormOptionsLoading(false)
@@ -148,12 +176,14 @@ function FeedingPage() {
     setFormErrorMessage('')
 
     try {
-      const [animalsData, feedTypesData] = await Promise.all([
+      const [animalsData, batchesData, feedTypesData] = await Promise.all([
         getAllAnimals(selectedFarmId),
+        getAllAnimalBatches(selectedFarmId),
         getAllFeedTypes(selectedFarmId),
       ])
 
       setAnimals(mapAnimalsToOptions(animalsData))
+      setBatches(mapBatchesToOptions(batchesData))
       setFeedTypes(feedTypesData)
     } catch (error) {
       setFormErrorMessage(getErrorMessage(error, t('feeding.errors.loadOptions'), t))
@@ -163,10 +193,18 @@ function FeedingPage() {
   }
 
   useEffect(() => {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    void Promise.all([loadFeedings(defaultFilters), loadFormOptions()])
+    void loadFormOptions()
   }, [selectedFarmId])
+
+  useEffect(() => {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
+      return
+    }
+
+    previousSelectedFarmIdRef.current = selectedFarmId
+    setPage(0)
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
 
   function handlePageChange(nextPage: number) {
     if (nextPage === page) {
@@ -189,6 +227,8 @@ function FeedingPage() {
     try {
       if (editingFeedingId) {
         await updateFeeding(editingFeedingId, data, selectedFarmId)
+      } else if (data.operationMode === 'BATCH') {
+        await createBatchFeeding(data, selectedFarmId)
       } else {
         await createFeeding(data, selectedFarmId)
       }
@@ -218,7 +258,9 @@ function FeedingPage() {
 
       setEditingFeedingId(feeding.id)
       setFormInitialValues({
+        operationMode: 'INDIVIDUAL',
         animalId: feeding.animalId,
+        batchId: '',
         feedTypeId: feeding.feedTypeId,
         date: feeding.date,
         quantity: feeding.quantity,
@@ -271,7 +313,7 @@ function FeedingPage() {
     setListErrorMessage('')
 
     try {
-      await exportFeedingsCsv(selectedFarmId, appliedFilters)
+      await exportFeedingsCsv(selectedFarmId, appliedFilters, feedingUnit)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
     } finally {
@@ -279,18 +321,15 @@ function FeedingPage() {
     }
   }
 
-  function applyFilters() {
-    setAppliedFilters(filters)
+  function clearFilters() {
     setPage(0)
-    void loadFeedings(filters, 0, pageSize)
+    resetFilters()
   }
 
-  function clearFilters() {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    setPage(0)
-    void loadFeedings(defaultFilters, 0, pageSize)
-  }
+  const quantityLabel = appendUnitToLabel(
+    t('feeding.table.quantity'),
+    t(getMeasurementUnitShortLabelKey(feedingUnit)),
+  )
 
   return (
     <main className="animals-page">
@@ -329,6 +368,7 @@ function FeedingPage() {
             <FeedingForm
               initialValues={formInitialValues}
               animals={animals}
+              batches={batches}
               feedTypes={feedTypes}
               onSubmit={handleCreateOrUpdateFeeding}
               onCancel={editingFeedingId ? handleCancelEdit : undefined}
@@ -357,17 +397,18 @@ function FeedingPage() {
           </div>
 
           <ListingFiltersBar
-            searchId="feeding-search"
-            searchLabel={t('feeding.filters.searchLabel')}
-            searchPlaceholder={t('feeding.filters.searchPlaceholder')}
-            searchValue={filters.search}
-            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
-            onApply={applyFilters}
+            search={{
+              id: 'feeding-search',
+              label: t('feeding.filters.searchLabel'),
+              placeholder: t('feeding.filters.searchPlaceholder'),
+              value: filters.search,
+              onChange: (value) => setFilters((current) => ({ ...current, search: value })),
+            }}
             onClear={clearFilters}
-            applyLabel={t('feeding.filters.apply')}
             clearLabel={t('feeding.filters.clear')}
             filters={[
               {
+                type: 'select',
                 id: 'feeding-animal-filter',
                 label: t('feeding.filters.animalLabel'),
                 value: filters.animalId,
@@ -378,6 +419,7 @@ function FeedingPage() {
                 ],
               },
               {
+                type: 'select',
                 id: 'feeding-feed-type-filter',
                 label: t('feeding.filters.feedTypeLabel'),
                 value: filters.feedTypeId,
@@ -388,6 +430,7 @@ function FeedingPage() {
                 ],
               },
               {
+                type: 'date',
                 id: 'feeding-date-filter',
                 label: t('feeding.filters.dateLabel'),
                 value: filters.date,
@@ -418,7 +461,7 @@ function FeedingPage() {
                     <th>{t('feeding.table.animalTag')}</th>
                     <th>{t('feeding.table.feedType')}</th>
                     <th>{t('feeding.table.date')}</th>
-                    <th>{t('feeding.table.quantity')}</th>
+                    <th>{quantityLabel}</th>
                     <th>{t('feeding.table.actions')}</th>
                   </tr>
                 </thead>
@@ -428,7 +471,7 @@ function FeedingPage() {
                       <td>{feeding.animal?.tag}</td>
                       <td>{feeding.feedType?.name}</td>
                       <td>{feeding.date}</td>
-                      <td>{feeding.quantity}</td>
+                      <td>{formatMeasurementValue(feeding.quantity, feedingUnit, language)}</td>
                       <td className="animals-table__actions">
                         <button
                           type="button"

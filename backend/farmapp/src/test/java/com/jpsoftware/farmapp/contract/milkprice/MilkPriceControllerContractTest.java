@@ -33,7 +33,7 @@ class MilkPriceControllerContractTest {
 
     @Test
     void shouldReturnPaginatedMilkPriceHistory() throws Exception {
-        when(milkPriceService.getHistoryPaginated("farm-1", 0, 10)).thenReturn(new PaginatedResponse<>(
+        when(milkPriceService.getHistoryPaginated("farm-1", null, null, 0, 10)).thenReturn(new PaginatedResponse<>(
                 List.of(new MilkPriceResponse(
                         "price-1",
                         "farm-1",

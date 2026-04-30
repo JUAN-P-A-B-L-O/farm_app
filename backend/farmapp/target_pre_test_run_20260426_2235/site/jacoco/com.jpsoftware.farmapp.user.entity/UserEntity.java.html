@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.user.entity</a> &gt; <span class="el_source">UserEntity.java</span></div><h1>UserEntity.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.user.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.util.UUID;
+
+@Entity
+@Table(name = &quot;users&quot;)
+public class UserEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private UUID id;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(nullable = false)
+    private String role;
+
+    @Column(nullable = false)
+    private String password;
+
+<span class="fc" id="L32">    @Column(nullable = false)</span>
+    private boolean active = true;
+
+    @Column(columnDefinition = &quot;TEXT&quot;)
+    private String avatarUrl;
+
+<span class="fc" id="L38">    public UserEntity() {</span>
+<span class="fc" id="L39">    }</span>
+
+    public UserEntity(UUID id, String name, String email, String role) {
+<span class="fc" id="L42">        this(id, name, email, role, &quot;&quot;, true);</span>
+<span class="fc" id="L43">    }</span>
+
+    public UserEntity(UUID id, String name, String email, String role, String password) {
+<span class="nc" id="L46">        this(id, name, email, role, password, true);</span>
+<span class="nc" id="L47">    }</span>
+
+<span class="fc" id="L49">    public UserEntity(UUID id, String name, String email, String role, String password, boolean active) {</span>
+<span class="fc" id="L50">        this.id = id;</span>
+<span class="fc" id="L51">        this.name = name;</span>
+<span class="fc" id="L52">        this.email = email;</span>
+<span class="fc" id="L53">        this.role = role;</span>
+<span class="fc" id="L54">        this.password = password;</span>
+<span class="fc" id="L55">        this.active = active;</span>
+<span class="fc" id="L56">    }</span>
+
+    public UUID getId() {
+<span class="fc" id="L59">        return id;</span>
+    }
+
+    public void setId(UUID id) {
+<span class="fc" id="L63">        this.id = id;</span>
+<span class="fc" id="L64">    }</span>
+
+    public String getName() {
+<span class="fc" id="L67">        return name;</span>
+    }
+
+    public void setName(String name) {
+<span class="fc" id="L71">        this.name = name;</span>
+<span class="fc" id="L72">    }</span>
+
+    public String getEmail() {
+<span class="fc" id="L75">        return email;</span>
+    }
+
+    public void setEmail(String email) {
+<span class="fc" id="L79">        this.email = email;</span>
+<span class="fc" id="L80">    }</span>
+
+    public String getRole() {
+<span class="fc" id="L83">        return role;</span>
+    }
+
+    public void setRole(String role) {
+<span class="fc" id="L87">        this.role = role;</span>
+<span class="fc" id="L88">    }</span>
+
+    public String getPassword() {
+<span class="fc" id="L91">        return password;</span>
+    }
+
+    public void setPassword(String password) {
+<span class="fc" id="L95">        this.password = password;</span>
+<span class="fc" id="L96">    }</span>
+
+    public boolean isActive() {
+<span class="fc" id="L99">        return active;</span>
+    }
+
+    public void setActive(boolean active) {
+<span class="fc" id="L103">        this.active = active;</span>
+<span class="fc" id="L104">    }</span>
+
+    public String getAvatarUrl() {
+<span class="fc" id="L107">        return avatarUrl;</span>
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+<span class="fc" id="L111">        this.avatarUrl = avatarUrl;</span>
+<span class="fc" id="L112">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

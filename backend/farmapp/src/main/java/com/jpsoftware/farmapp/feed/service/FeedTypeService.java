@@ -10,6 +10,8 @@ import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
 import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
@@ -25,6 +27,8 @@ import org.springframework.util.StringUtils;
 
 @Service
 public class FeedTypeService {
+    private static final int DEFAULT_MONEY_SCALE = 2;
+    private static final int FEED_RATE_EXPORT_SCALE = 5;
 
     private final FeedTypeRepository feedTypeRepository;
     private final FeedTypeMapper feedTypeMapper;
@@ -91,16 +95,40 @@ public class FeedTypeService {
 
     @Transactional(readOnly = true)
     public String exportAll(String farmId, String search, String currency) {
-        return CsvExportUtils.write(findAll(farmId, search).stream()
+        return exportAll(farmId, search, currency, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String search, String currency, String measurementUnitParam) {
+        MeasurementUnit measurementUnit = MeasurementUnit.fromFeedingParam(measurementUnitParam, "measurementUnit");
+        int monetaryScale = measurementUnit == MeasurementUnit.GRAM ? FEED_RATE_EXPORT_SCALE : DEFAULT_MONEY_SCALE;
+        List<FeedTypeResponse> rows = findAll(farmId, search).stream()
                 .map(feedType -> new FeedTypeResponse(
                         feedType.getId(),
                         feedType.getName(),
-                        CurrencyConversionUtils.convertMonetaryValue(feedType.getCostPerKg(), currency),
+                        CurrencyConversionUtils.convertMonetaryValue(
+                                MeasurementUnitConverter.convertRateFromBase(
+                                        feedType.getCostPerKg(),
+                                        measurementUnit,
+                                        monetaryScale),
+                                currency,
+                                monetaryScale),
                         feedType.getActive()))
-                .toList(), List.of(
+                .toList();
+
+        if (!StringUtils.hasText(measurementUnitParam)) {
+            return CsvExportUtils.write(rows, List.of(
                 new CsvColumn<>("id", FeedTypeResponse::getId),
                 new CsvColumn<>("name", FeedTypeResponse::getName),
                 new CsvColumn<>("costPerKg", FeedTypeResponse::getCostPerKg),
+                new CsvColumn<>("active", FeedTypeResponse::getActive)));
+        }
+
+        return CsvExportUtils.write(rows, List.of(
+                new CsvColumn<>("id", FeedTypeResponse::getId),
+                new CsvColumn<>("name", FeedTypeResponse::getName),
+                new CsvColumn<>("costPerUnit", FeedTypeResponse::getCostPerKg),
+                new CsvColumn<>("costUnit", row -> measurementUnit.getSymbol()),
                 new CsvColumn<>("active", FeedTypeResponse::getActive)));
     }
 

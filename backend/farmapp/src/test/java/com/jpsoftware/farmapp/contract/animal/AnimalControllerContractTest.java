@@ -16,6 +16,7 @@ import com.jpsoftware.farmapp.animal.dto.CreateAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.SellAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
 import com.jpsoftware.farmapp.animal.service.AnimalService;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandler;
 import java.time.LocalDate;
@@ -23,6 +24,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -36,6 +39,10 @@ class AnimalControllerContractTest {
         animalService = org.mockito.Mockito.mock(AnimalService.class);
         mockMvc = MockMvcBuilders.standaloneSetup(new AnimalController(animalService))
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setMessageConverters(new MappingJackson2HttpMessageConverter(
+                        Jackson2ObjectMapperBuilder.json()
+                                .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                                .build()))
                 .build();
     }
 
@@ -61,7 +68,7 @@ class AnimalControllerContractTest {
 
     @Test
     void shouldReturnAllAnimals() throws Exception {
-        when(animalService.findAll(null)).thenReturn(List.of(buildResponse()));
+        when(animalService.findAll(null, null, null, null)).thenReturn(List.of(buildResponse()));
 
         mockMvc.perform(get("/animals"))
                 .andExpect(status().isOk())
@@ -70,7 +77,7 @@ class AnimalControllerContractTest {
 
     @Test
     void shouldReturnPaginatedAnimals() throws Exception {
-        when(animalService.findAllPaginated("farm-1", 0, 10)).thenReturn(new PaginatedResponse<>(
+        when(animalService.findAllPaginated("farm-1", null, null, null, 0, 10)).thenReturn(new PaginatedResponse<>(
                 List.of(buildResponse()),
                 0,
                 10,

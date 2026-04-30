@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AnimalService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.animal.service</a> &gt; <span class="el_source">AnimalService.java</span></div><h1>AnimalService.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.animal.service;
+
+import com.jpsoftware.farmapp.animal.dto.AnimalResponse;
+import com.jpsoftware.farmapp.animal.dto.CreateAnimalRequest;
+import com.jpsoftware.farmapp.animal.dto.SellAnimalRequest;
+import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
+import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
+import com.jpsoftware.farmapp.animal.mapper.AnimalMapper;
+import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class AnimalService {
+
+<span class="fc" id="L34">    private static final Set&lt;String&gt; ALLOWED_STATUSES = Set.of(</span>
+            AnimalEntity.STATUS_ACTIVE,
+            AnimalEntity.STATUS_INACTIVE,
+            AnimalEntity.STATUS_SOLD,
+            AnimalEntity.STATUS_DEAD);
+<span class="fc" id="L39">    private static final Set&lt;String&gt; ALLOWED_ORIGINS = Set.of(</span>
+            AnimalEntity.ORIGIN_BORN,
+            AnimalEntity.ORIGIN_PURCHASED);
+
+    private final AnimalRepository animalRepository;
+    private final AnimalMapper animalMapper;
+    private final FarmAccessService farmAccessService;
+
+<span class="fc" id="L47">    public AnimalService(AnimalRepository animalRepository, AnimalMapper animalMapper, FarmAccessService farmAccessService) {</span>
+<span class="fc" id="L48">        this.animalRepository = animalRepository;</span>
+<span class="fc" id="L49">        this.animalMapper = animalMapper;</span>
+<span class="fc" id="L50">        this.farmAccessService = farmAccessService;</span>
+<span class="fc" id="L51">    }</span>
+
+    @Transactional
+    public AnimalResponse create(CreateAnimalRequest request) {
+<span class="fc" id="L55">        validateInput(request);</span>
+<span class="fc" id="L56">        farmAccessService.validateAccessibleFarm(request.getFarmId());</span>
+<span class="fc" id="L57">        ensureTagIsUnique(request.getTag());</span>
+<span class="fc" id="L58">        String normalizedOrigin = normalizeOrigin(request.getOrigin());</span>
+<span class="fc" id="L59">        Double normalizedAcquisitionCost = normalizeAcquisitionCost(normalizedOrigin, request.getAcquisitionCost());</span>
+
+<span class="fc" id="L61">        AnimalEntity animalEntity = animalMapper.toEntity(request);</span>
+<span class="fc" id="L62">        animalEntity.setStatus(AnimalEntity.STATUS_ACTIVE);</span>
+<span class="fc" id="L63">        animalEntity.setOrigin(normalizedOrigin);</span>
+<span class="fc" id="L64">        animalEntity.setAcquisitionCost(normalizedAcquisitionCost);</span>
+<span class="fc" id="L65">        AnimalEntity savedAnimal = animalRepository.save(animalEntity);</span>
+
+<span class="fc" id="L67">        return animalMapper.toResponse(savedAnimal);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public AnimalResponse findById(String id, String farmId) {
+<span class="fc" id="L72">        AnimalEntity animalEntity = findAnimal(id, farmId);</span>
+
+<span class="fc" id="L74">        return animalMapper.toResponse(animalEntity);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;AnimalResponse&gt; findAll(String farmId, String search, String status, String origin) {
+<span class="fc" id="L79">        farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+<span class="fc" id="L80">        List&lt;AnimalEntity&gt; animals = animalRepository.findAll(</span>
+<span class="fc" id="L81">                buildAnimalSpecification(farmId, search, status, origin),</span>
+<span class="fc" id="L82">                Sort.by(Sort.Direction.ASC, &quot;tag&quot;));</span>
+
+<span class="fc" id="L84">        return animals.stream()</span>
+<span class="fc" id="L85">                .map(animalMapper::toResponse)</span>
+<span class="fc" id="L86">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;AnimalResponse&gt; findAll(String farmId) {
+<span class="nc" id="L91">        return findAll(farmId, null, null, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse&lt;AnimalResponse&gt; findAllPaginated(String farmId, String search, String status, String origin, int page, int size) {
+<span class="fc" id="L96">        farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+<span class="fc" id="L97">        Page&lt;AnimalEntity&gt; animals = animalRepository.findAll(</span>
+<span class="fc" id="L98">                buildAnimalSpecification(farmId, search, status, origin),</span>
+<span class="fc" id="L99">                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, &quot;tag&quot;)));</span>
+<span class="fc" id="L100">        Page&lt;AnimalResponse&gt; responses = animals.map(animalMapper::toResponse);</span>
+<span class="fc" id="L101">        return new PaginatedResponse&lt;&gt;(</span>
+<span class="fc" id="L102">                responses.getContent(),</span>
+<span class="fc" id="L103">                responses.getNumber(),</span>
+<span class="fc" id="L104">                responses.getSize(),</span>
+<span class="fc" id="L105">                responses.getTotalElements(),</span>
+<span class="fc" id="L106">                responses.getTotalPages());</span>
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse&lt;AnimalResponse&gt; findAllPaginated(String farmId, int page, int size) {
+<span class="fc" id="L111">        return findAllPaginated(farmId, null, null, null, page, size);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String search, String status, String origin) {
+<span class="nc" id="L116">        return exportAll(farmId, search, status, origin, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String search, String status, String origin, String currency) {
+<span class="fc" id="L121">        return CsvExportUtils.write(findAll(farmId, search, status, origin).stream()</span>
+<span class="pc" id="L122">                .map(animal -&gt; AnimalResponse.builder()</span>
+<span class="nc" id="L123">                        .id(animal.getId())</span>
+<span class="nc" id="L124">                        .tag(animal.getTag())</span>
+<span class="nc" id="L125">                        .breed(animal.getBreed())</span>
+<span class="nc" id="L126">                        .birthDate(animal.getBirthDate())</span>
+<span class="nc" id="L127">                        .origin(animal.getOrigin())</span>
+<span class="nc" id="L128">                        .status(animal.getStatus())</span>
+<span class="nc" id="L129">                        .acquisitionCost(CurrencyConversionUtils.convertMonetaryValue(animal.getAcquisitionCost(), currency))</span>
+<span class="nc" id="L130">                        .salePrice(CurrencyConversionUtils.convertMonetaryValue(animal.getSalePrice(), currency))</span>
+<span class="nc" id="L131">                        .saleDate(animal.getSaleDate())</span>
+<span class="nc" id="L132">                        .farmId(animal.getFarmId())</span>
+<span class="nc" id="L133">                        .build())</span>
+<span class="fc" id="L134">                .toList(), List.of(</span>
+                new CsvColumn&lt;&gt;(&quot;id&quot;, AnimalResponse::getId),
+                new CsvColumn&lt;&gt;(&quot;tag&quot;, AnimalResponse::getTag),
+                new CsvColumn&lt;&gt;(&quot;breed&quot;, AnimalResponse::getBreed),
+                new CsvColumn&lt;&gt;(&quot;birthDate&quot;, AnimalResponse::getBirthDate),
+                new CsvColumn&lt;&gt;(&quot;origin&quot;, AnimalResponse::getOrigin),
+                new CsvColumn&lt;&gt;(&quot;status&quot;, AnimalResponse::getStatus),
+                new CsvColumn&lt;&gt;(&quot;acquisitionCost&quot;, AnimalResponse::getAcquisitionCost),
+                new CsvColumn&lt;&gt;(&quot;salePrice&quot;, AnimalResponse::getSalePrice),
+                new CsvColumn&lt;&gt;(&quot;saleDate&quot;, AnimalResponse::getSaleDate),
+                new CsvColumn&lt;&gt;(&quot;farmId&quot;, AnimalResponse::getFarmId)));
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId) {
+<span class="nc" id="L149">        return exportAll(farmId, null, null, null, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String currency) {
+<span class="nc" id="L154">        return exportAll(farmId, null, null, null, currency);</span>
+    }
+
+    @Transactional
+    public AnimalResponse update(String id, UpdateAnimalRequest request, String farmId) {
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L160">            throw new IllegalArgumentException(&quot;Update animal request must not be null&quot;);</span>
+        }
+
+<span class="fc" id="L163">        AnimalEntity animalEntity = findAnimal(id, farmId);</span>
+
+<span class="fc" id="L165">        validateTagUpdate(animalEntity, request);</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (request.getFarmId() != null) {</span>
+<span class="fc" id="L167">            farmAccessService.validateAccessibleFarm(request.getFarmId());</span>
+        }
+<span class="fc" id="L169">        applyUpdates(animalEntity, request);</span>
+
+<span class="fc" id="L171">        AnimalEntity updatedAnimal = animalRepository.save(animalEntity);</span>
+<span class="fc" id="L172">        return animalMapper.toResponse(updatedAnimal);</span>
+    }
+
+    @Transactional
+    public AnimalResponse sell(String id, SellAnimalRequest request, String farmId) {
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L178">            throw new IllegalArgumentException(&quot;Sell animal request must not be null&quot;);</span>
+        }
+
+<span class="fc" id="L181">        AnimalEntity animalEntity = findAnimal(id, farmId);</span>
+<span class="fc" id="L182">        validateSellable(animalEntity);</span>
+
+<span class="fc" id="L184">        Double salePrice = normalizeSalePrice(request.getSalePrice());</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        LocalDate saleDate = request.getSaleDate() != null ? request.getSaleDate() : LocalDate.now();</span>
+
+<span class="fc" id="L187">        animalEntity.setStatus(AnimalEntity.STATUS_SOLD);</span>
+<span class="fc" id="L188">        animalEntity.setSalePrice(salePrice);</span>
+<span class="fc" id="L189">        animalEntity.setSaleDate(saleDate);</span>
+
+<span class="fc" id="L191">        AnimalEntity soldAnimal = animalRepository.save(animalEntity);</span>
+<span class="fc" id="L192">        return animalMapper.toResponse(soldAnimal);</span>
+    }
+
+    @Transactional
+    public void delete(String id, String farmId) {
+<span class="fc" id="L197">        AnimalEntity animalEntity = findAnimal(id, farmId);</span>
+
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">        if (AnimalEntity.STATUS_INACTIVE.equals(animalEntity.getStatus())) {</span>
+<span class="fc" id="L200">            return;</span>
+        }
+
+<span class="nc" id="L203">        animalEntity.setStatus(AnimalEntity.STATUS_INACTIVE);</span>
+<span class="nc" id="L204">        animalRepository.save(animalEntity);</span>
+<span class="nc" id="L205">    }</span>
+
+    private void validateInput(CreateAnimalRequest request) {
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L209">            throw new IllegalArgumentException(&quot;Create animal request must not be null&quot;);</span>
+        }
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        if (!StringUtils.hasText(request.getTag())) {</span>
+<span class="nc" id="L212">            throw new IllegalArgumentException(&quot;Animal tag must not be blank&quot;);</span>
+        }
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">        if (!StringUtils.hasText(request.getBreed())) {</span>
+<span class="nc" id="L215">            throw new IllegalArgumentException(&quot;Animal breed must not be blank&quot;);</span>
+        }
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">        if (request.getBirthDate() == null) {</span>
+<span class="nc" id="L218">            throw new IllegalArgumentException(&quot;Animal birthDate must not be null&quot;);</span>
+        }
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">        if (!StringUtils.hasText(request.getOrigin())) {</span>
+<span class="nc" id="L221">            throw new IllegalArgumentException(&quot;Animal origin must not be blank&quot;);</span>
+        }
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">        if (!StringUtils.hasText(request.getFarmId())) {</span>
+<span class="nc" id="L224">            throw new IllegalArgumentException(&quot;Animal farmId must not be blank&quot;);</span>
+        }
+<span class="fc" id="L226">    }</span>
+
+    private void applyUpdates(AnimalEntity animalEntity, UpdateAnimalRequest request) {
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        if (request.getTag() != null) {</span>
+<span class="fc" id="L230">            animalEntity.setTag(request.getTag());</span>
+        }
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        if (request.getBreed() != null) {</span>
+<span class="fc" id="L233">            animalEntity.setBreed(request.getBreed());</span>
+        }
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        if (request.getBirthDate() != null) {</span>
+<span class="fc" id="L236">            animalEntity.setBirthDate(request.getBirthDate());</span>
+        }
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">        if (request.getStatus() != null) {</span>
+<span class="fc" id="L239">            animalEntity.setStatus(normalizeStatusForUpdate(animalEntity.getStatus(), request.getStatus()));</span>
+        }
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">        if (request.getOrigin() != null) {</span>
+<span class="fc" id="L242">            animalEntity.setOrigin(normalizeOrigin(request.getOrigin()));</span>
+        }
+<span class="pc bpc" id="L244" title="2 of 4 branches missed.">        if (request.getAcquisitionCost() != null || request.getOrigin() != null) {</span>
+<span class="fc" id="L245">            animalEntity.setAcquisitionCost(normalizeAcquisitionCost(</span>
+<span class="fc" id="L246">                    animalEntity.getOrigin(),</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">                    request.getAcquisitionCost() != null ? request.getAcquisitionCost() : animalEntity.getAcquisitionCost()));</span>
+        }
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">        if (request.getFarmId() != null) {</span>
+<span class="fc" id="L250">            animalEntity.setFarmId(request.getFarmId());</span>
+        }
+<span class="fc" id="L252">    }</span>
+
+    private void ensureTagIsUnique(String tag) {
+<span class="fc bfc" id="L255" title="All 2 branches covered.">        if (animalRepository.existsByTag(tag)) {</span>
+<span class="fc" id="L256">            throw new DataIntegrityViolationException(&quot;Animal with this tag already exists&quot;);</span>
+        }
+<span class="fc" id="L258">    }</span>
+
+    private void validateTagUpdate(AnimalEntity animalEntity, UpdateAnimalRequest request) {
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        if (request.getTag() == null) {</span>
+<span class="fc" id="L262">            return;</span>
+        }
+
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">        if (!request.getTag().equals(animalEntity.getTag())) {</span>
+<span class="fc" id="L266">            ensureTagIsUnique(request.getTag());</span>
+        }
+<span class="fc" id="L268">    }</span>
+
+    private AnimalEntity findAnimal(String id, String farmId) {
+<span class="fc" id="L271">        farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">        return (StringUtils.hasText(farmId)</span>
+<span class="fc" id="L273">                ? animalRepository.findByIdAndFarmId(id, farmId)</span>
+<span class="fc" id="L274">                : animalRepository.findById(id))</span>
+<span class="fc" id="L275">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Animal not found&quot;));</span>
+    }
+
+    private Specification&lt;AnimalEntity&gt; buildAnimalSpecification(String farmId, String search, String status, String origin) {
+<span class="fc" id="L279">        String normalizedSearch = normalizeFilter(search);</span>
+<span class="fc" id="L280">        String normalizedStatus = normalizeOptionalStatus(status);</span>
+<span class="fc" id="L281">        String normalizedOrigin = normalizeOptionalOrigin(origin);</span>
+
+<span class="fc" id="L283">        Specification&lt;AnimalEntity&gt; specification = Specification.where(null);</span>
+
+<span class="fc bfc" id="L285" title="All 2 branches covered.">        if (StringUtils.hasText(farmId)) {</span>
+<span class="fc" id="L286">            specification = specification.and((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L287">                    criteriaBuilder.equal(root.get(&quot;farmId&quot;), farmId));</span>
+        }
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">        if (normalizedStatus != null) {</span>
+<span class="nc" id="L290">            specification = specification.and((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L291">                    criteriaBuilder.equal(root.get(&quot;status&quot;), normalizedStatus));</span>
+        }
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">        if (normalizedOrigin != null) {</span>
+<span class="nc" id="L294">            specification = specification.and((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L295">                    criteriaBuilder.equal(root.get(&quot;origin&quot;), normalizedOrigin));</span>
+        }
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">        if (normalizedSearch != null) {</span>
+<span class="nc" id="L298">            String searchPattern = &quot;%&quot; + normalizedSearch + &quot;%&quot;;</span>
+<span class="nc" id="L299">            specification = specification.and((root, query, criteriaBuilder) -&gt; criteriaBuilder.or(</span>
+<span class="nc" id="L300">                    criteriaBuilder.like(criteriaBuilder.lower(root.get(&quot;tag&quot;)), searchPattern),</span>
+<span class="nc" id="L301">                    criteriaBuilder.like(criteriaBuilder.lower(root.get(&quot;breed&quot;)), searchPattern)));</span>
+        }
+
+<span class="fc" id="L304">        return specification;</span>
+    }
+
+    private String normalizeFilter(String value) {
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">        if (!StringUtils.hasText(value)) {</span>
+<span class="fc" id="L309">            return null;</span>
+        }
+<span class="nc" id="L311">        return value.trim().toLowerCase(Locale.ROOT);</span>
+    }
+
+    private String normalizeOptionalStatus(String status) {
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">        if (!StringUtils.hasText(status)) {</span>
+<span class="fc" id="L316">            return null;</span>
+        }
+<span class="nc" id="L318">        return normalizeStatus(status);</span>
+    }
+
+    private String normalizeOptionalOrigin(String origin) {
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">        if (!StringUtils.hasText(origin)) {</span>
+<span class="fc" id="L323">            return null;</span>
+        }
+<span class="nc" id="L325">        return normalizeOrigin(origin);</span>
+    }
+
+    private String normalizeStatus(String status) {
+<span class="fc" id="L329">        String normalizedStatus = status.trim().toUpperCase();</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">        if (!ALLOWED_STATUSES.contains(normalizedStatus)) {</span>
+<span class="nc" id="L331">            throw new ValidationException(&quot;Animal status must be ACTIVE, SOLD, DEAD, or INACTIVE&quot;);</span>
+        }
+<span class="fc" id="L333">        return normalizedStatus;</span>
+    }
+
+    private String normalizeStatusForUpdate(String currentStatus, String requestedStatus) {
+<span class="fc" id="L337">        String normalizedStatus = normalizeStatus(requestedStatus);</span>
+
+<span class="pc bpc" id="L339" title="1 of 4 branches missed.">        if (AnimalEntity.STATUS_SOLD.equals(normalizedStatus) &amp;&amp; !AnimalEntity.STATUS_SOLD.equals(currentStatus)) {</span>
+<span class="fc" id="L340">            throw new ValidationException(&quot;Use the sell action to mark an animal as SOLD&quot;);</span>
+        }
+
+<span class="pc bpc" id="L343" title="3 of 4 branches missed.">        if (AnimalEntity.STATUS_SOLD.equals(currentStatus) &amp;&amp; !AnimalEntity.STATUS_SOLD.equals(normalizedStatus)) {</span>
+<span class="nc" id="L344">            throw new ValidationException(&quot;Sold animals cannot transition to another status&quot;);</span>
+        }
+
+<span class="fc" id="L347">        return normalizedStatus;</span>
+    }
+
+    private String normalizeOrigin(String origin) {
+<span class="fc" id="L351">        String normalizedOrigin = origin.trim().toUpperCase();</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">        if (!ALLOWED_ORIGINS.contains(normalizedOrigin)) {</span>
+<span class="nc" id="L353">            throw new ValidationException(&quot;Animal origin must be PURCHASED or BORN&quot;);</span>
+        }
+<span class="fc" id="L355">        return normalizedOrigin;</span>
+    }
+
+    private Double normalizeAcquisitionCost(String origin, Double acquisitionCost) {
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">        if (AnimalEntity.ORIGIN_PURCHASED.equals(origin)) {</span>
+<span class="nc bnc" id="L360" title="All 4 branches missed.">            if (acquisitionCost == null || acquisitionCost &lt;= 0) {</span>
+<span class="nc" id="L361">                throw new ValidationException(&quot;Animal acquisitionCost must be greater than zero for purchased animals&quot;);</span>
+            }
+<span class="nc" id="L363">            DecimalScaleUtils.requireMaxScale(acquisitionCost, &quot;acquisitionCost&quot;);</span>
+<span class="nc" id="L364">            return DecimalScaleUtils.normalize(acquisitionCost);</span>
+        }
+
+<span class="pc bpc" id="L367" title="3 of 4 branches missed.">        if (acquisitionCost != null &amp;&amp; acquisitionCost &gt; 0) {</span>
+<span class="nc" id="L368">            DecimalScaleUtils.requireMaxScale(acquisitionCost, &quot;acquisitionCost&quot;);</span>
+        }
+<span class="fc" id="L370">        return null;</span>
+    }
+
+    private void validateSellable(AnimalEntity animalEntity) {
+<span class="fc bfc" id="L374" title="All 2 branches covered.">        if (AnimalEntity.STATUS_SOLD.equals(animalEntity.getStatus())) {</span>
+<span class="fc" id="L375">            throw new ValidationException(&quot;Animal is already sold&quot;);</span>
+        }
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">        if (AnimalEntity.STATUS_DEAD.equals(animalEntity.getStatus())</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">                || AnimalEntity.STATUS_INACTIVE.equals(animalEntity.getStatus())) {</span>
+<span class="nc" id="L379">            throw new ValidationException(&quot;Only active animals can be sold&quot;);</span>
+        }
+<span class="fc" id="L381">    }</span>
+
+    private Double normalizeSalePrice(Double salePrice) {
+<span class="pc bpc" id="L384" title="2 of 4 branches missed.">        if (salePrice == null || salePrice &lt;= 0) {</span>
+<span class="nc" id="L385">            throw new ValidationException(&quot;Animal salePrice must be greater than zero&quot;);</span>
+        }
+
+<span class="fc" id="L388">        DecimalScaleUtils.requireMaxScale(salePrice, &quot;salePrice&quot;);</span>
+<span class="fc" id="L389">        return DecimalScaleUtils.normalize(salePrice);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

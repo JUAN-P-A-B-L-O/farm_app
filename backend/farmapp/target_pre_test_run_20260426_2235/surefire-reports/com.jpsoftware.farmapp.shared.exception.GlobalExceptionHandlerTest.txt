@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandlerTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.755 s -- in com.jpsoftware.farmapp.shared.exception.GlobalExceptionHandlerTest

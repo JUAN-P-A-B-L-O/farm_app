@@ -47,6 +47,22 @@ class AnalyticsExportControllerContractTest {
     }
 
     @Test
+    void shouldExportProductionAnalyticsAsCsvWithProductionUnit() throws Exception {
+        when(analyticsService.exportProductionSeries(null, null, "animal-1", "month", "farm-1", "MILLILITER"))
+                .thenReturn("period,value,valueUnit\n2026-04,10000.0,mL\n");
+
+        mockMvc.perform(get("/analytics/production/export")
+                        .param("animalId", "animal-1")
+                        .param("groupBy", "month")
+                        .param("farmId", "farm-1")
+                        .param("productionUnit", "MILLILITER"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("period,value,valueUnit\n2026-04,10000.0,mL\n"));
+
+        verify(analyticsService).exportProductionSeries(null, null, "animal-1", "month", "farm-1", "MILLILITER");
+    }
+
+    @Test
     void shouldExportFeedingAnalyticsAsCsv() throws Exception {
         when(analyticsService.exportFeedingCostSeries(null, null, "animal-1", "day", "farm-1"))
                 .thenReturn("period,value\n2026-04-14,20.0\n");
@@ -115,6 +131,23 @@ class AnalyticsExportControllerContractTest {
     }
 
     @Test
+    void shouldExportProfitAnalyticsAsCsvWithProductionUnit() throws Exception {
+        when(analyticsService.exportProfitSeries(null, null, "animal-1", "day", "farm-1", false, "USD", "MILLILITER"))
+                .thenReturn("period,production,productionUnit,profit\n2026-04-14,10000.0,mL,54.0\n");
+
+        mockMvc.perform(get("/analytics/profit/export")
+                        .param("animalId", "animal-1")
+                        .param("farmId", "farm-1")
+                        .param("includeAcquisitionCost", "false")
+                        .param("currency", "USD")
+                        .param("productionUnit", "MILLILITER"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("period,production,productionUnit,profit\n2026-04-14,10000.0,mL,54.0\n"));
+
+        verify(analyticsService).exportProfitSeries(null, null, "animal-1", "day", "farm-1", false, "USD", "MILLILITER");
+    }
+
+    @Test
     void shouldExportProductionByAnimalAsCsv() throws Exception {
         when(analyticsService.exportProductionByAnimal(null, null, "animal-1", "farm-1"))
                 .thenReturn("animalId,animalTag,quantity\nanimal-1,TAG-001,10.0\n");
@@ -128,5 +161,20 @@ class AnalyticsExportControllerContractTest {
                 .andExpect(content().string("animalId,animalTag,quantity\nanimal-1,TAG-001,10.0\n"));
 
         verify(analyticsService).exportProductionByAnimal(null, null, "animal-1", "farm-1");
+    }
+
+    @Test
+    void shouldExportProductionByAnimalAsCsvWithProductionUnit() throws Exception {
+        when(analyticsService.exportProductionByAnimal(null, null, "animal-1", "farm-1", "MILLILITER"))
+                .thenReturn("animalId,animalTag,quantity,quantityUnit\nanimal-1,TAG-001,10000.0,mL\n");
+
+        mockMvc.perform(get("/analytics/production/by-animal/export")
+                        .param("animalId", "animal-1")
+                        .param("farmId", "farm-1")
+                        .param("productionUnit", "MILLILITER"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("animalId,animalTag,quantity,quantityUnit\nanimal-1,TAG-001,10000.0,mL\n"));
+
+        verify(analyticsService).exportProductionByAnimal(null, null, "animal-1", "farm-1", "MILLILITER");
     }
 }

@@ -44,14 +44,14 @@ public class DefaultAdminInitializer implements CommandLineRunner {
         }
 
         UserEntity admin = new UserEntity();
-        admin.setName("Default Admin");
+        admin.setName("Administrador padrão");
         admin.setEmail(adminEmail);
         admin.setRole("MANAGER");
         admin.setPassword(passwordEncoder.encode(adminPassword));
         admin.setActive(true);
 
         userRepository.save(admin);
-        farmRepository.save(new FarmEntity(null, "Default Farm", admin.getId()));
+        farmRepository.save(new FarmEntity(null, "Fazenda padrão", admin.getId()));
         logger.info("Default admin user created");
     }
 }

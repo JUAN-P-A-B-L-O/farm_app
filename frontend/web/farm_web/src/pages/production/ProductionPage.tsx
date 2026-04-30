@@ -1,14 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
 import ProductionForm from '../../components/production/ProductionForm'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
+import { getAllAnimalBatches } from '../../services/animalBatchService'
 import {
+  createBatchProduction,
   createProduction,
   deleteProduction,
   exportProductionsCsv,
@@ -17,19 +21,28 @@ import {
   updateProduction,
 } from '../../services/productionService'
 import type { Animal } from '../../types/animal'
+import type { AnimalBatch } from '../../types/animalBatch'
 import type {
   Production,
   ProductionApiErrorResponse,
   ProductionAnimalOption,
+  ProductionBatchOption,
   ProductionFormData,
   ProductionListFilters,
 } from '../../types/production'
 import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { isManager } from '../../utils/authorization'
+import {
+  appendUnitToLabel,
+  formatMeasurementValue,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import '../../App.css'
 
 const emptyProductionForm: ProductionFormData = {
+  operationMode: 'INDIVIDUAL',
   animalId: '',
+  batchId: '',
   date: '',
   quantity: 0,
   userId: '',
@@ -40,6 +53,8 @@ const defaultFilters: ProductionListFilters = {
   animalId: '',
   date: '',
 }
+
+const debouncedProductionFilterKeys: Array<keyof ProductionListFilters> = ['search']
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<ProductionApiErrorResponse>(error)) {
@@ -71,10 +86,15 @@ function mapAnimalsToOptions(animals: Animal[]): ProductionAnimalOption[] {
     }))
 }
 
+function mapBatchesToOptions(batches: AnimalBatch[]): ProductionBatchOption[] {
+  return batches
+}
+
 function ProductionPage() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const { productionUnit } = useMeasurementUnits()
   const canSelectCreateDate = isManager(user)
   const canDeleteResources = isManager(user)
   const [productions, setProductions] = useState<Production[]>([])
@@ -82,6 +102,7 @@ function ProductionPage() {
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [animals, setAnimals] = useState<ProductionAnimalOption[]>([])
+  const [batches, setBatches] = useState<ProductionBatchOption[]>([])
   const [formInitialValues, setFormInitialValues] = useState<ProductionFormData>(emptyProductionForm)
   const [isLoading, setIsLoading] = useState(true)
   const [isAnimalsLoading, setIsAnimalsLoading] = useState(true)
@@ -91,8 +112,14 @@ function ProductionPage() {
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingProductionId, setEditingProductionId] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
-  const [filters, setFilters] = useState<ProductionListFilters>(defaultFilters)
-  const [appliedFilters, setAppliedFilters] = useState<ProductionListFilters>(defaultFilters)
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
+    debounceKeys: debouncedProductionFilterKeys,
+    onAppliedChange: (nextFilters) => {
+      setPage(0)
+      void loadProductions(nextFilters, 0, pageSize)
+    },
+  })
 
   async function loadProductions(
     nextFilters: ProductionListFilters = appliedFilters,
@@ -133,6 +160,7 @@ function ProductionPage() {
   async function loadAnimals() {
     if (!selectedFarmId) {
       setAnimals([])
+      setBatches([])
       setFormErrorMessage('')
       setIsAnimalsLoading(false)
       return
@@ -142,8 +170,12 @@ function ProductionPage() {
     setFormErrorMessage('')
 
     try {
-      const data = await getAllAnimals(selectedFarmId)
-      setAnimals(mapAnimalsToOptions(data))
+      const [animalsData, batchesData] = await Promise.all([
+        getAllAnimals(selectedFarmId),
+        getAllAnimalBatches(selectedFarmId),
+      ])
+      setAnimals(mapAnimalsToOptions(animalsData))
+      setBatches(mapBatchesToOptions(batchesData))
     } catch (error) {
       setFormErrorMessage(getErrorMessage(error, t('production.errors.loadAnimals'), t))
     } finally {
@@ -152,10 +184,18 @@ function ProductionPage() {
   }
 
   useEffect(() => {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    void Promise.all([loadProductions(defaultFilters), loadAnimals()])
+    void loadAnimals()
   }, [selectedFarmId])
+
+  useEffect(() => {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
+      return
+    }
+
+    previousSelectedFarmIdRef.current = selectedFarmId
+    setPage(0)
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
 
   function handlePageChange(nextPage: number) {
     if (nextPage === page) {
@@ -174,14 +214,17 @@ function ProductionPage() {
   async function handleCreateOrUpdateProduction(data: ProductionFormData) {
     const requiresDate = editingProductionId !== null || canSelectCreateDate
     const payload: ProductionFormData = {
+      operationMode: data.operationMode,
       animalId: data.animalId.trim(),
+      batchId: data.batchId.trim(),
       date: data.date,
       quantity: Number(data.quantity),
       userId: data.userId.trim(),
     }
 
     if (
-      !payload.animalId ||
+      (payload.operationMode === 'INDIVIDUAL' && !payload.animalId) ||
+      (payload.operationMode === 'BATCH' && !payload.batchId) ||
       (requiresDate && !payload.date) ||
       !Number.isFinite(payload.quantity) ||
       payload.quantity <= 0 ||
@@ -197,6 +240,8 @@ function ProductionPage() {
     try {
       if (editingProductionId) {
         await updateProduction(editingProductionId, payload, selectedFarmId)
+      } else if (payload.operationMode === 'BATCH') {
+        await createBatchProduction(payload, selectedFarmId)
       } else {
         await createProduction(payload, selectedFarmId)
       }
@@ -226,7 +271,9 @@ function ProductionPage() {
 
       setEditingProductionId(production.id)
       setFormInitialValues({
+        operationMode: 'INDIVIDUAL',
         animalId: production.animalId,
+        batchId: '',
         date: production.date,
         quantity: production.quantity,
         userId: '',
@@ -278,7 +325,7 @@ function ProductionPage() {
     setListErrorMessage('')
 
     try {
-      await exportProductionsCsv(selectedFarmId, appliedFilters)
+      await exportProductionsCsv(selectedFarmId, appliedFilters, productionUnit)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
     } finally {
@@ -286,18 +333,15 @@ function ProductionPage() {
     }
   }
 
-  function applyFilters() {
-    setAppliedFilters(filters)
+  function clearFilters() {
     setPage(0)
-    void loadProductions(filters, 0, pageSize)
+    resetFilters()
   }
 
-  function clearFilters() {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    setPage(0)
-    void loadProductions(defaultFilters, 0, pageSize)
-  }
+  const quantityLabel = appendUnitToLabel(
+    t('production.table.quantity'),
+    t(getMeasurementUnitShortLabelKey(productionUnit)),
+  )
 
   return (
     <main className="animals-page">
@@ -332,6 +376,7 @@ function ProductionPage() {
             <ProductionForm
               initialValues={formInitialValues}
               animals={animals}
+              batches={batches}
               onSubmit={handleCreateOrUpdateProduction}
               onCancel={editingProductionId ? handleCancelEdit : undefined}
               isSubmitting={isSubmitting}
@@ -359,17 +404,18 @@ function ProductionPage() {
           </div>
 
           <ListingFiltersBar
-            searchId="production-search"
-            searchLabel={t('production.filters.searchLabel')}
-            searchPlaceholder={t('production.filters.searchPlaceholder')}
-            searchValue={filters.search}
-            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
-            onApply={applyFilters}
+            search={{
+              id: 'production-search',
+              label: t('production.filters.searchLabel'),
+              placeholder: t('production.filters.searchPlaceholder'),
+              value: filters.search,
+              onChange: (value) => setFilters((current) => ({ ...current, search: value })),
+            }}
             onClear={clearFilters}
-            applyLabel={t('production.filters.apply')}
             clearLabel={t('production.filters.clear')}
             filters={[
               {
+                type: 'select',
                 id: 'production-animal-filter',
                 label: t('production.filters.animalLabel'),
                 value: filters.animalId,
@@ -380,6 +426,7 @@ function ProductionPage() {
                 ],
               },
               {
+                type: 'date',
                 id: 'production-date-filter',
                 label: t('production.filters.dateLabel'),
                 value: filters.date,
@@ -409,7 +456,7 @@ function ProductionPage() {
                   <tr>
                     <th>{t('production.table.animalTag')}</th>
                     <th>{t('production.table.date')}</th>
-                    <th>{t('production.table.quantity')}</th>
+                    <th>{quantityLabel}</th>
                     <th>{t('production.table.actions')}</th>
                   </tr>
                 </thead>
@@ -418,7 +465,7 @@ function ProductionPage() {
                     <tr key={production.id}>
                       <td>{production.animal?.tag}</td>
                       <td>{production.date}</td>
-                      <td>{production.quantity}</td>
+                      <td>{formatMeasurementValue(production.quantity, productionUnit, language)}</td>
                       <td className="animals-table__actions">
                         <button
                           type="button"

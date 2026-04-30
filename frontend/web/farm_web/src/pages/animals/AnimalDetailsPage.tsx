@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { getAnimalOriginLabel, getAnimalStatusLabel } from '../../i18n/domainLabels'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAnimalById } from '../../services/animalService'
 import { getFeedingsByAnimalId } from '../../services/feedingService'
@@ -10,6 +12,11 @@ import type { Animal, ApiErrorResponse } from '../../types/animal'
 import type { FeedingTrendPoint } from '../../types/feeding'
 import type { ProductionTrendPoint } from '../../types/production'
 import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
+import {
+  appendUnitToLabel,
+  formatMeasurementValue,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import '../../App.css'
 
 interface AnimalDetailsPageProps {
@@ -23,7 +30,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
     const apiMessage = error.response?.data?.error
 
     if (status === 404) {
-      return apiMessage ?? 'Animal not found.'
+      return apiMessage ?? fallbackMessage
     }
 
     if (apiMessage) {
@@ -42,6 +49,7 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
   const { t, language } = useTranslation()
   const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
+  const { productionUnit, feedingUnit } = useMeasurementUnits()
   const [animal, setAnimal] = useState<Animal | null>(null)
   const [productions, setProductions] = useState<ProductionTrendPoint[]>([])
   const [feedings, setFeedings] = useState<FeedingTrendPoint[]>([])
@@ -72,14 +80,14 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
         setProductions(sortByDateDescending(productionsData))
         setFeedings(sortByDateDescending(feedingsData))
       } catch (error) {
-        setErrorMessage(getErrorMessage(error, 'Unable to load animal details.'))
+        setErrorMessage(getErrorMessage(error, t('animals.errors.loadDetails')))
       } finally {
         setIsLoading(false)
       }
     }
 
     void loadAnimalDetails()
-  }, [animalId, selectedFarmId])
+  }, [animalId, selectedFarmId, t])
 
   return (
     <main className="animals-page">
@@ -131,7 +139,7 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
               </div>
               <div className="animal-details-grid__item">
                 <dt>{t('animals.table.origin')}</dt>
-                <dd>{t(`animals.origins.${animal.origin}`)}</dd>
+                <dd>{getAnimalOriginLabel(t, animal.origin)}</dd>
               </div>
               <div className="animal-details-grid__item">
                 <dt>{appendCurrencyCode(t('animals.form.acquisitionCost'), currency)}</dt>
@@ -151,7 +159,7 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                   <span
                     className={`animals-table__status animals-table__status--${animal.status.toLowerCase()}`}
                   >
-                    {t(`animals.statuses.${animal.status}`)}
+                    {getAnimalStatusLabel(t, animal.status)}
                   </span>
                 </dd>
               </div>
@@ -161,13 +169,13 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
           <article className="animals-panel animals-panel--table">
             <div className="animals-panel__header">
               <div>
-                <h2>Production History</h2>
-                <p>Production records sorted from most recent to oldest.</p>
+                <h2>{t('animals.detailsSections.productionTitle')}</h2>
+                <p>{t('animals.detailsSections.productionDescription')}</p>
               </div>
             </div>
 
             {productions.length === 0 && (
-              <p className="animals-page__status">No production records found for this animal.</p>
+              <p className="animals-page__status">{t('animals.detailsSections.productionEmpty')}</p>
             )}
 
             {productions.length > 0 && (
@@ -175,15 +183,15 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                 <table className="animals-table">
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Quantity</th>
+                      <th>{t('production.table.date')}</th>
+                      <th>{appendUnitToLabel(t('production.table.quantity'), t(getMeasurementUnitShortLabelKey(productionUnit)))}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {productions.map((production) => (
                       <tr key={`${production.date}-${production.quantity}`}>
                         <td>{production.date}</td>
-                        <td>{production.quantity}</td>
+                        <td>{formatMeasurementValue(production.quantity, productionUnit, language)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -195,13 +203,13 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
           <article className="animals-panel animals-panel--table">
             <div className="animals-panel__header">
               <div>
-                <h2>Feeding History</h2>
-                <p>Feeding records sorted from most recent to oldest.</p>
+                <h2>{t('animals.detailsSections.feedingTitle')}</h2>
+                <p>{t('animals.detailsSections.feedingDescription')}</p>
               </div>
             </div>
 
             {feedings.length === 0 && (
-              <p className="animals-page__status">No feeding records found for this animal.</p>
+              <p className="animals-page__status">{t('animals.detailsSections.feedingEmpty')}</p>
             )}
 
             {feedings.length > 0 && (
@@ -209,15 +217,15 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
                 <table className="animals-table">
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Quantity</th>
+                      <th>{t('production.table.date')}</th>
+                      <th>{appendUnitToLabel(t('feeding.table.quantity'), t(getMeasurementUnitShortLabelKey(feedingUnit)))}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {feedings.map((feeding) => (
                       <tr key={`${feeding.date}-${feeding.quantity}`}>
                         <td>{feeding.date}</td>
-                        <td>{feeding.quantity}</td>
+                        <td>{formatMeasurementValue(feeding.quantity, feedingUnit, language)}</td>
                       </tr>
                     ))}
                   </tbody>

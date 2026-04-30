@@ -1,6 +1,7 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
 import type { CurrencyCode } from '../context/CurrencyContext'
+import type { ProductionUnit } from '../utils/measurementUnits'
 import type {
   AnalyticsBarChartPoint,
   AnalyticsDataset,
@@ -117,10 +118,14 @@ export async function exportAnalyticsProductionCsv(
   filters: AnalyticsFilters,
   farmId?: string,
   currency?: CurrencyCode,
+  productionUnit?: ProductionUnit,
 ): Promise<void> {
   await downloadCsv(
     '/analytics/production/export',
-    buildAnalyticsParams(filters, farmId, currency),
+    {
+      ...buildAnalyticsParams(filters, farmId, currency),
+      ...(productionUnit ? { productionUnit } : {}),
+    },
     'analytics-production.csv',
   )
 }
@@ -137,18 +142,30 @@ export async function exportAnalyticsProfitCsv(
   filters: AnalyticsFilters,
   farmId?: string,
   currency?: CurrencyCode,
+  productionUnit?: ProductionUnit,
 ): Promise<void> {
-  await downloadCsv('/analytics/profit/export', buildAnalyticsParams(filters, farmId, currency), 'analytics-profit.csv')
+  await downloadCsv(
+    '/analytics/profit/export',
+    {
+      ...buildAnalyticsParams(filters, farmId, currency),
+      ...(productionUnit ? { productionUnit } : {}),
+    },
+    'analytics-profit.csv',
+  )
 }
 
 export async function exportAnalyticsProductionByAnimalCsv(
   filters: AnalyticsFilters,
   farmId?: string,
   currency?: CurrencyCode,
+  productionUnit?: ProductionUnit,
 ): Promise<void> {
   await downloadCsv(
     '/analytics/production/by-animal/export',
-    buildProductionByAnimalParams(filters, farmId, currency),
+    {
+      ...buildProductionByAnimalParams(filters, farmId, currency),
+      ...(productionUnit ? { productionUnit } : {}),
+    },
     'analytics-production-by-animal.csv',
   )
 }

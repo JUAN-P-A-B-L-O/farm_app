@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jpsoftware.farmapp.production.controller.ProductionController;
+import com.jpsoftware.farmapp.production.dto.CreateBatchProductionRequest;
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
@@ -97,6 +98,17 @@ class ProductionControllerContractTest {
     }
 
     @Test
+    void shouldExportProductionsWithMeasurementUnit() throws Exception {
+        productionService.exportWithUnitResponse = "id,quantity,quantityUnit\nproduction-1,12500.0,mL\n";
+
+        mockMvc.perform(get("/productions/export")
+                        .param("animalId", "animal-1")
+                        .param("measurementUnit", "MILLILITER"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("id,quantity,quantityUnit\nproduction-1,12500.0,mL\n"));
+    }
+
+    @Test
     void shouldReturnSummary() throws Exception {
         productionService.summaryResponse = new ProductionSummaryResponse("123", 35.5);
 
@@ -143,6 +155,35 @@ class ProductionControllerContractTest {
     }
 
     @Test
+    void shouldCreateBatchProductionSuccessfully() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": "batch-1",
+                  "date": "2026-03-20",
+                  "quantity": 12.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        productionService.batchCreateResponse = List.of(
+                buildResponse(),
+                new ProductionResponse("production-2", "animal-2", LocalDate.of(2026, 3, 20), 12.5));
+
+        mockMvc.perform(post("/productions/batch")
+                        .param("farmId", "farm-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].animalId").value("animal-1"))
+                .andExpect(jsonPath("$[1].animalId").value("animal-2"))
+                .andExpect(jsonPath("$[0].quantity").value(12.5))
+                .andExpect(jsonPath("$[1].quantity").value(12.5));
+
+        org.junit.jupiter.api.Assertions.assertEquals("farm-1", productionService.lastBatchCreateFarmId);
+    }
+
+    @Test
     void shouldFailWhenQuantityIsInvalid() throws Exception {
         String requestBody = """
                 {
@@ -158,8 +199,49 @@ class ProductionControllerContractTest {
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("must be greater than 0"))
+                .andExpect(jsonPath("$.error").value("O valor deve ser maior que zero."))
                 .andExpect(jsonPath("$.path").value("/productions"));
+    }
+
+    @Test
+    void shouldFailWhenBatchIdIsMissingOnBatchCreate() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": " ",
+                  "date": "2026-03-20",
+                  "quantity": 12.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        mockMvc.perform(post("/productions/batch")
+                        .param("farmId", "farm-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Selecione um lote."))
+                .andExpect(jsonPath("$.path").value("/productions/batch"));
+    }
+
+    @Test
+    void shouldFailWhenFarmIdIsMissingOnBatchCreate() throws Exception {
+        String requestBody = """
+                {
+                  "batchId": "batch-1",
+                  "date": "2026-03-20",
+                  "quantity": 12.5,
+                  "userId": "11111111-1111-1111-1111-111111111111"
+                }
+                """;
+
+        mockMvc.perform(post("/productions/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("O parâmetro 'farmId' é obrigatório."))
+                .andExpect(jsonPath("$.path").value("/productions/batch"));
     }
 
     @Test
@@ -180,7 +262,7 @@ class ProductionControllerContractTest {
                         .content(requestBody))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Animal not found"))
+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
                 .andExpect(jsonPath("$.path").value("/productions"));
     }
 
@@ -225,7 +307,7 @@ class ProductionControllerContractTest {
                         .content(requestBody))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Production not found"))
+                .andExpect(jsonPath("$.error").value("Produção não encontrada."))
                 .andExpect(jsonPath("$.path").value("/productions/missing-id"));
     }
 
@@ -236,7 +318,7 @@ class ProductionControllerContractTest {
         mockMvc.perform(get("/productions/summary/by-animal").param("animalId", "missing-animal"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Animal not found"))
+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
                 .andExpect(jsonPath("$.path").value("/productions/summary/by-animal"));
     }
 
@@ -247,7 +329,7 @@ class ProductionControllerContractTest {
         mockMvc.perform(get("/productions/summary/profit/by-animal").param("animalId", "missing-animal"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Animal not found"))
+                .andExpect(jsonPath("$.error").value("Animal não encontrado."))
                 .andExpect(jsonPath("$.path").value("/productions/summary/profit/by-animal"));
     }
 
@@ -256,7 +338,7 @@ class ProductionControllerContractTest {
         mockMvc.perform(get("/productions/summary/by-animal"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").exists())
+                .andExpect(jsonPath("$.error").value("O parâmetro 'animalId' é obrigatório."))
                 .andExpect(jsonPath("$.path").value("/productions/summary/by-animal"));
     }
 
@@ -271,12 +353,15 @@ class ProductionControllerContractTest {
     private static class TestProductionService extends ProductionService {
 
         private ProductionResponse createResponse;
+        private List<ProductionResponse> batchCreateResponse = List.of();
+        private String lastBatchCreateFarmId;
         private RuntimeException createException;
         private List<ProductionResponse> findAllResponse = List.of();
         private PaginatedResponse<ProductionResponse> paginatedResponse;
         private ProductionSummaryResponse summaryResponse;
         private ProductionProfitResponse profitResponse;
         private String exportResponse = "";
+        private String exportWithUnitResponse = "";
         private ProductionResponse updateResponse;
         private RuntimeException summaryException;
         private RuntimeException profitException;
@@ -294,17 +379,28 @@ class ProductionControllerContractTest {
         }
 
         @Override
-        public List<ProductionResponse> findAll(String animalId, LocalDate date, String farmId) {
+        public List<ProductionResponse> findAll(String search, String animalId, LocalDate date, String farmId) {
             return findAllResponse;
         }
 
         @Override
-        public String exportAll(String animalId, LocalDate date, String farmId) {
+        public String exportAll(String search, String animalId, LocalDate date, String farmId) {
             return exportResponse;
         }
 
         @Override
-        public PaginatedResponse<ProductionResponse> findAllPaginated(String animalId, LocalDate date, String farmId, int page, int size) {
+        public String exportAll(String search, String animalId, LocalDate date, String farmId, String measurementUnitParam) {
+            return exportWithUnitResponse;
+        }
+
+        @Override
+        public PaginatedResponse<ProductionResponse> findAllPaginated(
+                String search,
+                String animalId,
+                LocalDate date,
+                String farmId,
+                int page,
+                int size) {
             return paginatedResponse;
         }
 
@@ -330,6 +426,12 @@ class ProductionControllerContractTest {
                 throw createException;
             }
             return createResponse;
+        }
+
+        @Override
+        public List<ProductionResponse> createBatch(CreateBatchProductionRequest request, String farmId) {
+            lastBatchCreateFarmId = farmId;
+            return batchCreateResponse;
         }
 
         @Override
@@ -455,7 +557,7 @@ class ProductionControllerContractTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.error").value("Inactive production cannot be updated"))
+                .andExpect(jsonPath("$.error").value("Não é possível atualizar uma produção inativa."))
                 .andExpect(jsonPath("$.path").value("/productions/production-1"));
     }
 

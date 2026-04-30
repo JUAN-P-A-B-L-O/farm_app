@@ -1,0 +1,2738 @@
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/controller/AnalyticsController.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/controller/AnalyticsController.java
+index 31267ae..ff3e8fc 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/controller/AnalyticsController.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/controller/AnalyticsController.java
+@@ -52,10 +52,13 @@ public class AnalyticsController {
+             @RequestParam(required = false) String animalId,
+             @RequestParam(required = false) String farmId,
+             @RequestParam(required = false) String currency,
+-            @RequestParam(required = false, defaultValue = "day") String groupBy) {
++            @RequestParam(required = false, defaultValue = "day") String groupBy,
++            @RequestParam(required = false) String productionUnit) {
+         return CsvResponseFactory.buildDownload(
+                 "analytics-production.csv",
+-                analyticsService.exportProductionSeries(startDate, endDate, animalId, groupBy, farmId));
++                StringUtils.hasText(productionUnit)
++                        ? analyticsService.exportProductionSeries(startDate, endDate, animalId, groupBy, farmId, productionUnit)
++                        : analyticsService.exportProductionSeries(startDate, endDate, animalId, groupBy, farmId));
+     }
+ 
+     @GetMapping("/feeding")
+@@ -131,10 +134,21 @@ public class AnalyticsController {
+             @RequestParam(required = false) String farmId,
+             @RequestParam(required = false) String currency,
+             @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
+-            @RequestParam(required = false, defaultValue = "day") String groupBy) {
++            @RequestParam(required = false, defaultValue = "day") String groupBy,
++            @RequestParam(required = false) String productionUnit) {
+         return CsvResponseFactory.buildDownload(
+                 "analytics-profit.csv",
+-                StringUtils.hasText(currency)
++                StringUtils.hasText(productionUnit)
++                        ? analyticsService.exportProfitSeries(
++                                startDate,
++                                endDate,
++                                animalId,
++                                groupBy,
++                                farmId,
++                                includeAcquisitionCost,
++                                currency,
++                                productionUnit)
++                        : StringUtils.hasText(currency)
+                         ? analyticsService.exportProfitSeries(
+                                 startDate,
+                                 endDate,
+@@ -173,9 +187,12 @@ public class AnalyticsController {
+             @RequestParam(required = false) LocalDate endDate,
+             @RequestParam(required = false) String animalId,
+             @RequestParam(required = false) String farmId,
+-            @RequestParam(required = false) String currency) {
++            @RequestParam(required = false) String currency,
++            @RequestParam(required = false) String productionUnit) {
+         return CsvResponseFactory.buildDownload(
+                 "analytics-production-by-animal.csv",
+-                analyticsService.exportProductionByAnimal(startDate, endDate, animalId, farmId));
++                StringUtils.hasText(productionUnit)
++                        ? analyticsService.exportProductionByAnimal(startDate, endDate, animalId, farmId, productionUnit)
++                        : analyticsService.exportProductionByAnimal(startDate, endDate, animalId, farmId));
+     }
+ }
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/service/AnalyticsService.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/service/AnalyticsService.java
+index f910651..b19f1a5 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/service/AnalyticsService.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/service/AnalyticsService.java
+@@ -17,6 +17,8 @@ import com.jpsoftware.farmapp.production.repository.ProductionRepository;
+ import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
+ import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+ import com.jpsoftware.farmapp.shared.exception.ValidationException;
++import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
++import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
+ import com.jpsoftware.farmapp.shared.util.CsvColumn;
+ import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
+ import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
+@@ -103,9 +105,22 @@ public class AnalyticsService {
+             String animalId,
+             String groupByParam,
+             String farmId) {
++        return exportProductionSeries(startDate, endDate, animalId, groupByParam, farmId, null);
++    }
++
++    @Transactional(readOnly = true)
++    public String exportProductionSeries(
++            LocalDate startDate,
++            LocalDate endDate,
++            String animalId,
++            String groupByParam,
++            String farmId,
++            String productionUnitParam) {
++        MeasurementUnit productionUnit = MeasurementUnit.fromProductionParam(productionUnitParam, "productionUnit");
+         return CsvExportUtils.write(getProductionSeries(startDate, endDate, animalId, groupByParam, farmId), List.of(
+                 new CsvColumn<>("period", AnalyticsTimeSeriesPointResponse::getPeriod),
+-                new CsvColumn<>("value", AnalyticsTimeSeriesPointResponse::getValue)));
++                new CsvColumn<>("value", point -> MeasurementUnitConverter.convertFromBase(point.getValue(), productionUnit)),
++                new CsvColumn<>("valueUnit", row -> productionUnit.getSymbol())));
+     }
+ 
+     @Transactional(readOnly = true)
+@@ -262,11 +277,36 @@ public class AnalyticsService {
+             String farmId,
+             boolean includeAcquisitionCost,
+             String currency) {
++        return exportProfitSeries(
++                startDate,
++                endDate,
++                animalId,
++                groupByParam,
++                farmId,
++                includeAcquisitionCost,
++                currency,
++                null);
++    }
++
++    @Transactional(readOnly = true)
++    public String exportProfitSeries(
++            LocalDate startDate,
++            LocalDate endDate,
++            String animalId,
++            String groupByParam,
++            String farmId,
++            boolean includeAcquisitionCost,
++            String currency,
++            String productionUnitParam) {
++        MeasurementUnit productionUnit = MeasurementUnit.fromProductionParam(productionUnitParam, "productionUnit");
+         return CsvExportUtils.write(
+                 getProfitSeries(startDate, endDate, animalId, groupByParam, farmId, includeAcquisitionCost, currency),
+                 List.of(
+                         new CsvColumn<>("period", AnalyticsProfitPointResponse::getPeriod),
+-                        new CsvColumn<>("production", AnalyticsProfitPointResponse::getProduction),
++                        new CsvColumn<>("production", point -> MeasurementUnitConverter.convertFromBase(
++                                point.getProduction(),
++                                productionUnit)),
++                        new CsvColumn<>("productionUnit", row -> productionUnit.getSymbol()),
+                         new CsvColumn<>("feedingCost", AnalyticsProfitPointResponse::getFeedingCost),
+                         new CsvColumn<>("revenue", AnalyticsProfitPointResponse::getRevenue),
+                         new CsvColumn<>("profit", AnalyticsProfitPointResponse::getProfit)));
+@@ -302,10 +342,24 @@ public class AnalyticsService {
+             LocalDate endDate,
+             String animalId,
+             String farmId) {
++        return exportProductionByAnimal(startDate, endDate, animalId, farmId, null);
++    }
++
++    @Transactional(readOnly = true)
++    public String exportProductionByAnimal(
++            LocalDate startDate,
++            LocalDate endDate,
++            String animalId,
++            String farmId,
++            String productionUnitParam) {
++        MeasurementUnit productionUnit = MeasurementUnit.fromProductionParam(productionUnitParam, "productionUnit");
+         return CsvExportUtils.write(getProductionByAnimal(startDate, endDate, animalId, farmId), List.of(
+                 new CsvColumn<>("animalId", AnalyticsAnimalProductionPointResponse::getAnimalId),
+                 new CsvColumn<>("animalTag", AnalyticsAnimalProductionPointResponse::getAnimalTag),
+-                new CsvColumn<>("quantity", AnalyticsAnimalProductionPointResponse::getQuantity)));
++                new CsvColumn<>("quantity", point -> MeasurementUnitConverter.convertFromBase(
++                        point.getQuantity(),
++                        productionUnit)),
++                new CsvColumn<>("quantityUnit", row -> productionUnit.getSymbol())));
+     }
+ 
+     private AnalyticsGroupBy validateFilters(
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/controller/DashboardController.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/controller/DashboardController.java
+index 11123a8..0738dd4 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/controller/DashboardController.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/controller/DashboardController.java
+@@ -74,11 +74,32 @@ public class DashboardController {
+             @RequestParam(required = false) List<String> animalIds,
+             @RequestParam(required = false) String status,
+             @RequestParam(required = false, defaultValue = "true") boolean includeAcquisitionCost,
+-            @RequestParam(required = false) String currency) {
++            @RequestParam(required = false) String currency,
++            @RequestParam(required = false) String productionUnit) {
+         boolean hasMultiAnimalFilter = hasAnimalIds(animalIds);
+         return CsvResponseFactory.buildDownload(
+                 "dashboard-summary.csv",
+-                StringUtils.hasText(currency)
++                StringUtils.hasText(productionUnit)
++                        ? hasMultiAnimalFilter
++                                ? dashboardService.exportDashboardByAnimals(
++                                        farmId,
++                                        startDate,
++                                        endDate,
++                                        mergeAnimalFilters(animalId, animalIds),
++                                        status,
++                                        includeAcquisitionCost,
++                                        currency,
++                                        productionUnit)
++                                : dashboardService.exportDashboard(
++                                        farmId,
++                                        startDate,
++                                        endDate,
++                                        animalId,
++                                        status,
++                                        includeAcquisitionCost,
++                                        currency,
++                                        productionUnit)
++                        : StringUtils.hasText(currency)
+                         ? hasMultiAnimalFilter
+                                 ? dashboardService.exportDashboardByAnimals(
+                                         farmId,
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java
+index 25f0253..762c569 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java
+@@ -13,6 +13,8 @@ import com.jpsoftware.farmapp.production.entity.ProductionEntity;
+ import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+ import com.jpsoftware.farmapp.shared.exception.ValidationException;
+ import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
++import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
++import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
+ import com.jpsoftware.farmapp.shared.util.CsvColumn;
+ import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
+ import com.jpsoftware.farmapp.production.repository.ProductionRepository;
+@@ -210,6 +212,20 @@ public class DashboardService {
+             String status,
+             boolean includeAcquisitionCost,
+             String currency) {
++        return exportDashboard(farmId, startDate, endDate, animalId, status, includeAcquisitionCost, currency, null);
++    }
++
++    @Transactional(readOnly = true)
++    public String exportDashboard(
++            String farmId,
++            LocalDate startDate,
++            LocalDate endDate,
++            String animalId,
++            String status,
++            boolean includeAcquisitionCost,
++            String currency,
++            String productionUnitParam) {
++        MeasurementUnit productionUnit = MeasurementUnit.fromProductionParam(productionUnitParam, "productionUnit");
+         DashboardResponse dashboard = getDashboard(
+                 farmId,
+                 startDate,
+@@ -219,7 +235,10 @@ public class DashboardService {
+                 includeAcquisitionCost,
+                 currency);
+         return CsvExportUtils.write(List.of(dashboard), List.of(
+-                new CsvColumn<>("totalProduction", DashboardResponse::getTotalProduction),
++                new CsvColumn<>("totalProduction", response -> MeasurementUnitConverter.convertFromBase(
++                        response.getTotalProduction(),
++                        productionUnit)),
++                new CsvColumn<>("totalProductionUnit", row -> productionUnit.getSymbol()),
+                 new CsvColumn<>("totalFeedingCost", DashboardResponse::getTotalFeedingCost),
+                 new CsvColumn<>("totalRevenue", DashboardResponse::getTotalRevenue),
+                 new CsvColumn<>("totalProfit", DashboardResponse::getTotalProfit),
+@@ -235,6 +254,20 @@ public class DashboardService {
+             String status,
+             boolean includeAcquisitionCost,
+             String currency) {
++        return exportDashboardByAnimals(farmId, startDate, endDate, animalIds, status, includeAcquisitionCost, currency, null);
++    }
++
++    @Transactional(readOnly = true)
++    public String exportDashboardByAnimals(
++            String farmId,
++            LocalDate startDate,
++            LocalDate endDate,
++            Collection<String> animalIds,
++            String status,
++            boolean includeAcquisitionCost,
++            String currency,
++            String productionUnitParam) {
++        MeasurementUnit productionUnit = MeasurementUnit.fromProductionParam(productionUnitParam, "productionUnit");
+         DashboardResponse dashboard = getDashboardByAnimals(
+                 farmId,
+                 startDate,
+@@ -244,7 +277,10 @@ public class DashboardService {
+                 includeAcquisitionCost,
+                 currency);
+         return CsvExportUtils.write(List.of(dashboard), List.of(
+-                new CsvColumn<>("totalProduction", DashboardResponse::getTotalProduction),
++                new CsvColumn<>("totalProduction", response -> MeasurementUnitConverter.convertFromBase(
++                        response.getTotalProduction(),
++                        productionUnit)),
++                new CsvColumn<>("totalProductionUnit", row -> productionUnit.getSymbol()),
+                 new CsvColumn<>("totalFeedingCost", DashboardResponse::getTotalFeedingCost),
+                 new CsvColumn<>("totalRevenue", DashboardResponse::getTotalRevenue),
+                 new CsvColumn<>("totalProfit", DashboardResponse::getTotalProfit),
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feeding/controller/FeedingController.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feeding/controller/FeedingController.java
+index cc67f9b..e4375eb 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feeding/controller/FeedingController.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feeding/controller/FeedingController.java
+@@ -18,6 +18,7 @@ import java.time.LocalDate;
+ import java.util.List;
+ import org.springframework.http.HttpStatus;
+ import org.springframework.http.ResponseEntity;
++import org.springframework.util.StringUtils;
+ import org.springframework.web.bind.annotation.GetMapping;
+ import org.springframework.web.bind.annotation.PathVariable;
+ import org.springframework.web.bind.annotation.PostMapping;
+@@ -85,8 +86,13 @@ public class FeedingController {
+             @RequestParam(required = false) String animalId,
+             @RequestParam(required = false) String feedTypeId,
+             @RequestParam(required = false) LocalDate date,
+-            @RequestParam(required = false) String farmId) {
+-        return CsvResponseFactory.buildDownload("feedings.csv", feedingService.exportAll(search, animalId, feedTypeId, date, farmId));
++            @RequestParam(required = false) String farmId,
++            @RequestParam(required = false) String measurementUnit) {
++        return CsvResponseFactory.buildDownload(
++                "feedings.csv",
++                StringUtils.hasText(measurementUnit)
++                        ? feedingService.exportAll(search, animalId, feedTypeId, date, farmId, measurementUnit)
++                        : feedingService.exportAll(search, animalId, feedTypeId, date, farmId));
+     }
+ 
+     @GetMapping("/{id}")
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feeding/service/FeedingService.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feeding/service/FeedingService.java
+index 73edb31..7aa2ef7 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feeding/service/FeedingService.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/feeding/service/FeedingService.java
+@@ -16,6 +16,8 @@ import com.jpsoftware.farmapp.feeding.mapper.FeedingMapper;
+ import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
+ import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+ import com.jpsoftware.farmapp.shared.exception.ConflictException;
++import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
++import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
+ import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+ import com.jpsoftware.farmapp.shared.exception.ValidationException;
+ import com.jpsoftware.farmapp.shared.util.CsvColumn;
+@@ -115,6 +117,18 @@ public class FeedingService {
+ 
+     @Transactional(readOnly = true)
+     public String exportAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
++        return exportAll(search, animalId, feedTypeId, date, farmId, null);
++    }
++
++    @Transactional(readOnly = true)
++    public String exportAll(
++            String search,
++            String animalId,
++            String feedTypeId,
++            LocalDate date,
++            String farmId,
++            String measurementUnitParam) {
++        MeasurementUnit measurementUnit = MeasurementUnit.fromFeedingParam(measurementUnitParam, "measurementUnit");
+         return CsvExportUtils.write(findAll(search, animalId, feedTypeId, date, farmId), List.of(
+                 new CsvColumn<>("id", FeedingResponse::getId),
+                 new CsvColumn<>("animalId", FeedingResponse::getAnimalId),
+@@ -122,7 +136,10 @@ public class FeedingService {
+                 new CsvColumn<>("feedTypeId", FeedingResponse::getFeedTypeId),
+                 new CsvColumn<>("feedTypeName", feeding -> feeding.getFeedType() != null ? feeding.getFeedType().getName() : null),
+                 new CsvColumn<>("date", FeedingResponse::getDate),
+-                new CsvColumn<>("quantity", FeedingResponse::getQuantity)));
++                new CsvColumn<>("quantity", feeding -> MeasurementUnitConverter.convertFromBase(
++                        feeding.getQuantity(),
++                        measurementUnit)),
++                new CsvColumn<>("quantityUnit", row -> measurementUnit.getSymbol())));
+     }
+ 
+     @Transactional(readOnly = true)
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/production/controller/ProductionController.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/production/controller/ProductionController.java
+index caefbb6..6855266 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/production/controller/ProductionController.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/production/controller/ProductionController.java
+@@ -21,6 +21,7 @@ import java.time.LocalDate;
+ import java.util.List;
+ import org.springframework.http.HttpStatus;
+ import org.springframework.http.ResponseEntity;
++import org.springframework.util.StringUtils;
+ import org.springframework.validation.annotation.Validated;
+ import org.springframework.web.bind.annotation.GetMapping;
+ import org.springframework.web.bind.annotation.PathVariable;
+@@ -71,8 +72,13 @@ public class ProductionController {
+             @RequestParam(required = false) String search,
+             @RequestParam(required = false) String animalId,
+             @RequestParam(required = false) LocalDate date,
+-            @RequestParam(required = false) String farmId) {
+-        return CsvResponseFactory.buildDownload("productions.csv", productionService.exportAll(search, animalId, date, farmId));
++            @RequestParam(required = false) String farmId,
++            @RequestParam(required = false) String measurementUnit) {
++        return CsvResponseFactory.buildDownload(
++                "productions.csv",
++                StringUtils.hasText(measurementUnit)
++                        ? productionService.exportAll(search, animalId, date, farmId, measurementUnit)
++                        : productionService.exportAll(search, animalId, date, farmId));
+     }
+ 
+     @GetMapping("/{id}")
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/production/service/ProductionService.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/production/service/ProductionService.java
+index 7e49938..23191ae 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/production/service/ProductionService.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/production/service/ProductionService.java
+@@ -18,6 +18,8 @@ import com.jpsoftware.farmapp.production.repository.ProductionRepository;
+ import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+ import com.jpsoftware.farmapp.shared.exception.BusinessException;
+ import com.jpsoftware.farmapp.shared.exception.ConflictException;
++import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
++import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
+ import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+ import com.jpsoftware.farmapp.shared.exception.ValidationException;
+ import com.jpsoftware.farmapp.shared.util.CsvColumn;
+@@ -121,12 +123,21 @@ public class ProductionService {
+ 
+     @Transactional(readOnly = true)
+     public String exportAll(String search, String animalId, LocalDate date, String farmId) {
++        return exportAll(search, animalId, date, farmId, null);
++    }
++
++    @Transactional(readOnly = true)
++    public String exportAll(String search, String animalId, LocalDate date, String farmId, String measurementUnitParam) {
++        MeasurementUnit measurementUnit = MeasurementUnit.fromProductionParam(measurementUnitParam, "measurementUnit");
+         return CsvExportUtils.write(findAll(search, animalId, date, farmId), List.of(
+                 new CsvColumn<>("id", ProductionResponse::getId),
+                 new CsvColumn<>("animalId", ProductionResponse::getAnimalId),
+                 new CsvColumn<>("animalTag", production -> production.getAnimal() != null ? production.getAnimal().getTag() : null),
+                 new CsvColumn<>("date", ProductionResponse::getDate),
+-                new CsvColumn<>("quantity", ProductionResponse::getQuantity)));
++                new CsvColumn<>("quantity", production -> MeasurementUnitConverter.convertFromBase(
++                        production.getQuantity(),
++                        measurementUnit)),
++                new CsvColumn<>("quantityUnit", row -> measurementUnit.getSymbol())));
+     }
+ 
+     @Transactional(readOnly = true)
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
+index 90c090f..ec3289d 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
+@@ -67,6 +67,9 @@ public final class ErrorMessageTranslator {
+             Map.entry("groupBy must be day or month", "O agrupamento deve ser por dia ou mês."),
+             Map.entry("status must be ACTIVE, INACTIVE, SOLD, or DEAD", "O status deve ser Ativo, Inativo, Vendido ou Morto."),
+             Map.entry("currency must be BRL or USD", "A moeda deve ser BRL ou USD."),
++            Map.entry("measurementUnit must be LITER or MILLILITER", "A unidade deve ser LITER ou MILLILITER."),
++            Map.entry("measurementUnit must be KILOGRAM or GRAM", "A unidade deve ser KILOGRAM ou GRAM."),
++            Map.entry("productionUnit must be LITER or MILLILITER", "A unidade de produção deve ser LITER ou MILLILITER."),
+             Map.entry("Invalid email or password", "E-mail ou senha inválidos."),
+             Map.entry("Inactive production cannot be updated", "Não é possível atualizar uma produção inativa."),
+             Map.entry("Inactive feeding cannot be updated", "Não é possível atualizar uma alimentação inativa."),
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnit.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnit.java
+new file mode 100644
+index 0000000..fee7f4d
+--- /dev/null
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnit.java
+@@ -0,0 +1,52 @@
++package com.jpsoftware.farmapp.shared.measurement;
++
++import com.jpsoftware.farmapp.shared.exception.ValidationException;
++import java.util.Locale;
++import org.springframework.util.StringUtils;
++
++public enum MeasurementUnit {
++    LITER("L", 1.0),
++    MILLILITER("mL", 1_000.0),
++    KILOGRAM("kg", 1.0),
++    GRAM("g", 1_000.0);
++
++    private final String symbol;
++    private final double unitsPerBaseUnit;
++
++    MeasurementUnit(String symbol, double unitsPerBaseUnit) {
++        this.symbol = symbol;
++        this.unitsPerBaseUnit = unitsPerBaseUnit;
++    }
++
++    public String getSymbol() {
++        return symbol;
++    }
++
++    public double getUnitsPerBaseUnit() {
++        return unitsPerBaseUnit;
++    }
++
++    public static MeasurementUnit fromProductionParam(String value, String parameterName) {
++        if (!StringUtils.hasText(value)) {
++            return LITER;
++        }
++
++        return switch (value.trim().toUpperCase(Locale.ROOT)) {
++            case "LITER" -> LITER;
++            case "MILLILITER" -> MILLILITER;
++            default -> throw new ValidationException(parameterName + " must be LITER or MILLILITER");
++        };
++    }
++
++    public static MeasurementUnit fromFeedingParam(String value, String parameterName) {
++        if (!StringUtils.hasText(value)) {
++            return KILOGRAM;
++        }
++
++        return switch (value.trim().toUpperCase(Locale.ROOT)) {
++            case "KILOGRAM" -> KILOGRAM;
++            case "GRAM" -> GRAM;
++            default -> throw new ValidationException(parameterName + " must be KILOGRAM or GRAM");
++        };
++    }
++}
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnitConverter.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnitConverter.java
+new file mode 100644
+index 0000000..db3db47
+--- /dev/null
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnitConverter.java
+@@ -0,0 +1,21 @@
++package com.jpsoftware.farmapp.shared.measurement;
++
++import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
++
++public final class MeasurementUnitConverter {
++
++    private MeasurementUnitConverter() {
++    }
++
++    public static Double convertFromBase(Double value, MeasurementUnit unit) {
++        if (value == null) {
++            return null;
++        }
++
++        if (unit == MeasurementUnit.MILLILITER || unit == MeasurementUnit.GRAM) {
++            return DecimalScaleUtils.normalize(value * unit.getUnitsPerBaseUnit());
++        }
++
++        return DecimalScaleUtils.normalize(value);
++    }
++}
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/analytics/AnalyticsExportControllerContractTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/analytics/AnalyticsExportControllerContractTest.java
+index b02c43e..0d94bc1 100644
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/analytics/AnalyticsExportControllerContractTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/analytics/AnalyticsExportControllerContractTest.java
+@@ -46,6 +46,22 @@ class AnalyticsExportControllerContractTest {
+         verify(analyticsService).exportProductionSeries(null, null, "animal-1", "month", "farm-1");
+     }
+ 
++    @Test
++    void shouldExportProductionAnalyticsAsCsvWithProductionUnit() throws Exception {
++        when(analyticsService.exportProductionSeries(null, null, "animal-1", "month", "farm-1", "MILLILITER"))
++                .thenReturn("period,value,valueUnit\n2026-04,10000.0,mL\n");
++
++        mockMvc.perform(get("/analytics/production/export")
++                        .param("animalId", "animal-1")
++                        .param("groupBy", "month")
++                        .param("farmId", "farm-1")
++                        .param("productionUnit", "MILLILITER"))
++                .andExpect(status().isOk())
++                .andExpect(content().string("period,value,valueUnit\n2026-04,10000.0,mL\n"));
++
++        verify(analyticsService).exportProductionSeries(null, null, "animal-1", "month", "farm-1", "MILLILITER");
++    }
++
+     @Test
+     void shouldExportFeedingAnalyticsAsCsv() throws Exception {
+         when(analyticsService.exportFeedingCostSeries(null, null, "animal-1", "day", "farm-1"))
+@@ -114,6 +130,23 @@ class AnalyticsExportControllerContractTest {
+         verify(analyticsService).exportProfitSeries(null, null, "animal-1", "day", "farm-1", false, "USD");
+     }
+ 
++    @Test
++    void shouldExportProfitAnalyticsAsCsvWithProductionUnit() throws Exception {
++        when(analyticsService.exportProfitSeries(null, null, "animal-1", "day", "farm-1", false, "USD", "MILLILITER"))
++                .thenReturn("period,production,productionUnit,profit\n2026-04-14,10000.0,mL,54.0\n");
++
++        mockMvc.perform(get("/analytics/profit/export")
++                        .param("animalId", "animal-1")
++                        .param("farmId", "farm-1")
++                        .param("includeAcquisitionCost", "false")
++                        .param("currency", "USD")
++                        .param("productionUnit", "MILLILITER"))
++                .andExpect(status().isOk())
++                .andExpect(content().string("period,production,productionUnit,profit\n2026-04-14,10000.0,mL,54.0\n"));
++
++        verify(analyticsService).exportProfitSeries(null, null, "animal-1", "day", "farm-1", false, "USD", "MILLILITER");
++    }
++
+     @Test
+     void shouldExportProductionByAnimalAsCsv() throws Exception {
+         when(analyticsService.exportProductionByAnimal(null, null, "animal-1", "farm-1"))
+@@ -129,4 +162,19 @@ class AnalyticsExportControllerContractTest {
+ 
+         verify(analyticsService).exportProductionByAnimal(null, null, "animal-1", "farm-1");
+     }
++
++    @Test
++    void shouldExportProductionByAnimalAsCsvWithProductionUnit() throws Exception {
++        when(analyticsService.exportProductionByAnimal(null, null, "animal-1", "farm-1", "MILLILITER"))
++                .thenReturn("animalId,animalTag,quantity,quantityUnit\nanimal-1,TAG-001,10000.0,mL\n");
++
++        mockMvc.perform(get("/analytics/production/by-animal/export")
++                        .param("animalId", "animal-1")
++                        .param("farmId", "farm-1")
++                        .param("productionUnit", "MILLILITER"))
++                .andExpect(status().isOk())
++                .andExpect(content().string("animalId,animalTag,quantity,quantityUnit\nanimal-1,TAG-001,10000.0,mL\n"));
++
++        verify(analyticsService).exportProductionByAnimal(null, null, "animal-1", "farm-1", "MILLILITER");
++    }
+ }
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java
+index ff4f8be..27ed15f 100644
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java
+@@ -82,6 +82,42 @@ class DashboardExportControllerContractTest {
+                 "USD");
+     }
+ 
++    @Test
++    void shouldExportDashboardAsCsvWithProductionUnit() throws Exception {
++        when(dashboardService.exportDashboard(
++                "farm-001",
++                LocalDate.parse("2026-02-01"),
++                LocalDate.parse("2026-02-28"),
++                "animal-9",
++                "SOLD",
++                true,
++                "USD",
++                "MILLILITER"))
++                .thenReturn("totalProduction,totalProductionUnit\n100000.0,mL\n");
++
++        mockMvc.perform(get("/dashboard/export")
++                        .param("farmId", "farm-001")
++                        .param("startDate", "2026-02-01")
++                        .param("endDate", "2026-02-28")
++                        .param("animalId", "animal-9")
++                        .param("status", "SOLD")
++                        .param("includeAcquisitionCost", "true")
++                        .param("currency", "USD")
++                        .param("productionUnit", "MILLILITER"))
++                .andExpect(status().isOk())
++                .andExpect(content().string("totalProduction,totalProductionUnit\n100000.0,mL\n"));
++
++        verify(dashboardService).exportDashboard(
++                "farm-001",
++                LocalDate.parse("2026-02-01"),
++                LocalDate.parse("2026-02-28"),
++                "animal-9",
++                "SOLD",
++                true,
++                "USD",
++                "MILLILITER");
++    }
++
+     @Test
+     void shouldExportDashboardAsCsvWithMultiAnimalFilters() throws Exception {
+         when(dashboardService.exportDashboardByAnimals(
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java
+index f793f79..39c5cb6 100644
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java
+@@ -153,6 +153,17 @@ class FeedingControllerContractTest {
+                 .andExpect(content().string("id,animalId\nfeeding-1,animal-1\n"));
+     }
+ 
++    @Test
++    void shouldExportFeedingsWithMeasurementUnit() throws Exception {
++        feedingService.exportWithUnitResponse = "id,quantity,quantityUnit\nfeeding-1,8500.0,g\n";
++
++        mockMvc.perform(get("/feedings/export")
++                        .param("animalId", "animal-1")
++                        .param("measurementUnit", "GRAM"))
++                .andExpect(status().isOk())
++                .andExpect(content().string("id,quantity,quantityUnit\nfeeding-1,8500.0,g\n"));
++    }
++
+     @Test
+     void shouldReturnEmptyWhenNoMatch() throws Exception {
+         feedingService.findAllResponse = List.of();
+@@ -223,6 +234,7 @@ class FeedingControllerContractTest {
+         private PaginatedResponse<FeedingResponse> paginatedResponse;
+         private FeedingResponse findByIdResponse;
+         private String exportResponse = "";
++        private String exportWithUnitResponse = "";
+         private RuntimeException findByIdException;
+         private FeedingResponse updateResponse;
+         private RuntimeException updateException;
+@@ -253,6 +265,17 @@ class FeedingControllerContractTest {
+             return exportResponse;
+         }
+ 
++        @Override
++        public String exportAll(
++                String search,
++                String animalId,
++                String feedTypeId,
++                LocalDate date,
++                String farmId,
++                String measurementUnitParam) {
++            return exportWithUnitResponse;
++        }
++
+         @Override
+         public PaginatedResponse<FeedingResponse> findAllPaginated(
+                 String search,
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java
+index 642ddaa..47cb929 100644
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java
+@@ -96,6 +96,17 @@ class ProductionControllerContractTest {
+                 .andExpect(content().string("id,animalId\nproduction-1,animal-1\n"));
+     }
+ 
++    @Test
++    void shouldExportProductionsWithMeasurementUnit() throws Exception {
++        productionService.exportWithUnitResponse = "id,quantity,quantityUnit\nproduction-1,12500.0,mL\n";
++
++        mockMvc.perform(get("/productions/export")
++                        .param("animalId", "animal-1")
++                        .param("measurementUnit", "MILLILITER"))
++                .andExpect(status().isOk())
++                .andExpect(content().string("id,quantity,quantityUnit\nproduction-1,12500.0,mL\n"));
++    }
++
+     @Test
+     void shouldReturnSummary() throws Exception {
+         productionService.summaryResponse = new ProductionSummaryResponse("123", 35.5);
+@@ -277,6 +288,7 @@ class ProductionControllerContractTest {
+         private ProductionSummaryResponse summaryResponse;
+         private ProductionProfitResponse profitResponse;
+         private String exportResponse = "";
++        private String exportWithUnitResponse = "";
+         private ProductionResponse updateResponse;
+         private RuntimeException summaryException;
+         private RuntimeException profitException;
+@@ -303,6 +315,11 @@ class ProductionControllerContractTest {
+             return exportResponse;
+         }
+ 
++        @Override
++        public String exportAll(String search, String animalId, LocalDate date, String farmId, String measurementUnitParam) {
++            return exportWithUnitResponse;
++        }
++
+         @Override
+         public PaginatedResponse<ProductionResponse> findAllPaginated(
+                 String search,
+diff --git a/frontend/web/farm_web/src/components/feeding/FeedingForm.tsx b/frontend/web/farm_web/src/components/feeding/FeedingForm.tsx
+index a1275d8..71a3e52 100644
+--- a/frontend/web/farm_web/src/components/feeding/FeedingForm.tsx
++++ b/frontend/web/farm_web/src/components/feeding/FeedingForm.tsx
+@@ -1,7 +1,15 @@
+ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
++import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
+ import { useTranslation } from '../../hooks/useTranslation'
+ import { getAllUsers } from '../../services/userService'
+ import { hasAtMostTwoDecimals, parseTwoDecimalInput } from '../../utils/decimal'
++import {
++  appendUnitToLabel,
++  convertMeasurementFromBase,
++  convertMeasurementToBase,
++  getMeasurementInputStep,
++  getMeasurementUnitShortLabelKey,
++} from '../../utils/measurementUnits'
+ import type {
+   FeedingAnimalOption,
+   FeedingFeedTypeOption,
+@@ -35,6 +43,7 @@ function FeedingForm({
+   allowDateSelection = true,
+ }: FeedingFormProps) {
+   const { t, language } = useTranslation()
++  const { feedingUnit } = useMeasurementUnits()
+   const [formData, setFormData] = useState<FeedingFormData>(initialValues)
+   const [users, setUsers] = useState<User[]>([])
+   const [isUsersLoading, setIsUsersLoading] = useState(true)
+@@ -75,10 +84,22 @@ function FeedingForm({
+ 
+     setValidationMessage('')
+ 
+-    setFormData((currentData) => ({
+-      ...currentData,
+-      [name]: name === 'quantity' ? parseTwoDecimalInput(value, currentData.quantity) : value,
+-    }))
++    setFormData((currentData) => {
++      if (name !== 'quantity') {
++        return {
++          ...currentData,
++          [name]: value,
++        }
++      }
++
++      const currentDisplayQuantity = convertMeasurementFromBase(currentData.quantity, feedingUnit)
++      const nextDisplayQuantity = parseTwoDecimalInput(value, currentDisplayQuantity)
++
++      return {
++        ...currentData,
++        quantity: convertMeasurementToBase(nextDisplayQuantity, feedingUnit),
++      }
++    })
+   }
+ 
+   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+@@ -95,8 +116,17 @@ function FeedingForm({
+       return
+     }
+ 
++    if (!Number.isFinite(formData.quantity) || formData.quantity <= 0) {
++      setValidationMessage(t('feeding.errors.quantity'))
++      return
++    }
++
+     if (!hasAtMostTwoDecimals(formData.quantity)) {
+-      setValidationMessage(t('feeding.errors.quantityPrecision'))
++      setValidationMessage(
++        feedingUnit === 'GRAM'
++          ? t('measurementUnits.errors.feedingStep')
++          : t('feeding.errors.quantityPrecision'),
++      )
+       return
+     }
+ 
+@@ -120,6 +150,8 @@ function FeedingForm({
+ 
+   const feedbackMessage =
+     validationMessage || (requireUserSelection ? usersErrorMessage : '') || errorMessage
++  const quantityUnitLabel = t(getMeasurementUnitShortLabelKey(feedingUnit))
++  const displayQuantity = convertMeasurementFromBase(formData.quantity, feedingUnit)
+ 
+   return (
+     <form className="animal-form" onSubmit={handleSubmit}>
+@@ -196,13 +228,13 @@ function FeedingForm({
+         )}
+ 
+         <label className="animal-form__field">
+-          <span>{t('feeding.form.quantity')}</span>
++          <span>{appendUnitToLabel(t('feeding.form.quantity'), quantityUnitLabel)}</span>
+           <input
+             name="quantity"
+             type="number"
+             min="0"
+-            step="0.01"
+-            value={formData.quantity}
++            step={getMeasurementInputStep(feedingUnit)}
++            value={displayQuantity}
+             onChange={handleChange}
+             placeholder="0"
+             required
+diff --git a/frontend/web/farm_web/src/components/production/ProductionForm.tsx b/frontend/web/farm_web/src/components/production/ProductionForm.tsx
+index f207f16..7a74cbc 100644
+--- a/frontend/web/farm_web/src/components/production/ProductionForm.tsx
++++ b/frontend/web/farm_web/src/components/production/ProductionForm.tsx
+@@ -1,7 +1,15 @@
+ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
++import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
+ import { useTranslation } from '../../hooks/useTranslation'
+ import { getAllUsers } from '../../services/userService'
+ import { hasAtMostTwoDecimals, parseTwoDecimalInput } from '../../utils/decimal'
++import {
++  appendUnitToLabel,
++  convertMeasurementFromBase,
++  convertMeasurementToBase,
++  getMeasurementInputStep,
++  getMeasurementUnitShortLabelKey,
++} from '../../utils/measurementUnits'
+ import type { ProductionAnimalOption, ProductionFormData } from '../../types/production'
+ import type { User } from '../../types/user'
+ 
+@@ -29,6 +37,7 @@ function ProductionForm({
+   allowDateSelection = true,
+ }: ProductionFormProps) {
+   const { t, language } = useTranslation()
++  const { productionUnit } = useMeasurementUnits()
+   const [formData, setFormData] = useState<ProductionFormData>(initialValues)
+   const [users, setUsers] = useState<User[]>([])
+   const [isUsersLoading, setIsUsersLoading] = useState(true)
+@@ -68,10 +77,22 @@ function ProductionForm({
+     const { name, value } = event.target
+ 
+     setValidationMessage('')
+-    setFormData((currentData) => ({
+-      ...currentData,
+-      [name]: name === 'quantity' ? parseTwoDecimalInput(value, currentData.quantity) : value,
+-    }))
++    setFormData((currentData) => {
++      if (name !== 'quantity') {
++        return {
++          ...currentData,
++          [name]: value,
++        }
++      }
++
++      const currentDisplayQuantity = convertMeasurementFromBase(currentData.quantity, productionUnit)
++      const nextDisplayQuantity = parseTwoDecimalInput(value, currentDisplayQuantity)
++
++      return {
++        ...currentData,
++        quantity: convertMeasurementToBase(nextDisplayQuantity, productionUnit),
++      }
++    })
+   }
+ 
+   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+@@ -94,7 +115,11 @@ function ProductionForm({
+     }
+ 
+     if (!hasAtMostTwoDecimals(formData.quantity)) {
+-      setValidationMessage(t('production.errors.quantityPrecision'))
++      setValidationMessage(
++        productionUnit === 'MILLILITER'
++          ? t('measurementUnits.errors.productionStep')
++          : t('production.errors.quantityPrecision'),
++      )
+       return
+     }
+ 
+@@ -117,6 +142,8 @@ function ProductionForm({
+ 
+   const feedbackMessage =
+     validationMessage || (requireUserSelection ? usersErrorMessage : '') || errorMessage
++  const quantityUnitLabel = t(getMeasurementUnitShortLabelKey(productionUnit))
++  const displayQuantity = convertMeasurementFromBase(formData.quantity, productionUnit)
+ 
+   return (
+     <form className="animal-form" onSubmit={handleSubmit}>
+@@ -175,13 +202,13 @@ function ProductionForm({
+         )}
+ 
+         <label className="animal-form__field">
+-          <span>{t('production.form.quantity')}</span>
++          <span>{appendUnitToLabel(t('production.form.quantity'), quantityUnitLabel)}</span>
+           <input
+             name="quantity"
+             type="number"
+             min="0"
+-            step="0.01"
+-            value={formData.quantity}
++            step={getMeasurementInputStep(productionUnit)}
++            value={displayQuantity}
+             onChange={handleChange}
+             placeholder="0"
+             required
+diff --git a/frontend/web/farm_web/src/context/MeasurementUnitContext.tsx b/frontend/web/farm_web/src/context/MeasurementUnitContext.tsx
+new file mode 100644
+index 0000000..551c03d
+--- /dev/null
++++ b/frontend/web/farm_web/src/context/MeasurementUnitContext.tsx
+@@ -0,0 +1,98 @@
++import {
++  createContext,
++  useContext,
++  useEffect,
++  useMemo,
++  useState,
++  type ReactNode,
++} from 'react'
++import type { FeedingUnit, ProductionUnit } from '../utils/measurementUnits'
++
++interface MeasurementUnitContextValue {
++  productionUnit: ProductionUnit
++  feedingUnit: FeedingUnit
++  setProductionUnit: (unit: ProductionUnit) => void
++  setFeedingUnit: (unit: FeedingUnit) => void
++}
++
++const STORAGE_KEY = 'farm-web-measurement-units'
++const DEFAULT_PRODUCTION_UNIT: ProductionUnit = 'LITER'
++const DEFAULT_FEEDING_UNIT: FeedingUnit = 'KILOGRAM'
++
++const MeasurementUnitContext = createContext<MeasurementUnitContextValue | undefined>(undefined)
++
++function isProductionUnit(value: string | null): value is ProductionUnit {
++  return value === 'LITER' || value === 'MILLILITER'
++}
++
++function isFeedingUnit(value: string | null): value is FeedingUnit {
++  return value === 'KILOGRAM' || value === 'GRAM'
++}
++
++export function MeasurementUnitProvider({ children }: { children: ReactNode }) {
++  const [productionUnit, setProductionUnit] = useState<ProductionUnit>(DEFAULT_PRODUCTION_UNIT)
++  const [feedingUnit, setFeedingUnit] = useState<FeedingUnit>(DEFAULT_FEEDING_UNIT)
++
++  useEffect(() => {
++    const storedValue = window.localStorage.getItem(STORAGE_KEY)
++
++    if (!storedValue) {
++      return
++    }
++
++    try {
++      const parsedValue = JSON.parse(storedValue) as {
++        productionUnit?: string
++        feedingUnit?: string
++      }
++
++      const nextProductionUnit = parsedValue.productionUnit ?? null
++      if (isProductionUnit(nextProductionUnit)) {
++        setProductionUnit(nextProductionUnit)
++      }
++
++      const nextFeedingUnit = parsedValue.feedingUnit ?? null
++      if (isFeedingUnit(nextFeedingUnit)) {
++        setFeedingUnit(nextFeedingUnit)
++      }
++    } catch {
++      window.localStorage.removeItem(STORAGE_KEY)
++    }
++  }, [])
++
++  useEffect(() => {
++    window.localStorage.setItem(
++      STORAGE_KEY,
++      JSON.stringify({
++        productionUnit,
++        feedingUnit,
++      }),
++    )
++  }, [feedingUnit, productionUnit])
++
++  const value = useMemo(
++    () => ({
++      productionUnit,
++      feedingUnit,
++      setProductionUnit,
++      setFeedingUnit,
++    }),
++    [feedingUnit, productionUnit],
++  )
++
++  return (
++    <MeasurementUnitContext.Provider value={value}>
++      {children}
++    </MeasurementUnitContext.Provider>
++  )
++}
++
++export function useMeasurementUnits() {
++  const context = useContext(MeasurementUnitContext)
++
++  if (!context) {
++    throw new Error('useMeasurementUnits must be used within a MeasurementUnitProvider')
++  }
++
++  return context
++}
+diff --git a/frontend/web/farm_web/src/hooks/useMeasurementUnits.ts b/frontend/web/farm_web/src/hooks/useMeasurementUnits.ts
+new file mode 100644
+index 0000000..406a597
+--- /dev/null
++++ b/frontend/web/farm_web/src/hooks/useMeasurementUnits.ts
+@@ -0,0 +1 @@
++export { useMeasurementUnits } from '../context/MeasurementUnitContext'
+diff --git a/frontend/web/farm_web/src/i18n/en.ts b/frontend/web/farm_web/src/i18n/en.ts
+index 9818049..d878a10 100644
+--- a/frontend/web/farm_web/src/i18n/en.ts
++++ b/frontend/web/farm_web/src/i18n/en.ts
+@@ -29,6 +29,26 @@ const en = {
+       settings: 'Settings',
+     },
+   },
++  measurementUnits: {
++    productionLabel: 'Production unit',
++    feedingLabel: 'Feeding unit',
++    options: {
++      LITER: 'Liters (L)',
++      MILLILITER: 'Milliliters (mL)',
++      KILOGRAM: 'Kilograms (kg)',
++      GRAM: 'Grams (g)',
++    },
++    short: {
++      LITER: 'L',
++      MILLILITER: 'mL',
++      KILOGRAM: 'kg',
++      GRAM: 'g',
++    },
++    errors: {
++      productionStep: 'When using milliliters, enter values in 10 mL increments.',
++      feedingStep: 'When using grams, enter values in 10 g increments.',
++    },
++  },
+   common: {
+     loading: 'Loading...',
+     saving: 'Saving...',
+@@ -374,6 +394,7 @@ const en = {
+       loadDetails: 'Unable to load feeding details.',
+       selectAnimal: 'Select an animal before creating the feeding record.',
+       selectFeedType: 'Select a feed type before creating the feeding record.',
++      quantity: 'Quantity must be greater than zero.',
+       quantityPrecision: 'Quantity must have at most 2 decimal places.',
+       userRequired: 'User is required.',
+       loadUsers: 'Unable to load users.',
+diff --git a/frontend/web/farm_web/src/i18n/pt-BR.ts b/frontend/web/farm_web/src/i18n/pt-BR.ts
+index f4095ee..fd74e1e 100644
+--- a/frontend/web/farm_web/src/i18n/pt-BR.ts
++++ b/frontend/web/farm_web/src/i18n/pt-BR.ts
+@@ -29,6 +29,26 @@ const ptBR = {
+       settings: 'Configurações',
+     },
+   },
++  measurementUnits: {
++    productionLabel: 'Unidade da producao',
++    feedingLabel: 'Unidade da alimentacao',
++    options: {
++      LITER: 'Litros (L)',
++      MILLILITER: 'Mililitros (mL)',
++      KILOGRAM: 'Quilogramas (kg)',
++      GRAM: 'Gramas (g)',
++    },
++    short: {
++      LITER: 'L',
++      MILLILITER: 'mL',
++      KILOGRAM: 'kg',
++      GRAM: 'g',
++    },
++    errors: {
++      productionStep: 'Ao usar mililitros, informe valores em multiplos de 10 mL.',
++      feedingStep: 'Ao usar gramas, informe valores em multiplos de 10 g.',
++    },
++  },
+   common: {
+     loading: 'Carregando...',
+     saving: 'Salvando...',
+@@ -374,6 +394,7 @@ const ptBR = {
+       loadDetails: 'Não foi possível carregar os detalhes da alimentação.',
+       selectAnimal: 'Selecione um animal antes de criar o registro de alimentação.',
+       selectFeedType: 'Selecione um tipo de ração antes de criar o registro de alimentação.',
++      quantity: 'A quantidade deve ser maior que zero.',
+       quantityPrecision: 'A quantidade deve ter no máximo 2 casas decimais.',
+       userRequired: 'Usuário é obrigatório.',
+       loadUsers: 'Não foi possível carregar os usuários.',
+diff --git a/frontend/web/farm_web/src/layout/AppLayout.tsx b/frontend/web/farm_web/src/layout/AppLayout.tsx
+index bdc3583..3f03b6e 100644
+--- a/frontend/web/farm_web/src/layout/AppLayout.tsx
++++ b/frontend/web/farm_web/src/layout/AppLayout.tsx
+@@ -2,6 +2,7 @@ import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-route
+ import { useAuth } from '../hooks/useAuth'
+ import { useCurrency } from '../hooks/useCurrency'
+ import { useFarm } from '../hooks/useFarm'
++import { useMeasurementUnits } from '../hooks/useMeasurementUnits'
+ import { useLanguage, type Language } from '../context/LanguageContext'
+ import { useTranslation } from '../hooks/useTranslation'
+ import { isManager } from '../utils/authorization'
+@@ -31,6 +32,12 @@ function AppLayout() {
+     setSelectedFarmId,
+   } = useFarm()
+   const { currency, setCurrency } = useCurrency()
++  const {
++    productionUnit,
++    feedingUnit,
++    setProductionUnit,
++    setFeedingUnit,
++  } = useMeasurementUnits()
+   const { language, setLanguage } = useLanguage()
+   const { t } = useTranslation()
+   const canManageRestrictedFeatures = isManager(user)
+@@ -138,6 +145,36 @@ function AppLayout() {
+           </select>
+         </div>
+ 
++        <div className="app-layout__farm-selector">
++          <label className="app-layout__language-label" htmlFor="production-unit-selector">
++            {t('measurementUnits.productionLabel')}
++          </label>
++          <select
++            id="production-unit-selector"
++            className="app-layout__farm-select"
++            value={productionUnit}
++            onChange={(event) => setProductionUnit(event.target.value as typeof productionUnit)}
++          >
++            <option value="LITER">{t('measurementUnits.options.LITER')}</option>
++            <option value="MILLILITER">{t('measurementUnits.options.MILLILITER')}</option>
++          </select>
++        </div>
++
++        <div className="app-layout__farm-selector">
++          <label className="app-layout__language-label" htmlFor="feeding-unit-selector">
++            {t('measurementUnits.feedingLabel')}
++          </label>
++          <select
++            id="feeding-unit-selector"
++            className="app-layout__farm-select"
++            value={feedingUnit}
++            onChange={(event) => setFeedingUnit(event.target.value as typeof feedingUnit)}
++          >
++            <option value="KILOGRAM">{t('measurementUnits.options.KILOGRAM')}</option>
++            <option value="GRAM">{t('measurementUnits.options.GRAM')}</option>
++          </select>
++        </div>
++
+         <div className="app-layout__session">
+           <p className="app-layout__session-user">{user?.name ?? user?.email}</p>
+           <button type="button" className="app-layout__logout-button" onClick={handleLogout}>
+diff --git a/frontend/web/farm_web/src/main.tsx b/frontend/web/farm_web/src/main.tsx
+index a25489b..64dcfc9 100644
+--- a/frontend/web/farm_web/src/main.tsx
++++ b/frontend/web/farm_web/src/main.tsx
+@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext.tsx'
+ import { CurrencyProvider } from './context/CurrencyContext.tsx'
+ import { FarmProvider } from './context/FarmContext.tsx'
+ import { LanguageProvider } from './context/LanguageContext.tsx'
++import { MeasurementUnitProvider } from './context/MeasurementUnitContext.tsx'
+ 
+ createRoot(document.getElementById('root')!).render(
+   <StrictMode>
+@@ -14,9 +15,11 @@ createRoot(document.getElementById('root')!).render(
+       <FarmProvider>
+         <LanguageProvider>
+           <CurrencyProvider>
+-            <BrowserRouter>
+-              <App />
+-            </BrowserRouter>
++            <MeasurementUnitProvider>
++              <BrowserRouter>
++                <App />
++              </BrowserRouter>
++            </MeasurementUnitProvider>
+           </CurrencyProvider>
+         </LanguageProvider>
+       </FarmProvider>
+diff --git a/frontend/web/farm_web/src/pages/analytics/AnalyticsPage.tsx b/frontend/web/farm_web/src/pages/analytics/AnalyticsPage.tsx
+index d9ff252..2d22671 100644
+--- a/frontend/web/farm_web/src/pages/analytics/AnalyticsPage.tsx
++++ b/frontend/web/farm_web/src/pages/analytics/AnalyticsPage.tsx
+@@ -6,6 +6,7 @@ import ExportCsvButton from '../../components/common/ExportCsvButton'
+ import LineChart from '../../components/analytics/LineChart'
+ import { useCurrency } from '../../hooks/useCurrency'
+ import { useFarm } from '../../hooks/useFarm'
++import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
+ import { useTranslation } from '../../hooks/useTranslation'
+ import { getAllAnimals } from '../../services/animalService'
+ import {
+@@ -18,6 +19,12 @@ import {
+ import type { Animal, ApiErrorResponse } from '../../types/animal'
+ import type { AnalyticsDataset, AnalyticsFilters } from '../../types/analytics'
+ import { appendCurrencyCode, formatCurrencyValue } from '../../utils/currency'
++import {
++  appendUnitToLabel,
++  convertMeasurementFromBase,
++  formatConvertedMeasurementValue,
++  getMeasurementUnitShortLabelKey,
++} from '../../utils/measurementUnits'
+ import '../../App.css'
+ 
+ function getErrorMessage(error: unknown, fallbackMessage: string): string {
+@@ -58,6 +65,7 @@ function AnalyticsPage() {
+   const { t, language } = useTranslation()
+   const { currency } = useCurrency()
+   const { selectedFarmId } = useFarm()
++  const { productionUnit } = useMeasurementUnits()
+   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
+   const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters)
+   const [appliedFilters, setAppliedFilters] = useState<AnalyticsFilters>(initialFilters)
+@@ -157,6 +165,25 @@ function AnalyticsPage() {
+   const showCharts = hasAppliedFilters && !isChartsLoading && !errorMessage
+   const shouldShowInitialState = !hasAppliedFilters && !isChartsLoading && !errorMessage
+   const formatChartCurrency = (value: number) => formatCurrencyValue(value, language, currency)
++  const formatChartProduction = (value: number) => (
++    `${formatConvertedMeasurementValue(value, language)} ${t(getMeasurementUnitShortLabelKey(productionUnit))}`
++  )
++  const productionSeries = analytics.productionSeries.map((point) => ({
++    ...point,
++    value: convertMeasurementFromBase(point.value, productionUnit),
++  }))
++  const productionByAnimal = analytics.productionByAnimal.map((point) => ({
++    ...point,
++    value: convertMeasurementFromBase(point.value, productionUnit),
++  }))
++  const productionTitle = appendUnitToLabel(
++    t('analytics.productionTitle'),
++    t(getMeasurementUnitShortLabelKey(productionUnit)),
++  )
++  const productionByAnimalTitle = appendUnitToLabel(
++    t('analytics.productionByAnimalTitle'),
++    t(getMeasurementUnitShortLabelKey(productionUnit)),
++  )
+ 
+   function renderChartEmptyState() {
+     return <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
+@@ -186,13 +213,13 @@ function AnalyticsPage() {
+ 
+     try {
+       if (key === 'production') {
+-        await exportAnalyticsProductionCsv(appliedFilters, selectedFarmId, currency)
++        await exportAnalyticsProductionCsv(appliedFilters, selectedFarmId, currency, productionUnit)
+       } else if (key === 'feeding') {
+         await exportAnalyticsFeedingCsv(appliedFilters, selectedFarmId, currency)
+       } else if (key === 'profit') {
+-        await exportAnalyticsProfitCsv(appliedFilters, selectedFarmId, currency)
++        await exportAnalyticsProfitCsv(appliedFilters, selectedFarmId, currency, productionUnit)
+       } else {
+-        await exportAnalyticsProductionByAnimalCsv(appliedFilters, selectedFarmId, currency)
++        await exportAnalyticsProductionByAnimalCsv(appliedFilters, selectedFarmId, currency, productionUnit)
+       }
+     } catch (error) {
+       setChartsErrorMessage(getErrorMessage(error, t('common.exportError')))
+@@ -304,7 +331,7 @@ function AnalyticsPage() {
+           <article className="analytics-panel analytics-chart">
+             <div className="analytics-chart__header">
+               <div className="analytics-chart__header-copy">
+-                <h2>{t('analytics.productionTitle')}</h2>
++                <h2>{productionTitle}</h2>
+                 <p>{t('analytics.productionDescription')}</p>
+               </div>
+               <ExportCsvButton
+@@ -312,19 +339,23 @@ function AnalyticsPage() {
+                 label={t('common.exportCsv')}
+                 loadingLabel={t('common.exportingCsv')}
+                 isLoading={exportingKey === 'production'}
+-                disabled={!showCharts || analytics.productionSeries.length === 0}
++                disabled={!showCharts || productionSeries.length === 0}
+               />
+             </div>
+ 
+             {shouldShowInitialState && renderChartEmptyState()}
+ 
+-            {showCharts && analytics.productionSeries.length > 0 && (
++            {showCharts && productionSeries.length > 0 && (
+               <ChartErrorBoundary fallback={renderChartEmptyState()}>
+-                <LineChart data={analytics.productionSeries} color="#2e6a46" />
++                <LineChart
++                  data={productionSeries}
++                  color="#2e6a46"
++                  valueFormatter={formatChartProduction}
++                />
+               </ChartErrorBoundary>
+             )}
+ 
+-            {showCharts && analytics.productionSeries.length === 0 && (
++            {showCharts && productionSeries.length === 0 && (
+               renderChartEmptyState()
+             )}
+           </article>
+@@ -396,7 +427,7 @@ function AnalyticsPage() {
+           <article className="analytics-panel analytics-chart">
+             <div className="analytics-chart__header">
+               <div className="analytics-chart__header-copy">
+-                <h2>{t('analytics.productionByAnimalTitle')}</h2>
++                <h2>{productionByAnimalTitle}</h2>
+                 <p>{t('analytics.productionByAnimalDescription')}</p>
+               </div>
+               <ExportCsvButton
+@@ -404,19 +435,23 @@ function AnalyticsPage() {
+                 label={t('common.exportCsv')}
+                 loadingLabel={t('common.exportingCsv')}
+                 isLoading={exportingKey === 'productionByAnimal'}
+-                disabled={!showCharts || analytics.productionByAnimal.length === 0}
++                disabled={!showCharts || productionByAnimal.length === 0}
+               />
+             </div>
+ 
+             {shouldShowInitialState && renderChartEmptyState()}
+ 
+-            {showCharts && analytics.productionByAnimal.length > 0 && (
++            {showCharts && productionByAnimal.length > 0 && (
+               <ChartErrorBoundary fallback={renderChartEmptyState()}>
+-                <BarChart data={analytics.productionByAnimal} color="#7b8f2a" />
++                <BarChart
++                  data={productionByAnimal}
++                  color="#7b8f2a"
++                  valueFormatter={formatChartProduction}
++                />
+               </ChartErrorBoundary>
+             )}
+ 
+-            {showCharts && analytics.productionByAnimal.length === 0 && (
++            {showCharts && productionByAnimal.length === 0 && (
+               renderChartEmptyState()
+             )}
+           </article>
+diff --git a/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx b/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
+index 8b446b3..22795ec 100644
+--- a/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
++++ b/frontend/web/farm_web/src/pages/animals/AnimalDetailsPage.tsx
+@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
+ import axios from 'axios'
+ import { useCurrency } from '../../hooks/useCurrency'
+ import { useFarm } from '../../hooks/useFarm'
++import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
+ import { useTranslation } from '../../hooks/useTranslation'
+ import { getAnimalById } from '../../services/animalService'
+ import { getFeedingsByAnimalId } from '../../services/feedingService'
+@@ -10,6 +11,11 @@ import type { Animal, ApiErrorResponse } from '../../types/animal'
+ import type { FeedingTrendPoint } from '../../types/feeding'
+ import type { ProductionTrendPoint } from '../../types/production'
+ import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
++import {
++  appendUnitToLabel,
++  formatMeasurementValue,
++  getMeasurementUnitShortLabelKey,
++} from '../../utils/measurementUnits'
+ import '../../App.css'
+ 
+ interface AnimalDetailsPageProps {
+@@ -42,6 +48,7 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
+   const { t, language } = useTranslation()
+   const { currency } = useCurrency()
+   const { selectedFarmId } = useFarm()
++  const { productionUnit, feedingUnit } = useMeasurementUnits()
+   const [animal, setAnimal] = useState<Animal | null>(null)
+   const [productions, setProductions] = useState<ProductionTrendPoint[]>([])
+   const [feedings, setFeedings] = useState<FeedingTrendPoint[]>([])
+@@ -176,14 +183,14 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
+                   <thead>
+                     <tr>
+                       <th>{t('production.table.date')}</th>
+-                      <th>{t('production.table.quantity')}</th>
++                      <th>{appendUnitToLabel(t('production.table.quantity'), t(getMeasurementUnitShortLabelKey(productionUnit)))}</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {productions.map((production) => (
+                       <tr key={`${production.date}-${production.quantity}`}>
+                         <td>{production.date}</td>
+-                        <td>{production.quantity}</td>
++                        <td>{formatMeasurementValue(production.quantity, productionUnit, language)}</td>
+                       </tr>
+                     ))}
+                   </tbody>
+@@ -210,14 +217,14 @@ function AnimalDetailsPage({ animalId, onBackToAnimals }: AnimalDetailsPageProps
+                   <thead>
+                     <tr>
+                       <th>{t('production.table.date')}</th>
+-                      <th>{t('production.table.quantity')}</th>
++                      <th>{appendUnitToLabel(t('feeding.table.quantity'), t(getMeasurementUnitShortLabelKey(feedingUnit)))}</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {feedings.map((feeding) => (
+                       <tr key={`${feeding.date}-${feeding.quantity}`}>
+                         <td>{feeding.date}</td>
+-                        <td>{feeding.quantity}</td>
++                        <td>{formatMeasurementValue(feeding.quantity, feedingUnit, language)}</td>
+                       </tr>
+                     ))}
+                   </tbody>
+diff --git a/frontend/web/farm_web/src/pages/dashboard/DashboardPage.tsx b/frontend/web/farm_web/src/pages/dashboard/DashboardPage.tsx
+index f033b47..b46a7ce 100644
+--- a/frontend/web/farm_web/src/pages/dashboard/DashboardPage.tsx
++++ b/frontend/web/farm_web/src/pages/dashboard/DashboardPage.tsx
+@@ -4,10 +4,16 @@ import ExportCsvButton from '../../components/common/ExportCsvButton'
+ import StatCard from '../../components/dashboard/StatCard'
+ import { useCurrency } from '../../hooks/useCurrency'
+ import { useFarm } from '../../hooks/useFarm'
++import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
+ import { useTranslation } from '../../hooks/useTranslation'
+ import { getAllAnimals } from '../../services/animalService'
+ import { exportDashboardCsv, fetchDashboard } from '../../services/dashboardService'
+ import { appendCurrencyCode } from '../../utils/currency'
++import {
++  appendUnitToLabel,
++  convertMeasurementFromBase,
++  getMeasurementUnitShortLabelKey,
++} from '../../utils/measurementUnits'
+ import type { Animal, ApiErrorResponse, AnimalStatus } from '../../types/animal'
+ import type { DashboardFilters, DashboardSummary } from '../../types/dashboard'
+ import '../../App.css'
+@@ -70,6 +76,7 @@ function DashboardPage() {
+   const { t } = useTranslation()
+   const { currency } = useCurrency()
+   const { selectedFarmId } = useFarm()
++  const { productionUnit } = useMeasurementUnits()
+   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
+   const [filters, setFilters] = useState<DashboardFilters>(createInitialFilters)
+   const [appliedFilters, setAppliedFilters] = useState<DashboardFilters>(createInitialFilters)
+@@ -201,7 +208,13 @@ function DashboardPage() {
+     setSummaryErrorMessage('')
+ 
+     try {
+-      await exportDashboardCsv(selectedFarmId, includeAcquisitionCost, currency, appliedFilters)
++      await exportDashboardCsv(
++        selectedFarmId,
++        includeAcquisitionCost,
++        currency,
++        appliedFilters,
++        productionUnit,
++      )
+     } catch (error) {
+       setSummaryErrorMessage(getErrorMessage(error, t('common.exportError')))
+     } finally {
+@@ -209,6 +222,11 @@ function DashboardPage() {
+     }
+   }
+ 
++  const productionTitle = appendUnitToLabel(
++    t('dashboard.stats.totalProduction'),
++    t(getMeasurementUnitShortLabelKey(productionUnit)),
++  )
++
+   return (
+     <main className="dashboard-page">
+       <section className="dashboard-page__header">
+@@ -330,10 +348,14 @@ function DashboardPage() {
+           {dashboardStats.map((stat) => (
+             <StatCard
+               key={stat.key}
+-              title={stat.format === 'currency'
+-                ? appendCurrencyCode(t(stat.titleKey), currency)
+-                : t(stat.titleKey)}
+-              value={summary[stat.key] ?? 0}
++              title={stat.key === 'totalProduction'
++                ? productionTitle
++                : stat.format === 'currency'
++                  ? appendCurrencyCode(t(stat.titleKey), currency)
++                  : t(stat.titleKey)}
++              value={stat.key === 'totalProduction'
++                ? convertMeasurementFromBase(summary.totalProduction, productionUnit)
++                : summary[stat.key] ?? 0}
+               format={stat.format}
+             />
+           ))}
+diff --git a/frontend/web/farm_web/src/pages/feeding/FeedingPage.tsx b/frontend/web/farm_web/src/pages/feeding/FeedingPage.tsx
+index 46372d2..61549e0 100644
+--- a/frontend/web/farm_web/src/pages/feeding/FeedingPage.tsx
++++ b/frontend/web/farm_web/src/pages/feeding/FeedingPage.tsx
+@@ -6,6 +6,7 @@ import PaginationControls from '../../components/common/PaginationControls'
+ import FeedingForm from '../../components/feeding/FeedingForm'
+ import { useAuth } from '../../hooks/useAuth'
+ import { useFarm } from '../../hooks/useFarm'
++import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
+ import { useTranslation } from '../../hooks/useTranslation'
+ import { getAllAnimals } from '../../services/animalService'
+ import {
+@@ -28,6 +29,11 @@ import type {
+ } from '../../types/feeding'
+ import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
+ import { isManager } from '../../utils/authorization'
++import {
++  appendUnitToLabel,
++  formatMeasurementValue,
++  getMeasurementUnitShortLabelKey,
++} from '../../utils/measurementUnits'
+ import '../../App.css'
+ 
+ const emptyFeedingForm: FeedingFormData = {
+@@ -76,9 +82,10 @@ function mapAnimalsToOptions(animals: Animal[]): FeedingAnimalOption[] {
+ }
+ 
+ function FeedingPage() {
+-  const { t } = useTranslation()
++  const { t, language } = useTranslation()
+   const { user } = useAuth()
+   const { selectedFarmId } = useFarm()
++  const { feedingUnit } = useMeasurementUnits()
+   const canSelectCreateDate = isManager(user)
+   const canDeleteResources = isManager(user)
+   const [feedings, setFeedings] = useState<Feeding[]>([])
+@@ -271,7 +278,7 @@ function FeedingPage() {
+     setListErrorMessage('')
+ 
+     try {
+-      await exportFeedingsCsv(selectedFarmId, appliedFilters)
++      await exportFeedingsCsv(selectedFarmId, appliedFilters, feedingUnit)
+     } catch (error) {
+       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
+     } finally {
+@@ -292,6 +299,11 @@ function FeedingPage() {
+     void loadFeedings(defaultFilters, 0, pageSize)
+   }
+ 
++  const quantityLabel = appendUnitToLabel(
++    t('feeding.table.quantity'),
++    t(getMeasurementUnitShortLabelKey(feedingUnit)),
++  )
++
+   return (
+     <main className="animals-page">
+       <section className="animals-page__header">
+@@ -418,7 +430,7 @@ function FeedingPage() {
+                     <th>{t('feeding.table.animalTag')}</th>
+                     <th>{t('feeding.table.feedType')}</th>
+                     <th>{t('feeding.table.date')}</th>
+-                    <th>{t('feeding.table.quantity')}</th>
++                    <th>{quantityLabel}</th>
+                     <th>{t('feeding.table.actions')}</th>
+                   </tr>
+                 </thead>
+@@ -428,7 +440,7 @@ function FeedingPage() {
+                       <td>{feeding.animal?.tag}</td>
+                       <td>{feeding.feedType?.name}</td>
+                       <td>{feeding.date}</td>
+-                      <td>{feeding.quantity}</td>
++                      <td>{formatMeasurementValue(feeding.quantity, feedingUnit, language)}</td>
+                       <td className="animals-table__actions">
+                         <button
+                           type="button"
+diff --git a/frontend/web/farm_web/src/pages/production/ProductionPage.tsx b/frontend/web/farm_web/src/pages/production/ProductionPage.tsx
+index aa77280..1cdc2c1 100644
+--- a/frontend/web/farm_web/src/pages/production/ProductionPage.tsx
++++ b/frontend/web/farm_web/src/pages/production/ProductionPage.tsx
+@@ -6,6 +6,7 @@ import PaginationControls from '../../components/common/PaginationControls'
+ import ProductionForm from '../../components/production/ProductionForm'
+ import { useAuth } from '../../hooks/useAuth'
+ import { useFarm } from '../../hooks/useFarm'
++import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
+ import { useTranslation } from '../../hooks/useTranslation'
+ import { getAllAnimals } from '../../services/animalService'
+ import {
+@@ -26,6 +27,11 @@ import type {
+ } from '../../types/production'
+ import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
+ import { isManager } from '../../utils/authorization'
++import {
++  appendUnitToLabel,
++  formatMeasurementValue,
++  getMeasurementUnitShortLabelKey,
++} from '../../utils/measurementUnits'
+ import '../../App.css'
+ 
+ const emptyProductionForm: ProductionFormData = {
+@@ -72,9 +78,10 @@ function mapAnimalsToOptions(animals: Animal[]): ProductionAnimalOption[] {
+ }
+ 
+ function ProductionPage() {
+-  const { t } = useTranslation()
++  const { t, language } = useTranslation()
+   const { user } = useAuth()
+   const { selectedFarmId } = useFarm()
++  const { productionUnit } = useMeasurementUnits()
+   const canSelectCreateDate = isManager(user)
+   const canDeleteResources = isManager(user)
+   const [productions, setProductions] = useState<Production[]>([])
+@@ -278,7 +285,7 @@ function ProductionPage() {
+     setListErrorMessage('')
+ 
+     try {
+-      await exportProductionsCsv(selectedFarmId, appliedFilters)
++      await exportProductionsCsv(selectedFarmId, appliedFilters, productionUnit)
+     } catch (error) {
+       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
+     } finally {
+@@ -299,6 +306,11 @@ function ProductionPage() {
+     void loadProductions(defaultFilters, 0, pageSize)
+   }
+ 
++  const quantityLabel = appendUnitToLabel(
++    t('production.table.quantity'),
++    t(getMeasurementUnitShortLabelKey(productionUnit)),
++  )
++
+   return (
+     <main className="animals-page">
+       <section className="animals-page__header">
+@@ -409,7 +421,7 @@ function ProductionPage() {
+                   <tr>
+                     <th>{t('production.table.animalTag')}</th>
+                     <th>{t('production.table.date')}</th>
+-                    <th>{t('production.table.quantity')}</th>
++                    <th>{quantityLabel}</th>
+                     <th>{t('production.table.actions')}</th>
+                   </tr>
+                 </thead>
+@@ -418,7 +430,7 @@ function ProductionPage() {
+                     <tr key={production.id}>
+                       <td>{production.animal?.tag}</td>
+                       <td>{production.date}</td>
+-                      <td>{production.quantity}</td>
++                      <td>{formatMeasurementValue(production.quantity, productionUnit, language)}</td>
+                       <td className="animals-table__actions">
+                         <button
+                           type="button"
+diff --git a/frontend/web/farm_web/src/services/analyticsService.ts b/frontend/web/farm_web/src/services/analyticsService.ts
+index 2266ce0..d21d6e6 100644
+--- a/frontend/web/farm_web/src/services/analyticsService.ts
++++ b/frontend/web/farm_web/src/services/analyticsService.ts
+@@ -1,6 +1,7 @@
+ import api from './api'
+ import { downloadCsv } from './csvExportService'
+ import type { CurrencyCode } from '../context/CurrencyContext'
++import type { ProductionUnit } from '../utils/measurementUnits'
+ import type {
+   AnalyticsBarChartPoint,
+   AnalyticsDataset,
+@@ -117,10 +118,14 @@ export async function exportAnalyticsProductionCsv(
+   filters: AnalyticsFilters,
+   farmId?: string,
+   currency?: CurrencyCode,
++  productionUnit?: ProductionUnit,
+ ): Promise<void> {
+   await downloadCsv(
+     '/analytics/production/export',
+-    buildAnalyticsParams(filters, farmId, currency),
++    {
++      ...buildAnalyticsParams(filters, farmId, currency),
++      ...(productionUnit ? { productionUnit } : {}),
++    },
+     'analytics-production.csv',
+   )
+ }
+@@ -137,18 +142,30 @@ export async function exportAnalyticsProfitCsv(
+   filters: AnalyticsFilters,
+   farmId?: string,
+   currency?: CurrencyCode,
++  productionUnit?: ProductionUnit,
+ ): Promise<void> {
+-  await downloadCsv('/analytics/profit/export', buildAnalyticsParams(filters, farmId, currency), 'analytics-profit.csv')
++  await downloadCsv(
++    '/analytics/profit/export',
++    {
++      ...buildAnalyticsParams(filters, farmId, currency),
++      ...(productionUnit ? { productionUnit } : {}),
++    },
++    'analytics-profit.csv',
++  )
+ }
+ 
+ export async function exportAnalyticsProductionByAnimalCsv(
+   filters: AnalyticsFilters,
+   farmId?: string,
+   currency?: CurrencyCode,
++  productionUnit?: ProductionUnit,
+ ): Promise<void> {
+   await downloadCsv(
+     '/analytics/production/by-animal/export',
+-    buildProductionByAnimalParams(filters, farmId, currency),
++    {
++      ...buildProductionByAnimalParams(filters, farmId, currency),
++      ...(productionUnit ? { productionUnit } : {}),
++    },
+     'analytics-production-by-animal.csv',
+   )
+ }
+diff --git a/frontend/web/farm_web/src/services/dashboardService.ts b/frontend/web/farm_web/src/services/dashboardService.ts
+index d5c3bfd..62e8291 100644
+--- a/frontend/web/farm_web/src/services/dashboardService.ts
++++ b/frontend/web/farm_web/src/services/dashboardService.ts
+@@ -2,6 +2,7 @@ import api from './api'
+ import { downloadCsv } from './csvExportService'
+ import type { CurrencyCode } from '../context/CurrencyContext'
+ import type { DashboardFilters, DashboardSummary } from '../types/dashboard'
++import type { ProductionUnit } from '../utils/measurementUnits'
+ 
+ const inFlightDashboardRequests = new Map<string, Promise<DashboardSummary>>()
+ 
+@@ -55,10 +56,14 @@ export async function exportDashboardCsv(
+   includeAcquisitionCost = true,
+   currency?: CurrencyCode,
+   filters?: DashboardFilters,
++  productionUnit?: ProductionUnit,
+ ): Promise<void> {
+   await downloadCsv(
+     '/dashboard/export',
+-    buildDashboardParams(farmId, includeAcquisitionCost, currency, filters),
++    {
++      ...buildDashboardParams(farmId, includeAcquisitionCost, currency, filters),
++      ...(productionUnit ? { productionUnit } : {}),
++    },
+     'dashboard-summary.csv',
+   )
+ }
+diff --git a/frontend/web/farm_web/src/services/feedingService.ts b/frontend/web/farm_web/src/services/feedingService.ts
+index aa80bd7..41b3269 100644
+--- a/frontend/web/farm_web/src/services/feedingService.ts
++++ b/frontend/web/farm_web/src/services/feedingService.ts
+@@ -1,6 +1,7 @@
+ import api from './api'
+ import { downloadCsv } from './csvExportService'
+ import { normalizeToTwoDecimals } from '../utils/decimal'
++import type { FeedingUnit } from '../utils/measurementUnits'
+ import type { PaginatedResponse, PaginationParams } from '../types/pagination'
+ import type {
+   CreateFeedingPayload,
+@@ -99,6 +100,17 @@ export async function deleteFeeding(id: string, farmId?: string): Promise<void>
+   })
+ }
+ 
+-export async function exportFeedingsCsv(farmId?: string, filters?: FeedingListFilters): Promise<void> {
+-  await downloadCsv('/feedings/export', buildFeedingListParams(farmId, filters), 'feedings.csv')
++export async function exportFeedingsCsv(
++  farmId?: string,
++  filters?: FeedingListFilters,
++  measurementUnit?: FeedingUnit,
++): Promise<void> {
++  await downloadCsv(
++    '/feedings/export',
++    {
++      ...buildFeedingListParams(farmId, filters),
++      ...(measurementUnit ? { measurementUnit } : {}),
++    },
++    'feedings.csv',
++  )
+ }
+diff --git a/frontend/web/farm_web/src/services/productionService.ts b/frontend/web/farm_web/src/services/productionService.ts
+index 8d234b7..39b48a4 100644
+--- a/frontend/web/farm_web/src/services/productionService.ts
++++ b/frontend/web/farm_web/src/services/productionService.ts
+@@ -1,6 +1,7 @@
+ import api from './api'
+ import { downloadCsv } from './csvExportService'
+ import { normalizeToTwoDecimals } from '../utils/decimal'
++import type { ProductionUnit } from '../utils/measurementUnits'
+ import type { PaginatedResponse, PaginationParams } from '../types/pagination'
+ import type {
+   CreateProductionPayload,
+@@ -95,6 +96,17 @@ export async function deleteProduction(id: string, farmId?: string): Promise<voi
+   })
+ }
+ 
+-export async function exportProductionsCsv(farmId?: string, filters?: ProductionListFilters): Promise<void> {
+-  await downloadCsv('/productions/export', buildProductionListParams(farmId, filters), 'productions.csv')
++export async function exportProductionsCsv(
++  farmId?: string,
++  filters?: ProductionListFilters,
++  measurementUnit?: ProductionUnit,
++): Promise<void> {
++  await downloadCsv(
++    '/productions/export',
++    {
++      ...buildProductionListParams(farmId, filters),
++      ...(measurementUnit ? { measurementUnit } : {}),
++    },
++    'productions.csv',
++  )
+ }
+diff --git a/frontend/web/farm_web/src/utils/measurementUnits.ts b/frontend/web/farm_web/src/utils/measurementUnits.ts
+new file mode 100644
+index 0000000..3f64797
+--- /dev/null
++++ b/frontend/web/farm_web/src/utils/measurementUnits.ts
+@@ -0,0 +1,77 @@
++import { hasAtMostTwoDecimals } from './decimal'
++
++export type ProductionUnit = 'LITER' | 'MILLILITER'
++export type FeedingUnit = 'KILOGRAM' | 'GRAM'
++export type MeasurementUnit = ProductionUnit | FeedingUnit
++
++const UNIT_FACTORS: Record<MeasurementUnit, number> = {
++  LITER: 1,
++  MILLILITER: 0.001,
++  KILOGRAM: 1,
++  GRAM: 0.001,
++}
++
++const UNIT_INPUT_STEPS: Record<MeasurementUnit, string> = {
++  LITER: '0.01',
++  MILLILITER: '10',
++  KILOGRAM: '0.01',
++  GRAM: '10',
++}
++
++function roundToDisplayPrecision(value: number) {
++  return Number(value.toFixed(6))
++}
++
++export function convertMeasurementToBase(value: number, unit: MeasurementUnit) {
++  if (!Number.isFinite(value)) {
++    return 0
++  }
++
++  return roundToDisplayPrecision(value * UNIT_FACTORS[unit])
++}
++
++export function convertMeasurementFromBase(value: number, unit: MeasurementUnit) {
++  if (!Number.isFinite(value)) {
++    return 0
++  }
++
++  return roundToDisplayPrecision(value / UNIT_FACTORS[unit])
++}
++
++export function formatMeasurementValue(
++  value: number,
++  unit: MeasurementUnit,
++  language: 'pt-BR' | 'en',
++) {
++  const convertedValue = convertMeasurementFromBase(value, unit)
++  return formatConvertedMeasurementValue(convertedValue, language)
++}
++
++export function formatConvertedMeasurementValue(
++  value: number,
++  language: 'pt-BR' | 'en',
++) {
++  const locale = language === 'pt-BR' ? 'pt-BR' : 'en-US'
++  const hasDecimals = !Number.isInteger(value)
++
++  return value.toLocaleString(locale, {
++    minimumFractionDigits: hasDecimals ? 2 : 0,
++    maximumFractionDigits: 2,
++  })
++}
++
++export function isMeasurementCompatibleWithBasePrecision(value: number, unit: MeasurementUnit) {
++  return hasAtMostTwoDecimals(convertMeasurementToBase(value, unit))
++}
++
++export function getMeasurementInputStep(unit: MeasurementUnit) {
++  return UNIT_INPUT_STEPS[unit]
++}
++
++export function getMeasurementUnitShortLabelKey(unit: MeasurementUnit) {
++  return `measurementUnits.short.${unit}`
++}
++
++export function appendUnitToLabel(label: string, unitLabel: string) {
++  return `${label} (${unitLabel})`
++}
+diff --git a/workspace/mvn.log b/workspace/mvn.log
+index c6e6226..5c697bd 100644
+--- a/workspace/mvn.log
++++ b/workspace/mvn.log
+@@ -27,315 +27,318 @@
+ [[1;34mINFO[m]  T E S T S
+ [[1;34mINFO[m] -------------------------------------------------------
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
+-15:23:09.532 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
+-15:23:10.691 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:10.691 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:10.696 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 4 ms
+-15:23:10.923 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:10.924 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:10.924 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:11.071 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:11.071 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:11.071 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.865 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
++18:00:49.476 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
++18:00:50.359 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:50.359 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:50.362 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 3 ms
++18:00:50.574 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:50.574 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:50.574 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:50.731 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:50.731 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:50.731 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:50.748 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:50.748 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:50.748 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.508 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.019 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mLocalizedErrorAttributesTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.jpsoftware.farmapp.shared.exception.[1mLocalizedErrorAttributesTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.jpsoftware.farmapp.shared.exception.[1mLocalizedErrorAttributesTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+ Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+ WARNING: A Java agent has been loaded dynamically (/home/juaneugenio/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar)
+ WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+ WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+ WARNING: Dynamic loading of agents will be disallowed by default in a future release
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.952 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.006 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m27[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.050 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m27[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.061 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
+-15:23:12.277 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.198 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
++18:00:52.017 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.207 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.029 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.045 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m3[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.829 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.810 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
+-15:23:13.431 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.431 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.431 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.471 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.471 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.471 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.495 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.495 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.495 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.512 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.512 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.512 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.270 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
++18:00:53.043 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.043 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.043 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.068 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.068 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.068 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.086 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.086 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.086 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.102 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.102 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.102 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.116 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
+-15:23:13.527 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.527 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.527 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.550 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.550 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.550 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.559 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.560 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.560 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.567 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.567 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.568 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.050 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
++18:00:53.121 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.121 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.121 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.139 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.139 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.139 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.149 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.149 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.149 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.157 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.157 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.157 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.052 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
+-15:23:13.583 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.583 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.583 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.608 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.608 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.608 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.633 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.633 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.633 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.654 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.654 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.655 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-15:23:13.673 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.673 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.673 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.685 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.685 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.685 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.701 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.701 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.701 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.723 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.723 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.723 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.741 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.741 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.741 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.760 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.760 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.760 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.777 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.777 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.777 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.789 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.789 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.790 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-15:23:13.811 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.811 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.812 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.828 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.828 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.828 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.837 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.838 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.838 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.853 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.853 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.853 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.864 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.865 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.865 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.874 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.874 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.874 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.884 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.884 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.885 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.319 s -- in com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
++18:00:53.176 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.176 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.177 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.204 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.204 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.205 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++18:00:53.226 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.226 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.226 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.242 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.242 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.242 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.255 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.255 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.255 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.265 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.265 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.265 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.278 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.279 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.279 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.304 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.304 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.304 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.321 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.321 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.321 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.335 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.336 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.336 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.350 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.350 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.350 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.361 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.361 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.361 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.382 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.383 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.383 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.395 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.395 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.395 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.404 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.404 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.404 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.413 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.414 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.414 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.422 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.422 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.422 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.428 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.428 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.428 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.436 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.436 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.437 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.279 s -- in com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
+-15:23:13.905 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.906 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.906 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.918 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.918 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.918 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.930 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.930 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.930 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.941 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.941 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.942 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.953 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.953 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.954 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-15:23:13.963 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.963 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.963 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.975 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.975 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.975 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.986 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.986 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.986 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:13.996 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:13.996 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:13.996 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.007 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.008 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.008 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.020 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.020 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.020 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.032 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.032 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.032 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.039 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.039 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.040 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-15:23:14.054 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.054 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.054 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.068 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.068 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.068 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.080 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.080 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.080 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.088 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.089 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.089 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m17[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.206 s -- in com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
++18:00:53.452 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.453 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.453 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.460 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.460 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.461 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
++18:00:53.472 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.472 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.472 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.482 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.483 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.483 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.492 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.492 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.492 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.500 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.501 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.501 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.511 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.511 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.511 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.521 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.521 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.521 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.530 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.530 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.530 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.539 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.539 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.539 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.547 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.547 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.547 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.556 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.556 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.556 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.562 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.562 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.562 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.576 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.576 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.576 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.589 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.589 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.589 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.600 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.600 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.600 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.609 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.609 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.609 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m17[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.173 s -- in com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
+-15:23:14.133 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.133 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.133 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.141 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.141 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.141 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.046 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
++18:00:53.658 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.658 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.658 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.666 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.666 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.666 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.052 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
+-15:23:14.148 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.148 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.148 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.161 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.162 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.162 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.174 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.175 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.175 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.190 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.190 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.191 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-15:23:14.198 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.198 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.198 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.205 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.205 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.205 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.215 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.215 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.215 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.079 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
++18:00:53.674 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.674 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.674 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.681 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.681 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.681 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.691 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.691 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.691 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.708 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.708 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.708 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.716 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.716 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.716 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.726 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.726 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.726 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.738 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.739 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.739 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.078 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
+-15:23:14.256 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.256 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.256 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.039 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
++18:00:53.774 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.774 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.774 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.033 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
+-15:23:14.272 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.272 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.272 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.281 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.281 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.282 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
++18:00:53.788 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.788 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.788 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.794 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.794 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.794 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
+-15:23:14.334 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.334 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.334 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.343 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.344 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.344 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.353 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.353 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.353 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.359 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.360 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.360 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.368 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.369 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.369 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.375 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.375 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.375 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.094 s -- in com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
++18:00:53.839 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.839 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.839 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.848 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.848 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.849 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.859 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.859 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.860 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.869 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.870 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.870 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.878 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.879 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.879 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.886 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.886 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.886 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.091 s -- in com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
+-15:23:14.389 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.389 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.389 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.400 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.400 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.400 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.409 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.409 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.409 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.416 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.416 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.416 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.429 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.429 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.429 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.437 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.437 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.437 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.450 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.450 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.450 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.076 s -- in com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
++18:00:53.896 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.897 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.897 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.909 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.909 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.909 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.917 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.917 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.917 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.923 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.923 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.923 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.934 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.934 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.934 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.941 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.941 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.941 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.951 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.951 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.951 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.069 s -- in com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
+-15:23:14.469 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.469 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.469 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.486 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.486 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.486 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.505 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.505 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.505 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.516 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.517 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.517 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.524 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.524 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.525 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+-15:23:14.538 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.539 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.539 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.553 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.553 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.553 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.569 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.570 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.570 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.582 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.582 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.582 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.601 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.602 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.602 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.609 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.609 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.609 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-15:23:14.626 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+-15:23:14.626 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+-15:23:14.626 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m12[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.184 s -- in com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
++18:00:53.975 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.975 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.975 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:53.986 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:53.986 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:53.986 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:54.001 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:54.001 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:54.001 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:54.009 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:54.009 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:54.009 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:54.014 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:54.015 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:54.015 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:54.023 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:54.023 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:54.023 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:54.031 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:54.031 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:54.031 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:54.038 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:54.038 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:54.038 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:54.046 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:54.046 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:54.046 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:54.057 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:54.057 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:54.057 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:54.062 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:54.062 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:54.062 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++18:00:54.070 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
++18:00:54.071 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
++18:00:54.071 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m12[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.113 s -- in com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.111 s -- in com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.063 s -- in com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+-15:23:14.782 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest]: AuthIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+-15:23:14.911 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest
++18:00:54.168 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest]: AuthIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++18:00:54.275 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest
+ 
+   .   ____          _            __ _ _
+  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+@@ -346,19 +349,19 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
+ 
+  :: Spring Boot ::                (v3.4.4)
+ 
+-2026-04-27T15:23:15.595-03:00  INFO 34277 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Starting AuthIntegrationTest using Java 21.0.7 with PID 34277 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
+-2026-04-27T15:23:15.598-03:00  INFO 34277 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : No active profile set, falling back to 1 default profile: "default"
+-2026-04-27T15:23:16.307-03:00  INFO 34277 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+-2026-04-27T15:23:16.361-03:00  INFO 34277 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 46 ms. Found 8 JPA repository interfaces.
+-2026-04-27T15:23:16.812-03:00  INFO 34277 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+-2026-04-27T15:23:16.865-03:00  INFO 34277 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.11.Final
+-2026-04-27T15:23:16.901-03:00  INFO 34277 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+-2026-04-27T15:23:17.050-03:00  INFO 34277 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+-2026-04-27T15:23:17.076-03:00  INFO 34277 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+-2026-04-27T15:23:17.344-03:00  INFO 34277 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:farmdb user=SA
+-2026-04-27T15:23:17.346-03:00  INFO 34277 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+-2026-04-27T15:23:17.370-03:00  WARN 34277 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+-2026-04-27T15:23:17.391-03:00  INFO 34277 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
++2026-04-27T18:00:54.596-03:00  INFO 94398 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Starting AuthIntegrationTest using Java 21.0.7 with PID 94398 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
++2026-04-27T18:00:54.597-03:00  INFO 94398 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : No active profile set, falling back to 1 default profile: "default"
++2026-04-27T18:00:55.194-03:00  INFO 94398 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
++2026-04-27T18:00:55.252-03:00  INFO 94398 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 50 ms. Found 8 JPA repository interfaces.
++2026-04-27T18:00:55.792-03:00  INFO 94398 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
++2026-04-27T18:00:55.843-03:00  INFO 94398 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.11.Final
++2026-04-27T18:00:55.886-03:00  INFO 94398 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
++2026-04-27T18:00:56.047-03:00  INFO 94398 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
++2026-04-27T18:00:56.074-03:00  INFO 94398 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
++2026-04-27T18:00:56.371-03:00  INFO 94398 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:farmdb user=SA
++2026-04-27T18:00:56.373-03:00  INFO 94398 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
++2026-04-27T18:00:56.407-03:00  WARN 94398 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
++2026-04-27T18:00:56.434-03:00  INFO 94398 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+ 	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+ 	Database driver: undefined/unknown
+ 	Database version: 2.3.232
+@@ -366,7 +369,7 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
+ 	Isolation level: undefined/unknown
+ 	Minimum pool size: undefined/unknown
+ 	Maximum pool size: undefined/unknown
+-2026-04-27T15:23:18.108-03:00  INFO 34277 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
++2026-04-27T18:00:57.356-03:00  INFO 94398 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+ Hibernate: create table animals (id varchar(255) not null, acquisition_cost float(53), birth_date date not null, breed varchar(255) not null, farm_id varchar(255) not null, origin varchar(255) not null, sale_date date, sale_price float(53), status varchar(255) not null, tag varchar(255) not null, primary key (id))
+ Hibernate: create table farms (id varchar(255) not null, name varchar(255) not null, owner_id uuid not null, primary key (id))
+ Hibernate: create table feed_types (id varchar(255) not null, active boolean not null, cost_per_kg float(53) not null, farm_id varchar(255), name varchar(255) not null, primary key (id))
+@@ -381,15 +384,15 @@ Hibernate: alter table if exists user_farm_assignments drop constraint if exists
+ Hibernate: alter table if exists user_farm_assignments add constraint UK9k021clhmghjjepfpvejsguce unique (user_id, farm_id)
+ Hibernate: alter table if exists users drop constraint if exists UK6dotkott2kjsp8vw4d0m25fb7
+ Hibernate: alter table if exists users add constraint UK6dotkott2kjsp8vw4d0m25fb7 unique (email)
+-2026-04-27T15:23:18.180-03:00  INFO 34277 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+-2026-04-27T15:23:18.382-03:00  INFO 34277 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+-2026-04-27T15:23:19.525-03:00  WARN 34277 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+-2026-04-27T15:23:20.063-03:00  INFO 34277 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+-2026-04-27T15:23:20.064-03:00  INFO 34277 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+-2026-04-27T15:23:20.064-03:00  INFO 34277 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+-2026-04-27T15:23:20.085-03:00  INFO 34277 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Started AuthIntegrationTest in 4.973 seconds (process running for 11.98)
++2026-04-27T18:00:57.429-03:00  INFO 94398 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
++2026-04-27T18:00:57.676-03:00  INFO 94398 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
++2026-04-27T18:00:59.028-03:00  WARN 94398 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
++2026-04-27T18:00:59.738-03:00  INFO 94398 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
++2026-04-27T18:00:59.738-03:00  INFO 94398 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
++2026-04-27T18:00:59.739-03:00  INFO 94398 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
++2026-04-27T18:00:59.758-03:00  INFO 94398 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Started AuthIntegrationTest in 5.399 seconds (process running for 11.386)
+ Hibernate: select count(*) from users ue1_0
+-2026-04-27T15:23:20.240-03:00  INFO 34277 --- [           main] c.j.f.s.config.DefaultAdminInitializer   : Default admin user created
++2026-04-27T18:00:59.943-03:00  INFO 94398 --- [           main] c.j.f.s.config.DefaultAdminInitializer   : Default admin user created
+ Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+ Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+@@ -403,42 +406,6 @@ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,
+ Hibernate: delete from users where id=?
+ Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+-
+-MockHttpServletRequest:
+-      HTTP Method = GET
+-      Request URI = /missing-route
+-       Parameters = {}
+-          Headers = [Authorization:"Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIyNWE2YTJiMC1jNDMwLTQ5YzQtOWJiNC03Yjc5YjJmNDg5YzYiLCJyb2xlIjoiV09SS0VSIiwiaWF0IjoxNzc3MzE0MjAwLCJleHAiOjE3Nzc0MDA2MDB9.AYvgJsrNc-KDICXy_3nprTCYbT9eh6NeuO3ZDibKYI9jteW0lnEqYZAB0rZtDCYwDz5IcnJk4yJyXjlzUOUpog"]
+-             Body = null
+-    Session Attrs = {}
+-
+-Handler:
+-             Type = org.springframework.web.servlet.resource.ResourceHttpRequestHandler
+-
+-Async:
+-    Async started = false
+-     Async result = null
+-
+-Resolved Exception:
+-             Type = org.springframework.web.servlet.resource.NoResourceFoundException
+-
+-ModelAndView:
+-        View name = null
+-             View = null
+-            Model = null
+-
+-FlashMap:
+-       Attributes = null
+-
+-MockHttpServletResponse:
+-           Status = 500
+-    Error message = null
+-          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+-     Content type = application/json
+-             Body = {"timestamp":"2026-04-27T18:23:20.548221091Z","status":500,"error":"Erro interno do servidor.","path":"/missing-route"}
+-    Forwarded URL = null
+-   Redirected URL = null
+-          Cookies = []
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+ Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+ Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+@@ -518,21 +485,10 @@ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,
+ Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
+-[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m7[m, [1;31mFailures: [0;1;31m1[m, Errors: 0, Skipped: 0, Time elapsed: 6.650 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+-[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldLocalizeDefaultErrorAttributesForMissingProtectedRoutes -- Time elapsed: 0.294 s <<< FAILURE!
+-java.lang.AssertionError: Status expected:<404> but was:<500>
+-	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
+-	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
+-	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:640)
+-	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+-	at com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldLocalizeDefaultErrorAttributesForMissingProtectedRoutes(AuthIntegrationTest.java:186)
+-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+-
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.031 s -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
+-2026-04-27T15:23:21.408-03:00  INFO 34277 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest]: ProductionIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+-2026-04-27T15:23:21.423-03:00  INFO 34277 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest
++2026-04-27T18:01:01.178-03:00  INFO 94398 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest]: ProductionIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++2026-04-27T18:01:01.185-03:00  INFO 94398 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+ Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+ Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+@@ -644,10 +600,10 @@ Hibernate: select coalesce(sum((fe1_0.quantity*fte1_0.cost_per_kg)),0) from feed
+ Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+ Hibernate: select count(*) from farms fe1_0 where fe1_0.id=?
+ Hibernate: select mpe1_0.id,mpe1_0.created_at,mpe1_0.created_by,mpe1_0.effective_date,mpe1_0.farm_id,mpe1_0.price from milk_prices mpe1_0 where mpe1_0.farm_id=? and mpe1_0.effective_date<=? order by mpe1_0.effective_date desc,mpe1_0.created_at desc fetch first ? rows only
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.556 s -- in com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.834 s -- in com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
+-2026-04-27T15:23:21.971-03:00  INFO 34277 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest]: FeedingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+-2026-04-27T15:23:21.993-03:00  INFO 34277 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest
++2026-04-27T18:01:02.014-03:00  INFO 94398 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest]: FeedingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++2026-04-27T18:01:02.025-03:00  INFO 94398 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+ Hibernate: delete from productions where id=?
+ Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+@@ -783,10 +739,10 @@ Hibernate: select fte1_0.id from feed_types fte1_0 where fte1_0.id=? and fte1_0.
+ Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+ Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+ Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.483 s -- in com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.502 s -- in com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
+-2026-04-27T15:23:22.453-03:00  INFO 34277 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest]: AnimalIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+-2026-04-27T15:23:22.461-03:00  INFO 34277 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest
++2026-04-27T18:01:02.515-03:00  INFO 94398 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest]: AnimalIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++2026-04-27T18:01:02.521-03:00  INFO 94398 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+ Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+ Hibernate: delete from feedings where id=?
+@@ -838,10 +794,10 @@ Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin
+ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+ Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+ Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.204 s -- in com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.214 s -- in com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
+-2026-04-27T15:23:22.657-03:00  INFO 34277 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.user.UserIntegrationTest]: UserIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+-2026-04-27T15:23:22.662-03:00  INFO 34277 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.user.UserIntegrationTest
++2026-04-27T18:01:02.735-03:00  INFO 94398 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.user.UserIntegrationTest]: UserIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++2026-04-27T18:01:02.744-03:00  INFO 94398 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.user.UserIntegrationTest
+ Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+ Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+ Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+@@ -1069,7 +1025,7 @@ Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+ Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+ Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_0.owner_id=?
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m13[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.051 s -- in com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m13[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.062 s -- in com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
+ [[1;34mINFO[m] Running com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+ 
+   .   ____          _            __ _ _
+@@ -1081,18 +1037,18 @@ Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_
+ 
+  :: Spring Boot ::                (v3.4.4)
+ 
+-2026-04-27T15:23:24.725-03:00  INFO 34277 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Starting FarmAppApplicationTests using Java 21.0.7 with PID 34277 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
+-2026-04-27T15:23:24.725-03:00  INFO 34277 --- [           main] c.j.farmapp.FarmAppApplicationTests      : No active profile set, falling back to 1 default profile: "default"
+-2026-04-27T15:23:24.838-03:00  INFO 34277 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+-2026-04-27T15:23:24.858-03:00  INFO 34277 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 18 ms. Found 8 JPA repository interfaces.
+-2026-04-27T15:23:24.922-03:00  INFO 34277 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+-2026-04-27T15:23:24.923-03:00  INFO 34277 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+-2026-04-27T15:23:24.929-03:00  INFO 34277 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+-2026-04-27T15:23:24.930-03:00  INFO 34277 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+-2026-04-27T15:23:24.931-03:00  INFO 34277 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn10: url=jdbc:h2:mem:farmdb user=SA
+-2026-04-27T15:23:24.932-03:00  INFO 34277 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+-2026-04-27T15:23:24.933-03:00  WARN 34277 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+-2026-04-27T15:23:24.933-03:00  INFO 34277 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
++2026-04-27T18:01:04.811-03:00  INFO 94398 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Starting FarmAppApplicationTests using Java 21.0.7 with PID 94398 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
++2026-04-27T18:01:04.811-03:00  INFO 94398 --- [           main] c.j.farmapp.FarmAppApplicationTests      : No active profile set, falling back to 1 default profile: "default"
++2026-04-27T18:01:04.930-03:00  INFO 94398 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
++2026-04-27T18:01:04.941-03:00  INFO 94398 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 10 ms. Found 8 JPA repository interfaces.
++2026-04-27T18:01:04.999-03:00  INFO 94398 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
++2026-04-27T18:01:05.000-03:00  INFO 94398 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
++2026-04-27T18:01:05.005-03:00  INFO 94398 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
++2026-04-27T18:01:05.006-03:00  INFO 94398 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
++2026-04-27T18:01:05.007-03:00  INFO 94398 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn10: url=jdbc:h2:mem:farmdb user=SA
++2026-04-27T18:01:05.007-03:00  INFO 94398 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
++2026-04-27T18:01:05.007-03:00  WARN 94398 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
++2026-04-27T18:01:05.008-03:00  INFO 94398 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+ 	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-2)']
+ 	Database driver: undefined/unknown
+ 	Database version: 2.3.232
+@@ -1100,36 +1056,26 @@ Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_
+ 	Isolation level: undefined/unknown
+ 	Minimum pool size: undefined/unknown
+ 	Maximum pool size: undefined/unknown
+-2026-04-27T15:23:25.058-03:00  INFO 34277 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
++2026-04-27T18:01:05.093-03:00  INFO 94398 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+ Hibernate: alter table if exists user_farm_assignments drop constraint if exists UK9k021clhmghjjepfpvejsguce
+ Hibernate: alter table if exists user_farm_assignments add constraint UK9k021clhmghjjepfpvejsguce unique (user_id, farm_id)
+-2026-04-27T15:23:25.066-03:00  INFO 34277 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+-2026-04-27T15:23:25.239-03:00  WARN 34277 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+-2026-04-27T15:23:25.368-03:00  INFO 34277 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Started FarmAppApplicationTests in 0.656 seconds (process running for 17.263)
++2026-04-27T18:01:05.100-03:00  INFO 94398 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
++2026-04-27T18:01:05.268-03:00  WARN 94398 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
++2026-04-27T18:01:05.373-03:00  INFO 94398 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Started FarmAppApplicationTests in 0.573 seconds (process running for 17.0)
+ Hibernate: select count(*) from users ue1_0
+-[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.669 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
++[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.586 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+ [[1;34mINFO[m] 
+ [[1;34mINFO[m] Results:
+ [[1;34mINFO[m] 
+-[[1;31mERROR[m] [1;31mFailures: [m
+-[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldLocalizeDefaultErrorAttributesForMissingProtectedRoutes:186 Status expected:<404> but was:<500>[m
++[[1;34mINFO[m] [1;32mTests run: 217, Failures: 0, Errors: 0, Skipped: 0[m
+ [[1;34mINFO[m] 
+-[[1;31mERROR[m] [1;31mTests run: 216, Failures: 1, Errors: 0, Skipped: 0[m
+ [[1;34mINFO[m] 
++[[1;34mINFO[m] [1m--- [0;32mjacoco-maven-plugin:0.8.11:report[m [1m(report)[m @ [36mfarmapp[0;1m ---[m
++[[1;34mINFO[m] Loading execution data file /home/juaneugenio/programmig/farm_app/backend/farmapp/target/jacoco.exec
++[[1;34mINFO[m] Analyzed bundle 'farmapp' with 89 classes
+ [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+-[[1;34mINFO[m] [1;31mBUILD FAILURE[m
++[[1;34mINFO[m] [1;32mBUILD SUCCESS[m
+ [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+-[[1;34mINFO[m] Total time:  18.397 s
+-[[1;34mINFO[m] Finished at: 2026-04-27T15:23:25-03:00
++[[1;34mINFO[m] Total time:  18.659 s
++[[1;34mINFO[m] Finished at: 2026-04-27T18:01:06-03:00
+ [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+-[[1;31mERROR[m] Failed to execute goal [32morg.apache.maven.plugins:maven-surefire-plugin:3.5.2:test[m [1m(default-test)[m on project [36mfarmapp[m: [1;31mThere are test failures.[m
+-[[1;31mERROR[m] [1;31m[m
+-[[1;31mERROR[m] [1;31mSee /home/juaneugenio/programmig/farm_app/backend/farmapp/target/surefire-reports for the individual test results.[m
+-[[1;31mERROR[m] [1;31mSee dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.[m
+-[[1;31mERROR[m] -> [1m[Help 1][m
+-[[1;31mERROR[m] 
+-[[1;31mERROR[m] To see the full stack trace of the errors, re-run Maven with the [1m-e[m switch.
+-[[1;31mERROR[m] Re-run Maven using the [1m-X[m switch to enable full debug logging.
+-[[1;31mERROR[m] 
+-[[1;31mERROR[m] For more information about the errors and possible solutions, please read the following articles:
+-[[1;31mERROR[m] [1m[Help 1][m http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

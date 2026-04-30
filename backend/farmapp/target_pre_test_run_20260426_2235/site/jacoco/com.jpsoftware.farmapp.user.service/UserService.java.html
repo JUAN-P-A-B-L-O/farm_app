@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.user.service</a> &gt; <span class="el_source">UserService.java</span></div><h1>UserService.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.user.service;
+
+import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
+import com.jpsoftware.farmapp.farm.repository.FarmRepository;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.exception.ConflictException;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
+import com.jpsoftware.farmapp.user.dto.ActivateUserRequest;
+import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
+import com.jpsoftware.farmapp.user.dto.UpdatePasswordRequest;
+import com.jpsoftware.farmapp.user.dto.UpdateUserRequest;
+import com.jpsoftware.farmapp.user.dto.UserResponse;
+import com.jpsoftware.farmapp.user.entity.UserFarmAssignmentEntity;
+import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.mapper.UserMapper;
+import com.jpsoftware.farmapp.user.repository.UserFarmAssignmentRepository;
+import com.jpsoftware.farmapp.user.repository.UserRepository;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final UserFarmAssignmentRepository userFarmAssignmentRepository;
+    private final FarmRepository farmRepository;
+    private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationContextService authenticationContextService;
+
+    public UserService(
+            UserRepository userRepository,
+            UserFarmAssignmentRepository userFarmAssignmentRepository,
+            FarmRepository farmRepository,
+            UserMapper userMapper,
+            PasswordEncoder passwordEncoder,
+<span class="fc" id="L50">            AuthenticationContextService authenticationContextService) {</span>
+<span class="fc" id="L51">        this.userRepository = userRepository;</span>
+<span class="fc" id="L52">        this.userFarmAssignmentRepository = userFarmAssignmentRepository;</span>
+<span class="fc" id="L53">        this.farmRepository = farmRepository;</span>
+<span class="fc" id="L54">        this.userMapper = userMapper;</span>
+<span class="fc" id="L55">        this.passwordEncoder = passwordEncoder;</span>
+<span class="fc" id="L56">        this.authenticationContextService = authenticationContextService;</span>
+<span class="fc" id="L57">    }</span>
+
+    @Transactional
+    public UserResponse create(CreateUserRequest request) {
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L62">            throw new ValidationException(&quot;request must not be null&quot;);</span>
+        }
+<span class="fc" id="L64">        UUID creatorId = authenticationContextService.getAuthenticatedUserId()</span>
+<span class="pc" id="L65">                .orElseThrow(() -&gt; new ValidationException(&quot;Authenticated manager is required&quot;));</span>
+<span class="fc" id="L66">        LinkedHashSet&lt;String&gt; normalizedFarmIds = validateManagedUserInput(</span>
+<span class="fc" id="L67">                request.getName(),</span>
+<span class="fc" id="L68">                request.getEmail(),</span>
+<span class="fc" id="L69">                request.getRole(),</span>
+<span class="fc" id="L70">                request.getFarmIds(),</span>
+                creatorId,
+                null);
+<span class="fc" id="L73">        validateCreatePasswordRules(request);</span>
+
+<span class="fc" id="L75">        UserEntity userEntity = userMapper.toEntity(request);</span>
+<span class="fc" id="L76">        userEntity.setName(request.getName().trim());</span>
+<span class="fc" id="L77">        userEntity.setEmail(normalizeEmail(request.getEmail()));</span>
+<span class="fc" id="L78">        userEntity.setRole(normalizeRole(request.getRole()));</span>
+<span class="fc" id="L79">        userEntity.setActive(Boolean.TRUE.equals(request.getActive()));</span>
+<span class="fc" id="L80">        userEntity.setAvatarUrl(normalizeAvatarUrl(request.getAvatarUrl()));</span>
+<span class="fc" id="L81">        userEntity.setPassword(passwordEncoder.encode(resolveRawPassword(request)));</span>
+<span class="fc" id="L82">        UserEntity savedUser = userRepository.save(userEntity);</span>
+<span class="fc" id="L83">        persistFarmAssignments(savedUser.getId(), normalizedFarmIds);</span>
+
+<span class="fc" id="L85">        return buildUserResponse(savedUser);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;UserResponse&gt; findAll(String search, Boolean active, String role) {
+<span class="fc" id="L90">        String normalizedSearch = normalizeFilter(search);</span>
+<span class="fc" id="L91">        String normalizedRole = normalizeFilterRole(role);</span>
+
+<span class="fc" id="L93">        return userRepository.findAll(Sort.by(Sort.Direction.ASC, &quot;name&quot;, &quot;email&quot;)).stream()</span>
+<span class="fc" id="L94">                .filter(userEntity -&gt; matchesSearch(userEntity, normalizedSearch))</span>
+<span class="fc" id="L95">                .filter(userEntity -&gt; matchesActive(userEntity, active))</span>
+<span class="fc" id="L96">                .filter(userEntity -&gt; matchesRole(userEntity, normalizedRole))</span>
+<span class="fc" id="L97">                .map(this::buildUserResponse)</span>
+<span class="fc" id="L98">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse&lt;UserResponse&gt; findAllPaginated(String search, Boolean active, String role, int page, int size) {
+<span class="fc" id="L103">        Page&lt;UserEntity&gt; users = userRepository.findAll(</span>
+<span class="fc" id="L104">                buildUserSpecification(search, active, role),</span>
+<span class="fc" id="L105">                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, &quot;name&quot;, &quot;email&quot;)));</span>
+<span class="fc" id="L106">        Page&lt;UserResponse&gt; responses = users.map(this::buildUserResponse);</span>
+<span class="fc" id="L107">        return new PaginatedResponse&lt;&gt;(</span>
+<span class="fc" id="L108">                responses.getContent(),</span>
+<span class="fc" id="L109">                responses.getNumber(),</span>
+<span class="fc" id="L110">                responses.getSize(),</span>
+<span class="fc" id="L111">                responses.getTotalElements(),</span>
+<span class="fc" id="L112">                responses.getTotalPages());</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String search, Boolean active, String role) {
+<span class="nc" id="L117">        return CsvExportUtils.write(findAll(search, active, role), List.of(</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">                new CsvColumn&lt;&gt;(&quot;id&quot;, user -&gt; user.getId() != null ? user.getId().toString() : null),</span>
+                new CsvColumn&lt;&gt;(&quot;name&quot;, UserResponse::getName),
+                new CsvColumn&lt;&gt;(&quot;email&quot;, UserResponse::getEmail),
+                new CsvColumn&lt;&gt;(&quot;role&quot;, UserResponse::getRole),
+                new CsvColumn&lt;&gt;(&quot;active&quot;, UserResponse::getActive),
+                new CsvColumn&lt;&gt;(&quot;avatarUrl&quot;, UserResponse::getAvatarUrl),
+<span class="nc bnc" id="L124" title="All 2 branches missed.">                new CsvColumn&lt;&gt;(&quot;farmIds&quot;, user -&gt; user.getFarmIds() != null ? String.join(&quot;;&quot;, user.getFarmIds()) : &quot;&quot;)));</span>
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse findById(String id) {
+<span class="fc" id="L129">        UserEntity userEntity = findUserEntity(validateId(id));</span>
+
+<span class="fc" id="L131">        return buildUserResponse(userEntity);</span>
+    }
+
+    @Transactional
+    public UserResponse update(String id, UpdateUserRequest request) {
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L137">            throw new ValidationException(&quot;request must not be null&quot;);</span>
+        }
+<span class="fc" id="L139">        UUID creatorId = authenticationContextService.getAuthenticatedUserId()</span>
+<span class="pc" id="L140">                .orElseThrow(() -&gt; new ValidationException(&quot;Authenticated manager is required&quot;));</span>
+<span class="fc" id="L141">        UUID userId = validateId(id);</span>
+<span class="fc" id="L142">        UserEntity userEntity = findUserEntity(userId);</span>
+<span class="fc" id="L143">        LinkedHashSet&lt;String&gt; normalizedFarmIds = validateManagedUserInput(</span>
+<span class="fc" id="L144">                request.getName(),</span>
+<span class="fc" id="L145">                request.getEmail(),</span>
+<span class="fc" id="L146">                request.getRole(),</span>
+<span class="fc" id="L147">                request.getFarmIds(),</span>
+                creatorId,
+                userId);
+<span class="fc" id="L150">        ensureFarmOwnerRemainsActiveManager(userEntity, normalizeRole(request.getRole()));</span>
+
+<span class="fc" id="L152">        userEntity.setName(request.getName().trim());</span>
+<span class="fc" id="L153">        userEntity.setEmail(normalizeEmail(request.getEmail()));</span>
+<span class="fc" id="L154">        userEntity.setRole(normalizeRole(request.getRole()));</span>
+<span class="fc" id="L155">        userEntity.setAvatarUrl(normalizeAvatarUrl(request.getAvatarUrl()));</span>
+<span class="fc" id="L156">        UserEntity savedUser = userRepository.save(userEntity);</span>
+<span class="fc" id="L157">        replaceFarmAssignments(savedUser.getId(), normalizedFarmIds);</span>
+
+<span class="fc" id="L159">        return buildUserResponse(savedUser);</span>
+    }
+
+    @Transactional
+    public UserResponse inactivate(String id) {
+<span class="fc" id="L164">        UserEntity userEntity = findUserEntity(validateId(id));</span>
+<span class="fc" id="L165">        ensureUserDoesNotOwnFarms(userEntity.getId(), &quot;Cannot inactivate user who owns farms&quot;);</span>
+
+<span class="fc" id="L167">        userEntity.setActive(false);</span>
+<span class="fc" id="L168">        return buildUserResponse(userRepository.save(userEntity));</span>
+    }
+
+    @Transactional
+    public UserResponse activate(String id, ActivateUserRequest request) {
+<span class="fc" id="L173">        UserEntity userEntity = findUserEntity(validateId(id));</span>
+
+<span class="fc" id="L175">        userEntity.setActive(true);</span>
+<span class="pc bpc" id="L176" title="2 of 4 branches missed.">        if (request != null &amp;&amp; StringUtils.hasText(request.getPassword())) {</span>
+<span class="fc" id="L177">            userEntity.setPassword(passwordEncoder.encode(request.getPassword().trim()));</span>
+        }
+
+<span class="fc" id="L180">        return buildUserResponse(userRepository.save(userEntity));</span>
+    }
+
+    @Transactional
+    public void delete(String id) {
+<span class="fc" id="L185">        UserEntity userEntity = findUserEntity(validateId(id));</span>
+<span class="fc" id="L186">        ensureUserDoesNotOwnFarms(userEntity.getId(), &quot;Cannot delete user who owns farms&quot;);</span>
+
+<span class="fc" id="L188">        userFarmAssignmentRepository.deleteByUserId(userEntity.getId());</span>
+<span class="fc" id="L189">        userRepository.delete(userEntity);</span>
+<span class="fc" id="L190">    }</span>
+
+    @Transactional
+    public void updateOwnPassword(UpdatePasswordRequest request) {
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L195">            throw new ValidationException(&quot;request must not be null&quot;);</span>
+        }
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">        if (!StringUtils.hasText(request.getCurrentPassword())) {</span>
+<span class="nc" id="L198">            throw new ValidationException(&quot;currentPassword must not be blank&quot;);</span>
+        }
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">        if (!StringUtils.hasText(request.getNewPassword())) {</span>
+<span class="nc" id="L201">            throw new ValidationException(&quot;newPassword must not be blank&quot;);</span>
+        }
+
+<span class="fc" id="L204">        UUID authenticatedUserId = authenticationContextService.getAuthenticatedUserId()</span>
+<span class="pc" id="L205">                .orElseThrow(() -&gt; new ValidationException(&quot;Authenticated user is required&quot;));</span>
+<span class="fc" id="L206">        UserEntity userEntity = findUserEntity(authenticatedUserId);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        if (!passwordEncoder.matches(request.getCurrentPassword(), userEntity.getPassword())) {</span>
+<span class="fc" id="L208">            throw new ValidationException(&quot;currentPassword is incorrect&quot;);</span>
+        }
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">        if (request.getCurrentPassword().equals(request.getNewPassword())) {</span>
+<span class="nc" id="L211">            throw new ValidationException(&quot;newPassword must be different from currentPassword&quot;);</span>
+        }
+
+<span class="fc" id="L214">        userEntity.setPassword(passwordEncoder.encode(request.getNewPassword()));</span>
+<span class="fc" id="L215">        userRepository.save(userEntity);</span>
+<span class="fc" id="L216">    }</span>
+
+    private String resolveRawPassword(CreateUserRequest request) {
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        if (StringUtils.hasText(request.getPassword())) {</span>
+<span class="fc" id="L220">            return request.getPassword();</span>
+        }
+<span class="fc" id="L222">        return UUID.randomUUID().toString();</span>
+    }
+
+    private void persistFarmAssignments(UUID userId, LinkedHashSet&lt;String&gt; farmIds) {
+<span class="fc" id="L226">        farmIds.forEach(farmId -&gt;</span>
+<span class="fc" id="L227">                userFarmAssignmentRepository.save(new UserFarmAssignmentEntity(null, userId, farmId)));</span>
+<span class="fc" id="L228">    }</span>
+
+    private void replaceFarmAssignments(UUID userId, LinkedHashSet&lt;String&gt; farmIds) {
+<span class="fc" id="L231">        userFarmAssignmentRepository.deleteByUserId(userId);</span>
+<span class="fc" id="L232">        userFarmAssignmentRepository.flush();</span>
+<span class="fc" id="L233">        persistFarmAssignments(userId, farmIds);</span>
+<span class="fc" id="L234">    }</span>
+
+    private UserResponse buildUserResponse(UserEntity userEntity) {
+<span class="fc" id="L237">        List&lt;String&gt; farmIds = userFarmAssignmentRepository.findByUserId(userEntity.getId()).stream()</span>
+<span class="fc" id="L238">                .map(UserFarmAssignmentEntity::getFarmId)</span>
+<span class="fc" id="L239">                .toList();</span>
+<span class="fc" id="L240">        return userMapper.toResponse(userEntity, farmIds);</span>
+    }
+
+    private LinkedHashSet&lt;String&gt; validateManagedUserInput(
+            String name,
+            String email,
+            String role,
+            List&lt;String&gt; farmIds,
+            UUID creatorId,
+            UUID existingUserId) {
+<span class="fc" id="L250">        validateRequiredText(name, &quot;name must not be blank&quot;);</span>
+<span class="fc" id="L251">        validateRequiredText(email, &quot;email must not be blank&quot;);</span>
+<span class="fc" id="L252">        validateRequiredText(role, &quot;role must not be blank&quot;);</span>
+
+<span class="fc" id="L254">        LinkedHashSet&lt;String&gt; normalizedFarmIds = normalizeFarmIds(farmIds);</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">        if (normalizedFarmIds.isEmpty()) {</span>
+<span class="nc" id="L256">            throw new ValidationException(&quot;farmIds must not be empty&quot;);</span>
+        }
+<span class="fc" id="L258">        boolean ownsAllFarms = normalizedFarmIds.stream()</span>
+<span class="fc" id="L259">                .allMatch(farmId -&gt; farmRepository.existsByIdAndOwnerId(farmId, creatorId));</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">        if (!ownsAllFarms) {</span>
+<span class="fc" id="L261">            throw new ValidationException(&quot;farmIds must reference farms owned by the authenticated manager&quot;);</span>
+        }
+
+<span class="fc" id="L264">        String normalizedEmail = normalizeEmail(email);</span>
+<span class="fc" id="L265">        userRepository.findByEmail(normalizedEmail)</span>
+<span class="pc bpc" id="L266" title="3 of 4 branches missed.">                .filter(user -&gt; existingUserId == null || !user.getId().equals(existingUserId))</span>
+<span class="fc" id="L267">                .ifPresent(existingUser -&gt; {</span>
+<span class="fc" id="L268">                    throw new ConflictException(&quot;User with this email already exists&quot;);</span>
+                });
+
+<span class="fc" id="L271">        return normalizedFarmIds;</span>
+    }
+
+    private void validateCreatePasswordRules(CreateUserRequest request) {
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">        if (request.getActive() == null) {</span>
+<span class="nc" id="L276">            throw new ValidationException(&quot;active must not be null&quot;);</span>
+        }
+<span class="fc bfc" id="L278" title="All 4 branches covered.">        if (Boolean.TRUE.equals(request.getActive()) &amp;&amp; !StringUtils.hasText(request.getPassword())) {</span>
+<span class="fc" id="L279">            throw new ValidationException(&quot;password must not be blank when active is true&quot;);</span>
+        }
+<span class="fc" id="L281">    }</span>
+
+    private LinkedHashSet&lt;String&gt; normalizeFarmIds(List&lt;String&gt; farmIds) {
+<span class="fc" id="L284">        LinkedHashSet&lt;String&gt; normalizedFarmIds = new LinkedHashSet&lt;&gt;();</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">        if (farmIds == null) {</span>
+<span class="nc" id="L286">            return normalizedFarmIds;</span>
+        }
+
+<span class="fc" id="L289">        farmIds.stream()</span>
+<span class="fc" id="L290">                .filter(StringUtils::hasText)</span>
+<span class="fc" id="L291">                .map(String::trim)</span>
+<span class="fc" id="L292">                .forEach(normalizedFarmIds::add);</span>
+<span class="fc" id="L293">        return normalizedFarmIds;</span>
+    }
+
+    private void ensureFarmOwnerRemainsActiveManager(UserEntity userEntity, String nextRole) {
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">        if (!ownsAnyFarm(userEntity.getId())) {</span>
+<span class="fc" id="L298">            return;</span>
+        }
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        if (!&quot;MANAGER&quot;.equals(nextRole)) {</span>
+<span class="nc" id="L301">            throw new ConflictException(&quot;User who owns farms must remain a manager&quot;);</span>
+        }
+<span class="nc bnc" id="L303" title="All 2 branches missed.">        if (!userEntity.isActive()) {</span>
+<span class="nc" id="L304">            throw new ConflictException(&quot;Inactive user who owns farms cannot be updated&quot;);</span>
+        }
+<span class="nc" id="L306">    }</span>
+
+    private void ensureUserDoesNotOwnFarms(UUID userId, String message) {
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        if (ownsAnyFarm(userId)) {</span>
+<span class="fc" id="L310">            throw new ConflictException(message);</span>
+        }
+<span class="fc" id="L312">    }</span>
+
+    private boolean ownsAnyFarm(UUID userId) {
+<span class="fc bfc" id="L315" title="All 2 branches covered.">        return !farmRepository.findByOwnerId(userId).isEmpty();</span>
+    }
+
+    private UserEntity findUserEntity(UUID userId) {
+<span class="fc" id="L319">        return userRepository.findById(userId)</span>
+<span class="fc" id="L320">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;User not found&quot;));</span>
+    }
+
+    private void validateRequiredText(String value, String message) {
+<span class="fc bfc" id="L324" title="All 2 branches covered.">        if (!StringUtils.hasText(value)) {</span>
+<span class="fc" id="L325">            throw new ValidationException(message);</span>
+        }
+<span class="fc" id="L327">    }</span>
+
+    private boolean matchesSearch(UserEntity userEntity, String normalizedSearch) {
+<span class="fc bfc" id="L330" title="All 2 branches covered.">        if (!StringUtils.hasText(normalizedSearch)) {</span>
+<span class="fc" id="L331">            return true;</span>
+        }
+
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        return userEntity.getName().toLowerCase(Locale.ROOT).contains(normalizedSearch)</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">                || userEntity.getEmail().toLowerCase(Locale.ROOT).contains(normalizedSearch);</span>
+    }
+
+    private boolean matchesActive(UserEntity userEntity, Boolean active) {
+<span class="pc bpc" id="L339" title="1 of 4 branches missed.">        return active == null || userEntity.isActive() == active;</span>
+    }
+
+    private boolean matchesRole(UserEntity userEntity, String normalizedRole) {
+<span class="fc bfc" id="L343" title="All 2 branches covered.">        return !StringUtils.hasText(normalizedRole)</span>
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">                || normalizedRole.equalsIgnoreCase(userEntity.getRole());</span>
+    }
+
+    private Specification&lt;UserEntity&gt; buildUserSpecification(String search, Boolean active, String role) {
+<span class="fc" id="L348">        String normalizedSearch = normalizeFilter(search);</span>
+<span class="fc" id="L349">        String normalizedRole = normalizeFilterRole(role);</span>
+
+<span class="fc" id="L351">        Specification&lt;UserEntity&gt; specification = Specification.where(null);</span>
+
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">        if (StringUtils.hasText(normalizedSearch)) {</span>
+<span class="nc" id="L354">            specification = specification.and((root, query, criteriaBuilder) -&gt; {</span>
+<span class="nc" id="L355">                String searchPattern = &quot;%&quot; + normalizedSearch + &quot;%&quot;;</span>
+<span class="nc" id="L356">                return criteriaBuilder.or(</span>
+<span class="nc" id="L357">                        criteriaBuilder.like(criteriaBuilder.lower(root.get(&quot;name&quot;)), searchPattern),</span>
+<span class="nc" id="L358">                        criteriaBuilder.like(criteriaBuilder.lower(root.get(&quot;email&quot;)), searchPattern));</span>
+            });
+        }
+
+<span class="pc bpc" id="L362" title="1 of 2 branches missed.">        if (active != null) {</span>
+<span class="nc" id="L363">            specification = specification.and((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L364">                    criteriaBuilder.equal(root.get(&quot;active&quot;), active));</span>
+        }
+
+<span class="pc bpc" id="L367" title="1 of 2 branches missed.">        if (StringUtils.hasText(normalizedRole)) {</span>
+<span class="nc" id="L368">            specification = specification.and((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L369">                    criteriaBuilder.equal(criteriaBuilder.upper(root.get(&quot;role&quot;)), normalizedRole));</span>
+        }
+
+<span class="fc" id="L372">        return specification;</span>
+    }
+
+    private String normalizeFilter(String value) {
+<span class="fc bfc" id="L376" title="All 2 branches covered.">        if (!StringUtils.hasText(value)) {</span>
+<span class="fc" id="L377">            return null;</span>
+        }
+<span class="fc" id="L379">        return value.trim().toLowerCase(Locale.ROOT);</span>
+    }
+
+    private String normalizeFilterRole(String role) {
+<span class="fc bfc" id="L383" title="All 2 branches covered.">        if (!StringUtils.hasText(role)) {</span>
+<span class="fc" id="L384">            return null;</span>
+        }
+<span class="fc" id="L386">        return normalizeRole(role);</span>
+    }
+
+    private String normalizeEmail(String email) {
+<span class="fc" id="L390">        return email.trim().toLowerCase(Locale.ROOT);</span>
+    }
+
+    private String normalizeRole(String role) {
+<span class="fc" id="L394">        return role.trim().toUpperCase(Locale.ROOT);</span>
+    }
+
+    private String normalizeAvatarUrl(String avatarUrl) {
+<span class="fc bfc" id="L398" title="All 2 branches covered.">        if (!StringUtils.hasText(avatarUrl)) {</span>
+<span class="fc" id="L399">            return null;</span>
+        }
+<span class="fc" id="L401">        return avatarUrl.trim();</span>
+    }
+
+    private UUID validateId(String id) {
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">        if (!StringUtils.hasText(id)) {</span>
+<span class="nc" id="L406">            throw new ValidationException(&quot;id must not be blank&quot;);</span>
+        }
+        try {
+<span class="fc" id="L409">            return UUID.fromString(id);</span>
+<span class="nc" id="L410">        } catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L411">            throw new ValidationException(&quot;id must be a valid UUID&quot;);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

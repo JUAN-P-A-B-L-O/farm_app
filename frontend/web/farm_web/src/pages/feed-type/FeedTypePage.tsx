@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import FeedTypeForm from '../../components/feed-type/FeedTypeForm'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
   createFeedType,
@@ -19,6 +21,10 @@ import type { FeedType, FeedTypeApiErrorResponse, FeedTypeFormData, FeedTypeList
 import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import { appendCurrencyCode, formatDisplayMoney } from '../../utils/currency'
 import { isManager } from '../../utils/authorization'
+import {
+  convertFeedCostFromBase,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import '../../App.css'
 
 const emptyFeedTypeForm: FeedTypeFormData = {
@@ -29,6 +35,8 @@ const emptyFeedTypeForm: FeedTypeFormData = {
 const defaultFilters: FeedTypeListFilters = {
   search: '',
 }
+
+const debouncedFeedTypeFilterKeys: Array<keyof FeedTypeListFilters> = ['search']
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<FeedTypeApiErrorResponse>(error)) {
@@ -60,6 +68,7 @@ function FeedTypePage() {
   const { currency } = useCurrency()
   const { user } = useAuth()
   const { selectedFarmId } = useFarm()
+  const { feedingUnit } = useMeasurementUnits()
   const canDeleteResources = isManager(user)
   const [feedTypes, setFeedTypes] = useState<FeedType[]>([])
   const [pagination, setPagination] = useState(createEmptyPaginatedResponse<FeedType>())
@@ -73,8 +82,14 @@ function FeedTypePage() {
   const [editingFeedTypeId, setEditingFeedTypeId] = useState<string | null>(null)
   const [formInitialValues, setFormInitialValues] = useState<FeedTypeFormData>(emptyFeedTypeForm)
   const [isExporting, setIsExporting] = useState(false)
-  const [filters, setFilters] = useState<FeedTypeListFilters>(defaultFilters)
-  const [appliedFilters, setAppliedFilters] = useState<FeedTypeListFilters>(defaultFilters)
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
+    debounceKeys: debouncedFeedTypeFilterKeys,
+    onAppliedChange: (nextFilters) => {
+      setPage(0)
+      void loadFeedTypes(nextFilters, 0, pageSize)
+    },
+  })
 
   async function loadFeedTypes(
     nextFilters: FeedTypeListFilters = appliedFilters,
@@ -113,11 +128,14 @@ function FeedTypePage() {
   }
 
   useEffect(() => {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
+      return
+    }
+
+    previousSelectedFarmIdRef.current = selectedFarmId
     setPage(0)
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    void loadFeedTypes(defaultFilters, 0, pageSize)
-  }, [selectedFarmId])
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
 
   function handlePageChange(nextPage: number) {
     if (nextPage === page) {
@@ -209,7 +227,7 @@ function FeedTypePage() {
     setListErrorMessage('')
 
     try {
-      await exportFeedTypesCsv(selectedFarmId, currency, appliedFilters)
+      await exportFeedTypesCsv(selectedFarmId, currency, appliedFilters, feedingUnit)
     } catch (error) {
       setListErrorMessage(getErrorMessage(error, t('common.exportError'), t))
     } finally {
@@ -217,18 +235,16 @@ function FeedTypePage() {
     }
   }
 
-  function applyFilters() {
-    setAppliedFilters(filters)
+  function clearFilters() {
     setPage(0)
-    void loadFeedTypes(filters, 0, pageSize)
+    resetFilters()
   }
 
-  function clearFilters() {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    setPage(0)
-    void loadFeedTypes(defaultFilters, 0, pageSize)
-  }
+  const unitLabel = t(getMeasurementUnitShortLabelKey(feedingUnit))
+  const costLabel = `${appendCurrencyCode(t('feedType.table.costPerKg'), currency)} / ${unitLabel}`
+  const currencyFormatOptions = feedingUnit === 'GRAM'
+    ? { minimumFractionDigits: 5, maximumFractionDigits: 5, conversionPrecision: 5 }
+    : { minimumFractionDigits: 2, maximumFractionDigits: 2, conversionPrecision: 2 }
 
   return (
     <main className="animals-page">
@@ -254,6 +270,7 @@ function FeedTypePage() {
           </div>
 
           <FeedTypeForm
+            key={editingFeedTypeId ?? 'new'}
             initialValues={formInitialValues}
             onSubmit={handleCreateOrUpdate}
             onCancel={editingFeedTypeId ? handleCancelEdit : undefined}
@@ -279,14 +296,14 @@ function FeedTypePage() {
           </div>
 
           <ListingFiltersBar
-            searchId="feed-type-search"
-            searchLabel={t('feedType.filters.searchLabel')}
-            searchPlaceholder={t('feedType.filters.searchPlaceholder')}
-            searchValue={filters.search}
-            onSearchChange={(value) => setFilters({ search: value })}
-            onApply={applyFilters}
+            search={{
+              id: 'feed-type-search',
+              label: t('feedType.filters.searchLabel'),
+              placeholder: t('feedType.filters.searchPlaceholder'),
+              value: filters.search,
+              onChange: (value) => setFilters({ search: value }),
+            }}
             onClear={clearFilters}
-            applyLabel={t('feedType.filters.apply')}
             clearLabel={t('feedType.filters.clear')}
           />
 
@@ -309,7 +326,7 @@ function FeedTypePage() {
                 <thead>
                   <tr>
                     <th>{t('feedType.table.name')}</th>
-                    <th>{appendCurrencyCode(t('feedType.table.costPerKg'), currency)}</th>
+                    <th>{costLabel}</th>
                     <th>{t('feedType.table.actions')}</th>
                   </tr>
                 </thead>
@@ -317,7 +334,12 @@ function FeedTypePage() {
                   {feedTypes.map((feedType) => (
                     <tr key={feedType.id}>
                       <td>{feedType.name}</td>
-                      <td>{formatDisplayMoney(feedType.costPerKg, language, currency)}</td>
+                      <td>{formatDisplayMoney(
+                        convertFeedCostFromBase(feedType.costPerKg, feedingUnit),
+                        language,
+                        currency,
+                        currencyFormatOptions,
+                      )}</td>
                       <td className="animals-table__actions">
                         <button
                           type="button"

@@ -10,12 +10,26 @@ function getNestedValue(source: unknown, key: string): string | undefined {
   }, source) as string | undefined
 }
 
+function interpolate(
+  template: string,
+  variables: Record<string, string | number> | undefined,
+) {
+  if (!variables) {
+    return template
+  }
+
+  return Object.entries(variables).reduce(
+    (currentValue, [key, value]) => currentValue.replaceAll(`{${key}}`, String(value)),
+    template,
+  )
+}
+
 export function useTranslation() {
   const { language } = useLanguage()
 
-  function t(key: string): string {
+  function t(key: string, variables?: Record<string, string | number>): string {
     const value = getNestedValue(translations[language], key)
-    return typeof value === 'string' ? value : key
+    return typeof value === 'string' ? interpolate(value, variables) : key
   }
 
   return {

@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
@@ -32,6 +33,8 @@ const defaultFilters: MilkPriceListFilters = {
   effectiveDate: '',
 }
 
+const debouncedMilkPriceFilterKeys: Array<keyof MilkPriceListFilters> = ['search']
+
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
   if (axios.isAxiosError<MilkPriceApiErrorResponse>(error)) {
     return error.response?.data?.error ?? fallbackMessage
@@ -55,8 +58,14 @@ function MilkPricePage() {
   const [isExporting, setIsExporting] = useState(false)
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
-  const [filters, setFilters] = useState<MilkPriceListFilters>(defaultFilters)
-  const [appliedFilters, setAppliedFilters] = useState<MilkPriceListFilters>(defaultFilters)
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
+    debounceKeys: debouncedMilkPriceFilterKeys,
+    onAppliedChange: (nextFilters) => {
+      setPage(0)
+      void loadMilkPrices(nextFilters, 0, pageSize)
+    },
+  })
 
   async function loadMilkPrices(
     nextFilters: MilkPriceListFilters = appliedFilters,
@@ -105,11 +114,14 @@ function MilkPricePage() {
   }
 
   useEffect(() => {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
+      return
+    }
+
+    previousSelectedFarmIdRef.current = selectedFarmId
     setPage(0)
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    void loadMilkPrices(defaultFilters, 0, pageSize)
-  }, [selectedFarmId])
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
 
   function handlePageChange(nextPage: number) {
     if (nextPage === page) {
@@ -169,17 +181,9 @@ function MilkPricePage() {
     }
   }
 
-  function applyFilters() {
-    setAppliedFilters(filters)
-    setPage(0)
-    void loadMilkPrices(filters, 0, pageSize)
-  }
-
   function clearFilters() {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
     setPage(0)
-    void loadMilkPrices(defaultFilters, 0, pageSize)
+    resetFilters()
   }
 
   return (
@@ -200,17 +204,18 @@ function MilkPricePage() {
           </div>
 
           <ListingFiltersBar
-            searchId="milk-price-search"
-            searchLabel={t('milkPrice.filters.searchLabel')}
-            searchPlaceholder={t('milkPrice.filters.searchPlaceholder')}
-            searchValue={filters.search}
-            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
-            onApply={applyFilters}
+            search={{
+              id: 'milk-price-search',
+              label: t('milkPrice.filters.searchLabel'),
+              placeholder: t('milkPrice.filters.searchPlaceholder'),
+              value: filters.search,
+              onChange: (value) => setFilters((current) => ({ ...current, search: value })),
+            }}
             onClear={clearFilters}
-            applyLabel={t('milkPrice.filters.apply')}
             clearLabel={t('milkPrice.filters.clear')}
             filters={[
               {
+                type: 'date',
                 id: 'milk-price-effective-date-filter',
                 label: t('milkPrice.filters.effectiveDateLabel'),
                 value: filters.effectiveDate,

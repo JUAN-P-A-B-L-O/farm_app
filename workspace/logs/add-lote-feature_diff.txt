@@ -1,0 +1,300 @@
+--- /dev/null
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/animalbatch/controller/AnimalBatchController.java
++package com.jpsoftware.farmapp.animalbatch.controller;
++
++import com.jpsoftware.farmapp.animalbatch.dto.AnimalBatchResponse;
++import com.jpsoftware.farmapp.animalbatch.dto.CreateAnimalBatchRequest;
++import com.jpsoftware.farmapp.animalbatch.dto.UpdateAnimalBatchRequest;
++import com.jpsoftware.farmapp.animalbatch.service.AnimalBatchService;
++import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
++import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
++import io.swagger.v3.oas.annotations.Operation;
++import io.swagger.v3.oas.annotations.media.Content;
++import io.swagger.v3.oas.annotations.media.Schema;
++import io.swagger.v3.oas.annotations.responses.ApiResponse;
++import io.swagger.v3.oas.annotations.responses.ApiResponses;
++import io.swagger.v3.oas.annotations.tags.Tag;
++import jakarta.validation.Valid;
++import java.util.List;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.ResponseEntity;
++import org.springframework.web.bind.annotation.DeleteMapping;
++import org.springframework.web.bind.annotation.GetMapping;
++import org.springframework.web.bind.annotation.PathVariable;
++import org.springframework.web.bind.annotation.PostMapping;
++import org.springframework.web.bind.annotation.PutMapping;
++import org.springframework.web.bind.annotation.RequestBody;
++import org.springframework.web.bind.annotation.RequestMapping;
++import org.springframework.web.bind.annotation.RequestParam;
++import org.springframework.web.bind.annotation.RestController;
++
++@RestController
++@RequestMapping("/animal-batches")
++@Tag(name = "Animal Batches", description = "Operations for managing farm-scoped animal batches.")
++public class AnimalBatchController {
++
++    private final AnimalBatchService animalBatchService;
++
++    public AnimalBatchController(AnimalBatchService animalBatchService) {
++        this.animalBatchService = animalBatchService;
++    }
++
++    @PostMapping
++    @Operation(summary = "Create animal batch", description = "Creates a new animal batch for the selected farm.")
++    @ApiResponses({
++            @ApiResponse(responseCode = "201", description = "Animal batch created successfully"),
++            @ApiResponse(responseCode = "400", description = "Invalid request data",
++                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
++            @ApiResponse(responseCode = "404", description = "Farm or animal not found",
++                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
++    })
++    public ResponseEntity<AnimalBatchResponse> create(
++            @Valid @RequestBody CreateAnimalBatchRequest request,
++            @RequestParam String farmId) {
++        return ResponseEntity.status(HttpStatus.CREATED).body(animalBatchService.create(request, farmId));
++    }
++
++    @GetMapping
++    @Operation(summary = "List animal batches", description = "Returns animal batches for the selected farm.")
++    public ResponseEntity<?> findAll(
++            @RequestParam(required = false) String search,
++            @RequestParam String farmId,
++            @RequestParam(required = false) Integer page,
++            @RequestParam(required = false) Integer size) {
++        if (page != null && size != null) {
++            PaginatedResponse<AnimalBatchResponse> response = animalBatchService.findAllPaginated(search, farmId, page, size);
++            return ResponseEntity.ok(response);
++        }
++
++        List<AnimalBatchResponse> response = animalBatchService.findAll(search, farmId);
++        return ResponseEntity.ok(response);
++    }
++
++    @GetMapping("/{id}")
++    @Operation(summary = "Get animal batch by id", description = "Returns a farm-scoped animal batch by its identifier.")
++    public ResponseEntity<AnimalBatchResponse> findById(
++            @PathVariable String id,
++            @RequestParam String farmId) {
++        return ResponseEntity.ok(animalBatchService.findById(id, farmId));
++    }
++
++    @PutMapping("/{id}")
++    @Operation(summary = "Update animal batch", description = "Updates a farm-scoped animal batch.")
++    public ResponseEntity<AnimalBatchResponse> update(
++            @PathVariable String id,
++            @Valid @RequestBody UpdateAnimalBatchRequest request,
++            @RequestParam String farmId) {
++        return ResponseEntity.ok(animalBatchService.update(id, request, farmId));
++    }
++
++    @DeleteMapping("/{id}")
++    @Operation(summary = "Delete animal batch", description = "Deletes a farm-scoped animal batch.")
++    public ResponseEntity<Void> delete(
++            @PathVariable String id,
++            @RequestParam String farmId) {
++        animalBatchService.delete(id, farmId);
++        return ResponseEntity.noContent().build();
++    }
++}
+--- /dev/null
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/animalbatch/dto/AnimalBatchResponse.java
++package com.jpsoftware.farmapp.animalbatch.dto;
++
++import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
++import io.swagger.v3.oas.annotations.media.Schema;
++import java.util.List;
++
++@Schema(description = "Animal batch response.")
++public class AnimalBatchResponse {
++
++    private String id;
++    private String name;
++    private String farmId;
++    private List<AnimalSummaryResponse> animals;
++
++    public AnimalBatchResponse() {
++    }
++
++    public AnimalBatchResponse(String id, String name, String farmId, List<AnimalSummaryResponse> animals) {
++        this.id = id;
++        this.name = name;
++        this.farmId = farmId;
++        this.animals = animals;
++    }
++
++    public String getId() {
++        return id;
++    }
++
++    public void setId(String id) {
++        this.id = id;
++    }
++
++    public String getName() {
++        return name;
++    }
++
++    public void setName(String name) {
++        this.name = name;
++    }
++
++    public String getFarmId() {
++        return farmId;
++    }
++
++    public void setFarmId(String farmId) {
++        this.farmId = farmId;
++    }
++
++    public List<AnimalSummaryResponse> getAnimals() {
++        return animals;
++    }
++
++    public void setAnimals(List<AnimalSummaryResponse> animals) {
++        this.animals = animals;
++    }
++}
+--- /dev/null
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/animalbatch/dto/CreateAnimalBatchRequest.java
++package com.jpsoftware.farmapp.animalbatch.dto;
++
++import io.swagger.v3.oas.annotations.media.Schema;
++import jakarta.validation.constraints.NotBlank;
++import jakarta.validation.constraints.NotEmpty;
++import java.util.List;
++
++@Schema(description = "Request payload for creating an animal batch.")
++public class CreateAnimalBatchRequest {
++
++    @NotBlank(message = "name must not be blank")
++    @Schema(description = "Batch name.", example = "Lote das novilhas")
++    private String name;
++
++    @NotEmpty(message = "animalIds must not be empty")
++    @Schema(description = "Animal identifiers assigned to the batch.")
++    private List<@NotBlank(message = "animalId must not be blank") String> animalIds;
++
++    public CreateAnimalBatchRequest() {
++    }
++
++    public CreateAnimalBatchRequest(String name, List<String> animalIds) {
++        this.name = name;
++        this.animalIds = animalIds;
++    }
++
++    public String getName() {
++        return name;
++    }
++
++    public void setName(String name) {
++        this.name = name;
++    }
++
++    public List<String> getAnimalIds() {
++        return animalIds;
++    }
++
++    public void setAnimalIds(List<String> animalIds) {
++        this.animalIds = animalIds;
++    }
++}
+--- /dev/null
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/animalbatch/dto/UpdateAnimalBatchRequest.java
++package com.jpsoftware.farmapp.animalbatch.dto;
++
++import io.swagger.v3.oas.annotations.media.Schema;
++import jakarta.validation.constraints.NotBlank;
++import jakarta.validation.constraints.NotEmpty;
++import java.util.List;
++
++@Schema(description = "Request payload for updating an animal batch.")
++public class UpdateAnimalBatchRequest {
++
++    @NotBlank(message = "name must not be blank")
++    @Schema(description = "Batch name.", example = "Lote das matrizes")
++    private String name;
++
++    @NotEmpty(message = "animalIds must not be empty")
++    @Schema(description = "Animal identifiers assigned to the batch.")
++    private List<@NotBlank(message = "animalId must not be blank") String> animalIds;
++
++    public UpdateAnimalBatchRequest() {
++    }
++
++    public UpdateAnimalBatchRequest(String name, List<String> animalIds) {
++        this.name = name;
++        this.animalIds = animalIds;
++    }
++
++    public String getName() {
++        return name;
++    }
++
++    public void setName(String name) {
++        this.name = name;
++    }
++
++    public List<String> getAnimalIds() {
++        return animalIds;
++    }
++
++    public void setAnimalIds(List<String> animalIds) {
++        this.animalIds = animalIds;
++    }
++}
+--- /dev/null
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/animalbatch/entity/AnimalBatchEntity.java
++package com.jpsoftware.farmapp.animalbatch.entity;
++
++import jakarta.persistence.Column;
++import jakarta.persistence.Entity;
++import jakarta.persistence.GeneratedValue;
++import jakarta.persistence.GenerationType;
++import jakarta.persistence.Id;
++import jakarta.persistence.Table;
++
++@Entity
++@Table(name = "animal_batches")
++public class AnimalBatchEntity {
++
++    @Id
++    @GeneratedValue(strategy = GenerationType.UUID)
++    @Column(nullable = false, updatable = false)
++    private String id;
++
++    @Column(nullable = false)
++    private String name;
++
++    @Column(name = "farm_id", nullable = false)
++    private String farmId;
++
++    public AnimalBatchEntity() {
++    }
++
++    public AnimalBatchEntity(String id, String name, String farmId) {
++        this.id = id;
++        this.name = name;
++        this.farmId = farmId;
++    }
++
++    public String getId() {
++        return id;
++    }
++
++    public void setId(String id) {
++        this.id = id;
++    }
++
++    public String getName() {
++        return name;
++    }
++
++    public void setName(String name) {
++        this.name = name;
++    }
++
++    public String getFarmId() {
++        return farmId;
++    }
++
++    public void setFarmId(String farmId) {

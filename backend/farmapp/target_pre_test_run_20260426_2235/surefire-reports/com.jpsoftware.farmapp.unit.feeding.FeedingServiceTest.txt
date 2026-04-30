@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.jpsoftware.farmapp.unit.feeding.FeedingServiceTest
+-------------------------------------------------------------------------------
+Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.033 s -- in com.jpsoftware.farmapp.unit.feeding.FeedingServiceTest

@@ -31,7 +31,7 @@ class MilkPriceExportControllerContractTest {
 
     @Test
     void shouldExportMilkPriceHistoryAsCsv() throws Exception {
-        when(milkPriceService.exportHistory("farm-1"))
+        when(milkPriceService.exportHistory("farm-1", null, null, null))
                 .thenReturn("id,price\nprice-1,2.35\n");
 
         mockMvc.perform(get("/milk-prices/export").param("farmId", "farm-1"))
@@ -40,12 +40,12 @@ class MilkPriceExportControllerContractTest {
                 .andExpect(header().string("Content-Disposition", Matchers.containsString("milk-prices.csv")))
                 .andExpect(content().string("id,price\nprice-1,2.35\n"));
 
-        verify(milkPriceService).exportHistory("farm-1");
+        verify(milkPriceService).exportHistory("farm-1", null, null, null);
     }
 
     @Test
     void shouldExportMilkPriceHistoryAsCsvWithCurrencyContext() throws Exception {
-        when(milkPriceService.exportHistory("farm-1", "USD"))
+        when(milkPriceService.exportHistory("farm-1", null, null, "USD"))
                 .thenReturn("id,price\nprice-1,0.47\n");
 
         mockMvc.perform(get("/milk-prices/export").param("farmId", "farm-1").param("currency", "USD"))
@@ -54,6 +54,6 @@ class MilkPriceExportControllerContractTest {
                 .andExpect(header().string("Content-Disposition", Matchers.containsString("milk-prices.csv")))
                 .andExpect(content().string("id,price\nprice-1,0.47\n"));
 
-        verify(milkPriceService).exportHistory("farm-1", "USD");
+        verify(milkPriceService).exportHistory("farm-1", null, null, "USD");
     }
 }

@@ -1,0 +1,1935 @@
+OpenAI Codex v0.124.0 (research preview)
+--------
+workdir: /home/juaneugenio/programmig/farm_app
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/juaneugenio/.codex/memories]
+reasoning effort: high
+reasoning summaries: none
+session id: 019dd1f2-aa28-7700-a407-fc1b8ef751b4
+--------
+user
+You are a senior software engineer acting as a FIXER in the farm_app project.
+
+You MUST strictly follow the project rules defined in AI_CONTEXT.md.
+
+Your job is to FIX issues identified in the current implementation, especially after test or compilation failures.
+
+You do NOT implement new features.
+
+---
+
+## CORE BEHAVIOR
+
+- Be precise and minimal.
+- Only change what is necessary to fix the issue.
+- Do NOT refactor unrelated parts of the code.
+- Do NOT introduce new architecture or abstractions.
+- Do NOT modify working logic unless required for the fix.
+
+---
+
+## INPUT EXPECTATION
+
+You will receive:
+
+- Error logs (compilation or test failures)
+- Context of recent changes (diff or feature intent)
+
+You MUST use this information to guide your fix.
+
+---
+
+## FIX STRATEGY
+
+1. Identify the root cause of the failure
+2. Determine whether the issue is:
+   - broken test
+   - outdated test
+   - incorrect implementation
+   - signature mismatch
+3. Apply the smallest possible fix
+4. Preserve behavior and contracts
+5. If error type is contract:
+- Prefer adjusting response format or message
+- Do NOT refactor large parts of system
+---
+
+## TEST ALIGNMENT RULES (CRITICAL)
+
+- If tests are outdated due to valid implementation changes → UPDATE tests
+- If implementation is incorrect → FIX implementation
+- If tests are incorrect → FIX tests
+
+You MUST decide correctly which side is wrong.
+
+---
+
+## ABSOLUTE RESTRICTIONS
+
+You MUST NOT:
+
+- Delete tests to make them pass
+- Comment out failing tests
+- Skip tests
+- Remove assertions without replacing them
+- Change expected behavior without justification
+
+---
+
+## ARCHITECTURE RULES
+
+- Controllers must remain thin
+- Business logic must stay in services
+- Do NOT move logic across layers
+- Do NOT introduce complex JPA relationships
+- Preserve DTO, mapper, and repository usage
+
+---
+
+## BACKEND RULES
+
+- Validate inputs properly
+- Keep service-layer responsibility intact
+- Do NOT bypass validation
+- Respect soft-delete and lifecycle rules
+- Do NOT introduce breaking changes
+
+---
+
+## FRONTEND RULES
+
+- Use existing service layer
+- Do NOT call APIs directly from components
+- Keep UI changes minimal
+
+---
+
+## COMMON FIX SCENARIOS
+
+You SHOULD handle:
+
+- @Override errors due to signature mismatch
+- Method signature changes not reflected in tests
+- Missing dependencies or injections
+- Broken controller-service contracts
+- Invalid assumptions in tests
+- Null pointer or validation issues
+
+---
+
+## OUTPUT FORMAT (STRICT)
+
+You MUST return your response in JSON format:
+
+{
+  "summary": "Short explanation of the fix",
+  "root_cause": "What caused the issue",
+  "changed_files": [
+    "relative/path/to/file1",
+    "relative/path/to/file2"
+  ],
+  "changes": [
+    {
+      "file": "relative/path/to/file",
+      "description": "What was fixed",
+      "code": "ONLY the relevant code snippet or full file if necessary"
+    }
+  ]
+}
+
+---
+
+## IMPORTANT OUTPUT RULES
+
+- DO NOT return explanations outside JSON
+- DO NOT include markdown formatting
+- DO NOT include backticks
+- ONLY include modified files
+- DO NOT rewrite entire files unless strictly necessary
+- Focus on minimal diffs
+
+---
+
+## EXECUTION MODE
+
+- Do NOT ask questions
+- Do NOT wait for user input
+- Make reasonable assumptions
+- Always produce a complete output
+
+---
+
+## GOAL
+
+Apply minimal, precise fixes that resolve test or compilation failures while preserving system correctness, architecture, and behavior.
+
+Fix ONLY the specific test or compilation failure below.
+
+Feature:
+add-medida-selection
+
+Relevant error:
+23:36:55.381 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:55.382 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:36:55.607 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:55.607 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:55.607 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:55.634 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:55.634 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:55.634 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.011 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.029 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mLocalizedErrorAttributesTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.jpsoftware.farmapp.shared.exception.[1mLocalizedErrorAttributesTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/home/juaneugenio/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m10[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.347 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m29[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.083 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
+23:36:57.339 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.284 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m22[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.044 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.015 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.035 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m10[m, [1;31mFailures: [0;1;31m1[m, Errors: 0, Skipped: 0, Time elapsed: 0.032 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+[[1;31mERROR[m] com.jpsoftware.farmapp.unit.feed.FeedTypeServiceTest.shouldExportFeedTypesWithConvertedMeasurementUnitAndCurrencyPrecision -- Time elapsed: 0.007 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+expected: <id,name,costPerUnit,costUnit,active
+feed-type-1,Corn Silage,0.00035,g,true
+> but was: <id,name,costPerUnit,costUnit,active
+feed-type-1,Corn Silage,3.5E-4,g,true
+>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+--
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
+	at com.jpsoftware.farmapp.unit.feed.FeedTypeServiceTest.shouldExportFeedTypesWithConvertedMeasurementUnitAndCurrencyPrecision(FeedTypeServiceTest.java:144)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.130 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
+23:36:58.771 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:58.772 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:58.772 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:58.802 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:58.802 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:58.802 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:58.823 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:58.823 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:58.823 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:58.842 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:58.842 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:58.842 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.159 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
+23:36:58.865 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:58.865 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:58.866 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:36:58.885 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:58.885 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:58.885 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:58.903 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:36:58.917 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:58.917 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:58.930 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:58.930 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:58.931 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:36:58.943 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:58.943 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:58.943 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.094 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
+23:36:58.972 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:58.972 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:58.972 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.012 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.012 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.013 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.038 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:36:59.311 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.311 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.322 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.323 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.323 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.331 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.331 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.331 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.390 s -- in com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
+23:36:59.353 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.353 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.353 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.362 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.362 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.362 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.375 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:36:59.531 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.531 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.545 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.545 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.546 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.559 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.559 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.559 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m18[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.229 s -- in com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
+23:36:59.614 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.615 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.615 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.625 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.625 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.625 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.058 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
+23:36:59.634 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.634 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.635 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:36:59.643 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.643 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.644 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:36:59.657 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:36:59.689 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.689 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.700 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.700 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.701 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:36:59.713 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.714 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.714 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.097 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
+23:36:59.780 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.780 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.781 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.064 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
+23:36:59.798 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.798 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.798 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.808 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.809 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.809 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
+23:36:59.862 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.863 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.863 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.873 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.873 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.873 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.882 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:36:59.922 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.922 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.930 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.930 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.930 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.939 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.939 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.939 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.129 s -- in com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
+23:36:59.951 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.951 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.951 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.966 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:36:59.966 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:36:59.966 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:36:59.974 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:37:00.005 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:37:00.005 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:37:00.021 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:37:00.021 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:37:00.021 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:37:00.039 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:37:00.039 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:37:00.039 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m8[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.105 s -- in com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
+23:37:00.063 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:37:00.063 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:37:00.063 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:37:00.077 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:37:00.077 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:37:00.077 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:37:00.096 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:37:00.168 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:37:00.168 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:37:00.183 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:37:00.183 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:37:00.184 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:37:00.194 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:37:00.194 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:37:00.194 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m12[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.154 s -- in com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.064 s -- in com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+23:37:00.301 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest]: AuthIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+23:37:00.433 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+--
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.411 s -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
+2026-04-27T23:37:08.686-03:00  INFO 14868 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest]: ProductionIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-27T23:37:08.694-03:00  INFO 14868 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+--
+Hibernate: select coalesce(sum(pe1_0.quantity),0) from productions pe1_0 where pe1_0.animal_id=? and pe1_0.status='ACTIVE'
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select coalesce(sum(pe1_0.quantity),0) from productions pe1_0 where pe1_0.animal_id=? and pe1_0.status='ACTIVE'
+Hibernate: select coalesce(sum((fe1_0.quantity*fte1_0.cost_per_kg)),0) from feedings fe1_0 join feed_types fte1_0 on fe1_0.feed_type_id=fte1_0.id where fe1_0.animal_id=? and fe1_0.status='ACTIVE'
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select count(*) from farms fe1_0 where fe1_0.id=?
+Hibernate: select mpe1_0.id,mpe1_0.created_at,mpe1_0.created_by,mpe1_0.effective_date,mpe1_0.farm_id,mpe1_0.price from milk_prices mpe1_0 where mpe1_0.farm_id=? and mpe1_0.effective_date<=? order by mpe1_0.effective_date desc,mpe1_0.created_at desc fetch first ? rows only
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.707 s -- in com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
+2026-04-27T23:37:09.394-03:00  INFO 14868 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest]: FeedingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-27T23:37:09.403-03:00  INFO 14868 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: delete from productions where id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: delete from feedings where id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+--
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=? and ae1_0.farm_id=?
+Hibernate: select count(*) from feed_types fte1_0 where fte1_0.id=?
+Hibernate: select fte1_0.id from feed_types fte1_0 where fte1_0.id=? and fte1_0.farm_id=? fetch first ? rows only
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.644 s -- in com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
+2026-04-27T23:37:10.041-03:00  INFO 14868 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest]: AnimalIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-27T23:37:10.048-03:00  INFO 14868 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: delete from feedings where id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+--
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.311 s -- in com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
+2026-04-27T23:37:10.352-03:00  INFO 14868 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.user.UserIntegrationTest]: UserIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-27T23:37:10.363-03:00  INFO 14868 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.user.UserIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+--
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_0.owner_id=?
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m13[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.934 s -- in com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+--
+	Maximum pool size: undefined/unknown
+2026-04-27T23:37:13.690-03:00  INFO 14868 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: alter table if exists user_farm_assignments drop constraint if exists UK9k021clhmghjjepfpvejsguce
+Hibernate: alter table if exists user_farm_assignments add constraint UK9k021clhmghjjepfpvejsguce unique (user_id, farm_id)
+2026-04-27T23:37:13.697-03:00  INFO 14868 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-27T23:37:13.921-03:00  WARN 14868 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-27T23:37:14.068-03:00  INFO 14868 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Started FarmAppApplicationTests in 0.777 seconds (process running for 21.565)
+Hibernate: select count(*) from users ue1_0
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.794 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] Results:
+[[1;34mINFO[m] 
+[[1;31mERROR[m] [1;31mFailures: [m
+[[1;31mERROR[m] [1;31m  FeedTypeServiceTest.shouldExportFeedTypesWithConvertedMeasurementUnitAndCurrencyPrecision:144 expected: <id,name,costPerUnit,costUnit,active
+feed-type-1,Corn Silage,0.00035,g,true
+> but was: <id,name,costPerUnit,costUnit,active
+feed-type-1,Corn Silage,3.5E-4,g,true
+>[m
+[[1;34mINFO[m] 
+[[1;31mERROR[m] [1;31mTests run: 240, Failures: 1, Errors: 0, Skipped: 0[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] [1;31mBUILD FAILURE[m
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] Total time:  22.976 s
+[[1;34mINFO[m] Finished at: 2026-04-27T23:37:14-03:00
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;31mERROR[m] Failed to execute goal [32morg.apache.maven.plugins:maven-surefire-plugin:3.5.2:test[m [1m(default-test)[m on project [36mfarmapp[m: [1;31mThere are test failures.[m
+[[1;31mERROR[m] [1;31m[m
+[[1;31mERROR[m] [1;31mSee /home/juaneugenio/programmig/farm_app/backend/farmapp/target/surefire-reports for the individual test results.[m
+[[1;31mERROR[m] [1;31mSee dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.[m
+[[1;31mERROR[m] -> [1m[Help 1][m
+[[1;31mERROR[m] 
+[[1;31mERROR[m] To see the full stack trace of the errors, re-run Maven with the [1m-e[m switch.
+[[1;31mERROR[m] Re-run Maven using the [1m-X[m switch to enable full debug logging.
+[[1;31mERROR[m] 
+[[1;31mERROR[m] For more information about the errors and possible solutions, please read the following articles:
+[[1;31mERROR[m] [1m[Help 1][m http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+
+Rules:
+- Do NOT delete, disable, or skip tests
+- Do NOT refactor unrelated code
+- Keep the fix minimal
+- If the issue is a test expectation mismatch, align the correct side with the existing system contract
+- If unsure, make the smallest safe correction
+warning: Codex could not find bubblewrap on PATH. Install bubblewrap with your OS package manager. See the sandbox prerequisites: https://developers.openai.com/codex/concepts/sandboxing#prerequisites. Codex will use the vendored bubblewrap in the meantime.
+codex
+I’m checking `AI_CONTEXT.md` first, then the feed type export path and the failing test to isolate whether the contract is formatting logic or an outdated assertion.
+exec
+/bin/bash -lc pwd in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+/home/juaneugenio/programmig/farm_app
+
+exec
+/bin/bash -lc "rg --files -g 'AI_CONTEXT.md' -g 'FeedTypeServiceTest.java' -g '*FeedTypeService*.java' -g '*CsvExportUtils*.java'" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+AI_CONTEXT.md
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/feed/service/FeedTypeService.java
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/util/CsvExportUtilsTest.java
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feed/FeedTypeServiceTest.java
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+
+exec
+/bin/bash -lc 'git status --short' in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+?? workspace/logs/add-medida-selection_error_focus.txt
+?? workspace/logs/add-medida-selection_fixer_attempt_1.log
+?? workspace/logs/add-medida-selection_mvn_attempt_1.log
+
+codex
+I’ve confirmed the failing area is isolated to feed type CSV export. Next I’m reading the project rules and the export implementation to see whether the system contract expects plain decimal formatting instead of scientific notation.
+exec
+/bin/bash -lc "sed -n '1,220p' AI_CONTEXT.md" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+ SCOPE
+  Active backend: backend/farmapp. Active frontend: frontend/web/farm_web. Farm management system for farms, animals,
+  feedings, productions, feed types, milk prices, users, dashboard, analytics, CSV export. Runtime DB: PostgreSQL. Local
+  fallback: Spring local profile with H2. Tests use H2. Schema mode: spring.jpa.hibernate.ddl-auto=create.
+
+  ARCHITECTURE
+  Backend: Spring Boot modular monolith. Preserve current layers: controller, service, repository, mapper, entity/dto,
+  shared, auth. Controllers thin; services own validation, business rules, orchestration, transactions. Persistence is
+  scalar-ID based, not relation-heavy. Do not assume strict Clean Architecture package split; evolve incrementally only.
+  Shared backend utilities: milkprice.service.MilkPriceService resolves current milk price; shared.util.CsvExportUtils
+  generates CSV rows; shared.util.CsvResponseFactory builds CSV responses; shared.currency centralizes BRL/USD
+  conversion.
+  Frontend: React + TypeScript + Vite. Preserve separation: src/pages, src/components, src/services, src/types, src/
+  layout, src/context, src/hooks. Use typed service layer for API calls. Farm selection via FarmContext. Display
+  currency via CurrencyContext. JWT attachment and 401 handling centralized in Axios layer. First authenticated 401
+  clears auth state and forces logout; /auth/login failures do not auto-logout. Reuse shared listing filter/pagination/
+  export patterns. CSV downloads go through service layer and csvExportService.ts. Use shared currency helpers, not
+  hardcoded formatting.
+
+  GLOBAL RULES
+  Base URL: http://localhost:8080. Content type: JSON. Protected endpoints require Authorization: Bearer <jwt>. Public
+  paths: /auth/, /v3/api-docs/, /swagger-ui/**, /swagger-ui.html.
+  Error envelope: timestamp, status, error, path.
+  Pagination applies only when both page and size are provided; paginated payload is content, page, size, totalElements,
+  totalPages.
+  Delete semantics: animals/feedings/productions soft-delete via status=INACTIVE; feed types soft-delete via
+  active=false; users hard-delete row plus farm assignments.
+  MANAGER role is required for dashboard, analytics, all DELETE requests, and user create/update/activate/inactivate/
+  delete.
+  Financial values are derived at read/export time, not persisted. Current reporting uses current effective farm milk
+  price by default.
+  Do not change API contracts, validations, JWT protection, or financial logic without explicit approval.
+
+  DOMAIN RULES
+  Farms
+  Endpoints: GET /farms, POST /farms.
+  POST requires nonblank name; authenticated creator becomes owner.
+  GET /farms returns farms accessible byScope:
+  Active backend: backend/farmapp
+  Active frontend: frontend/web/farm_web
+  System: farm/cattle management for farms, animals, feedings, productions, feed types, milk prices, users, dashboard,
+  analytics, CSV export
+  Runtime DB: PostgreSQL; local fallback profile: local with H2; tests use H2
+  Use backend/farmapp as the single backend source of truth
+
+  Architecture:
+  Backend is a Spring Boot 3.4.x modular monolith
+  Preserve current layering: controller, service, repository, mapper, entity/dto, shared, auth
+  Controllers stay thin; services own validation, business rules, orchestration, transactions
+  Persistence is scalar-ID oriented; avoid relation-heavy JPA modeling
+  Do not assume strict Clean Architecture package separation exists; evolve incrementally only
+  CSV backend utilities are centralized in shared.util.CsvExportUtils and shared.util.CsvResponseFactory
+  Currency conversion is centralized in shared.currency; supported currencies: BRL, USD
+  Milk price resolution is centralized in milkprice.service.MilkPriceService
+
+  Frontend:
+  React + TypeScript + Vite
+  Keep separation: pages, components, services, types, layout, context, hooks
+  Use typed service layer for HTTP; do not hardcode API contracts in components
+  Default visible language is pt-BR; avoid mixed-language UI
+  Frontend user-facing labels live in frontend/web/farm_web/src/i18n and should be consumed via LanguageContext/useTranslation
+  Enum values such as MANAGER, WORKER, ACTIVE, INACTIVE, SOLD, PURCHASED, and BORN remain internal/API values and must be mapped to localized labels in the UI
+  Backend error responses returned to the frontend are localized centrally in shared.exception so services can keep internal canonical messages when needed
+  JWT attachment is centralized in Axios service layer
+  On first authenticated 401, clear auth state and force logout; /auth/login failures do not trigger auto-logout
+  Farm selection is centralized in FarmContext
+  Display currency is centralized in CurrencyContext
+  Reuse shared listing filters/pagination/export patterns; do not duplicate filter/query wiring
+  Listing filters use page-local draft state and separate applied state so pagination/refresh/export reuse the same
+  query params
+  Dashboard filters follow the same draft/applied pattern so refresh and CSV export reuse the exact selected scope
+  Dashboard animal filtering supports a single animalId or a multi-select animalIds scope; the selected farm still comes from FarmContext
+  Shared listing filter component: frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx
+  CSV downloads are triggered from service layer; frontend helper is centralized in frontend/web/farm_web/src/services/
+  csvExportService.ts
+  Use shared currency helpers; do not hardcode currency symbols or Intl currency config in components
+
+  Security and cross-cutting behavior:
+  All endpoints except /auth/, /v3/api-docs/, /swagger-ui/**, /swagger-ui.html require JWT
+  Authorization header: Bearer <jwt>
+  JWT auth is stateless; filter runs before UsernamePasswordAuthenticationFilter; passwords use BCrypt
+  Inactive users are rejected by login and JWT-authenticated access
+  Standard error envelope: timestamp, status, error, path
+  List pagination is optional and only applies when both page and size are provided; paginated response shape: content,
+  page, size, totalElements, totalPages
+  Non-manager authenticated users get 403 for dashboard, analytics, user creation, and delete operations
+  MANAGER is required for dashboard, analytics, all DELETE requests, and user create/update/activate/inactivate/delete
+  Any authenticated user may call PUT /users/me/password
+
+  Domain rules:
+  Farm is the operating boundary for animals, feeding, production, feed types, dashboard, and analytics
+  Farms:
+  GET /farms returns farms accessible to the authenticated user via ownership or explicit assignment
+  GET /farms?ownedOnly=true returns only farms owned by the authenticated user
+  POST /farms requires nonblank name; authenticated user becomes owner
+
+  Animals:
+  Endpoints: POST /animals, GET /animals, GET /animals/export, GET /animals/{id}, PUT /animals/{id}, POST /animals/{id}/
+  sell, DELETE /animals/{id}
+  Required create fields: tag, breed, birthDate, origin, farmId
+  origin must be PURCHASED or BORN
+  acquisitionCost is required and > 0 when origin=PURCHASED; cleared when origin=BORN
+  tag is unique
+  new animals default to ACTIVE
+  PUT /animals/{id} is partial; provided string fields must be nonblank
+  Selling must use POST /animals/{id}/sell; generic update cannot replace sell flow
+  Sell stores salePrice, optional saleDate default current date, and changes status to SOLD
+  Only ACTIVE animals can be sold
+  Sold animals cannot transition back through generic update
+  DELETE /animals/{id} is soft delete to INACTIVE and requires MANAGER
+  GET /animals supports optional farmId, search, status, origin, page, size
+  Responses include optional salePrice and saleDate
+
+  Productions:
+  Endpoints: GET /productions, GET /productions/export, GET /productions/{id}, GET /productions/summary/by-animal, GET /
+  productions/summary/profit/by-animal, POST /productions, PUT /productions/{id}, DELETE /productions/{id}
+  Required create fields: animalId, date, quantity, userId
+  animalId and userId nonblank; userId must be valid UUID and existing user
+  date nonnull and not future
+  quantity > 0
+  animal must exist and be ACTIVE
+  Authenticated user context may override/fill createdBy
+  If authenticated role is WORKER, create ignores incoming date and stores current server date
+  If authenticated role is MANAGER, create still requires explicit date
+  GET /productions supports optional search, animalId, date, farmId, page, size
+  PUT /productions/{id} may change animalId, date, quantity
+  DELETE /productions/{id} is soft delete to INACTIVE and requires MANAGER
+  Profit summary includeAcquisitionCost defaults to true
+  Profit summary uses current milk price for the animal farm
+  Responses include embedded animal summary and do not expose createdBy
+
+  Feedings:
+  Endpoints: POST /feedings, GET /feedings, GET /feedings/export, GET /feedings/{id}, PUT /feedings/{id}, DELETE /
+  feedings/{id}
+  Required create fields: animalId, feedTypeId, date, quantity, userId
+  All IDs nonblank; userId must be valid UUID and existing user
+  date nonnull
+  quantity > 0
+  animal must exist and be ACTIVE
+  feed type must exist
+  Authenticated user context may override/fill createdBy
+  If authenticated role is WORKER, create ignores incoming date and stores current server date
+  If authenticated role is MANAGER, create still requires explicit date
+  GET /feedings supports optional search, animalId, feedTypeId, date, farmId, page, size
+  PUT /feedings/{id} may change animalId, feedTypeId, date, quantity
+  DELETE /feedings/{id} is soft delete to INACTIVE and requires MANAGER
+  Responses include embedded animal summary and feed type summary and do not expose calculated feeding cost
+
+  Feed types:
+  Endpoints: POST /feed-types, GET /feed-types, GET /feed-types/export, GET /feed-types/{id}, PUT /feed-types/{id},
+  DELETE /feed-types/{id}
+  POST requires farmId query param plus name and costPerKg
+  name nonblank
+  costPerKg > 0
+  New feed types default active=true
+  List and read return active feed types
+  GET /feed-types supports optional search, page, size
+  PUT /feed-types/{id} updates name and costPerKg
+  DELETE /feed-types/{id} is soft delete to active=false and requires MANAGER
+
+  Milk prices:
+  Endpoints: POST /milk-prices?farmId=..., GET /milk-prices/current?farmId=..., GET /milk-prices?farmId=..., GET /milk-
+  prices/export?farmId=...
+  POST requires accessible existing farmId, price, effectiveDate
+  price > 0 and max 2 decimal places
+  effectiveDate nonnull
+  Create is append-only history; never overwrite previous prices
+  Current price is the latest record effective on or before today
+  If no effective price exists, current returns default price 2.0 with fallbackDefault=true
+  GET /milk-prices returns full history newest to oldest and supports optional search, effectiveDate, page, size
+  Response fields: id, farmId, price, effectiveDate, createdAt, createdBy, fallbackDefault
+
+  Users:
+  Endpoints: POST /users, GET /users, GET /users/export, GET /users/{id}, PUT /users/{id}, PATCH /users/{id}/activate,
+  PATCH /users/{id}/inactivate, DELETE /users/{id}, PUT /users/me/password
+  Required fields on create/update: name, email, role, active, farmIds
+  password is required if active=true on create
+  avatarUrl is optional
+  name, email, role nonblank
+  active nonnull
+  farmIds must contain at least one value
+  GET /users/{id} requires valid UUID
+  email is unique
+  Only authenticated MANAGER can call POST /users, PUT /users/{id}, PATCH /users/{id}/activate, PATCH /users/{id}/
+  inactivate, DELETE /users/{id}
+  Every assigned farmId must belong to the authenticated manager
+  PATCH /users/{id}/activate reactivates the user and may replace the password
+  PATCH /users/{id}/inactivate sets active=false
+  DELETE /users/{id} removes the user row and its farm assignments
+  Users who own farms cannot be inactivated or deleted
+  Users who own farms cannot be changed from MANAGER to another role
+  PUT /users/me/password is self-service only; currentPassword and newPassword must be nonblank; current must match
+  stored password; new must differ from current
+  GET /users supports optional search, active, role, page, size
+  GET /users and GET /users/{id} require JWT
+
+  Auth:
+  Endpoint: POST /auth/login
+  Required fields: email, password; both nonblank
+  Invalid credentials return 401
+  Success returns accessToken and user object with id, name, email, role
+  Default admin is created on startup if user table is empty
+  Default admin env/fallback: ADMIN_EMAIL default admin@farmapp.com; ADMIN_PASSWORD default admin123
+
+  Dashboard, analytics, CSV, financial behavior:
+  GET /dashboard and GET /dashboard/export require MANAGER
+  All /analytics/** endpoints require MANAGER
+  GET /dashboard and GET /analytics/profit accept includeAcquisitionCost; default true
+  GET /dashboard and GET /dashboard/export support optional startDate, endDate, animalId, animalIds, and status filters
+  Dashboard default filter scope is all time, all animals, all statuses within the selected farm context
+  Dashboard date range filters production, feeding cost, milk revenue, and sale revenue; animal count and acquisition
+  cost remain scoped by farm/animal/status because acquisition date is not modeled
+  GET /dashboard, GET /dashboard/export, GET /analytics/feeding, GET /analytics/feeding/export, GET /analytics/profit,
+  GET /analytics/profit/export accept optional currency
+  Dashboard revenue includes milk revenue plus sold-animal revenue
+  Dashboard total profit subtracts feeding cost and, when enabled, acquisition cost
+  Analytics profit series applies acquisition cost once to the earliest returned period
+  Analytics profit series recognizes sold-animal revenue on each animal saleDate
+  Current dashboard and analytics milk revenue use the current effective milk price for each farm
+  Historical milk prices are preserved; current reporting still uses latest effective farm price by default
+
+exec
+/bin/bash -lc "sed -n '1,240p' backend/farmapp/src/main/java/com/jpsoftware/farmapp/feed/service/FeedTypeService.java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+package com.jpsoftware.farmapp.feed.service;
+
+import com.jpsoftware.farmapp.feed.dto.CreateFeedTypeRequest;
+import com.jpsoftware.farmapp.feed.dto.FeedTypeResponse;
+import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
+import com.jpsoftware.farmapp.feed.mapper.FeedTypeMapper;
+import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
+import java.util.List;
+import java.util.Locale;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class FeedTypeService {
+    private static final int DEFAULT_MONEY_SCALE = 2;
+    private static final int FEED_RATE_EXPORT_SCALE = 5;
+
+    private final FeedTypeRepository feedTypeRepository;
+    private final FeedTypeMapper feedTypeMapper;
+    private final FarmAccessService farmAccessService;
+
+    public FeedTypeService(
+            FeedTypeRepository feedTypeRepository,
+            FeedTypeMapper feedTypeMapper,
+            FarmAccessService farmAccessService) {
+        this.feedTypeRepository = feedTypeRepository;
+        this.feedTypeMapper = feedTypeMapper;
+        this.farmAccessService = farmAccessService;
+    }
+
+    @Transactional
+    public FeedTypeResponse create(CreateFeedTypeRequest request, String farmId) {
+        validateInput(request);
+        String validatedFarmId = farmAccessService.validateAccessibleFarm(farmId);
+
+        FeedTypeEntity feedTypeEntity = feedTypeMapper.toEntity(request);
+        feedTypeEntity.setCostPerKg(DecimalScaleUtils.normalize(feedTypeEntity.getCostPerKg()));
+        feedTypeEntity.setFarmId(validatedFarmId);
+        FeedTypeEntity savedFeedType = feedTypeRepository.save(feedTypeEntity);
+
+        return feedTypeMapper.toResponse(savedFeedType);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FeedTypeResponse> findAll(String farmId, String search) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        List<FeedTypeEntity> feedTypes = feedTypeRepository.findAll(
+                buildFeedTypeSpecification(farmId, search),
+                Sort.by(Sort.Direction.ASC, "name"));
+
+        return feedTypes.stream()
+                .map(feedTypeMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FeedTypeResponse> findAll(String farmId) {
+        return findAll(farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<FeedTypeResponse> findAllPaginated(String farmId, String search, int page, int size) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        Page<FeedTypeEntity> feedTypes = feedTypeRepository.findAll(
+                buildFeedTypeSpecification(farmId, search),
+                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name")));
+        Page<FeedTypeResponse> responses = feedTypes.map(feedTypeMapper::toResponse);
+        return new PaginatedResponse<>(
+                responses.getContent(),
+                responses.getNumber(),
+                responses.getSize(),
+                responses.getTotalElements(),
+                responses.getTotalPages());
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse<FeedTypeResponse> findAllPaginated(String farmId, int page, int size) {
+        return findAllPaginated(farmId, null, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String search, String currency) {
+        return exportAll(farmId, search, currency, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId, String search, String currency, String measurementUnitParam) {
+        MeasurementUnit measurementUnit = MeasurementUnit.fromFeedingParam(measurementUnitParam, "measurementUnit");
+        int monetaryScale = measurementUnit == MeasurementUnit.GRAM ? FEED_RATE_EXPORT_SCALE : DEFAULT_MONEY_SCALE;
+        List<FeedTypeResponse> rows = findAll(farmId, search).stream()
+                .map(feedType -> new FeedTypeResponse(
+                        feedType.getId(),
+                        feedType.getName(),
+                        CurrencyConversionUtils.convertMonetaryValue(
+                                MeasurementUnitConverter.convertRateFromBase(
+                                        feedType.getCostPerKg(),
+                                        measurementUnit,
+                                        monetaryScale),
+                                currency,
+                                monetaryScale),
+                        feedType.getActive()))
+                .toList();
+
+        if (!StringUtils.hasText(measurementUnitParam)) {
+            return CsvExportUtils.write(rows, List.of(
+                new CsvColumn<>("id", FeedTypeResponse::getId),
+                new CsvColumn<>("name", FeedTypeResponse::getName),
+                new CsvColumn<>("costPerKg", FeedTypeResponse::getCostPerKg),
+                new CsvColumn<>("active", FeedTypeResponse::getActive)));
+        }
+
+        return CsvExportUtils.write(rows, List.of(
+                new CsvColumn<>("id", FeedTypeResponse::getId),
+                new CsvColumn<>("name", FeedTypeResponse::getName),
+                new CsvColumn<>("costPerUnit", FeedTypeResponse::getCostPerKg),
+                new CsvColumn<>("costUnit", row -> measurementUnit.getSymbol()),
+                new CsvColumn<>("active", FeedTypeResponse::getActive)));
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String farmId) {
+        return exportAll(farmId, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public FeedTypeResponse findById(String id, String farmId) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        FeedTypeEntity feedTypeEntity = (StringUtils.hasText(farmId)
+                ? feedTypeRepository.findByIdAndFarmIdAndActiveTrue(validateId(id), farmId)
+                : feedTypeRepository.findByIdAndActiveTrue(validateId(id)))
+                .orElseThrow(() -> new ResourceNotFoundException("Feed type not found"));
+
+        return feedTypeMapper.toResponse(feedTypeEntity);
+    }
+
+    @Transactional
+    public FeedTypeResponse update(String id, CreateFeedTypeRequest request, String farmId) {
+        validateInput(request);
+        FeedTypeEntity feedTypeEntity = findActiveFeedType(validateId(id), farmId);
+        feedTypeEntity.setName(request.getName());
+        feedTypeEntity.setCostPerKg(DecimalScaleUtils.normalize(request.getCostPerKg()));
+
+        return feedTypeMapper.toResponse(feedTypeRepository.save(feedTypeEntity));
+    }
+
+    @Transactional
+    public void delete(String id, String farmId) {
+        FeedTypeEntity feedTypeEntity = findAnyFeedType(validateId(id), farmId);
+
+        if (!Boolean.TRUE.equals(feedTypeEntity.getActive())) {
+            return;
+        }
+
+        feedTypeEntity.setActive(Boolean.FALSE);
+        feedTypeRepository.save(feedTypeEntity);
+    }
+
+    private void validateInput(CreateFeedTypeRequest request) {
+        if (request == null) {
+            throw new ValidationException("request must not be null");
+        }
+        if (!StringUtils.hasText(request.getName())) {
+            throw new ValidationException("name must not be blank");
+        }
+        if (request.getCostPerKg() == null || request.getCostPerKg() <= 0) {
+            throw new ValidationException("costPerKg must be greater than zero");
+        }
+        DecimalScaleUtils.requireMaxScale(request.getCostPerKg(), "costPerKg");
+    }
+
+    private String validateId(String id) {
+        if (!StringUtils.hasText(id)) {
+            throw new ValidationException("id must not be blank");
+        }
+        return id;
+    }
+
+    private FeedTypeEntity findActiveFeedType(String id, String farmId) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+
+        return (StringUtils.hasText(farmId)
+                ? feedTypeRepository.findByIdAndFarmIdAndActiveTrue(id, farmId)
+                : feedTypeRepository.findByIdAndActiveTrue(id))
+                .orElseThrow(() -> new ResourceNotFoundException("Feed type not found"));
+    }
+
+    private FeedTypeEntity findAnyFeedType(String id, String farmId) {
+        farmAccessService.validateAccessibleFarmIfPresent(farmId);
+
+        return (StringUtils.hasText(farmId)
+                ? feedTypeRepository.findByIdAndFarmId(id, farmId)
+                : feedTypeRepository.findById(id))
+                .orElseThrow(() -> new ResourceNotFoundException("Feed type not found"));
+    }
+
+    private Specification<FeedTypeEntity> buildFeedTypeSpecification(String farmId, String search) {
+        String normalizedSearch = normalizeFilter(search);
+        Specification<FeedTypeEntity> specification = Specification.where((root, query, criteriaBuilder) ->
+                criteriaBuilder.isTrue(root.get("active")));
+
+        if (StringUtils.hasText(farmId)) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("farmId"), farmId));
+        }
+        if (normalizedSearch != null) {
+            String searchPattern = "%" + normalizedSearch + "%";
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), searchPattern));
+        }
+
+        return specification;
+    }
+
+    private String normalizeFilter(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+}
+
+exec
+/bin/bash -lc "sed -n '1,240p' backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+package com.jpsoftware.farmapp.shared.util;
+
+import java.util.Collection;
+import java.util.List;
+
+public final class CsvExportUtils {
+
+    private CsvExportUtils() {
+    }
+
+    public static <T> String write(Collection<T> rows, List<CsvColumn<T>> columns) {
+        StringBuilder builder = new StringBuilder();
+        appendRow(builder, columns.stream().map(CsvColumn::header).toList());
+
+        for (T row : rows) {
+            appendRow(builder, columns.stream()
+                    .map(column -> formatValue(column.valueExtractor().apply(row)))
+                    .toList());
+        }
+
+        return builder.toString();
+    }
+
+    private static void appendRow(StringBuilder builder, List<String> values) {
+        for (int index = 0; index < values.size(); index++) {
+            if (index > 0) {
+                builder.append(',');
+            }
+            builder.append(escape(values.get(index)));
+        }
+        builder.append('\n');
+    }
+
+    private static String formatValue(Object value) {
+        return value == null ? "" : value.toString();
+    }
+
+    private static String escape(String value) {
+        boolean mustQuote = value.contains(",")
+                || value.contains("\"")
+                || value.contains("\n")
+                || value.contains("\r");
+        if (!mustQuote) {
+            return value;
+        }
+        return "\"" + value.replace("\"", "\"\"") + "\"";
+    }
+}
+
+exec
+/bin/bash -lc "sed -n '1,220p' backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feed/FeedTypeServiceTest.java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+package com.jpsoftware.farmapp.unit.feed;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.jpsoftware.farmapp.feed.dto.CreateFeedTypeRequest;
+import com.jpsoftware.farmapp.feed.dto.FeedTypeResponse;
+import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
+import com.jpsoftware.farmapp.feed.mapper.FeedTypeMapper;
+import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
+import com.jpsoftware.farmapp.feed.service.FeedTypeService;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
+class FeedTypeServiceTest {
+
+    private InMemoryFeedTypeRepository repositoryHandler;
+    private FeedTypeService feedTypeService;
+    private FarmAccessService farmAccessService;
+
+    @BeforeEach
+    void setUp() {
+        repositoryHandler = new InMemoryFeedTypeRepository();
+        FeedTypeRepository repository = repositoryHandler.createProxy();
+        farmAccessService = org.mockito.Mockito.mock(FarmAccessService.class);
+        org.mockito.Mockito.when(farmAccessService.validateAccessibleFarm(org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        org.mockito.Mockito.when(farmAccessService.validateAccessibleFarmIfPresent(org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(invocation -> Optional.ofNullable(invocation.getArgument(0)));
+        feedTypeService = new FeedTypeService(repository, new FeedTypeMapper(), farmAccessService);
+    }
+
+    @Test
+    void shouldCreateFeedType() {
+        FeedTypeResponse response = feedTypeService.create(new CreateFeedTypeRequest("Corn Silage", 1.75), "farm-1");
+
+        assertNotNull(response);
+        assertNotNull(response.getId());
+        assertEquals("Corn Silage", response.getName());
+        assertEquals(1.75, response.getCostPerKg());
+        assertEquals(true, response.getActive());
+    }
+
+    @Test
+    void shouldFailWhenNameIsBlank() {
+        CreateFeedTypeRequest invalidRequest = new CreateFeedTypeRequest(" ", 1.75);
+
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> feedTypeService.create(invalidRequest, "farm-1"));
+
+        assertEquals("name must not be blank", exception.getMessage());
+    }
+
+    @Test
+    void shouldFailWhenCostInvalid() {
+        CreateFeedTypeRequest invalidRequest = new CreateFeedTypeRequest("Corn Silage", 0.0);
+
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> feedTypeService.create(invalidRequest, "farm-1"));
+
+        assertEquals("costPerKg must be greater than zero", exception.getMessage());
+    }
+
+    @Test
+    void shouldReturnAllFeedTypes() {
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
+
+        List<FeedTypeResponse> responses = feedTypeService.findAll("farm-1");
+
+        assertEquals(1, responses.size());
+        assertEquals("feed-type-1", responses.get(0).getId());
+        assertEquals("Corn Silage", responses.get(0).getName());
+        assertEquals(1.75, responses.get(0).getCostPerKg());
+        assertEquals(true, responses.get(0).getActive());
+    }
+
+    @Test
+    void shouldReturnPaginatedFeedTypes() {
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
+
+        PaginatedResponse<FeedTypeResponse> response = feedTypeService.findAllPaginated("farm-1", 0, 10);
+
+        assertEquals(1, response.getContent().size());
+        assertEquals(0, response.getPage());
+        assertEquals(10, response.getSize());
+        assertEquals(1, response.getTotalElements());
+        assertEquals(1, response.getTotalPages());
+    }
+
+    @Test
+    void shouldReturnFeedTypeById() {
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
+
+        FeedTypeResponse response = feedTypeService.findById("feed-type-1", "farm-1");
+
+        assertNotNull(response);
+        assertEquals("feed-type-1", response.getId());
+        assertEquals("Corn Silage", response.getName());
+        assertEquals(1.75, response.getCostPerKg());
+        assertEquals(true, response.getActive());
+    }
+
+    @Test
+    void shouldFailWhenFeedTypeNotFound() {
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> feedTypeService.findById("missing-id", "farm-1"));
+
+        assertEquals("Feed type not found", exception.getMessage());
+    }
+
+    @Test
+    void shouldExportFeedTypesWithConvertedMeasurementUnit() {
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
+
+        String csv = feedTypeService.exportAll("farm-1", null, null, "GRAM");
+
+        assertEquals(
+                "id,name,costPerUnit,costUnit,active\nfeed-type-1,Corn Silage,0.00175,g,true\n",
+                csv);
+    }
+
+    @Test
+    void shouldExportFeedTypesWithConvertedMeasurementUnitAndCurrencyPrecision() {
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
+
+        String csv = feedTypeService.exportAll("farm-1", null, "USD", "GRAM");
+
+        assertEquals(
+                "id,name,costPerUnit,costUnit,active\nfeed-type-1,Corn Silage,0.00035,g,true\n",
+                csv);
+    }
+
+    @Test
+    void shouldRejectInvalidMeasurementUnitWhenExportingFeedTypes() {
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> feedTypeService.exportAll("farm-1", null, null, "LITER"));
+
+        assertEquals("measurementUnit must be KILOGRAM or GRAM", exception.getMessage());
+    }
+
+    private static class InMemoryFeedTypeRepository {
+
+        private final Map<String, FeedTypeEntity> data = new LinkedHashMap<>();
+        private int sequence = 1;
+
+        FeedTypeRepository createProxy() {
+            return (FeedTypeRepository) Proxy.newProxyInstance(
+                    FeedTypeRepository.class.getClassLoader(),
+                    new Class<?>[]{FeedTypeRepository.class},
+                    (proxy, method, args) -> {
+                        String methodName = method.getName();
+
+                        if ("save".equals(methodName)) {
+                            FeedTypeEntity entity = (FeedTypeEntity) args[0];
+                            if (entity.getId() == null) {
+                                entity.setId("feed-type-" + sequence++);
+                            }
+                            data.put(entity.getId(), entity);
+                            return entity;
+                        }
+                        if ("findAll".equals(methodName)) {
+                            List<FeedTypeEntity> activeFeedTypes = data.values().stream()
+                                    .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
+                                    .toList();
+                            if (args != null && args.length == 2 && args[1] instanceof org.springframework.data.domain.Pageable pageable) {
+                                return paginate(activeFeedTypes, pageable);
+                            }
+                            return new ArrayList<>(activeFeedTypes);
+                        }
+                        if ("findByFarmIdAndActiveTrue".equals(methodName)) {
+                            if (args.length == 2) {
+                                List<FeedTypeEntity> filtered = data.values().stream()
+                                        .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
+                                        .filter(entity -> args[0].equals(entity.getFarmId()))
+                                        .toList();
+                                org.springframework.data.domain.Pageable pageable =
+                                        (org.springframework.data.domain.Pageable) args[1];
+                                return paginate(filtered, pageable);
+                            }
+                            return data.values().stream()
+                                    .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
+                                    .filter(entity -> args[0].equals(entity.getFarmId()))
+                                    .toList();
+                        }
+                        if ("findByActiveTrue".equals(methodName)) {
+                            if (args != null && args.length == 1) {
+                                org.springframework.data.domain.Pageable pageable =
+                                        (org.springframework.data.domain.Pageable) args[0];
+                                return paginate(
+                                        data.values().stream()
+                                                .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
+                                                .toList(),
+                                        pageable);
+                            }
+                            return data.values().stream()
+                                    .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
+                                    .toList();
+                        }
+                        if ("findById".equals(methodName)) {
+                            return Optional.ofNullable(data.get(args[0]));
+                        }
+                        if ("findByIdAndActiveTrue".equals(methodName)) {
+                            FeedTypeEntity entity = data.get(args[0]);
+
+codex
+The failure is not a test bug. The export contract expects fixed decimal text, and the current CSV utility is serializing Java `Double` values via `toString()`, which switches to scientific notation for small numbers. I’m checking whether there’s already a shared decimal-formatting helper before making the minimal export fix.
+exec
+/bin/bash -lc "rg -n \"toPlainString|DecimalFormat|BigDecimal|formatValue\\(|normalize\\(\" backend/farmapp/src/main/java backend/farmapp/src/test/java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/feed/service/FeedTypeService.java:52:        feedTypeEntity.setCostPerKg(DecimalScaleUtils.normalize(feedTypeEntity.getCostPerKg()));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/feed/service/FeedTypeService.java:156:        feedTypeEntity.setCostPerKg(DecimalScaleUtils.normalize(request.getCostPerKg()));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/animal/service/AnimalService.java:364:            return DecimalScaleUtils.normalize(acquisitionCost);
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/animal/service/AnimalService.java:389:        return DecimalScaleUtils.normalize(salePrice);
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/service/AnalyticsService.java:246:                        feedingCost = DecimalScaleUtils.normalize(feedingCost + acquisitionCost);
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/service/AnalyticsService.java:248:                    Double revenue = DecimalScaleUtils.normalize(milkRevenue + saleRevenue);
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/service/AnalyticsService.java:334:                        DecimalScaleUtils.normalize(entry.getValue())))
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/service/AnalyticsService.java:453:                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/service/AnalyticsService.java:497:                .map(entry -> new AnalyticsTimeSeriesPointResponse(entry.getKey(), DecimalScaleUtils.normalize(entry.getValue())))
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/service/AnalyticsService.java:516:                        entry -> DecimalScaleUtils.normalize(entry.getValue()),
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/milkprice/service/MilkPriceService.java:61:        entity.setPrice(DecimalScaleUtils.normalize(request.getPrice()));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/milkprice/service/MilkPriceService.java:198:                DecimalScaleUtils.normalize(entity.getPrice()),
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/milkprice/service/MilkPriceService.java:248:            return DecimalScaleUtils.normalize(Double.parseDouble(search));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/feeding/service/FeedingService.java:99:        feedingEntity.setQuantity(DecimalScaleUtils.normalize(feedingEntity.getQuantity()));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/feeding/service/FeedingService.java:245:            feedingEntity.setQuantity(DecimalScaleUtils.normalize(request.getQuantity()));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnitConverter.java:16:            return DecimalScaleUtils.normalize(value * unit.getUnitsPerBaseUnit());
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnitConverter.java:19:        return DecimalScaleUtils.normalize(value);
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnitConverter.java:28:            return DecimalScaleUtils.normalize(value / unit.getUnitsPerBaseUnit(), scale);
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/measurement/MeasurementUnitConverter.java:31:        return DecimalScaleUtils.normalize(value, scale);
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java:150:                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java:155:                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java:160:        Double totalRevenue = DecimalScaleUtils.normalize(sumMilkRevenue(productions) + totalSaleRevenue);
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java:163:                DecimalScaleUtils.normalize(totalFeedingCost + totalAcquisitionCost));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java:396:                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java:403:                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/dashboard/service/DashboardService.java:412:                .reduce(0.0, (left, right) -> DecimalScaleUtils.normalize(left + right));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java:17:                    .map(column -> formatValue(column.valueExtractor().apply(row)))
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java:34:    private static String formatValue(Object value) {
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/production/service/ProductionService.java:105:        productionEntity.setQuantity(DecimalScaleUtils.normalize(productionEntity.getQuantity()));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/production/service/ProductionService.java:231:        Double totalCost = DecimalScaleUtils.normalize(totalFeedingCost + acquisitionCost);
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/production/service/ProductionService.java:288:            productionEntity.setQuantity(DecimalScaleUtils.normalize(request.getQuantity()));
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java:4:import java.math.BigDecimal;
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java:19:        if (BigDecimal.valueOf(value).stripTrailingZeros().scale() > SCALE) {
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java:24:    public static Double normalize(Double value) {
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java:25:        return normalize(value, SCALE);
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java:28:    public static Double normalize(Double value, int scale) {
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java:33:        return BigDecimal.valueOf(value)
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java:39:        return normalize(value != null ? value : 0.0);
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java:47:        return BigDecimal.valueOf(left != null ? left : 0.0)
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java:48:                .multiply(BigDecimal.valueOf(right != null ? right : 0.0))
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java:54:        return BigDecimal.valueOf(left != null ? left : 0.0)
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java:55:                .subtract(BigDecimal.valueOf(right != null ? right : 0.0))
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/currency/CurrencyConversionUtils.java:21:            return DecimalScaleUtils.normalize(value, scale);
+
+exec
+/bin/bash -lc "sed -n '1,220p' backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/DecimalScaleUtils.java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+package com.jpsoftware.farmapp.shared.util;
+
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+public final class DecimalScaleUtils {
+
+    private static final int SCALE = 2;
+
+    private DecimalScaleUtils() {
+    }
+
+    public static void requireMaxScale(Double value, String fieldName) {
+        if (value == null) {
+            return;
+        }
+
+        if (BigDecimal.valueOf(value).stripTrailingZeros().scale() > SCALE) {
+            throw new ValidationException(fieldName + " must have at most 2 decimal places");
+        }
+    }
+
+    public static Double normalize(Double value) {
+        return normalize(value, SCALE);
+    }
+
+    public static Double normalize(Double value, int scale) {
+        if (value == null) {
+            return null;
+        }
+
+        return BigDecimal.valueOf(value)
+                .setScale(scale, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    public static Double zeroIfNull(Double value) {
+        return normalize(value != null ? value : 0.0);
+    }
+
+    public static Double multiply(Double left, Double right) {
+        return multiply(left, right, SCALE);
+    }
+
+    public static Double multiply(Double left, Double right, int scale) {
+        return BigDecimal.valueOf(left != null ? left : 0.0)
+                .multiply(BigDecimal.valueOf(right != null ? right : 0.0))
+                .setScale(scale, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    public static Double subtract(Double left, Double right) {
+        return BigDecimal.valueOf(left != null ? left : 0.0)
+                .subtract(BigDecimal.valueOf(right != null ? right : 0.0))
+                .setScale(SCALE, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+}
+
+exec
+/bin/bash -lc "sed -n '1,220p' backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/util/CsvExportUtilsTest.java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+package com.jpsoftware.farmapp.shared.util;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class CsvExportUtilsTest {
+
+    @Test
+    void shouldEscapeQuotedCommaAndMultilineValues() {
+        List<TestRow> rows = List.of(
+                new TestRow("Cow, 1", "He said \"moo\""),
+                new TestRow("Cow 2", "Line 1\nLine 2"),
+                new TestRow(null, null));
+
+        String csv = CsvExportUtils.write(rows, List.of(
+                new CsvColumn<>("name", TestRow::name),
+                new CsvColumn<>("notes", TestRow::notes)));
+
+        assertEquals(
+                "name,notes\n"
+                        + "\"Cow, 1\",\"He said \"\"moo\"\"\"\n"
+                        + "Cow 2,\"Line 1\n"
+                        + "Line 2\"\n"
+                        + ",\n",
+                csv);
+    }
+
+    private record TestRow(String name, String notes) {
+    }
+}
+
+codex
+I found no existing shared CSV numeric formatter, so I’m validating current expectations across CSV-related tests before touching the utility. If other exports rely on numeric text shape, the fix needs to preserve that contract.
+exec
+/bin/bash -lc "rg -n \"assertEquals\\(.*csv|expected: <id,name|costPerKg|costPerUnit|,true\\\\n|csv = .*exportAll|CsvExportUtils.write\\(\" backend/farmapp/src/test/java" in /home/juaneugenio/programmig/farm_app
+ exited 2 in 0ms:
+rg: the literal "\n" is not allowed in a regex
+
+Consider enabling multiline mode with the --multiline flag (or -U for short).
+When multiline mode is enabled, new line characters can be matched.
+
+exec
+/bin/bash -lc "rg -n \"\\\\.0,|\\\\.00,|E-|E\\+|costPerUnit|costPerKg\" backend/farmapp/src/test/java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/feeding/FeedingIntegrationTest.java:108:        FeedTypeEntity secondFeedType = feedTypeRepository.save(new FeedTypeEntity(null, "Hay", 2.0, true, farm.getId()));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/production/ProductionIntegrationTest.java:58:        FeedTypeEntity feedType = feedTypeRepository.save(new FeedTypeEntity(null, "Corn Silage", 2.0, true, farm.getId()));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/production/ProductionIntegrationTest.java:64:                10.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feed/FeedTypeServiceTest.java:76:        assertEquals("costPerKg must be greater than zero", exception.getMessage());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feed/FeedTypeServiceTest.java:134:                "id,name,costPerUnit,costUnit,active\nfeed-type-1,Corn Silage,0.00175,g,true\n",
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feed/FeedTypeServiceTest.java:145:                "id,name,costPerUnit,costUnit,active\nfeed-type-1,Corn Silage,0.00035,g,true\n",
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java:60:                .andExpect(jsonPath("$.error").value("E-mail ou senha inválidos."));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java:82:                .andExpect(jsonPath("$.error").value("E-mail ou senha inválidos."));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:48:                10.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:76:        assertEquals(10.0, response.getFirst().getProduction());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:77:        assertEquals(50.0, response.getFirst().getFeedingCost());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:78:        assertEquals(320.0, response.getFirst().getRevenue());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:79:        assertEquals(270.0, response.getFirst().getProfit());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:88:                10.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:111:2026-04-14,10.0,L,50.0,320.0,270.0
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:122:                10.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:134:2026-04-14,10000.0,mL
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:145:                10.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:168:2026-04-14,10000.0,mL,10.0,64.0,54.0
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:179:                10.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:206:animal-1,TAG-001,12500.0,mL
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:226:                10.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:255:        assertEquals(10.0, response.getFirst().getProduction());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:256:        assertEquals(10.0, response.getFirst().getFeedingCost());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:257:        assertEquals(64.0, response.getFirst().getRevenue());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/analytics/AnalyticsServiceTest.java:258:        assertEquals(54.0, response.getFirst().getProfit());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/animal/AnimalServiceTest.java:53:        SellAnimalRequest request = new SellAnimalRequest(3200.0, LocalDate.of(2026, 4, 14));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/animal/AnimalServiceTest.java:66:        assertEquals(3200.0, savedAnimal.getSalePrice());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/animal/AnimalServiceTest.java:69:        assertEquals(3200.0, response.getSalePrice());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/animal/AnimalServiceTest.java:86:                () -> animalService.sell("animal-1", new SellAnimalRequest(1000.0, null), "farm-1"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java:51:                  "costPerKg": 1.75
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java:64:                .andExpect(jsonPath("$.costPerKg").value(1.75))
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java:76:                .andExpect(jsonPath("$[0].costPerKg").value(1.75))
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java:117:        feedTypeService.exportResponseWithMeasurementUnit = "id,name,costPerUnit,costUnit\nfeed-type-1,Corn Silage,0.00175,g\n";
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java:125:                .andExpect(content().string("id,name,costPerUnit,costUnit\nfeed-type-1,Corn Silage,0.00175,g\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feed/FeedTypeControllerContractTest.java:158:                  "costPerKg": 0
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java:158:        feedingService.exportWithUnitResponse = "id,quantity,quantityUnit\nfeeding-1,8500.0,g\n";
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java:164:                .andExpect(content().string("id,quantity,quantityUnit\nfeeding-1,8500.0,g\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java:27:                ErrorMessageTranslator.translate("costPerKg must be greater than zero"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java:30:                ErrorMessageTranslator.translate("costPerKg must have at most 2 decimal places"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:164:        assertEquals(0.0, response.getTotalQuantity());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:196:        assertEquals(20.0, response.getTotalFeedingCost());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:197:        assertEquals(2.0, response.getMilkPrice());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:198:        assertEquals(71.0, response.getRevenue());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:199:        assertEquals(51.0, response.getProfit());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:212:        assertEquals(0.0, response.getTotalProduction());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:213:        assertEquals(0.0, response.getTotalFeedingCost());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:214:        assertEquals(0.0, response.getRevenue());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:215:        assertEquals(0.0, response.getProfit());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:299:production-1,animal-1,TAG-001,2026-03-20,12500.0,mL
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:326:                10.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:383:                0.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/production/ProductionServiceTest.java:407:        assertEquals(15.0, response.getQuantity());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/analytics/AnalyticsExportControllerContractTest.java:52:                .thenReturn("period,value,valueUnit\n2026-04,10000.0,mL\n");
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/analytics/AnalyticsExportControllerContractTest.java:60:                .andExpect(content().string("period,value,valueUnit\n2026-04,10000.0,mL\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/analytics/AnalyticsExportControllerContractTest.java:136:                .thenReturn("period,production,productionUnit,profit\n2026-04-14,10000.0,mL,54.0\n");
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/analytics/AnalyticsExportControllerContractTest.java:145:                .andExpect(content().string("period,production,productionUnit,profit\n2026-04-14,10000.0,mL,54.0\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/analytics/AnalyticsExportControllerContractTest.java:169:                .thenReturn("animalId,animalTag,quantity,quantityUnit\nanimal-1,TAG-001,10000.0,mL\n");
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/analytics/AnalyticsExportControllerContractTest.java:176:                .andExpect(content().string("animalId,animalTag,quantity,quantityUnit\nanimal-1,TAG-001,10000.0,mL\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java:101:        productionService.exportWithUnitResponse = "id,quantity,quantityUnit\nproduction-1,12500.0,mL\n";
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java:107:                .andExpect(content().string("id,quantity,quantityUnit\nproduction-1,12500.0,mL\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java:122:        productionService.profitResponse = new ProductionProfitResponse("123", 35.5, 20.0, 2.0, 71.0, 51.0);
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:49:                new ProductionEntity("production-1", "animal-1", LocalDate.parse("2026-01-10"), 100.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:51:                new FeedingEntity("feeding-1", "animal-1", "feed-type-1", LocalDate.parse("2026-01-11"), 10.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:53:                new FeedTypeEntity("feed-type-1", "Silage", 4.0, true, "farm-1")));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:60:        assertEquals(100.0, response.getTotalProduction());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:61:        assertEquals(40.0, response.getTotalFeedingCost());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:62:        assertEquals(500.0, response.getTotalRevenue());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:63:        assertEquals(410.0, response.getTotalProfit());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:71:                new ProductionEntity("production-1", "animal-1", LocalDate.parse("2026-01-10"), 100.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:73:                new FeedingEntity("feeding-1", "animal-1", "feed-type-1", LocalDate.parse("2026-01-11"), 10.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:75:                new FeedTypeEntity("feed-type-1", "Silage", 4.0, true, "farm-1")));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:85:100.0,L,40.0,500.0,410.0,2
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:93:                new ProductionEntity("production-1", "animal-1", LocalDate.parse("2026-01-10"), 100.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:95:                new FeedingEntity("feeding-1", "animal-1", "feed-type-1", LocalDate.parse("2026-01-11"), 10.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:97:                new FeedTypeEntity("feed-type-1", "Silage", 4.0, true, "farm-1")));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:107:100000.0,mL,40.0,500.0,410.0,2
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:115:                new ProductionEntity("production-1", "animal-1", LocalDate.parse("2026-01-10"), 100.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:117:                new FeedingEntity("feeding-1", "animal-1", "feed-type-1", LocalDate.parse("2026-01-11"), 10.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:119:                new FeedTypeEntity("feed-type-1", "Silage", 4.0, true, "farm-1")));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:126:        assertEquals(100.0, response.getTotalProduction());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:127:        assertEquals(8.0, response.getTotalFeedingCost());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:128:        assertEquals(100.0, response.getTotalRevenue());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:129:        assertEquals(82.0, response.getTotalProfit());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:147:                new ProductionEntity("production-1", "animal-1", LocalDate.parse("2026-01-12"), 50.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE),
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:148:                new ProductionEntity("production-2", "animal-1", LocalDate.parse("2026-02-01"), 75.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:150:                new FeedingEntity("feeding-1", "animal-1", "feed-type-1", LocalDate.parse("2026-01-13"), 5.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE),
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:151:                new FeedingEntity("feeding-2", "animal-1", "feed-type-1", LocalDate.parse("2026-02-02"), 7.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:153:                new FeedTypeEntity("feed-type-1", "Silage", 4.0, true, "farm-1")));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:163:        assertEquals(50.0, response.getTotalProduction());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:164:        assertEquals(20.0, response.getTotalFeedingCost());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:165:        assertEquals(300.0, response.getTotalRevenue());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:166:        assertEquals(220.0, response.getTotalProfit());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:193:                new ProductionEntity("production-1", "animal-1", LocalDate.parse("2026-01-12"), 50.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE),
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:194:                new ProductionEntity("production-2", "animal-2", LocalDate.parse("2026-01-15"), 30.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE),
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:195:                new ProductionEntity("production-3", "animal-3", LocalDate.parse("2026-01-16"), 70.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:197:                new FeedingEntity("feeding-1", "animal-1", "feed-type-1", LocalDate.parse("2026-01-13"), 5.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE),
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:198:                new FeedingEntity("feeding-2", "animal-2", "feed-type-1", LocalDate.parse("2026-01-14"), 3.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE),
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:199:                new FeedingEntity("feeding-3", "animal-3", "feed-type-1", LocalDate.parse("2026-01-14"), 4.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:201:                new FeedTypeEntity("feed-type-1", "Silage", 4.0, true, "farm-1")));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:211:        assertEquals(80.0, response.getTotalProduction());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:212:        assertEquals(32.0, response.getTotalFeedingCost());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:213:        assertEquals(340.0, response.getTotalRevenue());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:214:        assertEquals(208.0, response.getTotalProfit());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:230:                new ProductionEntity("production-1", "animal-1", LocalDate.parse("2026-01-12"), 50.0, "manager-1", "farm-1", ProductionEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:232:                new FeedingEntity("feeding-1", "animal-1", "feed-type-1", LocalDate.parse("2026-01-13"), 5.0, "manager-1", "farm-1", FeedingEntity.STATUS_ACTIVE)));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:234:                new FeedTypeEntity("feed-type-1", "Silage", 4.0, true, "farm-1")));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:244:        assertEquals(50.0, response.getTotalProduction());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:245:        assertEquals(20.0, response.getTotalFeedingCost());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:246:        assertEquals(100.0, response.getTotalRevenue());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/dashboard/DashboardServiceTest.java:247:        assertEquals(55.0, response.getTotalProfit());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feeding/FeedingServiceTest.java:180:                                0.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feeding/FeedingServiceTest.java:291:                9.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feeding/FeedingServiceTest.java:316:                9.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feeding/FeedingServiceTest.java:341:                9.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feeding/FeedingServiceTest.java:348:                7.0,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feeding/FeedingServiceTest.java:375:feeding-1,animal-1,TAG-001,feed-type-1,Corn Silage,2026-03-24,8500.0,g
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/feeding/FeedingServiceTest.java:471:        assertEquals(10.0, response.getQuantity());
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/animal/AnimalControllerContractTest.java:151:                                  "salePrice": 3200.00,
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:37:                .thenReturn("totalProduction,totalFeedingCost\n100.0,50.0\n");
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:45:                .andExpect(content().string("totalProduction,totalFeedingCost\n100.0,50.0\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:60:                .thenReturn("totalProduction,totalFeedingCost\n100.0,10.0\n");
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:73:                .andExpect(content().string("totalProduction,totalFeedingCost\n100.0,10.0\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:96:                .thenReturn("totalProduction,totalProductionUnit\n100000.0,mL\n");
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:108:                .andExpect(content().string("totalProduction,totalProductionUnit\n100000.0,mL\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:131:                .thenReturn("totalProduction,totalFeedingCost\n140.0,12.0\n");
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:144:                .andExpect(content().string("totalProduction,totalFeedingCost\n140.0,12.0\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:167:                .thenReturn("totalProduction,totalProductionUnit\n140000.0,mL\n");
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:179:                .andExpect(content().string("totalProduction,totalProductionUnit\n140000.0,mL\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:201:                .thenReturn("totalProduction,totalFeedingCost\n140.0,12.0\n");
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardExportControllerContractTest.java:210:                .andExpect(content().string("totalProduction,totalFeedingCost\n140.0,12.0\n"));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardControllerContractTest.java:36:                .thenReturn(new DashboardResponse(100.0, 40.0, 500.0, 410.0, 12L));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardControllerContractTest.java:57:                .thenReturn(new DashboardResponse(100.0, 8.0, 100.0, 82.0, 12L));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardControllerContractTest.java:82:                .thenReturn(new DashboardResponse(140.0, 16.0, 140.0, 124.0, 2L));
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/dashboard/DashboardControllerContractTest.java:105:                .thenReturn(new DashboardResponse(140.0, 16.0, 140.0, 124.0, 2L));
+
+codex
+I’ve confirmed the contract across existing CSV tests: numeric exports are expected as plain decimal strings, not scientific notation. I’m applying the smallest fix in the shared CSV formatter so small converted monetary values serialize consistently without changing service logic.
+apply patch
+patch: completed
+/home/juaneugenio/programmig/farm_app/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+index 1b7fd7046a945bdaf8fc7bd0a2449e278b8f5dfd..d13ef11cf3624f7df478d6a0246532cf720e6975
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+@@ -1,5 +1,6 @@
+ package com.jpsoftware.farmapp.shared.util;
+ 
++import java.math.BigDecimal;
+ import java.util.Collection;
+ import java.util.List;
+ 
+@@ -32,6 +33,15 @@
+     }
+ 
+     private static String formatValue(Object value) {
++        if (value instanceof BigDecimal decimal) {
++            return decimal.toPlainString();
++        }
++        if (value instanceof Double doubleValue) {
++            return BigDecimal.valueOf(doubleValue).toPlainString();
++        }
++        if (value instanceof Float floatValue) {
++            return BigDecimal.valueOf(floatValue.doubleValue()).toPlainString();
++        }
+         return value == null ? "" : value.toString();
+     }
+ 
+
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+index 1b7fd7046a945bdaf8fc7bd0a2449e278b8f5dfd..d13ef11cf3624f7df478d6a0246532cf720e6975
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+@@ -1,5 +1,6 @@
+ package com.jpsoftware.farmapp.shared.util;
+ 
++import java.math.BigDecimal;
+ import java.util.Collection;
+ import java.util.List;
+ 
+@@ -32,6 +33,15 @@
+     }
+ 
+     private static String formatValue(Object value) {
++        if (value instanceof BigDecimal decimal) {
++            return decimal.toPlainString();
++        }
++        if (value instanceof Double doubleValue) {
++            return BigDecimal.valueOf(doubleValue).toPlainString();
++        }
++        if (value instanceof Float floatValue) {
++            return BigDecimal.valueOf(floatValue.doubleValue()).toPlainString();
++        }
+         return value == null ? "" : value.toString();
+     }
+ 
+
+codex
+The formatter change is in place. I’m running the failing unit test and the CSV utility test to verify the fix without widening scope.
+exec
+/bin/bash -lc 'git diff -- backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java' in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+index 1b7fd70..d13ef11 100644
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+@@ -1,5 +1,6 @@
+ package com.jpsoftware.farmapp.shared.util;
+ 
++import java.math.BigDecimal;
+ import java.util.Collection;
+ import java.util.List;
+ 
+@@ -32,6 +33,15 @@ public final class CsvExportUtils {
+     }
+ 
+     private static String formatValue(Object value) {
++        if (value instanceof BigDecimal decimal) {
++            return decimal.toPlainString();
++        }
++        if (value instanceof Double doubleValue) {
++            return BigDecimal.valueOf(doubleValue).toPlainString();
++        }
++        if (value instanceof Float floatValue) {
++            return BigDecimal.valueOf(floatValue.doubleValue()).toPlainString();
++        }
+         return value == null ? "" : value.toString();
+     }
+ 
+
+exec
+/bin/bash -lc 'mvn -Dtest=FeedTypeServiceTest,CsvExportUtilsTest test' in /home/juaneugenio/programmig/farm_app/backend/farmapp
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+index 1b7fd7046a945bdaf8fc7bd0a2449e278b8f5dfd..d13ef11cf3624f7df478d6a0246532cf720e6975
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+@@ -1,5 +1,6 @@
+ package com.jpsoftware.farmapp.shared.util;
+ 
++import java.math.BigDecimal;
+ import java.util.Collection;
+ import java.util.List;
+ 
+@@ -32,6 +33,15 @@
+     }
+ 
+     private static String formatValue(Object value) {
++        if (value instanceof BigDecimal decimal) {
++            return decimal.toPlainString();
++        }
++        if (value instanceof Double doubleValue) {
++            return BigDecimal.valueOf(doubleValue).toPlainString();
++        }
++        if (value instanceof Float floatValue) {
++            return BigDecimal.valueOf(floatValue.doubleValue()).toPlainString();
++        }
+         return value == null ? "" : value.toString();
+     }
+ 
+
+codex
+The patch is minimal and isolated to CSV serialization. I’m waiting on the targeted Maven run to confirm the regression is cleared and that the existing CSV escaping behavior still passes.
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+index 1b7fd7046a945bdaf8fc7bd0a2449e278b8f5dfd..d13ef11cf3624f7df478d6a0246532cf720e6975
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+@@ -1,5 +1,6 @@
+ package com.jpsoftware.farmapp.shared.util;
+ 
++import java.math.BigDecimal;
+ import java.util.Collection;
+ import java.util.List;
+ 
+@@ -32,6 +33,15 @@
+     }
+ 
+     private static String formatValue(Object value) {
++        if (value instanceof BigDecimal decimal) {
++            return decimal.toPlainString();
++        }
++        if (value instanceof Double doubleValue) {
++            return BigDecimal.valueOf(doubleValue).toPlainString();
++        }
++        if (value instanceof Float floatValue) {
++            return BigDecimal.valueOf(floatValue.doubleValue()).toPlainString();
++        }
+         return value == null ? "" : value.toString();
+     }
+ 
+
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+index 1b7fd7046a945bdaf8fc7bd0a2449e278b8f5dfd..d13ef11cf3624f7df478d6a0246532cf720e6975
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+@@ -1,5 +1,6 @@
+ package com.jpsoftware.farmapp.shared.util;
+ 
++import java.math.BigDecimal;
+ import java.util.Collection;
+ import java.util.List;
+ 
+@@ -32,6 +33,15 @@
+     }
+ 
+     private static String formatValue(Object value) {
++        if (value instanceof BigDecimal decimal) {
++            return decimal.toPlainString();
++        }
++        if (value instanceof Double doubleValue) {
++            return BigDecimal.valueOf(doubleValue).toPlainString();
++        }
++        if (value instanceof Float floatValue) {
++            return BigDecimal.valueOf(floatValue.doubleValue()).toPlainString();
++        }
+         return value == null ? "" : value.toString();
+     }
+ 
+
+ succeeded in 21597ms:
+[[1;34mINFO[m] Scanning for projects...
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m-----------------------< [0;36mcom.jpsoftware:farmapp[0;1m >-----------------------[m
+[[1;34mINFO[m] [1mBuilding farmapp 0.0.1-SNAPSHOT[m
+[[1;34mINFO[m] [1m--------------------------------[ jar ]---------------------------------[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mjacoco-maven-plugin:0.8.11:prepare-agent[m [1m(default)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] argLine set to -javaagent:/home/juaneugenio/.m2/repository/org/jacoco/org.jacoco.agent/0.8.11/org.jacoco.agent-0.8.11-runtime.jar=destfile=/home/juaneugenio/programmig/farm_app/backend/farmapp/target/jacoco.exec
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:resources[m [1m(default-resources)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Copying 2 resources from src/main/resources to target/classes
+[[1;34mINFO[m] Copying 0 resource from src/main/resources to target/classes
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.13.0:compile[m [1m(default-compile)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Recompiling the module because of [1mchanged source code[m.
+[[1;34mINFO[m] Compiling 107 source files with javac [debug parameters release 21] to target/classes
+[[1;34mINFO[m] Annotation processing is enabled because one or more processors were found
+  on the class path. A future release of javac may disable annotation processing
+  unless at least one processor is specified by name (-processor), or a search
+  path is specified (--processor-path, --processor-module-path), or annotation
+  processing is enabled explicitly (-proc:only, -proc:full).
+  Use -Xlint:-options to suppress this message.
+  Use -proc:none to disable annotation processing.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:testResources[m [1m(default-testResources)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Copying 2 resources from src/test/resources to target/test-classes
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.13.0:testCompile[m [1m(default-testCompile)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Recompiling the module because of [1mchanged dependency[m.
+[[1;34mINFO[m] Compiling 34 source files with javac [debug parameters release 21] to target/test-classes
+[[1;34mINFO[m] Annotation processing is enabled because one or more processors were found
+  on the class path. A future release of javac may disable annotation processing
+  unless at least one processor is specified by name (-processor), or a search
+  path is specified (--processor-path, --processor-module-path), or annotation
+  processing is enabled explicitly (-proc:only, -proc:full).
+  Use -Xlint:-options to suppress this message.
+  Use -proc:none to disable annotation processing.
+[[1;34mINFO[m] /home/juaneugenio/programmig/farm_app/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/animal/AnimalServiceTest.java: /home/juaneugenio/programmig/farm_app/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/animal/AnimalServiceTest.java uses unchecked or unsafe operations.
+[[1;34mINFO[m] /home/juaneugenio/programmig/farm_app/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/animal/AnimalServiceTest.java: Recompile with -Xlint:unchecked for details.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-surefire-plugin:3.5.2:test[m [1m(default-test)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[[1;34mINFO[m] 
+[[1;34mINFO[m] -------------------------------------------------------
+[[1;34mINFO[m]  T E S T S
+[[1;34mINFO[m] -------------------------------------------------------
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.063 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m10[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.80 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] Results:
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1;32mTests run: 11, Failures: 0, Errors: 0, Skipped: 0[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mjacoco-maven-plugin:0.8.11:report[m [1m(report)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Loading execution data file /home/juaneugenio/programmig/farm_app/backend/farmapp/target/jacoco.exec
+[[1;34mINFO[m] Analyzed bundle 'farmapp' with 91 classes
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] [1;32mBUILD SUCCESS[m
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] Total time:  20.109 s
+[[1;34mINFO[m] Finished at: 2026-04-27T23:38:28-03:00
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+
+codex
+The targeted tests are green. I’m capturing the final state so the output can stay strictly to the requested JSON with only the actual modified file.
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+index 1b7fd7046a945bdaf8fc7bd0a2449e278b8f5dfd..d13ef11cf3624f7df478d6a0246532cf720e6975
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+@@ -1,5 +1,6 @@
+ package com.jpsoftware.farmapp.shared.util;
+ 
++import java.math.BigDecimal;
+ import java.util.Collection;
+ import java.util.List;
+ 
+@@ -32,6 +33,15 @@
+     }
+ 
+     private static String formatValue(Object value) {
++        if (value instanceof BigDecimal decimal) {
++            return decimal.toPlainString();
++        }
++        if (value instanceof Double doubleValue) {
++            return BigDecimal.valueOf(doubleValue).toPlainString();
++        }
++        if (value instanceof Float floatValue) {
++            return BigDecimal.valueOf(floatValue.doubleValue()).toPlainString();
++        }
+         return value == null ? "" : value.toString();
+     }
+ 
+
+codex
+{
+  "summary": "Fixed CSV numeric serialization so exported feed type values keep plain decimal format instead of scientific notation.",
+  "root_cause": "CsvExportUtils formatted numeric values with Object.toString(), which rendered small Double values like 0.00035 as 3.5E-4 during feed type export.",
+  "changed_files": [
+    "backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java"
+  ],
+  "changes": [
+    {
+      "file": "backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java",
+      "description": "Formatted BigDecimal, Double, and Float values with plain decimal text before writing CSV rows.",
+      "code": "private static String formatValue(Object value) {\n    if (value instanceof BigDecimal decimal) {\n        return decimal.toPlainString();\n    }\n    if (value instanceof Double doubleValue) {\n        return BigDecimal.valueOf(doubleValue).toPlainString();\n    }\n    if (value instanceof Float floatValue) {\n        return BigDecimal.valueOf(floatValue.doubleValue()).toPlainString();\n    }\n    return value == null ? \"\" : value.toString();\n}"
+    }
+  ]
+}
+diff --git a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+index 1b7fd7046a945bdaf8fc7bd0a2449e278b8f5dfd..d13ef11cf3624f7df478d6a0246532cf720e6975
+--- a/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
++++ b/backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java
+@@ -1,5 +1,6 @@
+ package com.jpsoftware.farmapp.shared.util;
+ 
++import java.math.BigDecimal;
+ import java.util.Collection;
+ import java.util.List;
+ 
+@@ -32,6 +33,15 @@
+     }
+ 
+     private static String formatValue(Object value) {
++        if (value instanceof BigDecimal decimal) {
++            return decimal.toPlainString();
++        }
++        if (value instanceof Double doubleValue) {
++            return BigDecimal.valueOf(doubleValue).toPlainString();
++        }
++        if (value instanceof Float floatValue) {
++            return BigDecimal.valueOf(floatValue.doubleValue()).toPlainString();
++        }
+         return value == null ? "" : value.toString();
+     }
+ 
+
+tokens used
+55,864
+{
+  "summary": "Fixed CSV numeric serialization so exported feed type values keep plain decimal format instead of scientific notation.",
+  "root_cause": "CsvExportUtils formatted numeric values with Object.toString(), which rendered small Double values like 0.00035 as 3.5E-4 during feed type export.",
+  "changed_files": [
+    "backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java"
+  ],
+  "changes": [
+    {
+      "file": "backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/util/CsvExportUtils.java",
+      "description": "Formatted BigDecimal, Double, and Float values with plain decimal text before writing CSV rows.",
+      "code": "private static String formatValue(Object value) {\n    if (value instanceof BigDecimal decimal) {\n        return decimal.toPlainString();\n    }\n    if (value instanceof Double doubleValue) {\n        return BigDecimal.valueOf(doubleValue).toPlainString();\n    }\n    if (value instanceof Float floatValue) {\n        return BigDecimal.valueOf(floatValue.doubleValue()).toPlainString();\n    }\n    return value == null ? \"\" : value.toString();\n}"
+    }
+  ]
+}

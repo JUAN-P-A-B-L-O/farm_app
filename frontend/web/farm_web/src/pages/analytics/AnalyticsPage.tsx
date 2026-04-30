@@ -1,11 +1,14 @@
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import axios from 'axios'
 import BarChart from '../../components/analytics/BarChart'
 import ChartErrorBoundary from '../../components/analytics/ChartErrorBoundary'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import LineChart from '../../components/analytics/LineChart'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import { useCurrency } from '../../hooks/useCurrency'
 import { useFarm } from '../../hooks/useFarm'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllAnimals } from '../../services/animalService'
 import {
@@ -18,6 +21,12 @@ import {
 import type { Animal, ApiErrorResponse } from '../../types/animal'
 import type { AnalyticsDataset, AnalyticsFilters } from '../../types/analytics'
 import { appendCurrencyCode, formatCurrencyValue } from '../../utils/currency'
+import {
+  appendUnitToLabel,
+  convertMeasurementFromBase,
+  formatConvertedMeasurementValue,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import '../../App.css'
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -39,12 +48,14 @@ function mapAnimalsToOptions(animals: Animal[]) {
   }))
 }
 
-const initialFilters: AnalyticsFilters = {
-  startDate: '',
-  endDate: '',
-  animalId: '',
-  groupBy: 'day',
-  includeAcquisitionCost: true,
+function createInitialFilters(): AnalyticsFilters {
+  return {
+    startDate: '',
+    endDate: '',
+    animalId: '',
+    groupBy: 'day',
+    includeAcquisitionCost: true,
+  }
 }
 
 const emptyDataset: AnalyticsDataset = {
@@ -54,20 +65,28 @@ const emptyDataset: AnalyticsDataset = {
   productionByAnimal: [],
 }
 
+function filterAvailableAnimalId(currentAnimalId: string, nextAnimals: Array<{ id: string; tag: string }>) {
+  if (!currentAnimalId) {
+    return currentAnimalId
+  }
+
+  return nextAnimals.some((animal) => animal.id === currentAnimalId) ? currentAnimalId : ''
+}
+
 function AnalyticsPage() {
   const { t, language } = useTranslation()
   const { currency } = useCurrency()
   const { selectedFarmId } = useFarm()
+  const { productionUnit } = useMeasurementUnits()
   const [animals, setAnimals] = useState<Array<{ id: string; tag: string }>>([])
-  const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters)
-  const [appliedFilters, setAppliedFilters] = useState<AnalyticsFilters>(initialFilters)
   const [analytics, setAnalytics] = useState<AnalyticsDataset>(emptyDataset)
   const [isAnimalsLoading, setIsAnimalsLoading] = useState(true)
   const [isChartsLoading, setIsChartsLoading] = useState(false)
   const [exportingKey, setExportingKey] = useState<string | null>(null)
-  const [hasAppliedFilters, setHasAppliedFilters] = useState(false)
   const [animalsErrorMessage, setAnimalsErrorMessage] = useState('')
   const [chartsErrorMessage, setChartsErrorMessage] = useState('')
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(createInitialFilters)
   const resolveErrorMessage = useEffectEvent((error: unknown, fallbackKey: string) =>
     getErrorMessage(error, t(fallbackKey)),
   )
@@ -87,7 +106,18 @@ function AnalyticsPage() {
         const data = selectedFarmId ? await getAllAnimals(selectedFarmId) : []
 
         if (isActive) {
-          setAnimals(mapAnimalsToOptions(data))
+          const nextAnimals = mapAnimalsToOptions(data)
+          setAnimals(nextAnimals)
+          setFilters((current) => {
+            if (!current.animalId) {
+              return current
+            }
+
+            const nextAnimalId = filterAvailableAnimalId(current.animalId, nextAnimals)
+            return nextAnimalId === current.animalId
+              ? current
+              : { ...current, animalId: nextAnimalId }
+          })
         }
       } catch (error) {
         if (isActive) {
@@ -105,13 +135,18 @@ function AnalyticsPage() {
     return () => {
       isActive = false
     }
-  }, [selectedFarmId])
+  }, [selectedFarmId, setFilters])
 
   useEffect(() => {
-    if (!hasAppliedFilters) {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
       return
     }
 
+    previousSelectedFarmIdRef.current = selectedFarmId
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
+
+  useEffect(() => {
     let isActive = true
 
     async function loadAnalytics() {
@@ -152,11 +187,29 @@ function AnalyticsPage() {
     return () => {
       isActive = false
     }
-  }, [appliedFilters, currency, hasAppliedFilters, selectedFarmId])
+  }, [appliedFilters, currency, selectedFarmId])
 
-  const showCharts = hasAppliedFilters && !isChartsLoading && !errorMessage
-  const shouldShowInitialState = !hasAppliedFilters && !isChartsLoading && !errorMessage
+  const showCharts = !isChartsLoading && !errorMessage
   const formatChartCurrency = (value: number) => formatCurrencyValue(value, language, currency)
+  const formatChartProduction = (value: number) => (
+    `${formatConvertedMeasurementValue(value, language)} ${t(getMeasurementUnitShortLabelKey(productionUnit))}`
+  )
+  const productionSeries = analytics.productionSeries.map((point) => ({
+    ...point,
+    value: convertMeasurementFromBase(point.value, productionUnit),
+  }))
+  const productionByAnimal = analytics.productionByAnimal.map((point) => ({
+    ...point,
+    value: convertMeasurementFromBase(point.value, productionUnit),
+  }))
+  const productionTitle = appendUnitToLabel(
+    t('analytics.productionTitle'),
+    t(getMeasurementUnitShortLabelKey(productionUnit)),
+  )
+  const productionByAnimalTitle = appendUnitToLabel(
+    t('analytics.productionByAnimalTitle'),
+    t(getMeasurementUnitShortLabelKey(productionUnit)),
+  )
 
   function renderChartEmptyState() {
     return <p className="analytics-chart__empty">{t('analytics.emptyState')}</p>
@@ -169,15 +222,14 @@ function AnalyticsPage() {
     }))
   }
 
-  function applyFilters() {
-    setAppliedFilters(filters)
-    setHasAppliedFilters(true)
+  function clearFilters() {
+    resetFilters()
   }
 
   async function handleExport(
     key: 'production' | 'feeding' | 'profit' | 'productionByAnimal',
   ) {
-    if (!selectedFarmId || !hasAppliedFilters) {
+    if (!selectedFarmId) {
       return
     }
 
@@ -186,13 +238,13 @@ function AnalyticsPage() {
 
     try {
       if (key === 'production') {
-        await exportAnalyticsProductionCsv(appliedFilters, selectedFarmId, currency)
+        await exportAnalyticsProductionCsv(appliedFilters, selectedFarmId, currency, productionUnit)
       } else if (key === 'feeding') {
         await exportAnalyticsFeedingCsv(appliedFilters, selectedFarmId, currency)
       } else if (key === 'profit') {
-        await exportAnalyticsProfitCsv(appliedFilters, selectedFarmId, currency)
+        await exportAnalyticsProfitCsv(appliedFilters, selectedFarmId, currency, productionUnit)
       } else {
-        await exportAnalyticsProductionByAnimalCsv(appliedFilters, selectedFarmId, currency)
+        await exportAnalyticsProductionByAnimalCsv(appliedFilters, selectedFarmId, currency, productionUnit)
       }
     } catch (error) {
       setChartsErrorMessage(getErrorMessage(error, t('common.exportError')))
@@ -220,72 +272,56 @@ function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="analytics-controls">
-            <label htmlFor="analytics-start-date">
-              {t('analytics.startDateLabel')}
-              <input
-                id="analytics-start-date"
-                type="date"
-                value={filters.startDate}
-                onChange={(event) => updateFilter('startDate', event.target.value)}
-              />
-            </label>
-
-            <label htmlFor="analytics-end-date">
-              {t('analytics.endDateLabel')}
-              <input
-                id="analytics-end-date"
-                type="date"
-                value={filters.endDate}
-                onChange={(event) => updateFilter('endDate', event.target.value)}
-              />
-            </label>
-
-            <label htmlFor="analytics-animal-select">
-              {t('analytics.animalLabel')}
-              <select
-                id="analytics-animal-select"
-                value={filters.animalId}
-                onChange={(event) => updateFilter('animalId', event.target.value)}
-                disabled={isAnimalsLoading}
-              >
-                <option value="">{t('analytics.allAnimals')}</option>
-                {animals.map((animal) => (
-                  <option key={animal.id} value={animal.id}>
-                    {animal.tag}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label htmlFor="analytics-group-by">
-              {t('analytics.groupByLabel')}
-              <select
-                id="analytics-group-by"
-                value={filters.groupBy}
-                onChange={(event) => updateFilter('groupBy', event.target.value as AnalyticsFilters['groupBy'])}
-              >
-                <option value="day">{t('analytics.groupByDay')}</option>
-                <option value="month">{t('analytics.groupByMonth')}</option>
-              </select>
-            </label>
-
-            <label htmlFor="analytics-include-acquisition-cost" className="analytics-controls__checkbox">
-              <input
-                id="analytics-include-acquisition-cost"
-                type="checkbox"
-                checked={filters.includeAcquisitionCost}
-                onChange={(event) => updateFilter('includeAcquisitionCost', event.target.checked)}
-              />
-              <span>{t('analytics.includeAcquisitionCost')}</span>
-            </label>
-          </div>
-
-          <div className="analytics-actions">
-            <button type="button" className="animals-panel__button" onClick={applyFilters}>
-              {t('analytics.applyFilters')}
-            </button>
-          </div>
+          <ListingFiltersBar
+            onClear={clearFilters}
+            clearLabel={t('analytics.clearFilters')}
+            filters={[
+              {
+                type: 'date',
+                id: 'analytics-start-date',
+                label: t('analytics.startDateLabel'),
+                value: filters.startDate,
+                onChange: (value) => updateFilter('startDate', value),
+              },
+              {
+                type: 'date',
+                id: 'analytics-end-date',
+                label: t('analytics.endDateLabel'),
+                value: filters.endDate,
+                onChange: (value) => updateFilter('endDate', value),
+              },
+              {
+                type: 'select',
+                id: 'analytics-animal-select',
+                label: t('analytics.animalLabel'),
+                value: filters.animalId,
+                disabled: isAnimalsLoading,
+                onChange: (value) => updateFilter('animalId', value),
+                options: [
+                  { value: '', label: t('analytics.allAnimals') },
+                  ...animals.map((animal) => ({ value: animal.id, label: animal.tag })),
+                ],
+              },
+              {
+                type: 'select',
+                id: 'analytics-group-by',
+                label: t('analytics.groupByLabel'),
+                value: filters.groupBy,
+                onChange: (value) => updateFilter('groupBy', value as AnalyticsFilters['groupBy']),
+                options: [
+                  { value: 'day', label: t('analytics.groupByDay') },
+                  { value: 'month', label: t('analytics.groupByMonth') },
+                ],
+              },
+              {
+                type: 'checkbox',
+                id: 'analytics-include-acquisition-cost',
+                label: t('analytics.includeAcquisitionCost'),
+                checked: filters.includeAcquisitionCost,
+                onChange: (checked) => updateFilter('includeAcquisitionCost', checked),
+              },
+            ]}
+          />
 
           {isAnimalsLoading && <p className="animals-page__status">{t('analytics.loadingAnimals')}</p>}
 
@@ -304,7 +340,7 @@ function AnalyticsPage() {
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
               <div className="analytics-chart__header-copy">
-                <h2>{t('analytics.productionTitle')}</h2>
+                <h2>{productionTitle}</h2>
                 <p>{t('analytics.productionDescription')}</p>
               </div>
               <ExportCsvButton
@@ -312,19 +348,21 @@ function AnalyticsPage() {
                 label={t('common.exportCsv')}
                 loadingLabel={t('common.exportingCsv')}
                 isLoading={exportingKey === 'production'}
-                disabled={!showCharts || analytics.productionSeries.length === 0}
+                disabled={!showCharts || productionSeries.length === 0}
               />
             </div>
 
-            {shouldShowInitialState && renderChartEmptyState()}
-
-            {showCharts && analytics.productionSeries.length > 0 && (
+            {showCharts && productionSeries.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
-                <LineChart data={analytics.productionSeries} color="#2e6a46" />
+                <LineChart
+                  data={productionSeries}
+                  color="#2e6a46"
+                  valueFormatter={formatChartProduction}
+                />
               </ChartErrorBoundary>
             )}
 
-            {showCharts && analytics.productionSeries.length === 0 && (
+            {!isChartsLoading && !errorMessage && productionSeries.length === 0 && (
               renderChartEmptyState()
             )}
           </article>
@@ -344,8 +382,6 @@ function AnalyticsPage() {
               />
             </div>
 
-            {shouldShowInitialState && renderChartEmptyState()}
-
             {showCharts && analytics.feedingCostSeries.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
                 <LineChart
@@ -356,7 +392,7 @@ function AnalyticsPage() {
               </ChartErrorBoundary>
             )}
 
-            {showCharts && analytics.feedingCostSeries.length === 0 && (
+            {!isChartsLoading && !errorMessage && analytics.feedingCostSeries.length === 0 && (
               renderChartEmptyState()
             )}
           </article>
@@ -376,8 +412,6 @@ function AnalyticsPage() {
               />
             </div>
 
-            {shouldShowInitialState && renderChartEmptyState()}
-
             {showCharts && analytics.profitSeries.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
                 <LineChart
@@ -388,7 +422,7 @@ function AnalyticsPage() {
               </ChartErrorBoundary>
             )}
 
-            {showCharts && analytics.profitSeries.length === 0 && (
+            {!isChartsLoading && !errorMessage && analytics.profitSeries.length === 0 && (
               renderChartEmptyState()
             )}
           </article>
@@ -396,7 +430,7 @@ function AnalyticsPage() {
           <article className="analytics-panel analytics-chart">
             <div className="analytics-chart__header">
               <div className="analytics-chart__header-copy">
-                <h2>{t('analytics.productionByAnimalTitle')}</h2>
+                <h2>{productionByAnimalTitle}</h2>
                 <p>{t('analytics.productionByAnimalDescription')}</p>
               </div>
               <ExportCsvButton
@@ -404,19 +438,21 @@ function AnalyticsPage() {
                 label={t('common.exportCsv')}
                 loadingLabel={t('common.exportingCsv')}
                 isLoading={exportingKey === 'productionByAnimal'}
-                disabled={!showCharts || analytics.productionByAnimal.length === 0}
+                disabled={!showCharts || productionByAnimal.length === 0}
               />
             </div>
 
-            {shouldShowInitialState && renderChartEmptyState()}
-
-            {showCharts && analytics.productionByAnimal.length > 0 && (
+            {showCharts && productionByAnimal.length > 0 && (
               <ChartErrorBoundary fallback={renderChartEmptyState()}>
-                <BarChart data={analytics.productionByAnimal} color="#7b8f2a" />
+                <BarChart
+                  data={productionByAnimal}
+                  color="#7b8f2a"
+                  valueFormatter={formatChartProduction}
+                />
               </ChartErrorBoundary>
             )}
 
-            {showCharts && analytics.productionByAnimal.length === 0 && (
+            {!isChartsLoading && !errorMessage && productionByAnimal.length === 0 && (
               renderChartEmptyState()
             )}
           </article>

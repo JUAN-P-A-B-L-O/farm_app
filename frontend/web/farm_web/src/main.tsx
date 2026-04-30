@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext.tsx'
 import { CurrencyProvider } from './context/CurrencyContext.tsx'
 import { FarmProvider } from './context/FarmContext.tsx'
 import { LanguageProvider } from './context/LanguageContext.tsx'
+import { MeasurementUnitProvider } from './context/MeasurementUnitContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -14,9 +15,11 @@ createRoot(document.getElementById('root')!).render(
       <FarmProvider>
         <LanguageProvider>
           <CurrencyProvider>
-            <BrowserRouter>
-              <App />
-            </BrowserRouter>
+            <MeasurementUnitProvider>
+              <BrowserRouter>
+                <App />
+              </BrowserRouter>
+            </MeasurementUnitProvider>
           </CurrencyProvider>
         </LanguageProvider>
       </FarmProvider>

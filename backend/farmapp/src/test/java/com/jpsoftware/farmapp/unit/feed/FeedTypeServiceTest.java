@@ -124,6 +124,37 @@ class FeedTypeServiceTest {
         assertEquals("Feed type not found", exception.getMessage());
     }
 
+    @Test
+    void shouldExportFeedTypesWithConvertedMeasurementUnit() {
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
+
+        String csv = feedTypeService.exportAll("farm-1", null, null, "GRAM");
+
+        assertEquals(
+                "id,name,costPerUnit,costUnit,active\nfeed-type-1,Corn Silage,0.00175,g,true\n",
+                csv);
+    }
+
+    @Test
+    void shouldExportFeedTypesWithConvertedMeasurementUnitAndCurrencyPrecision() {
+        repositoryHandler.store(new FeedTypeEntity("feed-type-1", "Corn Silage", 1.75, true, "farm-1"));
+
+        String csv = feedTypeService.exportAll("farm-1", null, "USD", "GRAM");
+
+        assertEquals(
+                "id,name,costPerUnit,costUnit,active\nfeed-type-1,Corn Silage,0.00035,g,true\n",
+                csv);
+    }
+
+    @Test
+    void shouldRejectInvalidMeasurementUnitWhenExportingFeedTypes() {
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> feedTypeService.exportAll("farm-1", null, null, "LITER"));
+
+        assertEquals("measurementUnit must be KILOGRAM or GRAM", exception.getMessage());
+    }
+
     private static class InMemoryFeedTypeRepository {
 
         private final Map<String, FeedTypeEntity> data = new LinkedHashMap<>();
@@ -145,7 +176,13 @@ class FeedTypeServiceTest {
                             return entity;
                         }
                         if ("findAll".equals(methodName)) {
-                            return new ArrayList<>(data.values());
+                            List<FeedTypeEntity> activeFeedTypes = data.values().stream()
+                                    .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
+                                    .toList();
+                            if (args != null && args.length == 2 && args[1] instanceof org.springframework.data.domain.Pageable pageable) {
+                                return paginate(activeFeedTypes, pageable);
+                            }
+                            return new ArrayList<>(activeFeedTypes);
                         }
                         if ("findByFarmIdAndActiveTrue".equals(methodName)) {
                             if (args.length == 2) {

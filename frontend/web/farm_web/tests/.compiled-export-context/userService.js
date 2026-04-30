@@ -17,6 +17,18 @@ export async function getAllUsers(filters) {
   return response.data
 }
 
+export async function getUsersPage(filters, pagination) {
+  const response = await api.get('/users', {
+    params: {
+      ...buildUserListParams(filters),
+      page: pagination.page,
+      size: pagination.size,
+    },
+  })
+
+  return response.data
+}
+
 export async function createUser(data) {
   const payload = {
     name: data.name,

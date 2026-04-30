@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AnalyticsService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.analytics.service</a> &gt; <span class="el_source">AnalyticsService.java</span></div><h1>AnalyticsService.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.analytics.service;
+
+import com.jpsoftware.farmapp.analytics.dto.AnalyticsAnimalProductionPointResponse;
+import com.jpsoftware.farmapp.analytics.dto.AnalyticsGroupBy;
+import com.jpsoftware.farmapp.analytics.dto.AnalyticsProfitPointResponse;
+import com.jpsoftware.farmapp.analytics.dto.AnalyticsTimeSeriesPointResponse;
+import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
+import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
+import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
+import com.jpsoftware.farmapp.feeding.entity.FeedingEntity;
+import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
+import com.jpsoftware.farmapp.production.entity.ProductionEntity;
+import com.jpsoftware.farmapp.production.repository.ProductionRepository;
+import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class AnalyticsService {
+
+<span class="fc" id="L42">    private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern(&quot;yyyy-MM&quot;);</span>
+
+    private final ProductionRepository productionRepository;
+    private final FeedingRepository feedingRepository;
+    private final AnimalRepository animalRepository;
+    private final FeedTypeRepository feedTypeRepository;
+    private final FarmAccessService farmAccessService;
+    private final MilkPriceService milkPriceService;
+
+    @Autowired
+    public AnalyticsService(
+            ProductionRepository productionRepository,
+            FeedingRepository feedingRepository,
+            AnimalRepository animalRepository,
+            FeedTypeRepository feedTypeRepository,
+            FarmAccessService farmAccessService,
+<span class="fc" id="L58">            MilkPriceService milkPriceService) {</span>
+<span class="fc" id="L59">        this.productionRepository = productionRepository;</span>
+<span class="fc" id="L60">        this.feedingRepository = feedingRepository;</span>
+<span class="fc" id="L61">        this.animalRepository = animalRepository;</span>
+<span class="fc" id="L62">        this.feedTypeRepository = feedTypeRepository;</span>
+<span class="fc" id="L63">        this.farmAccessService = farmAccessService;</span>
+<span class="fc" id="L64">        this.milkPriceService = milkPriceService;</span>
+<span class="fc" id="L65">    }</span>
+
+    public AnalyticsService(
+            ProductionRepository productionRepository,
+            FeedingRepository feedingRepository,
+            AnimalRepository animalRepository,
+            FeedTypeRepository feedTypeRepository,
+            FarmAccessService farmAccessService) {
+<span class="fc" id="L73">        this(</span>
+                productionRepository,
+                feedingRepository,
+                animalRepository,
+                feedTypeRepository,
+                farmAccessService,
+                null);
+<span class="fc" id="L80">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;AnalyticsTimeSeriesPointResponse&gt; getProductionSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId) {
+<span class="fc" id="L89">        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);</span>
+<span class="fc" id="L90">        List&lt;ProductionEntity&gt; productions = filterProductions(startDate, endDate, animalId, farmId);</span>
+
+<span class="fc" id="L92">        return aggregateSeries(</span>
+                productions,
+                groupBy,
+                ProductionEntity::getDate,
+                ProductionEntity::getQuantity);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportProductionSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId) {
+<span class="fc" id="L106">        return CsvExportUtils.write(getProductionSeries(startDate, endDate, animalId, groupByParam, farmId), List.of(</span>
+                new CsvColumn&lt;&gt;(&quot;period&quot;, AnalyticsTimeSeriesPointResponse::getPeriod),
+                new CsvColumn&lt;&gt;(&quot;value&quot;, AnalyticsTimeSeriesPointResponse::getValue)));
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;AnalyticsTimeSeriesPointResponse&gt; getFeedingCostSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId) {
+<span class="nc" id="L118">        return getFeedingCostSeries(startDate, endDate, animalId, groupByParam, farmId, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;AnalyticsTimeSeriesPointResponse&gt; getFeedingCostSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            String currency) {
+<span class="nc" id="L129">        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);</span>
+<span class="nc" id="L130">        List&lt;FeedingEntity&gt; feedings = filterFeedings(startDate, endDate, animalId, farmId);</span>
+<span class="nc" id="L131">        Map&lt;String, Double&gt; feedCostsById = loadFeedCostsById(feedings);</span>
+
+<span class="nc" id="L133">        return convertSeriesValues(</span>
+<span class="nc" id="L134">                aggregateSeries(</span>
+                feedings,
+                groupBy,
+                FeedingEntity::getDate,
+<span class="nc" id="L138">                feeding -&gt; DecimalScaleUtils.multiply(</span>
+<span class="nc" id="L139">                        DecimalScaleUtils.zeroIfNull(feedCostsById.get(feeding.getFeedTypeId())),</span>
+<span class="nc" id="L140">                        DecimalScaleUtils.zeroIfNull(feeding.getQuantity()))),</span>
+                currency);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportFeedingCostSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId) {
+<span class="nc" id="L151">        return exportFeedingCostSeries(startDate, endDate, animalId, groupByParam, farmId, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportFeedingCostSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            String currency) {
+<span class="nc" id="L162">        return CsvExportUtils.write(getFeedingCostSeries(startDate, endDate, animalId, groupByParam, farmId, currency), List.of(</span>
+                new CsvColumn&lt;&gt;(&quot;period&quot;, AnalyticsTimeSeriesPointResponse::getPeriod),
+                new CsvColumn&lt;&gt;(&quot;value&quot;, AnalyticsTimeSeriesPointResponse::getValue)));
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;AnalyticsProfitPointResponse&gt; getProfitSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            boolean includeAcquisitionCost) {
+<span class="fc" id="L175">        return getProfitSeries(startDate, endDate, animalId, groupByParam, farmId, includeAcquisitionCost, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;AnalyticsProfitPointResponse&gt; getProfitSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            boolean includeAcquisitionCost,
+            String currency) {
+<span class="fc" id="L187">        AnalyticsGroupBy groupBy = validateFilters(startDate, endDate, animalId, groupByParam, farmId);</span>
+<span class="fc" id="L188">        List&lt;ProductionEntity&gt; productions = filterProductions(startDate, endDate, animalId, farmId);</span>
+<span class="fc" id="L189">        List&lt;FeedingEntity&gt; feedings = filterFeedings(startDate, endDate, animalId, farmId);</span>
+<span class="fc" id="L190">        Map&lt;String, Double&gt; productionByPeriod = aggregateValues(</span>
+                productions,
+                groupBy,
+                ProductionEntity::getDate,
+                ProductionEntity::getQuantity);
+<span class="fc" id="L195">        Map&lt;String, Double&gt; milkRevenueByPeriod = aggregateValues(</span>
+                productions,
+                groupBy,
+                ProductionEntity::getDate,
+<span class="fc" id="L199">                production -&gt; DecimalScaleUtils.multiply(</span>
+<span class="fc" id="L200">                        DecimalScaleUtils.zeroIfNull(production.getQuantity()),</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">                        milkPriceService != null</span>
+<span class="nc" id="L202">                                ? milkPriceService.resolveCurrentPriceValue(production.getFarmId())</span>
+<span class="fc" id="L203">                                : MilkPriceService.DEFAULT_MILK_PRICE));</span>
+<span class="fc" id="L204">        Map&lt;String, Double&gt; saleRevenueByPeriod = aggregateSaleRevenue(startDate, endDate, animalId, farmId, groupBy);</span>
+<span class="fc" id="L205">        Map&lt;String, Double&gt; feedCostsById = loadFeedCostsById(feedings);</span>
+<span class="fc" id="L206">        Map&lt;String, Double&gt; feedingCostByPeriod = aggregateValues(</span>
+                feedings,
+                groupBy,
+                FeedingEntity::getDate,
+<span class="nc" id="L210">                feeding -&gt; DecimalScaleUtils.multiply(</span>
+<span class="nc" id="L211">                        DecimalScaleUtils.zeroIfNull(feedCostsById.get(feeding.getFeedTypeId())),</span>
+<span class="nc" id="L212">                        DecimalScaleUtils.zeroIfNull(feeding.getQuantity())));</span>
+
+<span class="fc" id="L214">        Set&lt;String&gt; periods = new java.util.TreeSet&lt;&gt;();</span>
+<span class="fc" id="L215">        periods.addAll(productionByPeriod.keySet());</span>
+<span class="fc" id="L216">        periods.addAll(milkRevenueByPeriod.keySet());</span>
+<span class="fc" id="L217">        periods.addAll(saleRevenueByPeriod.keySet());</span>
+<span class="fc" id="L218">        periods.addAll(feedingCostByPeriod.keySet());</span>
+<span class="fc" id="L219">        String acquisitionPeriod = periods.stream().findFirst().orElse(null);</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">        Double acquisitionCost = includeAcquisitionCost</span>
+<span class="fc" id="L221">                ? DecimalScaleUtils.zeroIfNull(sumAcquisitionCost(animalId, farmId))</span>
+<span class="nc" id="L222">                : 0.0;</span>
+
+<span class="fc" id="L224">        return periods.stream()</span>
+<span class="fc" id="L225">                .map(period -&gt; {</span>
+<span class="fc" id="L226">                    Double production = DecimalScaleUtils.zeroIfNull(productionByPeriod.get(period));</span>
+<span class="fc" id="L227">                    Double milkRevenue = DecimalScaleUtils.zeroIfNull(milkRevenueByPeriod.get(period));</span>
+<span class="fc" id="L228">                    Double saleRevenue = DecimalScaleUtils.zeroIfNull(saleRevenueByPeriod.get(period));</span>
+<span class="fc" id="L229">                    Double feedingCost = DecimalScaleUtils.zeroIfNull(feedingCostByPeriod.get(period));</span>
+<span class="pc bpc" id="L230" title="2 of 4 branches missed.">                    if (includeAcquisitionCost &amp;&amp; period.equals(acquisitionPeriod)) {</span>
+<span class="fc" id="L231">                        feedingCost = DecimalScaleUtils.normalize(feedingCost + acquisitionCost);</span>
+                    }
+<span class="fc" id="L233">                    Double revenue = DecimalScaleUtils.normalize(milkRevenue + saleRevenue);</span>
+<span class="fc" id="L234">                    Double profit = DecimalScaleUtils.subtract(revenue, feedingCost);</span>
+<span class="fc" id="L235">                    return new AnalyticsProfitPointResponse(</span>
+                            period,
+                            production,
+<span class="fc" id="L238">                            CurrencyConversionUtils.convertMonetaryValue(feedingCost, currency),</span>
+<span class="fc" id="L239">                            CurrencyConversionUtils.convertMonetaryValue(revenue, currency),</span>
+<span class="fc" id="L240">                            CurrencyConversionUtils.convertMonetaryValue(profit, currency));</span>
+                })
+<span class="fc" id="L242">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportProfitSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            boolean includeAcquisitionCost) {
+<span class="fc" id="L253">        return exportProfitSeries(startDate, endDate, animalId, groupByParam, farmId, includeAcquisitionCost, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportProfitSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            boolean includeAcquisitionCost,
+            String currency) {
+<span class="fc" id="L265">        return CsvExportUtils.write(</span>
+<span class="fc" id="L266">                getProfitSeries(startDate, endDate, animalId, groupByParam, farmId, includeAcquisitionCost, currency),</span>
+<span class="fc" id="L267">                List.of(</span>
+                        new CsvColumn&lt;&gt;(&quot;period&quot;, AnalyticsProfitPointResponse::getPeriod),
+                        new CsvColumn&lt;&gt;(&quot;production&quot;, AnalyticsProfitPointResponse::getProduction),
+                        new CsvColumn&lt;&gt;(&quot;feedingCost&quot;, AnalyticsProfitPointResponse::getFeedingCost),
+                        new CsvColumn&lt;&gt;(&quot;revenue&quot;, AnalyticsProfitPointResponse::getRevenue),
+                        new CsvColumn&lt;&gt;(&quot;profit&quot;, AnalyticsProfitPointResponse::getProfit)));
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;AnalyticsAnimalProductionPointResponse&gt; getProductionByAnimal(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String farmId) {
+<span class="nc" id="L281">        validateFilters(startDate, endDate, animalId, AnalyticsGroupBy.DAY.name(), farmId);</span>
+<span class="nc" id="L282">        List&lt;ProductionEntity&gt; productions = filterProductions(startDate, endDate, animalId, farmId);</span>
+<span class="nc" id="L283">        Map&lt;String, AnimalEntity&gt; animalsById = loadAnimalsById(productions);</span>
+
+<span class="nc" id="L285">        return productions.stream()</span>
+<span class="nc" id="L286">                .collect(Collectors.groupingBy(</span>
+                        ProductionEntity::getAnimalId,
+<span class="nc" id="L288">                        Collectors.summingDouble(production -&gt; DecimalScaleUtils.zeroIfNull(production.getQuantity()))))</span>
+<span class="nc" id="L289">                .entrySet()</span>
+<span class="nc" id="L290">                .stream()</span>
+<span class="nc" id="L291">                .map(entry -&gt; new AnalyticsAnimalProductionPointResponse(</span>
+<span class="nc" id="L292">                        entry.getKey(),</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">                        animalsById.containsKey(entry.getKey()) ? animalsById.get(entry.getKey()).getTag() : entry.getKey(),</span>
+<span class="nc" id="L294">                        DecimalScaleUtils.normalize(entry.getValue())))</span>
+<span class="nc" id="L295">                .sorted(Comparator.comparing(AnalyticsAnimalProductionPointResponse::getAnimalTag))</span>
+<span class="nc" id="L296">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportProductionByAnimal(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String farmId) {
+<span class="nc" id="L305">        return CsvExportUtils.write(getProductionByAnimal(startDate, endDate, animalId, farmId), List.of(</span>
+                new CsvColumn&lt;&gt;(&quot;animalId&quot;, AnalyticsAnimalProductionPointResponse::getAnimalId),
+                new CsvColumn&lt;&gt;(&quot;animalTag&quot;, AnalyticsAnimalProductionPointResponse::getAnimalTag),
+                new CsvColumn&lt;&gt;(&quot;quantity&quot;, AnalyticsAnimalProductionPointResponse::getQuantity)));
+    }
+
+    private AnalyticsGroupBy validateFilters(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId) {
+<span class="pc bpc" id="L317" title="5 of 6 branches missed.">        if (startDate != null &amp;&amp; endDate != null &amp;&amp; startDate.isAfter(endDate)) {</span>
+<span class="nc" id="L318">            throw new ValidationException(&quot;startDate must be before or equal to endDate&quot;);</span>
+        }
+
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">        if (farmAccessService != null) {</span>
+<span class="fc" id="L322">            farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+        }
+
+<span class="pc bpc" id="L325" title="1 of 4 branches missed.">        if (StringUtils.hasText(animalId) &amp;&amp; !animalRepository.existsById(animalId)) {</span>
+<span class="nc" id="L326">            throw new ResourceNotFoundException(&quot;Animal not found&quot;);</span>
+        }
+<span class="pc bpc" id="L328" title="2 of 6 branches missed.">        if (StringUtils.hasText(animalId) &amp;&amp; StringUtils.hasText(farmId) &amp;&amp; !animalRepository.existsByIdAndFarmId(animalId, farmId)) {</span>
+<span class="nc" id="L329">            throw new ResourceNotFoundException(&quot;Animal not found&quot;);</span>
+        }
+
+        try {
+<span class="fc" id="L333">            return AnalyticsGroupBy.fromQueryParam(groupByParam);</span>
+<span class="nc" id="L334">        } catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L335">            throw new ValidationException(&quot;groupBy must be day or month&quot;);</span>
+        }
+    }
+
+    private List&lt;ProductionEntity&gt; filterProductions(LocalDate startDate, LocalDate endDate, String animalId, String farmId) {
+<span class="fc bfc" id="L340" title="All 2 branches covered.">        List&lt;ProductionEntity&gt; productions = StringUtils.hasText(farmId)</span>
+<span class="fc" id="L341">                ? productionRepository.findByFarmIdAndStatus(farmId, ProductionEntity.STATUS_ACTIVE)</span>
+<span class="fc" id="L342">                : productionRepository.findAll();</span>
+
+<span class="fc" id="L344">        return productions.stream()</span>
+<span class="fc" id="L345">                .filter(production -&gt; matchesAnimal(production.getAnimalId(), animalId))</span>
+<span class="fc" id="L346">                .filter(production -&gt; matchesDateRange(production.getDate(), startDate, endDate))</span>
+<span class="fc" id="L347">                .toList();</span>
+    }
+
+    private List&lt;FeedingEntity&gt; filterFeedings(LocalDate startDate, LocalDate endDate, String animalId, String farmId) {
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">        List&lt;FeedingEntity&gt; feedings = StringUtils.hasText(farmId)</span>
+<span class="fc" id="L352">                ? feedingRepository.findByFarmIdAndStatus(farmId, FeedingEntity.STATUS_ACTIVE)</span>
+<span class="pc" id="L353">                : feedingRepository.findAll();</span>
+
+<span class="fc" id="L355">        return feedings.stream()</span>
+<span class="pc" id="L356">                .filter(feeding -&gt; matchesAnimal(feeding.getAnimalId(), animalId))</span>
+<span class="pc" id="L357">                .filter(feeding -&gt; matchesDateRange(feeding.getDate(), startDate, endDate))</span>
+<span class="fc" id="L358">                .toList();</span>
+    }
+
+    private boolean matchesAnimal(String entityAnimalId, String filterAnimalId) {
+<span class="pc bpc" id="L362" title="2 of 4 branches missed.">        return !StringUtils.hasText(filterAnimalId) || Objects.equals(entityAnimalId, filterAnimalId);</span>
+    }
+
+    private boolean matchesDateRange(LocalDate date, LocalDate startDate, LocalDate endDate) {
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">        if (date == null) {</span>
+<span class="nc" id="L367">            return false;</span>
+        }
+
+<span class="pc bpc" id="L370" title="3 of 4 branches missed.">        boolean matchesStart = startDate == null || !date.isBefore(startDate);</span>
+<span class="pc bpc" id="L371" title="3 of 4 branches missed.">        boolean matchesEnd = endDate == null || !date.isAfter(endDate);</span>
+<span class="pc bpc" id="L372" title="2 of 4 branches missed.">        return matchesStart &amp;&amp; matchesEnd;</span>
+    }
+
+    private Map&lt;String, Double&gt; loadFeedCostsById(Collection&lt;FeedingEntity&gt; feedings) {
+<span class="fc" id="L376">        Set&lt;String&gt; feedTypeIds = feedings.stream()</span>
+<span class="fc" id="L377">                .map(FeedingEntity::getFeedTypeId)</span>
+<span class="fc" id="L378">                .filter(StringUtils::hasText)</span>
+<span class="fc" id="L379">                .collect(Collectors.toSet());</span>
+
+<span class="fc" id="L381">        return feedTypeRepository.findAllById(feedTypeIds).stream()</span>
+<span class="pc" id="L382">                .collect(Collectors.toMap(FeedTypeEntity::getId, feedType -&gt; DecimalScaleUtils.zeroIfNull(feedType.getCostPerKg())));</span>
+    }
+
+    private Map&lt;String, AnimalEntity&gt; loadAnimalsById(Collection&lt;ProductionEntity&gt; productions) {
+<span class="nc" id="L386">        Set&lt;String&gt; animalIds = productions.stream()</span>
+<span class="nc" id="L387">                .map(ProductionEntity::getAnimalId)</span>
+<span class="nc" id="L388">                .filter(StringUtils::hasText)</span>
+<span class="nc" id="L389">                .collect(Collectors.toSet());</span>
+
+<span class="nc" id="L391">        return animalRepository.findAllById(animalIds).stream()</span>
+<span class="nc" id="L392">                .collect(Collectors.toMap(AnimalEntity::getId, animal -&gt; animal));</span>
+    }
+
+    private Double sumAcquisitionCost(String animalId, String farmId) {
+<span class="fc" id="L396">        return filterAnimalsForFinancials(animalId, farmId).stream()</span>
+<span class="fc" id="L397">                .map(AnimalEntity::getAcquisitionCost)</span>
+<span class="fc" id="L398">                .map(DecimalScaleUtils::zeroIfNull)</span>
+<span class="fc" id="L399">                .reduce(0.0, (left, right) -&gt; DecimalScaleUtils.normalize(left + right));</span>
+    }
+
+    private Map&lt;String, Double&gt; aggregateSaleRevenue(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String farmId,
+            AnalyticsGroupBy groupBy) {
+<span class="fc" id="L408">        List&lt;AnimalEntity&gt; soldAnimals = filterAnimalsForFinancials(animalId, farmId).stream()</span>
+<span class="pc bpc" id="L409" title="1 of 2 branches missed.">                .filter(animal -&gt; animal.getSaleDate() != null)</span>
+<span class="fc" id="L410">                .filter(animal -&gt; matchesDateRange(animal.getSaleDate(), startDate, endDate))</span>
+<span class="pc bpc" id="L411" title="1 of 2 branches missed.">                .filter(animal -&gt; animal.getSalePrice() != null)</span>
+<span class="fc" id="L412">                .toList();</span>
+
+<span class="fc" id="L414">        return aggregateValues(</span>
+                soldAnimals,
+                groupBy,
+                AnimalEntity::getSaleDate,
+                AnimalEntity::getSalePrice);
+    }
+
+    private List&lt;AnimalEntity&gt; filterAnimalsForFinancials(String animalId, String farmId) {
+        List&lt;AnimalEntity&gt; animals;
+<span class="pc bpc" id="L423" title="1 of 2 branches missed.">        if (StringUtils.hasText(animalId)) {</span>
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">            AnimalEntity animal = StringUtils.hasText(farmId)</span>
+<span class="fc" id="L425">                    ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)</span>
+<span class="pc" id="L426">                    : animalRepository.findById(animalId).orElse(null);</span>
+<span class="pc bpc" id="L427" title="1 of 2 branches missed.">            animals = animal != null ? List.of(animal) : List.of();</span>
+<span class="pc bnc" id="L428" title="All 2 branches missed.">        } else if (StringUtils.hasText(farmId)) {</span>
+<span class="nc" id="L429">            animals = animalRepository.findByFarmId(farmId);</span>
+        } else {
+<span class="nc" id="L431">            animals = animalRepository.findAll();</span>
+        }
+
+<span class="fc" id="L434">        return animals;</span>
+    }
+
+    private &lt;T&gt; List&lt;AnalyticsTimeSeriesPointResponse&gt; aggregateSeries(
+            Collection&lt;T&gt; items,
+            AnalyticsGroupBy groupBy,
+            java.util.function.Function&lt;T, LocalDate&gt; dateExtractor,
+            java.util.function.Function&lt;T, Double&gt; valueExtractor) {
+<span class="fc" id="L442">        return aggregateValues(items, groupBy, dateExtractor, valueExtractor).entrySet().stream()</span>
+<span class="pc" id="L443">                .map(entry -&gt; new AnalyticsTimeSeriesPointResponse(entry.getKey(), DecimalScaleUtils.normalize(entry.getValue())))</span>
+<span class="fc" id="L444">                .toList();</span>
+    }
+
+    private &lt;T&gt; Map&lt;String, Double&gt; aggregateValues(
+            Collection&lt;T&gt; items,
+            AnalyticsGroupBy groupBy,
+            java.util.function.Function&lt;T, LocalDate&gt; dateExtractor,
+            java.util.function.Function&lt;T, Double&gt; valueExtractor) {
+<span class="fc" id="L452">        return items.stream()</span>
+<span class="fc" id="L453">                .collect(Collectors.groupingBy(</span>
+<span class="fc" id="L454">                        item -&gt; toPeriodLabel(dateExtractor.apply(item), groupBy),</span>
+                        LinkedHashMap::new,
+<span class="fc" id="L456">                        Collectors.summingDouble(item -&gt; DecimalScaleUtils.zeroIfNull(valueExtractor.apply(item)))))</span>
+<span class="fc" id="L457">                .entrySet()</span>
+<span class="fc" id="L458">                .stream()</span>
+<span class="fc" id="L459">                .sorted(Map.Entry.comparingByKey())</span>
+<span class="fc" id="L460">                .collect(Collectors.toMap(</span>
+                        Map.Entry::getKey,
+<span class="fc" id="L462">                        entry -&gt; DecimalScaleUtils.normalize(entry.getValue()),</span>
+<span class="nc" id="L463">                        (left, right) -&gt; left,</span>
+                        LinkedHashMap::new));
+    }
+
+    private List&lt;AnalyticsTimeSeriesPointResponse&gt; convertSeriesValues(
+            List&lt;AnalyticsTimeSeriesPointResponse&gt; series,
+            String currency) {
+<span class="nc" id="L470">        return series.stream()</span>
+<span class="nc" id="L471">                .map(point -&gt; new AnalyticsTimeSeriesPointResponse(</span>
+<span class="nc" id="L472">                        point.getPeriod(),</span>
+<span class="nc" id="L473">                        CurrencyConversionUtils.convertMonetaryValue(point.getValue(), currency)))</span>
+<span class="nc" id="L474">                .toList();</span>
+    }
+
+    private String toPeriodLabel(LocalDate date, AnalyticsGroupBy groupBy) {
+<span class="pc bpc" id="L478" title="1 of 2 branches missed.">        if (groupBy == AnalyticsGroupBy.MONTH) {</span>
+<span class="nc" id="L479">            return YearMonth.from(date).format(MONTH_FORMATTER);</span>
+        }
+
+<span class="fc" id="L482">        return date.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -4,6 +4,7 @@ import DashboardPage from './pages/dashboard/DashboardPage'
 import AnimalsPage from './pages/animals/AnimalsPage'
 import AnimalDetailsPage from './pages/animals/AnimalDetailsPage'
 import AnalyticsPage from './pages/analytics/AnalyticsPage'
+import AnimalBatchPage from './pages/batch/AnimalBatchPage'
 import FeedingPage from './pages/feeding/FeedingPage'
 import FeedTypePage from './pages/feed-type/FeedTypePage'
 import ProductionPage from './pages/production/ProductionPage'
@@ -54,6 +55,7 @@ function App() {
           />
           <Route path="/animals" element={<AnimalsRoute />} />
           <Route path="/animals/:id" element={<AnimalDetailsRoute />} />
+          <Route path="/batches" element={<AnimalBatchPage />} />
           <Route path="/production" element={<ProductionPage />} />
           <Route path="/milk-prices" element={<MilkPricePage />} />
           <Route path="/feeding" element={<FeedingPage />} />

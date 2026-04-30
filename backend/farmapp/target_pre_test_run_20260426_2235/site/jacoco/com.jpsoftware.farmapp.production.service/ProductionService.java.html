@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProductionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.production.service</a> &gt; <span class="el_source">ProductionService.java</span></div><h1>ProductionService.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.production.service;
+
+import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
+import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
+import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
+import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
+import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
+import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
+import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
+import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
+import com.jpsoftware.farmapp.production.dto.ProductionResponse;
+import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
+import com.jpsoftware.farmapp.production.dto.UpdateProductionRequest;
+import com.jpsoftware.farmapp.production.entity.ProductionEntity;
+import com.jpsoftware.farmapp.production.mapper.ProductionMapper;
+import com.jpsoftware.farmapp.production.repository.ProductionRepository;
+import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
+import com.jpsoftware.farmapp.shared.exception.BusinessException;
+import com.jpsoftware.farmapp.shared.exception.ConflictException;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
+import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.util.CsvColumn;
+import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
+import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
+import com.jpsoftware.farmapp.user.repository.UserRepository;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class ProductionService {
+    private static final String WORKER_ROLE = &quot;WORKER&quot;;
+
+    private final ProductionRepository productionRepository;
+    private final FeedingRepository feedingRepository;
+    private final AnimalRepository animalRepository;
+    private final UserRepository userRepository;
+    private final ProductionMapper productionMapper;
+    private final AuthenticationContextService authenticationContextService;
+    private final FarmAccessService farmAccessService;
+    private final MilkPriceService milkPriceService;
+
+    @Autowired
+    public ProductionService(
+            ProductionRepository productionRepository,
+            FeedingRepository feedingRepository,
+            AnimalRepository animalRepository,
+            UserRepository userRepository,
+            ProductionMapper productionMapper,
+            AuthenticationContextService authenticationContextService,
+            FarmAccessService farmAccessService,
+<span class="fc" id="L64">            MilkPriceService milkPriceService) {</span>
+<span class="fc" id="L65">        this.productionRepository = productionRepository;</span>
+<span class="fc" id="L66">        this.feedingRepository = feedingRepository;</span>
+<span class="fc" id="L67">        this.animalRepository = animalRepository;</span>
+<span class="fc" id="L68">        this.userRepository = userRepository;</span>
+<span class="fc" id="L69">        this.productionMapper = productionMapper;</span>
+<span class="fc" id="L70">        this.authenticationContextService = authenticationContextService;</span>
+<span class="fc" id="L71">        this.farmAccessService = farmAccessService;</span>
+<span class="fc" id="L72">        this.milkPriceService = milkPriceService;</span>
+<span class="fc" id="L73">    }</span>
+
+    public ProductionService(
+            ProductionRepository productionRepository,
+            FeedingRepository feedingRepository,
+            AnimalRepository animalRepository,
+            UserRepository userRepository,
+            ProductionMapper productionMapper,
+            AuthenticationContextService authenticationContextService) {
+<span class="fc" id="L82">        this(</span>
+                productionRepository,
+                feedingRepository,
+                animalRepository,
+                userRepository,
+                productionMapper,
+                authenticationContextService,
+                null,
+                null);
+<span class="fc" id="L91">    }</span>
+
+    @Transactional
+    public ProductionResponse create(CreateProductionRequest request, String farmId) {
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        String createdBy = authenticationContextService.resolveUserId(request != null ? request.getUserId() : null);</span>
+<span class="fc" id="L96">        LocalDate effectiveDate = resolveCreationDate(request);</span>
+<span class="fc" id="L97">        validateInput(request, createdBy, effectiveDate);</span>
+<span class="fc" id="L98">        String resolvedFarmId = resolveFarmId(request, farmId);</span>
+<span class="fc" id="L99">        validateRelations(request, createdBy, resolvedFarmId);</span>
+
+<span class="fc" id="L101">        ProductionEntity productionEntity = toEntity(request);</span>
+<span class="fc" id="L102">        productionEntity.setDate(effectiveDate);</span>
+<span class="fc" id="L103">        productionEntity.setQuantity(DecimalScaleUtils.normalize(productionEntity.getQuantity()));</span>
+<span class="fc" id="L104">        productionEntity.setCreatedBy(createdBy);</span>
+<span class="fc" id="L105">        productionEntity.setFarmId(resolvedFarmId);</span>
+<span class="fc" id="L106">        productionEntity.setStatus(ProductionEntity.STATUS_ACTIVE);</span>
+<span class="fc" id="L107">        ProductionEntity savedProduction = productionRepository.save(productionEntity);</span>
+
+<span class="fc" id="L109">        return toEnrichedResponse(savedProduction);</span>
+    }
+
+    @Transactional
+    public ProductionResponse create(CreateProductionRequest request) {
+<span class="fc" id="L114">        return create(request, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;ProductionResponse&gt; findAll(String search, String animalId, LocalDate date, String farmId) {
+<span class="fc" id="L119">        return getAllProductions(search, animalId, date, farmId);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(String search, String animalId, LocalDate date, String farmId) {
+<span class="nc" id="L124">        return CsvExportUtils.write(findAll(search, animalId, date, farmId), List.of(</span>
+                new CsvColumn&lt;&gt;(&quot;id&quot;, ProductionResponse::getId),
+                new CsvColumn&lt;&gt;(&quot;animalId&quot;, ProductionResponse::getAnimalId),
+<span class="nc bnc" id="L127" title="All 2 branches missed.">                new CsvColumn&lt;&gt;(&quot;animalTag&quot;, production -&gt; production.getAnimal() != null ? production.getAnimal().getTag() : null),</span>
+                new CsvColumn&lt;&gt;(&quot;date&quot;, ProductionResponse::getDate),
+                new CsvColumn&lt;&gt;(&quot;quantity&quot;, ProductionResponse::getQuantity)));
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;ProductionResponse&gt; findAll(String animalId, LocalDate date) {
+<span class="fc" id="L134">        return findAll(null, animalId, date, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;ProductionResponse&gt; getAllProductions(String search, String animalId, LocalDate date, String farmId) {
+<span class="fc" id="L139">        List&lt;ProductionEntity&gt; productions = findProductions(search, animalId, date, farmId);</span>
+<span class="fc" id="L140">        Map&lt;String, AnimalSummaryResponse&gt; animalsById = loadAnimalSummariesById(productions);</span>
+<span class="fc" id="L141">        return productions.stream()</span>
+<span class="fc" id="L142">                .map(production -&gt; productionMapper.toResponse(production, animalsById.get(production.getAnimalId())))</span>
+<span class="fc" id="L143">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse&lt;ProductionResponse&gt; findAllPaginated(String search, String animalId, LocalDate date, String farmId, int page, int size) {
+<span class="fc" id="L148">        return getAllProductionsPaginated(search, animalId, date, farmId, page, size);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse&lt;ProductionResponse&gt; findAllPaginated(String animalId, LocalDate date, int page, int size) {
+<span class="fc" id="L153">        return findAllPaginated(null, animalId, date, null, page, size);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponse&lt;ProductionResponse&gt; getAllProductionsPaginated(
+            String search,
+            String animalId,
+            LocalDate date,
+            String farmId,
+            int page,
+            int size) {
+<span class="fc" id="L164">        Page&lt;ProductionEntity&gt; productions = findProductions(search, animalId, date, farmId, PageRequest.of(page, size));</span>
+<span class="fc" id="L165">        Map&lt;String, AnimalSummaryResponse&gt; animalsById = loadAnimalSummariesById(productions.getContent());</span>
+<span class="fc" id="L166">        Page&lt;ProductionResponse&gt; responses = productions.map(production -&gt;</span>
+<span class="fc" id="L167">                productionMapper.toResponse(production, animalsById.get(production.getAnimalId())));</span>
+<span class="fc" id="L168">        return toPaginatedResponse(responses);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionResponse findById(String id, String farmId) {
+<span class="fc" id="L173">        return getProductionById(id, farmId);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionResponse findById(String id) {
+<span class="fc" id="L178">        return findById(id, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionResponse getProductionById(String id, String farmId) {
+<span class="fc" id="L183">        validateAccessibleFarmIfPresent(farmId);</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        ProductionEntity productionEntity = (StringUtils.hasText(farmId)</span>
+<span class="nc" id="L185">                ? productionRepository.findByIdAndFarmIdAndStatus(validateId(id), farmId, ProductionEntity.STATUS_ACTIVE)</span>
+<span class="fc" id="L186">                : productionRepository.findById(validateId(id)))</span>
+<span class="fc" id="L187">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Production not found&quot;));</span>
+
+<span class="fc" id="L189">        return toEnrichedResponse(productionEntity);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionSummaryResponse getSummaryByAnimal(String animalId, String farmId) {
+<span class="fc" id="L194">        String validatedAnimalId = validateAnimalId(animalId);</span>
+<span class="fc" id="L195">        validateAnimal(validatedAnimalId, farmId);</span>
+
+<span class="fc" id="L197">        Double totalQuantity = productionRepository.sumQuantityByAnimalId(validatedAnimalId);</span>
+<span class="fc" id="L198">        return new ProductionSummaryResponse(validatedAnimalId, DecimalScaleUtils.zeroIfNull(totalQuantity));</span>
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionSummaryResponse getSummaryByAnimal(String animalId) {
+<span class="fc" id="L203">        return getSummaryByAnimal(animalId, null);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionProfitResponse getProfitByAnimal(String animalId, String farmId, boolean includeAcquisitionCost) {
+<span class="fc" id="L208">        String validatedAnimalId = validateAnimalId(animalId);</span>
+<span class="fc" id="L209">        AnimalEntity animal = validateAnimal(validatedAnimalId, farmId);</span>
+
+<span class="fc" id="L211">        Double totalProduction = DecimalScaleUtils.zeroIfNull(productionRepository.sumProductionByAnimalId(validatedAnimalId));</span>
+<span class="fc" id="L212">        Double totalFeedingCost = DecimalScaleUtils.zeroIfNull(feedingRepository.sumFeedingCostByAnimalId(validatedAnimalId));</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">        Double acquisitionCost = includeAcquisitionCost</span>
+<span class="fc" id="L214">                ? DecimalScaleUtils.zeroIfNull(animal.getAcquisitionCost())</span>
+<span class="nc" id="L215">                : 0.0;</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        Double milkPrice = milkPriceService != null</span>
+<span class="fc" id="L217">                ? milkPriceService.resolveCurrentPriceValue(animal.getFarmId())</span>
+<span class="fc" id="L218">                : MilkPriceService.DEFAULT_MILK_PRICE;</span>
+<span class="fc" id="L219">        Double revenue = DecimalScaleUtils.multiply(totalProduction, milkPrice);</span>
+<span class="fc" id="L220">        Double totalCost = DecimalScaleUtils.normalize(totalFeedingCost + acquisitionCost);</span>
+<span class="fc" id="L221">        Double profit = DecimalScaleUtils.subtract(revenue, totalCost);</span>
+
+<span class="fc" id="L223">        return new ProductionProfitResponse(</span>
+                validatedAnimalId,
+                totalProduction,
+                totalCost,
+                milkPrice,
+                revenue,
+                profit);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionProfitResponse getProfitByAnimal(String animalId, String farmId) {
+<span class="nc" id="L234">        return getProfitByAnimal(animalId, farmId, true);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public ProductionProfitResponse getProfitByAnimal(String animalId) {
+<span class="fc" id="L239">        return getProfitByAnimal(animalId, null, true);</span>
+    }
+
+    @Transactional
+    public ProductionResponse update(String id, UpdateProductionRequest request, String farmId) {
+<span class="fc" id="L244">        return updateProduction(id, request, farmId);</span>
+    }
+
+    @Transactional
+    public ProductionResponse update(String id, UpdateProductionRequest request) {
+<span class="fc" id="L249">        return update(id, request, null);</span>
+    }
+
+    @Transactional
+    public ProductionResponse updateProduction(String id, UpdateProductionRequest request, String farmId) {
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L255">            throw new ValidationException(&quot;request must not be null&quot;);</span>
+        }
+
+<span class="fc" id="L258">        ProductionEntity productionEntity = getProductionIncludingInactive(id, farmId);</span>
+<span class="fc" id="L259">        ensureProductionIsActive(productionEntity, &quot;Inactive production cannot be updated&quot;);</span>
+
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        if (StringUtils.hasText(request.getAnimalId())) {</span>
+<span class="fc" id="L262">            validateAnimalIsActive(request.getAnimalId(), farmId);</span>
+<span class="fc" id="L263">            productionEntity.setAnimalId(request.getAnimalId());</span>
+        }
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        if (request.getDate() != null) {</span>
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">            if (request.getDate().isAfter(LocalDate.now())) {</span>
+<span class="nc" id="L267">                throw new BusinessException(&quot;Date cannot be in the future&quot;);</span>
+            }
+<span class="fc" id="L269">            productionEntity.setDate(request.getDate());</span>
+        }
+
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">        if (request.getQuantity() != null) {</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">            if (request.getQuantity() &lt;= 0) {</span>
+<span class="fc" id="L274">                throw new ValidationException(&quot;quantity must be greater than zero&quot;);</span>
+            }
+<span class="fc" id="L276">            DecimalScaleUtils.requireMaxScale(request.getQuantity(), &quot;quantity&quot;);</span>
+<span class="fc" id="L277">            productionEntity.setQuantity(DecimalScaleUtils.normalize(request.getQuantity()));</span>
+        }
+
+<span class="fc" id="L280">        ProductionEntity savedProduction = productionRepository.save(productionEntity);</span>
+<span class="fc" id="L281">        return toEnrichedResponse(savedProduction);</span>
+    }
+
+    @Transactional
+    public void deleteProduction(String id, String farmId) {
+<span class="fc" id="L286">        ProductionEntity productionEntity = getProductionIncludingInactive(id, farmId);</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        if (ProductionEntity.STATUS_INACTIVE.equals(productionEntity.getStatus())) {</span>
+<span class="fc" id="L288">            return;</span>
+        }
+
+<span class="fc" id="L291">        productionEntity.setStatus(ProductionEntity.STATUS_INACTIVE);</span>
+<span class="fc" id="L292">        productionRepository.save(productionEntity);</span>
+<span class="fc" id="L293">    }</span>
+
+    @Transactional
+    public void deleteProduction(String id) {
+<span class="fc" id="L297">        deleteProduction(id, null);</span>
+<span class="fc" id="L298">    }</span>
+
+    private ProductionResponse toEnrichedResponse(ProductionEntity productionEntity) {
+<span class="fc" id="L301">        AnimalSummaryResponse animal = animalRepository.findById(productionEntity.getAnimalId())</span>
+<span class="fc" id="L302">                .map(this::toAnimalSummary)</span>
+<span class="fc" id="L303">                .orElse(null);</span>
+<span class="fc" id="L304">        return productionMapper.toResponse(productionEntity, animal);</span>
+    }
+
+    private Map&lt;String, AnimalSummaryResponse&gt; loadAnimalSummariesById(Collection&lt;ProductionEntity&gt; productions) {
+<span class="fc" id="L308">        Set&lt;String&gt; animalIds = productions.stream()</span>
+<span class="fc" id="L309">                .map(ProductionEntity::getAnimalId)</span>
+<span class="fc" id="L310">                .filter(StringUtils::hasText)</span>
+<span class="fc" id="L311">                .collect(Collectors.toSet());</span>
+
+<span class="fc" id="L313">        return animalRepository.findAllById(animalIds).stream()</span>
+<span class="fc" id="L314">                .collect(Collectors.toMap(AnimalEntity::getId, this::toAnimalSummary));</span>
+    }
+
+    private AnimalSummaryResponse toAnimalSummary(AnimalEntity animalEntity) {
+<span class="fc" id="L318">        return new AnimalSummaryResponse(animalEntity.getId(), animalEntity.getTag());</span>
+    }
+
+    private void validateInput(CreateProductionRequest request, String createdBy, LocalDate effectiveDate) {
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L323">            throw new ValidationException(&quot;request must not be null&quot;);</span>
+        }
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">        if (!StringUtils.hasText(request.getAnimalId())) {</span>
+<span class="nc" id="L326">            throw new ValidationException(&quot;animalId must not be blank&quot;);</span>
+        }
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">        if (effectiveDate == null) {</span>
+<span class="nc" id="L329">            throw new ValidationException(&quot;date must not be null&quot;);</span>
+        }
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">        if (effectiveDate.isAfter(LocalDate.now())) {</span>
+<span class="nc" id="L332">            throw new BusinessException(&quot;Date cannot be in the future&quot;);</span>
+        }
+<span class="pc bpc" id="L334" title="1 of 4 branches missed.">        if (request.getQuantity() == null || request.getQuantity() &lt;= 0) {</span>
+<span class="fc" id="L335">            throw new ValidationException(&quot;quantity must be greater than zero&quot;);</span>
+        }
+<span class="fc" id="L337">        DecimalScaleUtils.requireMaxScale(request.getQuantity(), &quot;quantity&quot;);</span>
+<span class="pc bpc" id="L338" title="1 of 2 branches missed.">        if (!StringUtils.hasText(createdBy)) {</span>
+<span class="nc" id="L339">            throw new ValidationException(&quot;userId must not be blank&quot;);</span>
+        }
+<span class="fc" id="L341">    }</span>
+
+    private void validateRelations(CreateProductionRequest request, String createdBy, String farmId) {
+<span class="fc" id="L344">        validateAnimalIsActive(request.getAnimalId(), farmId);</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">        if (!userRepository.existsById(parseUserId(createdBy))) {</span>
+<span class="fc" id="L346">            throw new ResourceNotFoundException(&quot;User not found&quot;);</span>
+        }
+<span class="fc" id="L348">    }</span>
+
+    private ProductionEntity toEntity(CreateProductionRequest request) {
+<span class="fc" id="L351">        return productionMapper.toEntity(request);</span>
+    }
+
+    private LocalDate resolveCreationDate(CreateProductionRequest request) {
+<span class="fc bfc" id="L355" title="All 2 branches covered.">        if (authenticationContextService.hasRole(WORKER_ROLE)) {</span>
+<span class="fc" id="L356">            return LocalDate.now();</span>
+        }
+
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">        return request != null ? request.getDate() : null;</span>
+    }
+
+    private List&lt;ProductionEntity&gt; findProductions(String search, String animalId, LocalDate date, String farmId) {
+<span class="fc" id="L363">        validateAccessibleFarmIfPresent(farmId);</span>
+<span class="fc" id="L364">        return productionRepository.findAll(buildProductionSpecification(search, animalId, date, farmId));</span>
+    }
+
+    private Page&lt;ProductionEntity&gt; findProductions(
+            String search,
+            String animalId,
+            LocalDate date,
+            String farmId,
+            org.springframework.data.domain.Pageable pageable) {
+<span class="fc" id="L373">        validateAccessibleFarmIfPresent(farmId);</span>
+<span class="fc" id="L374">        return productionRepository.findAll(buildProductionSpecification(search, animalId, date, farmId), pageable);</span>
+    }
+
+    private Specification&lt;ProductionEntity&gt; buildProductionSpecification(String search, String animalId, LocalDate date, String farmId) {
+<span class="fc" id="L378">        String normalizedSearch = normalizeFilter(search);</span>
+<span class="fc" id="L379">        Specification&lt;ProductionEntity&gt; specification = Specification.where((root, query, criteriaBuilder) -&gt;</span>
+<span class="fc" id="L380">                criteriaBuilder.equal(root.get(&quot;status&quot;), ProductionEntity.STATUS_ACTIVE));</span>
+
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">        if (StringUtils.hasText(farmId)) {</span>
+<span class="nc" id="L383">            specification = specification.and((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L384">                    criteriaBuilder.equal(root.get(&quot;farmId&quot;), farmId));</span>
+        }
+<span class="fc bfc" id="L386" title="All 2 branches covered.">        if (StringUtils.hasText(animalId)) {</span>
+<span class="fc" id="L387">            specification = specification.and((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L388">                    criteriaBuilder.equal(root.get(&quot;animalId&quot;), animalId));</span>
+        }
+<span class="fc bfc" id="L390" title="All 2 branches covered.">        if (date != null) {</span>
+<span class="fc" id="L391">            specification = specification.and((root, query, criteriaBuilder) -&gt;</span>
+<span class="nc" id="L392">                    criteriaBuilder.equal(root.get(&quot;date&quot;), date));</span>
+        }
+<span class="pc bpc" id="L394" title="1 of 2 branches missed.">        if (normalizedSearch != null) {</span>
+<span class="nc" id="L395">            String searchPattern = &quot;%&quot; + normalizedSearch + &quot;%&quot;;</span>
+<span class="nc" id="L396">            specification = specification.and((root, query, criteriaBuilder) -&gt; {</span>
+<span class="nc" id="L397">                var animalQuery = query.subquery(Integer.class);</span>
+<span class="nc" id="L398">                var animalRoot = animalQuery.from(AnimalEntity.class);</span>
+<span class="nc" id="L399">                animalQuery.select(criteriaBuilder.literal(1));</span>
+<span class="nc" id="L400">                animalQuery.where(</span>
+<span class="nc" id="L401">                        criteriaBuilder.equal(animalRoot.get(&quot;id&quot;), root.get(&quot;animalId&quot;)),</span>
+<span class="nc" id="L402">                        criteriaBuilder.like(criteriaBuilder.lower(animalRoot.get(&quot;tag&quot;)), searchPattern));</span>
+<span class="nc" id="L403">                return criteriaBuilder.exists(animalQuery);</span>
+            });
+        }
+
+<span class="fc" id="L407">        return specification;</span>
+    }
+
+    private ProductionEntity getProductionIncludingInactive(String id, String farmId) {
+<span class="fc" id="L411">        validateAccessibleFarmIfPresent(farmId);</span>
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">        return (StringUtils.hasText(farmId)</span>
+<span class="nc" id="L413">                ? productionRepository.findAnyByIdAndFarmId(validateId(id), farmId)</span>
+<span class="fc" id="L414">                : productionRepository.findAnyById(validateId(id)))</span>
+<span class="fc" id="L415">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Production not found&quot;));</span>
+    }
+
+    private void ensureProductionIsActive(ProductionEntity productionEntity, String message) {
+<span class="fc bfc" id="L419" title="All 2 branches covered.">        if (ProductionEntity.STATUS_INACTIVE.equals(productionEntity.getStatus())) {</span>
+<span class="fc" id="L420">            throw new ConflictException(message);</span>
+        }
+<span class="fc" id="L422">    }</span>
+
+    private PaginatedResponse&lt;ProductionResponse&gt; toPaginatedResponse(Page&lt;ProductionResponse&gt; page) {
+<span class="fc" id="L425">        return new PaginatedResponse&lt;&gt;(</span>
+<span class="fc" id="L426">                page.getContent(),</span>
+<span class="fc" id="L427">                page.getNumber(),</span>
+<span class="fc" id="L428">                page.getSize(),</span>
+<span class="fc" id="L429">                page.getTotalElements(),</span>
+<span class="fc" id="L430">                page.getTotalPages());</span>
+    }
+
+    private String validateId(String id) {
+<span class="pc bpc" id="L434" title="1 of 2 branches missed.">        if (!StringUtils.hasText(id)) {</span>
+<span class="nc" id="L435">            throw new ValidationException(&quot;id must not be blank&quot;);</span>
+        }
+<span class="fc" id="L437">        return id;</span>
+    }
+
+    private String validateAnimalId(String animalId) {
+<span class="fc bfc" id="L441" title="All 2 branches covered.">        if (!StringUtils.hasText(animalId)) {</span>
+<span class="fc" id="L442">            throw new ValidationException(&quot;animalId must not be blank&quot;);</span>
+        }
+<span class="fc" id="L444">        return animalId;</span>
+    }
+
+    private AnimalEntity validateAnimal(String animalId, String farmId) {
+<span class="fc bfc" id="L448" title="All 2 branches covered.">        AnimalEntity animal = StringUtils.hasText(farmId)</span>
+<span class="fc" id="L449">                ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)</span>
+<span class="fc" id="L450">                : animalRepository.findById(animalId).orElse(null);</span>
+<span class="fc bfc" id="L451" title="All 2 branches covered.">        if (animal == null) {</span>
+<span class="fc" id="L452">            throw new ResourceNotFoundException(&quot;Animal not found&quot;);</span>
+        }
+<span class="fc" id="L454">        return animal;</span>
+    }
+
+    private AnimalEntity validateAnimalIsActive(String animalId, String farmId) {
+<span class="fc" id="L458">        AnimalEntity animal = validateAnimal(animalId, farmId);</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">        if (!AnimalEntity.STATUS_ACTIVE.equals(animal.getStatus())) {</span>
+<span class="nc" id="L460">            throw new ValidationException(&quot;Animal must be ACTIVE for production operations&quot;);</span>
+        }
+<span class="fc" id="L462">        return animal;</span>
+    }
+
+    private String resolveFarmId(CreateProductionRequest request, String farmId) {
+<span class="pc bpc" id="L466" title="1 of 2 branches missed.">        if (StringUtils.hasText(farmId)) {</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">            return farmAccessService != null ? farmAccessService.validateAccessibleFarm(farmId) : farmId;</span>
+        }
+
+<span class="fc" id="L470">        AnimalEntity animalEntity = animalRepository.findById(request.getAnimalId())</span>
+<span class="fc" id="L471">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Animal not found&quot;));</span>
+<span class="fc bfc" id="L472" title="All 2 branches covered.">        return farmAccessService != null ? farmAccessService.validateAccessibleFarm(animalEntity.getFarmId()) : animalEntity.getFarmId();</span>
+    }
+
+    private java.util.UUID parseUserId(String userId) {
+        try {
+<span class="fc" id="L477">            return java.util.UUID.fromString(userId);</span>
+<span class="nc" id="L478">        } catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L479">            throw new ValidationException(&quot;userId must be a valid UUID&quot;);</span>
+        }
+    }
+
+    private void validateAccessibleFarmIfPresent(String farmId) {
+<span class="fc bfc" id="L484" title="All 2 branches covered.">        if (farmAccessService != null) {</span>
+<span class="fc" id="L485">            farmAccessService.validateAccessibleFarmIfPresent(farmId);</span>
+        }
+<span class="fc" id="L487">    }</span>
+
+    private String normalizeFilter(String value) {
+<span class="pc bpc" id="L490" title="1 of 2 branches missed.">        if (!StringUtils.hasText(value)) {</span>
+<span class="fc" id="L491">            return null;</span>
+        }
+<span class="nc" id="L493">        return value.trim().toLowerCase(Locale.ROOT);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

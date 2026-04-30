@@ -2,6 +2,7 @@ package com.jpsoftware.farmapp.auth.infrastructure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.exception.ErrorMessageTranslator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -36,7 +37,7 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
         ErrorResponse body = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
-                .error(message)
+                .error(ErrorMessageTranslator.translate(message))
                 .path(request.getRequestURI())
                 .build();
 

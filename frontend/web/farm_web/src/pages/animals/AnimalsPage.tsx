@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import AnimalForm from '../../components/animal/AnimalForm'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
+import { ANIMAL_ORIGINS, ANIMAL_STATUSES, getAnimalOriginLabel, getAnimalStatusLabel } from '../../i18n/domainLabels'
 import { useAuth } from '../../hooks/useAuth'
 import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -39,6 +41,8 @@ const defaultFilters: AnimalListFilters = {
   status: '',
   origin: '',
 }
+
+const debouncedAnimalFilterKeys: Array<keyof AnimalListFilters> = ['search']
 
 function getErrorMessage(error: unknown, fallbackMessage: string, t: (key: string) => string): string {
   if (axios.isAxiosError<ApiErrorResponse>(error)) {
@@ -83,8 +87,14 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const [formInitialValues, setFormInitialValues] = useState<AnimalFormData>(emptyAnimalForm)
   const [salePrice, setSalePrice] = useState('')
   const [saleDate, setSaleDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [filters, setFilters] = useState<AnimalListFilters>(defaultFilters)
-  const [appliedFilters, setAppliedFilters] = useState<AnimalListFilters>(defaultFilters)
+  const previousSelectedFarmIdRef = useRef(selectedFarmId)
+  const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
+    debounceKeys: debouncedAnimalFilterKeys,
+    onAppliedChange: (nextFilters) => {
+      setPage(0)
+      void loadAnimals(nextFilters, 0, pageSize)
+    },
+  })
 
   async function loadAnimals(
     nextFilters: AnimalListFilters = appliedFilters,
@@ -123,11 +133,14 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   }
 
   useEffect(() => {
+    if (previousSelectedFarmIdRef.current === selectedFarmId) {
+      return
+    }
+
+    previousSelectedFarmIdRef.current = selectedFarmId
     setPage(0)
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
-    void loadAnimals(defaultFilters, 0, pageSize)
-  }, [selectedFarmId])
+    resetFilters()
+  }, [resetFilters, selectedFarmId])
 
   function handlePageChange(nextPage: number) {
     if (nextPage === page) {
@@ -298,17 +311,9 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
     }
   }
 
-  function applyFilters() {
-    setAppliedFilters(filters)
-    setPage(0)
-    void loadAnimals(filters, 0, pageSize)
-  }
-
   function clearFilters() {
-    setFilters(defaultFilters)
-    setAppliedFilters(defaultFilters)
     setPage(0)
-    void loadAnimals(defaultFilters, 0, pageSize)
+    resetFilters()
   }
 
   return (
@@ -351,7 +356,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
             <div className="animals-panel__header">
               <div>
                 <h2>{t('animals.sellTitle')}</h2>
-                <p>{t('animals.sellDescription').replace('{tag}', sellingAnimal.tag)}</p>
+                <p>{t('animals.sellDescription', { tag: sellingAnimal.tag })}</p>
               </div>
             </div>
 
@@ -423,38 +428,42 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
           </div>
 
           <ListingFiltersBar
-            searchId="animals-search"
-            searchLabel={t('animals.filters.searchLabel')}
-            searchPlaceholder={t('animals.filters.searchPlaceholder')}
-            searchValue={filters.search}
-            onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
-            onApply={applyFilters}
+            search={{
+              id: 'animals-search',
+              label: t('animals.filters.searchLabel'),
+              placeholder: t('animals.filters.searchPlaceholder'),
+              value: filters.search,
+              onChange: (value) => setFilters((current) => ({ ...current, search: value })),
+            }}
             onClear={clearFilters}
-            applyLabel={t('animals.filters.apply')}
             clearLabel={t('animals.filters.clear')}
             filters={[
               {
+                type: 'select',
                 id: 'animals-status-filter',
                 label: t('animals.filters.statusLabel'),
                 value: filters.status,
                 onChange: (value) => setFilters((current) => ({ ...current, status: value as AnimalListFilters['status'] })),
                 options: [
                   { value: '', label: t('animals.filters.allStatuses') },
-                  { value: 'ACTIVE', label: t('animals.statuses.ACTIVE') },
-                  { value: 'SOLD', label: t('animals.statuses.SOLD') },
-                  { value: 'DEAD', label: t('animals.statuses.DEAD') },
-                  { value: 'INACTIVE', label: t('animals.statuses.INACTIVE') },
+                  ...ANIMAL_STATUSES.map((status) => ({
+                    value: status,
+                    label: getAnimalStatusLabel(t, status),
+                  })),
                 ],
               },
               {
+                type: 'select',
                 id: 'animals-origin-filter',
                 label: t('animals.filters.originLabel'),
                 value: filters.origin,
                 onChange: (value) => setFilters((current) => ({ ...current, origin: value as AnimalListFilters['origin'] })),
                 options: [
                   { value: '', label: t('animals.filters.allOrigins') },
-                  { value: 'BORN', label: t('animals.origins.BORN') },
-                  { value: 'PURCHASED', label: t('animals.origins.PURCHASED') },
+                  ...ANIMAL_ORIGINS.map((origin) => ({
+                    value: origin,
+                    label: getAnimalOriginLabel(t, origin),
+                  })),
                 ],
               },
             ]}
@@ -492,12 +501,12 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
                       <td>{animal.tag}</td>
                       <td>{animal.breed}</td>
                       <td>{animal.birthDate}</td>
-                      <td>{t(`animals.origins.${animal.origin}`)}</td>
+                      <td>{getAnimalOriginLabel(t, animal.origin)}</td>
                       <td>
                         <span
                           className={`animals-table__status animals-table__status--${animal.status.toLowerCase()}`}
                         >
-                          {t(`animals.statuses.${animal.status}`)}
+                          {getAnimalStatusLabel(t, animal.status)}
                         </span>
                       </td>
                       <td className="animals-table__actions">

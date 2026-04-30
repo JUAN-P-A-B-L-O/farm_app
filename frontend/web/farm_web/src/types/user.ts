@@ -1,8 +1,10 @@
+export type UserRole = 'MANAGER' | 'WORKER'
+
 export interface User {
   id: string
   name: string
   email: string
-  role: string
+  role: UserRole
   active: boolean
   avatarUrl?: string | null
   farmIds: string[]
@@ -11,7 +13,7 @@ export interface User {
 export interface UserFormData {
   name: string
   email: string
-  role: string
+  role: UserRole | ''
   password: string
   active: boolean
   avatarUrl: string
@@ -21,7 +23,7 @@ export interface UserFormData {
 export interface UserListFilters {
   search: string
   active: '' | 'true' | 'false'
-  role: string
+  role: UserRole | ''
 }
 
 export interface UserApiErrorResponse {

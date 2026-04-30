@@ -1,882 +1,287 @@
-# AI Context
-
-## 1. Project Overview
-
-### What the system does
-
-`farm_app` is a farm management system focused on cattle operations. The current implementation covers authentication, farms, operational records for animals, feeding, milk production, feed types, milk prices, users, and analytics/dashboard reporting.
-
-### Core features
-
-- Farms:
-  - create and list farms accessible to the authenticated user
-  - farm access can come from ownership or explicit user assignment
-  - farm is the operating boundary used by animals, feeding, production, feed types, dashboard, and analytics
-- Animals:
-  - create, list, retrieve, update, and delete animal records
-  - track origin (`BORN` or `PURCHASED`) and optional acquisition cost
-  - support a dedicated sell action with persisted sale price and sale date
-  - lifecycle is status-based (`ACTIVE`, `SOLD`, `DEAD`, `INACTIVE`)
-  - listing supports optional server-side search by tag or breed plus optional filters by `farmId`, `status`, and `origin`
-- Feeding:
-  - create, list, update, and soft-delete feeding records
-  - retrieve individual feeding entries
-  - listing supports optional server-side search by animal tag or feed type name plus optional filters by `animalId`, `feedTypeId`, `date`, and `farmId`
-  - optional pagination on listing endpoints
-  - on create, `WORKER` users cannot choose the date; frontend hides the date field and backend uses the current server date, ignoring any incoming date
-  - on create, `MANAGER` users can set the date manually
-  - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
-- Production:
-  - create, list, update, and soft-delete milk production records
-  - retrieve individual production entries
-  - update production animal, date, and quantity
-  - listing supports optional server-side search by animal tag plus optional filters by `animalId`, `date`, and `farmId`
-  - optional pagination on listing endpoints
-  - on create, `WORKER` users cannot choose the date; frontend hides the date field and backend uses the current server date, ignoring any incoming date
-  - on create, `MANAGER` users can set the date manually
-  - lifecycle is status-based (`ACTIVE`, `INACTIVE`)
-  - summary and profit views by animal
-- Feed types:
-  - create, list, retrieve, update, and soft-delete feed type records
-  - feed types are scoped by farm
-  - listing supports optional server-side search by name plus optional backend pagination using `page` and `size`
-  - new feed types default to `active = true`
-  - delete marks feed types inactive rather than physically deleting rows
-- Users:
-  - create users
-  - list, retrieve, update, activate, inactivate, and delete users
-  - users are also the accountability reference for feeding and production records
-  - current role values used by the frontend are `MANAGER` and `WORKER`
-  - `MANAGER` is the privileged role for dashboard, analytics, and delete operations
-  - only authenticated `MANAGER` users can create, update, activate, inactivate, and delete users
-  - new users must be assigned to at least one farm owned by the creating manager
-  - user updates must also keep at least one farm owned by the authenticated manager
-  - users store an `active` login flag; inactive users cannot authenticate
-  - managers can reactivate inactive users through a dedicated activation action and may set a replacement password during reactivation
-  - inactivation sets `active = false` and blocks login plus JWT-authenticated access
-  - users who own farms cannot be inactivated or deleted, and farm owners must remain `MANAGER`
-  - user email is unique and enforced in service validation plus a database constraint
-  - users can store an optional `avatarUrl` image reference for list and form display
-  - user listing supports optional server-side filtering by search text, status, and role
-  - user listing also supports optional backend pagination using `page` and `size`
-  - authenticated users can update only their own password through a dedicated self-service settings flow
-- Analytics:
-  - dashboard aggregates total production, feeding cost, revenue, profit, and animal count
-  - dashboard and analytics endpoints require role `MANAGER`
-  - sold-animal revenue is included in dashboard and analytics revenue/profit calculations
-  - profit-oriented endpoints support `includeAcquisitionCost` and default it to `true`
-  - dashboard and monetary analytics/export endpoints accept an optional `currency` context; `BRL` is the default and `USD` is also supported
-  - monetary reporting values are still derived from stored base amounts and converted only at read/export time
-  - CSV export is available for dashboard plus each analytics view using the currently applied filters
-  - frontend includes analytics pages and charts
-- Milk prices:
-  - milk price is managed per farm as a time-based history
-  - each new price is stored as a new record with `price`, `effectiveDate`, `createdAt`, and `createdBy`
-  - current price is the latest record whose `effectiveDate` is on or before today
-  - milk price history listing supports optional server-side search plus an optional `effectiveDate` filter, alongside optional backend pagination using `page` and `size`
-  - if a farm has no effective milk price yet, reporting falls back to the legacy default price `2.0`
-- CSV export:
-  - CSV export is available per screen/context for animals, users, feedings, productions, feed types, milk price history, dashboard, and analytics views
-  - exports are generated on the backend and downloaded by the frontend through the service layer
-  - listing exports must respect the same farm and filter scope used by the active screen
-  - monetary exports also respect the active frontend currency context
-  - frontend downloads are centralized in `frontend/web/farm_web/src/services/csvExportService.ts`
-  - service helpers should build export params from the same screen state used for the corresponding list or dashboard fetch call
-
-### Current implementation note
-
-- Backend is active under `backend/farmapp`
-- Frontend web app is active under `frontend/web/farm_web`
-- There is no parallel active backend tree in this checkout; use `backend/farmapp` as the single backend source of truth
-- Local backend startup can use the `local` Spring profile to run against in-memory H2 when PostgreSQL is unavailable; the default runtime configuration remains PostgreSQL
-
-## 2. Architecture
-
-### Backend
-
-The backend is a Spring Boot 3.4.x modular monolith with a layered structure per business module.
-
-Current layers in code:
-
-- `controller`: HTTP endpoints, request binding, status codes, `@Valid` entry points
-- `service`: business rules, validations, orchestration, transaction boundaries
-- `repository`: Spring Data JPA persistence and aggregate queries
-- `mapper`: DTO/entity transformations
-- `entity` and `dto`: persistence and API models
-- `shared`: exception handling, config, reusable DTOs
-- `auth`: JWT security, login flow, authentication context
-  - `auth.service`: login/authentication context contracts and application services
-  - `auth.infrastructure`: JWT filter, token implementation, security configuration, authentication entry point
-
-### Clean Architecture alignment
-
-The codebase is aligned with Clean Architecture principles, but it is not a strict four-ring implementation yet.
-
-Practical mapping today:
-
-- Domain:
-  - business concepts live mostly in entities, DTOs, and service rules
-  - there is no isolated pure domain layer with rich aggregates
-- Application:
-  - service classes act as application services/use-case orchestration
-- Infrastructure:
-  - repositories, security filters, JWT token service, Spring configuration, JPA entities
-- Controller:
-  - REST controllers in each module
-
-Important constraint:
-
-- Do not assume a fully separated `domain/application/infrastructure/controller` package structure already exists
-- Future work should preserve current layering and move incrementally if stronger separation is introduced
-
-### Backend design characteristics
-
-- Controllers are intentionally thin
-- Services own business validation and referential checks
-- Persistence is ID-based rather than relation-heavy
-- JPA entities mostly store scalar foreign keys such as `animalId`, `feedTypeId`, and `createdBy`
-- Financial values such as revenue and profit are calculated at read time
-- milk price resolution now lives in `milkprice.service.MilkPriceService`
-- production, dashboard, and analytics services use the current farm milk price by default for revenue/profit calculations
-- reusable CSV row generation is centralized in `shared.util.CsvExportUtils`, while response headers and attachment naming are centralized in `shared.util.CsvResponseFactory`
-- backend currency conversion for reporting and export is centralized in `shared.currency` and currently supports `BRL` and `USD`
-
-### Frontend
-
-The frontend is a React + TypeScript + Vite application.
-
-Current structure:
-
-- `src/pages`: route-level screens
-- `src/components`: reusable UI by domain area
-- `src/services`: API access layer using Axios
-- `src/types`: typed frontend contracts
-- `src/layout`: application shell and navigation
-- `src/context` and `src/hooks`: shared state and helpers
-
-Frontend architectural rules already visible in code:
-
-- component-based composition
-- typed service functions wrapping HTTP calls
-- route-based page organization
-- translation support via language context and dictionaries
-- farm selection is handled centrally through `FarmContext`
-- display currency selection is handled centrally through `CurrencyContext`
-- reusable listing search/filter controls should be implemented as configurable shared components when multiple pages can adopt the same pattern
-- the shared listing filter pattern uses page-local draft filter state plus separately applied filter state so pagination, refresh, and CSV export all reuse the same backend query params
-- reusable listing filter controls live in `frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx` and currently support a shared search input plus configurable select and date fields
-- reusable listing pagination controls should be implemented through a shared component and keep the current filter/farm context when changing pages
-- screen-level CSV actions are rendered through the shared `ExportCsvButton` component and call backend downloads through service-layer helpers
-- monetary labels and formatting should use shared currency helpers instead of hardcoded symbols or hardcoded `Intl` currency values in components
-
-Current frontend constraint:
-
-- JWT attachment is centralized in the Axios service layer
-- invalid or expired JWT responses are handled centrally in the Axios response layer; the first `401` on an authenticated request clears stored auth state and forces frontend logout
-- backend security requires JWT for almost all endpoints, so frontend work should continue to centralize auth headers rather than scattering them across components
-
-## 3. API Contract
-
-## Base behavior
-
-- Base URL in frontend service config: `http://localhost:8080`
-- Content type: JSON
-- Protected endpoints require `Authorization: Bearer <jwt>`
-- Error envelope is standardized:
-
-```json
-{
-  "timestamp": "2026-04-07T10:00:00",
-  "status": 400,
-  "error": "validation message",
-  "path": "/animals"
-}
-```
-
-### `/farms`
-
-Endpoints:
-
-- `GET /farms`
-- `POST /farms`
-
-Create request:
-
-```json
-{
-  "name": "North Dairy"
-}
-```
-
-Required fields:
-
-- `name`
-
-Key validations and rules:
-
-- `name` must not be blank
-- authenticated user is required for farm creation
-- created farm is owned by the authenticated user
-- `GET /farms` returns farms accessible to the authenticated user, including farms explicitly assigned to that user
-- `GET /farms?ownedOnly=true` returns only farms owned by the authenticated user
-- frontend uses a dedicated farm creation flow before regular module access when no farm is selected
-
-### `/animals`
-
-Endpoints:
-
-- `POST /animals`
-- `GET /animals`
-- `GET /animals/export`
-- `GET /animals/{id}`
-- `PUT /animals/{id}`
-- `POST /animals/{id}/sell`
-- `DELETE /animals/{id}`
-
-Create request:
-
-```json
-{
-  "tag": "COW-101",
-  "breed": "Holstein",
-  "birthDate": "2022-01-15",
-  "origin": "PURCHASED",
-  "acquisitionCost": 1250.50,
-  "farmId": "farm-001"
-}
-```
-
-Required fields:
-
-- `tag`
-- `breed`
-- `birthDate`
-- `origin`
-- `farmId`
-
-Key validations and rules:
-
-- `tag`, `breed`, and `farmId` must not be blank
-- `birthDate` must not be null
-- `origin` must be `PURCHASED` or `BORN`
-- `acquisitionCost` is required and must be greater than zero when `origin = PURCHASED`
-- `acquisitionCost` is cleared when `origin = BORN`
-- `tag` must be unique
-- new animals default to status `ACTIVE`
-- `PUT /animals/{id}` can update lifecycle status except that selling must use the dedicated sell action
-- `POST /animals/{id}/sell` stores `salePrice`, optional `saleDate` (defaults to current date), and changes status to `SOLD`
-- only `ACTIVE` animals can be sold
-- once sold, the animal cannot transition back to another status through generic update
-- `DELETE /animals/{id}` is now soft-delete behavior and marks the animal as `INACTIVE`
-- `DELETE /animals/{id}` requires role `MANAGER`
-- `GET /animals` optionally accepts `farmId`, `search`, `status`, and `origin`
-- `GET /animals` also accepts optional `page` and `size`; when both are provided it returns a paginated payload with `content`, `page`, `size`, `totalElements`, and `totalPages`
-- update is partial, but provided string fields must not be blank
-
-Sell request:
-
-```json
-{
-  "salePrice": 3200.0,
-  "saleDate": "2026-04-14"
-}
-```
-
-Animal response characteristics:
-
-- includes optional `salePrice`
-- includes optional `saleDate`
-
-### `/productions`
-
-Endpoints:
-
-- `GET /productions`
-- `GET /productions/export`
-- `GET /productions/{id}`
-- `GET /productions/summary/by-animal?animalId=...`
-- `GET /productions/summary/profit/by-animal?animalId=...&includeAcquisitionCost=true`
-- `POST /productions`
-- `PUT /productions/{id}`
-- `DELETE /productions/{id}`
-
-Create request:
-
-```json
-{
-  "animalId": "animal-001",
-  "date": "2026-03-20",
-  "quantity": 32.8,
-  "userId": "550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-Update request:
-
-```json
-{
-  "animalId": "animal-001",
-  "date": "2026-03-21",
-  "quantity": 34.2
-}
-```
-
-Required fields on create:
-
-- `animalId`
-- `date`
-- `quantity`
-- `userId`
-
-Key validations and rules:
-
-- `animalId` and `userId` must not be blank
-- `date` must not be null
-- `date` cannot be in the future
-- `quantity` must be greater than zero
-- referenced animal must exist and be `ACTIVE`
-- `userId` must be a valid UUID and must exist as a user
-- authenticated user context can override/fill `createdBy`
-- when the authenticated user has role `WORKER`, create ignores the incoming `date` and stores the current server date
-- when the authenticated user has role `MANAGER`, create still requires an explicit date
-- list endpoint supports optional `search`, `animalId`, `date`, `farmId`, `page`, and `size`
-- pagination is only returned when both `page` and `size` are provided and uses the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
-- update can change `animalId`, `date`, and `quantity`
-- delete is soft-delete behavior and marks the record as `INACTIVE`
-- delete requires role `MANAGER`
-- profit summary includes acquisition cost by default and allows opting out with `includeAcquisitionCost=false`
-- profit summary uses the current milk price for the animal's farm
-
-Response characteristics:
-
-- includes top-level production fields
-- includes embedded animal summary
-- does not expose `createdBy`
-
-### `/milk-prices`
-
-Endpoints:
-
-- `POST /milk-prices?farmId=...`
-- `GET /milk-prices/current?farmId=...`
-- `GET /milk-prices?farmId=...`
-- `GET /milk-prices/export?farmId=...`
-
-Create request:
-
-```json
-{
-  "price": 2.35,
-  "effectiveDate": "2026-04-14"
-}
-```
-
-Required fields:
-
-- `farmId` query param
-- `price`
-- `effectiveDate`
-
-Key validations and rules:
-
-- `farmId` must reference an accessible existing farm
-- `price` must be greater than zero and have at most 2 decimal places
-- `effectiveDate` must not be null
-- creating a price always inserts a new history record; previous values are never overwritten
-- `GET /milk-prices/current` returns the latest price effective on or before today for the farm
-- when no effective price exists yet, `GET /milk-prices/current` returns the legacy default price `2.0` with `fallbackDefault = true`
-- `GET /milk-prices` returns full farm price history ordered from newest to oldest and also accepts optional `search` plus `effectiveDate`
-- `GET /milk-prices` also accepts optional `page` and `size`; when both are provided it returns the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
-
-Response characteristics:
-
-- includes `id`, `farmId`, `price`, `effectiveDate`, `createdAt`, `createdBy`, and `fallbackDefault`
-
-### `/feedings`
-
-Endpoints:
-
-- `POST /feedings`
-- `GET /feedings`
-- `GET /feedings/export`
-- `GET /feedings/{id}`
-- `PUT /feedings/{id}`
-- `DELETE /feedings/{id}`
-
-Create request:
-
-```json
-{
-  "animalId": "animal-001",
-  "feedTypeId": "feed-type-001",
-  "date": "2026-03-20",
-  "quantity": 14.5,
-  "userId": "550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-Required fields:
-
-- `animalId`
-- `feedTypeId`
-- `date`
-- `quantity`
-- `userId`
-
-Key validations and rules:
-
-- all string identifiers must not be blank
-- `date` must not be null
-- `quantity` must be greater than zero
-- referenced animal must exist and be `ACTIVE`
-- referenced feed type must exist
-- `userId` must be a valid UUID and must exist as a user
-- authenticated user context can override/fill `createdBy`
-- when the authenticated user has role `WORKER`, create ignores the incoming `date` and stores the current server date
-- when the authenticated user has role `MANAGER`, create still requires an explicit date
-- list endpoint supports optional `search`, `animalId`, `feedTypeId`, `date`, `farmId`, `page`, and `size`
-- pagination is only returned when both `page` and `size` are provided
-- update can change `animalId`, `feedTypeId`, `date`, and `quantity`
-- delete is soft-delete behavior and marks the record as `INACTIVE`
-- delete requires role `MANAGER`
-
-Response characteristics:
-
-- includes top-level feeding fields
-- includes embedded animal summary
-- includes embedded feed type summary
-- does not expose calculated feeding cost
-
-### `/feed-types`
-
-Endpoints:
-
-- `POST /feed-types`
-- `GET /feed-types`
-- `GET /feed-types/export`
-- `GET /feed-types/{id}`
-- `PUT /feed-types/{id}`
-- `DELETE /feed-types/{id}`
-
-Create request:
-
-```json
-{
-  "name": "Corn Silage",
-  "costPerKg": 1.85
-}
-```
-
-Required fields:
-
-- `farmId` query param on create
-- `name`
-- `costPerKg`
-
-Key validations and rules:
-
-- `name` must not be blank
-- `costPerKg` must be greater than zero
-- created feed types default to `active = true`
-- list and read endpoints return active feed types
-- list endpoint also accepts optional `search`, `page`, and `size`; when both pagination params are provided it returns the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
-- update changes `name` and `costPerKg`
-- delete is soft-delete behavior and marks the feed type inactive
-- delete requires role `MANAGER`
-
-### `/users`
-
-Endpoints:
-
-- `POST /users`
-- `GET /users`
-- `GET /users/export`
-- `GET /users/{id}`
-- `PUT /users/{id}`
-- `PATCH /users/{id}/activate`
-- `PATCH /users/{id}/inactivate`
-- `DELETE /users/{id}`
-- `PUT /users/me/password`
-
-Create request:
-
-```json
-{
-  "name": "Maria Silva",
-  "email": "maria.silva@farmapp.com",
-  "role": "MANAGER",
-  "password": "farmapp@123",
-  "active": true,
-  "avatarUrl": "https://example.com/avatar.png",
-  "farmIds": ["farm-001"]
-}
-```
-
-Update request:
-
-```json
-{
-  "name": "Maria Silva",
-  "email": "maria.silva@farmapp.com",
-  "role": "WORKER",
-  "avatarUrl": "https://example.com/avatar.png",
-  "farmIds": ["farm-001"]
-}
-```
-
-Activate request:
-
-```json
-{
-  "password": "farmapp@456"
-}
-```
-
-Update password request:
-
-```json
-{
-  "currentPassword": "farmapp@123",
-  "newPassword": "farmapp@456"
-}
-```
-
-Required fields:
-
-- `name`
-- `email`
-- `role`
-- `active`
-- `farmIds`
-
-Conditional field:
-
-- `password`
-
-Key validations and rules:
-
-- `name`, `email`, and `role` must not be blank
-- `active` must not be null
-- `farmIds` must contain at least one value
-- `id` in read endpoints must be a valid UUID
-- only authenticated `MANAGER` users can call `POST /users`, `PUT /users/{id}`, `PATCH /users/{id}/inactivate`, and `DELETE /users/{id}`
-- `email` must be unique
-- if `active = true`, `password` is required
-- if `active = false`, login is blocked even if a password hash is stored
-- every `farmId` must belong to the authenticated manager creating the user
-- `avatarUrl` is optional on create and update
-- update changes `name`, `email`, `role`, `avatarUrl`, and `farmIds`
-- `PATCH /users/{id}/activate` marks the user active again and may replace the password used for the next login
-- password changes do not go through the manager edit endpoint
-- `PUT /users/me/password` is self-service only for the authenticated user
-- `currentPassword` and `newPassword` must not be blank
-- `currentPassword` must match the stored password
-- `newPassword` must differ from `currentPassword`
-- `PATCH /users/{id}/activate` requires role `MANAGER`
-- `PATCH /users/{id}/inactivate` marks the user inactive instead of deleting the row
-- `DELETE /users/{id}` removes the user row and its farm assignments
-- users who own farms cannot be inactivated or deleted
-- users who own farms cannot be changed from `MANAGER` to another role
-- `GET /users` accepts optional `search`, `active`, and `role` filters
-- `GET /users` also accepts optional `page` and `size`; when both are provided it returns the shared paginated payload shape with `content`, `page`, `size`, `totalElements`, and `totalPages`
-- `GET /users` and `GET /users/{id}` require JWT authentication
-
-### Dashboard and analytics profit behavior
-
-- `GET /dashboard` requires role `MANAGER`
-- `GET /dashboard/export` requires role `MANAGER`
-- all `/analytics/**` endpoints require role `MANAGER`
-- `GET /dashboard` now accepts optional `includeAcquisitionCost` and defaults it to `true`
-- `GET /dashboard`, `GET /dashboard/export`, `GET /analytics/feeding`, `GET /analytics/feeding/export`, `GET /analytics/profit`, and `GET /analytics/profit/export` accept optional `currency`
-- `GET /analytics/profit` now accepts optional `includeAcquisitionCost` and defaults it to `true`
-- analytics CSV exports are available at:
-  - `GET /analytics/production/export`
-  - `GET /analytics/feeding/export`
-  - `GET /analytics/profit/export`
-  - `GET /analytics/production/by-animal/export`
-- analytics CSV exports reuse the same query params as their corresponding JSON endpoints so filtered exports match the chart currently shown in the UI
-- dashboard revenue now includes milk revenue plus sold-animal revenue
-- dashboard total profit subtracts feeding cost and, when enabled, acquisition cost
-- analytics profit series applies acquisition cost once to the earliest returned period because the current animal model does not store a separate acquisition date
-- analytics profit series now also recognizes sold-animal revenue on each animal's `saleDate`
-- milk revenue in dashboard and analytics is based on the current milk price resolved for each farm
-- historical milk price records are preserved for future period-aware analytics, but current reporting still applies the latest effective farm price by default
-
-### `/auth/login`
-
-Endpoint:
-
-- `POST /auth/login`
-
-Request:
-
-```json
-{
-  "email": "admin@farmapp.com",
-  "password": "admin123"
-}
-```
-
-Required fields:
-
-- `email`
-- `password`
-
-Key validations and rules:
-
-- both fields must not be blank
-- invalid credentials return `401`
-- success returns `accessToken` and a `user` object
-
-Response shape:
-
-```json
-{
-  "accessToken": "jwt-token",
-  "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "Default Admin",
-    "email": "admin@farmapp.com",
-    "role": "MANAGER"
-  }
-}
-```
-
-## 4. Authentication
-
-- Authentication is JWT-based
-- Public paths:
-  - `/auth/**`
-  - `/v3/api-docs/**`
-  - `/swagger-ui/**`
-  - `/swagger-ui.html`
-- All other endpoints require authentication
-- Role-based authorization:
-  - `MANAGER` can access dashboard and analytics
-  - `MANAGER` can create, update, activate, inactivate, and delete users
-  - `MANAGER` can perform `DELETE` requests
-  - non-manager authenticated users receive `403 Forbidden` for user creation, dashboard, analytics, and delete operations
-  - any authenticated user can call `PUT /users/me/password` to update their own password
-
-### Login flow
-
-1. Client sends `POST /auth/login` with email and password
-2. Backend verifies credentials with `AuthService`
-3. Backend returns `accessToken` and user summary
-4. Client sends the token on protected requests using:
-
-```http
-Authorization: Bearer <jwt>
-```
-
-### Frontend session invalidation behavior
-
-- the frontend registers a centralized unauthorized handler from the auth context into the Axios client
-- when a protected request returns `401 Invalid or expired token`, the client clears persisted auth data immediately, updates React auth state, and lets protected routing redirect the user to `/login`
-- login request failures on `/auth/login` do not trigger auto-logout behavior
-- duplicate logout handling is suppressed for the same invalid session to avoid repeated redirects or state churn
-
-### Current implementation notes
-
-- JWT filter runs before `UsernamePasswordAuthenticationFilter`
-- sessions are stateless
-- passwords are hashed with BCrypt
-- inactive users are rejected by the login service and by JWT request authentication
-- a default admin is created on startup if the user table is empty
-- default admin credentials come from environment or fallback values:
-  - `ADMIN_EMAIL`, default `admin@farmapp.com`
-  - `ADMIN_PASSWORD`, default `admin123`
-
-## 5. Database
-
-- Primary configured database: PostgreSQL
-- Driver and dialect are PostgreSQL in `backend/farmapp/src/main/resources/application.properties`
-- Schema generation mode is currently `spring.jpa.hibernate.ddl-auto=create`
-- H2 is included for tests
-- `backend/farmapp/src/main/resources/application-local.properties` provides an explicit local-development profile backed by H2 for environments where PostgreSQL is not running or not reachable
-
-### Main entities
-
-- User
-  - `id`, `name`, `email`, `role`, `password`, `active`
-- Farm
-  - `id`, `name`, `ownerId`
-- UserFarmAssignment
-  - `id`, `userId`, `farmId`
-- Animal
-  - `id`, `tag`, `breed`, `birthDate`, `status`, `origin`, `acquisitionCost`, `salePrice`, `saleDate`, `farmId`
-- Production
-  - `id`, `animalId`, `date`, `quantity`, `createdBy`, `farmId`, `status`
-- Feeding
-  - `id`, `animalId`, `feedTypeId`, `date`, `quantity`, `createdBy`, `farmId`, `status`
-- MilkPrice
-  - `id`, `farmId`, `price`, `effectiveDate`, `createdAt`, `createdBy`
-- FeedType
-  - `id`, `name`, `costPerKg`, `active`, `farmId`
-
-### Database constraints and behavior
-
-- `animals.tag` is unique
-- `users.email` is unique
-- many relational checks are enforced in services rather than via JPA relationships
-- operational tables use scalar IDs rather than object associations
-- user-to-farm access is persisted through a scalar-ID assignment table rather than relation-heavy JPA mappings
-- production and feeding delete behavior is implemented with `status = INACTIVE`
-- feed type delete behavior is implemented with `active = false`
-- feeding cost is derived from `feedings.quantity * feed_types.cost_per_kg`
-- milk price history is persisted as append-only records per farm
-- revenue and profit are derived at query time, not persisted
-
-## 6. Coding Standards
-
-### Backend
-
-- Do not mix domain logic directly into controllers
-- Controllers must remain thin and delegate to services
-- Services own business rules, validations, and orchestration
-- reusable CSV generation now lives in shared backend utilities and is consumed from services so controllers remain thin
-- Services use constructor injection; if a Spring service keeps multiple constructors for compatibility, explicitly annotate the full dependency constructor with `@Autowired`
-- Do not couple business logic to JPA annotations or entity graph behavior
-- Do not introduce rich JPA relation graphs unless explicitly required
-- Preserve mapper usage for DTO/entity transformations
-- Preserve uniform exception handling through the shared exception layer
-
-Important interpretation:
-
-- The codebase does use JPA entities for persistence
-- However, it intentionally avoids mixing business rules with persistence concerns and avoids relation-heavy modeling
-
-### Frontend
-
-- Do not hardcode API contracts directly inside UI components
-- Use the service layer in `src/services`
-- Keep components simple and page-oriented
-- Keep types in `src/types`
-- Preserve the current component/page/service separation
-- When adding auth-aware features, centralize token handling in the API/service layer rather than scattering headers across components
-- Prefer reusable search/filter components for listing screens instead of duplicating filter markup and query wiring
-- CSV downloads should be triggered from the service layer rather than building CSV content in UI components
-
-## 7. Development Rules
-
-- Do not break existing functionality
-- Do not refactor the entire codebase
-- Make incremental changes only
-- Always respect the existing API contract unless a contract change is explicitly approved
-- Preserve existing module boundaries and naming
-- Prefer extending existing services and controllers over introducing parallel patterns
-- Account for the fact that backend security is stricter than the current frontend integration
-- Treat `backend/farmapp` as the active backend unless there is an explicit reason to work in the legacy duplicate tree
-
-## 8. Testing Strategy
-
-### Automated tests
-
-Backend tests currently include:
-
-- Spring Boot integration tests
-- controller contract tests
-- service/unit tests
-- auth integration tests
-
-Observed examples:
-
-- `AuthIntegrationTest` verifies login and JWT protection
-- integration tests for animals, feedings, and productions use authenticated requests
-
-### Manual tests
-
-The repository includes a manual curl-based script:
-
-- `backend/test/animal/manual test/test-animals.sh`
-
-This script exercises:
-
-- user creation
-- login
-- authenticated animal flow
-- production flow
-- feed type and feeding flow
-- profit queries
-
-### Testing constraints
-
-- JWT is required for protected endpoints
-- manual test flows rely on `Authorization: Bearer <token>`
-- when adding or changing protected features, include authenticated test coverage
-
-## 9. Prompt Engineering Rules
-
-When generating code for this project:
-
-- be safe
-- be incremental
-- avoid over-engineering
-- follow existing patterns
-- prefer compatibility over novelty
-- preserve controller/service/repository/mapper boundaries
-- validate all input that crosses the API boundary
-- do not invent missing endpoints or frontend capabilities
-- if frontend and backend are out of sync, fix the mismatch with the smallest coherent change
-
-## 10. Known Decisions
-
-- JWT authentication is the current security model
-- manual curl script testing is part of the current workflow
-- frontend and backend are separated applications
-- backend is a single Spring Boot deployable unit
-- PostgreSQL is the configured runtime database
-- H2 is used in tests
-- service-layer validation is preferred over ORM-heavy relations
-- financial metrics are derived, not persisted
-- deployment approach is currently simple and monolithic rather than containerized or automated
-- there is no CI/CD or Docker setup in the repository at this time
-
-## 11. DO NOT
-
-- Do not change API contracts without explicit approval
-- Do not remove existing validations
-- Do not introduce breaking changes
-- Do not replace thin controllers with business-heavy controllers
-- Do not bypass the service layer for business operations
-- Do not assume missing backend endpoints exist because frontend stubs reference them
-- Do not introduce large-scale refactors to force a stricter architecture in one pass
-- Do not remove JWT protection from protected endpoints
-- Do not silently change derived financial logic such as milk price handling
-
-## 12. Future Roadmap
-
-These are reasonable next areas based on current gaps, but they are not fully implemented now:
-
-- authentication improvements in the frontend
-- token persistence and logout/session handling
-- CI/CD pipeline setup
-- Docker-based local and deployment workflow
-- stronger environment-based configuration
-- scaling and reporting improvements if data volume grows
-- possible tightening of architectural separation toward stricter Clean Architecture boundaries
-
-## 13. Version Control Rules
-
-- Every meaningful change must result in a commit
-- Commits must follow the Conventional Commits pattern
-- Examples:
-  - `feat: add authentication`
-  - `fix: correct validation bug`
-  - `refactor: simplify service logic`
-- Never push automatically
-- Commits should be atomic and focused
-- Avoid mixing unrelated changes in a single commit
-
-Before committing:
-
-- ensure no breaking changes were introduced
-- ensure code compiles logically
-
-## Working Guidance For Future AI Agents
-
-- Start by checking whether a change belongs in `backend/farmapp` or `frontend/web/farm_web`
-- Preserve the current backend layering even if a broader architecture is desired
-- Verify frontend requests against real backend endpoints before changing UI code
-- Prefer small compatible changes that close concrete gaps
-- If a requested feature assumes missing infrastructure, document the gap first and then implement the narrowest viable step
+ SCOPE
+  Active backend: backend/farmapp. Active frontend: frontend/web/farm_web. Farm management system for farms, animals,
+  feedings, productions, feed types, milk prices, users, dashboard, analytics, CSV export. Runtime DB: PostgreSQL. Local
+  fallback: Spring local profile with H2. Tests use H2. Schema mode: spring.jpa.hibernate.ddl-auto=create.
+
+  ARCHITECTURE
+  Backend: Spring Boot modular monolith. Preserve current layers: controller, service, repository, mapper, entity/dto,
+  shared, auth. Controllers thin; services own validation, business rules, orchestration, transactions. Persistence is
+  scalar-ID based, not relation-heavy. Do not assume strict Clean Architecture package split; evolve incrementally only.
+  Shared backend utilities: milkprice.service.MilkPriceService resolves current milk price; shared.util.CsvExportUtils
+  generates CSV rows; shared.util.CsvResponseFactory builds CSV responses; shared.currency centralizes BRL/USD
+  conversion.
+  Frontend: React + TypeScript + Vite. Preserve separation: src/pages, src/components, src/services, src/types, src/
+  layout, src/context, src/hooks. Use typed service layer for API calls. Farm selection via FarmContext. Display
+  currency via CurrencyContext. JWT attachment and 401 handling centralized in Axios layer. First authenticated 401
+  clears auth state and forces logout; /auth/login failures do not auto-logout. Reuse shared listing filter/pagination/
+  export patterns. CSV downloads go through service layer and csvExportService.ts. Use shared currency helpers, not
+  hardcoded formatting.
+
+  GLOBAL RULES
+  Base URL: http://localhost:8080. Content type: JSON. Protected endpoints require Authorization: Bearer <jwt>. Public
+  paths: /auth/, /v3/api-docs/, /swagger-ui/**, /swagger-ui.html.
+  Error envelope: timestamp, status, error, path.
+  Pagination applies only when both page and size are provided; paginated payload is content, page, size, totalElements,
+  totalPages.
+  Delete semantics: animals/feedings/productions soft-delete via status=INACTIVE; feed types soft-delete via
+  active=false; users hard-delete row plus farm assignments.
+  MANAGER role is required for dashboard, analytics, all DELETE requests, and user create/update/activate/inactivate/
+  delete.
+  Financial values are derived at read/export time, not persisted. Current reporting uses current effective farm milk
+  price by default.
+  Do not change API contracts, validations, JWT protection, or financial logic without explicit approval.
+
+  DOMAIN RULES
+  Farms
+  Endpoints: GET /farms, POST /farms.
+  POST requires nonblank name; authenticated creator becomes owner.
+  GET /farms returns farms accessible byScope:
+  Active backend: backend/farmapp
+  Active frontend: frontend/web/farm_web
+  System: farm/cattle management for farms, animals, feedings, productions, feed types, milk prices, users, dashboard,
+  analytics, CSV export
+  Runtime DB: PostgreSQL; local fallback profile: local with H2; tests use H2
+  Use backend/farmapp as the single backend source of truth
+
+  Architecture:
+  Backend is a Spring Boot 3.4.x modular monolith
+  Preserve current layering: controller, service, repository, mapper, entity/dto, shared, auth
+  Controllers stay thin; services own validation, business rules, orchestration, transactions
+  Persistence is scalar-ID oriented; avoid relation-heavy JPA modeling
+  Do not assume strict Clean Architecture package separation exists; evolve incrementally only
+  CSV backend utilities are centralized in shared.util.CsvExportUtils and shared.util.CsvResponseFactory
+  Currency conversion is centralized in shared.currency; supported currencies: BRL, USD
+  Milk price resolution is centralized in milkprice.service.MilkPriceService
+
+  Frontend:
+  React + TypeScript + Vite
+  Keep separation: pages, components, services, types, layout, context, hooks
+  Use typed service layer for HTTP; do not hardcode API contracts in components
+  Default visible language is pt-BR; avoid mixed-language UI
+  Frontend user-facing labels live in frontend/web/farm_web/src/i18n and should be consumed via LanguageContext/useTranslation
+  Enum values such as MANAGER, WORKER, ACTIVE, INACTIVE, SOLD, PURCHASED, and BORN remain internal/API values and must be mapped to localized labels in the UI
+  Backend error responses returned to the frontend are localized centrally in shared.exception so services can keep internal canonical messages when needed
+  JWT attachment is centralized in Axios service layer
+  On first authenticated 401, clear auth state and force logout; /auth/login failures do not trigger auto-logout
+  Farm selection is centralized in FarmContext
+  Display currency is centralized in CurrencyContext
+  Reuse shared listing filters/pagination/export patterns; do not duplicate filter/query wiring
+  Listing filters use page-local draft state and separate applied state so pagination/refresh/export reuse the same
+  query params
+  Dashboard filters follow the same draft/applied pattern so refresh and CSV export reuse the exact selected scope
+  Dashboard animal filtering supports a single animalId or a multi-select animalIds scope; the selected farm still comes from FarmContext
+  Shared listing filter component: frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx
+  CSV downloads are triggered from service layer; frontend helper is centralized in frontend/web/farm_web/src/services/
+  csvExportService.ts
+  Use shared currency helpers; do not hardcode currency symbols or Intl currency config in components
+
+  Security and cross-cutting behavior:
+  All endpoints except /auth/, /v3/api-docs/, /swagger-ui/**, /swagger-ui.html require JWT
+  Authorization header: Bearer <jwt>
+  JWT auth is stateless; filter runs before UsernamePasswordAuthenticationFilter; passwords use BCrypt
+  Inactive users are rejected by login and JWT-authenticated access
+  Standard error envelope: timestamp, status, error, path
+  List pagination is optional and only applies when both page and size are provided; paginated response shape: content,
+  page, size, totalElements, totalPages
+  Non-manager authenticated users get 403 for dashboard, analytics, user creation, and delete operations
+  MANAGER is required for dashboard, analytics, all DELETE requests, and user create/update/activate/inactivate/delete
+  Any authenticated user may call PUT /users/me/password
+
+  Domain rules:
+  Farm is the operating boundary for animals, feeding, production, feed types, dashboard, and analytics
+  Farms:
+  GET /farms returns farms accessible to the authenticated user via ownership or explicit assignment
+  GET /farms?ownedOnly=true returns only farms owned by the authenticated user
+  POST /farms requires nonblank name; authenticated user becomes owner
+
+  Animals:
+  Endpoints: POST /animals, GET /animals, GET /animals/export, GET /animals/{id}, PUT /animals/{id}, POST /animals/{id}/
+  sell, DELETE /animals/{id}
+  Required create fields: tag, breed, birthDate, origin, farmId
+  origin must be PURCHASED or BORN
+  acquisitionCost is required and > 0 when origin=PURCHASED; cleared when origin=BORN
+  tag is unique
+  new animals default to ACTIVE
+  PUT /animals/{id} is partial; provided string fields must be nonblank
+  Selling must use POST /animals/{id}/sell; generic update cannot replace sell flow
+  Sell stores salePrice, optional saleDate default current date, and changes status to SOLD
+  Only ACTIVE animals can be sold
+  Sold animals cannot transition back through generic update
+  DELETE /animals/{id} is soft delete to INACTIVE and requires MANAGER
+  GET /animals supports optional farmId, search, status, origin, page, size
+  Responses include optional salePrice and saleDate
+
+  Productions:
+  Endpoints: GET /productions, GET /productions/export, GET /productions/{id}, GET /productions/summary/by-animal, GET /
+  productions/summary/profit/by-animal, POST /productions, PUT /productions/{id}, DELETE /productions/{id}
+  Required create fields: animalId, date, quantity, userId
+  animalId and userId nonblank; userId must be valid UUID and existing user
+  date nonnull and not future
+  quantity > 0
+  animal must exist and be ACTIVE
+  Authenticated user context may override/fill createdBy
+  If authenticated role is WORKER, create ignores incoming date and stores current server date
+  If authenticated role is MANAGER, create still requires explicit date
+  GET /productions supports optional search, animalId, date, farmId, page, size
+  PUT /productions/{id} may change animalId, date, quantity
+  DELETE /productions/{id} is soft delete to INACTIVE and requires MANAGER
+  Profit summary includeAcquisitionCost defaults to true
+  Profit summary uses current milk price for the animal farm
+  Responses include embedded animal summary and do not expose createdBy
+
+  Feedings:
+  Endpoints: POST /feedings, GET /feedings, GET /feedings/export, GET /feedings/{id}, PUT /feedings/{id}, DELETE /
+  feedings/{id}
+  Required create fields: animalId, feedTypeId, date, quantity, userId
+  All IDs nonblank; userId must be valid UUID and existing user
+  date nonnull
+  quantity > 0
+  animal must exist and be ACTIVE
+  feed type must exist
+  Authenticated user context may override/fill createdBy
+  If authenticated role is WORKER, create ignores incoming date and stores current server date
+  If authenticated role is MANAGER, create still requires explicit date
+  GET /feedings supports optional search, animalId, feedTypeId, date, farmId, page, size
+  PUT /feedings/{id} may change animalId, feedTypeId, date, quantity
+  DELETE /feedings/{id} is soft delete to INACTIVE and requires MANAGER
+  Responses include embedded animal summary and feed type summary and do not expose calculated feeding cost
+
+  Feed types:
+  Endpoints: POST /feed-types, GET /feed-types, GET /feed-types/export, GET /feed-types/{id}, PUT /feed-types/{id},
+  DELETE /feed-types/{id}
+  POST requires farmId query param plus name and costPerKg
+  name nonblank
+  costPerKg > 0
+  New feed types default active=true
+  List and read return active feed types
+  GET /feed-types supports optional search, page, size
+  PUT /feed-types/{id} updates name and costPerKg
+  DELETE /feed-types/{id} is soft delete to active=false and requires MANAGER
+
+  Milk prices:
+  Endpoints: POST /milk-prices?farmId=..., GET /milk-prices/current?farmId=..., GET /milk-prices?farmId=..., GET /milk-
+  prices/export?farmId=...
+  POST requires accessible existing farmId, price, effectiveDate
+  price > 0 and max 2 decimal places
+  effectiveDate nonnull
+  Create is append-only history; never overwrite previous prices
+  Current price is the latest record effective on or before today
+  If no effective price exists, current returns default price 2.0 with fallbackDefault=true
+  GET /milk-prices returns full history newest to oldest and supports optional search, effectiveDate, page, size
+  Response fields: id, farmId, price, effectiveDate, createdAt, createdBy, fallbackDefault
+
+  Users:
+  Endpoints: POST /users, GET /users, GET /users/export, GET /users/{id}, PUT /users/{id}, PATCH /users/{id}/activate,
+  PATCH /users/{id}/inactivate, DELETE /users/{id}, PUT /users/me/password
+  Required fields on create/update: name, email, role, active, farmIds
+  password is required if active=true on create
+  avatarUrl is optional
+  name, email, role nonblank
+  active nonnull
+  farmIds must contain at least one value
+  GET /users/{id} requires valid UUID
+  email is unique
+  Only authenticated MANAGER can call POST /users, PUT /users/{id}, PATCH /users/{id}/activate, PATCH /users/{id}/
+  inactivate, DELETE /users/{id}
+  Every assigned farmId must belong to the authenticated manager
+  PATCH /users/{id}/activate reactivates the user and may replace the password
+  PATCH /users/{id}/inactivate sets active=false
+  DELETE /users/{id} removes the user row and its farm assignments
+  Users who own farms cannot be inactivated or deleted
+  Users who own farms cannot be changed from MANAGER to another role
+  PUT /users/me/password is self-service only; currentPassword and newPassword must be nonblank; current must match
+  stored password; new must differ from current
+  GET /users supports optional search, active, role, page, size
+  GET /users and GET /users/{id} require JWT
+
+  Auth:
+  Endpoint: POST /auth/login
+  Required fields: email, password; both nonblank
+  Invalid credentials return 401
+  Success returns accessToken and user object with id, name, email, role
+  Default admin is created on startup if user table is empty
+  Default admin env/fallback: ADMIN_EMAIL default admin@farmapp.com; ADMIN_PASSWORD default admin123
+
+  Dashboard, analytics, CSV, financial behavior:
+  GET /dashboard and GET /dashboard/export require MANAGER
+  All /analytics/** endpoints require MANAGER
+  GET /dashboard and GET /analytics/profit accept includeAcquisitionCost; default true
+  GET /dashboard and GET /dashboard/export support optional startDate, endDate, animalId, animalIds, and status filters
+  Dashboard default filter scope is all time, all animals, all statuses within the selected farm context
+  Dashboard date range filters production, feeding cost, milk revenue, and sale revenue; animal count and acquisition
+  cost remain scoped by farm/animal/status because acquisition date is not modeled
+  GET /dashboard, GET /dashboard/export, GET /analytics/feeding, GET /analytics/feeding/export, GET /analytics/profit,
+  GET /analytics/profit/export accept optional currency
+  Dashboard revenue includes milk revenue plus sold-animal revenue
+  Dashboard total profit subtracts feeding cost and, when enabled, acquisition cost
+  Analytics profit series applies acquisition cost once to the earliest returned period
+  Analytics profit series recognizes sold-animal revenue on each animal saleDate
+  Current dashboard and analytics milk revenue use the current effective milk price for each farm
+  Historical milk prices are preserved; current reporting still uses latest effective farm price by default
+  CSV export exists for animals, users, feedings, productions, feed types, milk prices, dashboard, analytics
+  Listing/dashboard/analytics exports must reuse the same farm/filter/currency scope as the corresponding screen or JSON
+  request
+
+  Data model and persistence:
+  Main entities:
+  User(id, name, email, role, password, active)
+  Farm(id, name, ownerId)
+  UserFarmAssignment(id, userId, farmId)
+  Animal(id, tag, breed, birthDate, status, origin, acquisitionCost, salePrice, saleDate, farmId)
+  Production(id, animalId, date, quantity, createdBy, farmId, status)
+  Feeding(id, animalId, feedTypeId, date, quantity, createdBy, farmId, status)
+  MilkPrice(id, farmId, price, effectiveDate, createdAt, createdBy)
+  FeedType(id, name, costPerKg, active, farmId)
+  DB constraints:
+  animals.tag unique
+  users.email unique
+  Relational integrity checks are primarily enforced in services, not rich JPA associations
+  User-farm access is persisted via scalar-ID assignment table
+  Feeding and production delete behavior uses status=INACTIVE
+  Feed type delete behavior uses active=false
+  Feeding cost is derived from quantity * costPerKg
+  Milk price history is append-only
+  Revenue and profit are derived at query/export time, not persisted
+
+  Development rules:
+  Do not break existing functionality
+  Do not refactor the entire codebase
+  Make incremental changes only
+  Always respect existing API contracts unless a contract change is explicitly approved
+  Preserve module boundaries and naming
+  Prefer extending existing services/controllers over parallel patterns
+  Account for backend security being stricter than some frontend assumptions
+  Validate all API-boundary input
+  Prefer compatibility over novelty
+  Follow existing patterns
+  If frontend and backend are out of sync, fix the mismatch with the smallest coherent change
+  Verify frontend requests against real backend endpoints before changing UI code
+  If a requested feature assumes missing infrastructure, document the gap first and implement the narrowest viable step
+
+  Testing:
+  Backend tests include Spring Boot integration tests, controller contract tests, service/unit tests, auth integration
+  tests
+  Protected endpoint tests must use JWT
+  When adding or changing protected features, include authenticated test coverage
+  Manual script exists at backend/test/animal/manual test/test-animals.sh
+
+  Do not:
+  Do not change API contracts without explicit approval
+  Do not remove existing validations
+  Do not introduce breaking changes
+  Do not replace thin controllers with business-heavy controllers
+  Do not bypass the service layer for business operations
+  Do not couple business logic to JPA annotations or entity graph behavior
+  Do not introduce rich JPA relation graphs unless explicitly required
+  Do not assume missing backend endpoints exist because frontend stubs reference them
+  Do not introduce large-scale refactors to force stricter architecture in one pass
+  Do not remove JWT protection from protected endpoints
+  Do not silently change derived financial logic, especially milk price, revenue, or profit behavior
+  Do not work in a parallel backend tree unless explicitly required
+
+  Version control:
+  Every meaningful change must result in a commit
+  Use Conventional Commits
+  Commits must be atomic and focused
+  Never push automatically
+  Before committing, ensure no breaking changes and code compiles logically

@@ -1,0 +1,1828 @@
+OpenAI Codex v0.124.0 (research preview)
+--------
+workdir: /home/juaneugenio/programmig/farm_app
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/juaneugenio/.codex/memories]
+reasoning effort: high
+reasoning summaries: none
+session id: 019dd1de-eb0b-7170-a6d8-7b05a6fe0b9b
+--------
+user
+You are a senior software engineer acting as a FIXER in the farm_app project.
+
+You MUST strictly follow the project rules defined in AI_CONTEXT.md.
+
+Your job is to FIX issues identified in the current implementation, especially after test or compilation failures.
+
+You do NOT implement new features.
+
+---
+
+## CORE BEHAVIOR
+
+- Be precise and minimal.
+- Only change what is necessary to fix the issue.
+- Do NOT refactor unrelated parts of the code.
+- Do NOT introduce new architecture or abstractions.
+- Do NOT modify working logic unless required for the fix.
+
+---
+
+## INPUT EXPECTATION
+
+You will receive:
+
+- Error logs (compilation or test failures)
+- Context of recent changes (diff or feature intent)
+
+You MUST use this information to guide your fix.
+
+---
+
+## FIX STRATEGY
+
+1. Identify the root cause of the failure
+2. Determine whether the issue is:
+   - broken test
+   - outdated test
+   - incorrect implementation
+   - signature mismatch
+3. Apply the smallest possible fix
+4. Preserve behavior and contracts
+5. If error type is contract:
+- Prefer adjusting response format or message
+- Do NOT refactor large parts of system
+---
+
+## TEST ALIGNMENT RULES (CRITICAL)
+
+- If tests are outdated due to valid implementation changes → UPDATE tests
+- If implementation is incorrect → FIX implementation
+- If tests are incorrect → FIX tests
+
+You MUST decide correctly which side is wrong.
+
+---
+
+## ABSOLUTE RESTRICTIONS
+
+You MUST NOT:
+
+- Delete tests to make them pass
+- Comment out failing tests
+- Skip tests
+- Remove assertions without replacing them
+- Change expected behavior without justification
+
+---
+
+## ARCHITECTURE RULES
+
+- Controllers must remain thin
+- Business logic must stay in services
+- Do NOT move logic across layers
+- Do NOT introduce complex JPA relationships
+- Preserve DTO, mapper, and repository usage
+
+---
+
+## BACKEND RULES
+
+- Validate inputs properly
+- Keep service-layer responsibility intact
+- Do NOT bypass validation
+- Respect soft-delete and lifecycle rules
+- Do NOT introduce breaking changes
+
+---
+
+## FRONTEND RULES
+
+- Use existing service layer
+- Do NOT call APIs directly from components
+- Keep UI changes minimal
+
+---
+
+## COMMON FIX SCENARIOS
+
+You SHOULD handle:
+
+- @Override errors due to signature mismatch
+- Method signature changes not reflected in tests
+- Missing dependencies or injections
+- Broken controller-service contracts
+- Invalid assumptions in tests
+- Null pointer or validation issues
+
+---
+
+## OUTPUT FORMAT (STRICT)
+
+You MUST return your response in JSON format:
+
+{
+  "summary": "Short explanation of the fix",
+  "root_cause": "What caused the issue",
+  "changed_files": [
+    "relative/path/to/file1",
+    "relative/path/to/file2"
+  ],
+  "changes": [
+    {
+      "file": "relative/path/to/file",
+      "description": "What was fixed",
+      "code": "ONLY the relevant code snippet or full file if necessary"
+    }
+  ]
+}
+
+---
+
+## IMPORTANT OUTPUT RULES
+
+- DO NOT return explanations outside JSON
+- DO NOT include markdown formatting
+- DO NOT include backticks
+- ONLY include modified files
+- DO NOT rewrite entire files unless strictly necessary
+- Focus on minimal diffs
+
+---
+
+## EXECUTION MODE
+
+- Do NOT ask questions
+- Do NOT wait for user input
+- Make reasonable assumptions
+- Always produce a complete output
+
+---
+
+## GOAL
+
+Apply minimal, precise fixes that resolve test or compilation failures while preserving system correctness, architecture, and behavior.
+
+Fix ONLY the specific test or compilation failure below.
+
+Feature:
+add-language-translation
+
+Relevant error:
+23:15:21.258 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:21.258 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:21.482 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:21.482 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:21.482 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:21.507 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:21.507 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:21.508 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.058 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m8[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.022 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mLocalizedErrorAttributesTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.jpsoftware.farmapp.shared.exception.[1mLocalizedErrorAttributesTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/home/juaneugenio/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m10[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.331 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m29[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.083 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
+23:15:23.177 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.269 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m22[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.043 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.035 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.125 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
+23:15:24.582 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:24.582 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:24.582 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:24.615 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:24.615 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:24.616 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:24.641 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:24.641 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:24.641 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:24.659 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:24.659 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:24.659 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.161 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
+23:15:24.677 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:24.677 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:24.677 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:24.694 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:24.694 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:24.694 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:24.712 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:15:24.723 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:24.723 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:24.732 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:24.732 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:24.732 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:24.744 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:24.744 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:24.745 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.080 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
+23:15:24.768 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:24.768 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:24.768 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:24.806 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:24.806 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:24.807 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:24.835 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:15:25.113 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.113 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.126 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.126 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.126 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.135 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.135 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.136 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m20[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.394 s -- in com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
+23:15:25.156 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.156 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.156 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.166 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.166 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.166 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.182 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:15:25.357 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.358 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:15:25.374 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.375 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.375 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.395 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.395 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.396 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m18[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.259 s -- in com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
+23:15:25.453 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.453 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.453 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.463 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.463 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.463 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.060 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
+23:15:25.473 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.473 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.473 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.481 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.481 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.481 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.496 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:15:25.528 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.529 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.538 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.539 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.539 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.551 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.552 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.552 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.096 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
+23:15:25.604 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.604 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.604 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.049 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
+23:15:25.619 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.619 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.620 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.631 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.631 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.631 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
+23:15:25.694 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.694 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.694 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.704 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.704 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.704 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.713 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:15:25.760 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.760 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.772 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.772 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.772 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.781 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.781 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.781 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.149 s -- in com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
+23:15:25.792 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.792 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.793 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:15:25.804 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.804 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.804 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.814 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:15:25.837 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.837 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.847 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.847 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.848 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:15:25.860 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.860 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.861 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.083 s -- in com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
+23:15:25.883 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.883 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.883 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:25.896 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:25.896 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.897 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:15:25.914 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+--
+23:15:25.996 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:25.996 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+23:15:26.003 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:26.003 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:26.004 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+23:15:26.016 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+23:15:26.016 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+23:15:26.016 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m12[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.154 s -- in com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.082 s -- in com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+23:15:26.140 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest]: AuthIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+23:15:26.282 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+--
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
+[[1;31mERROR[m] [1;31mTests [0;1mrun: [0;1m7[m, [1;31mFailures: [0;1;31m1[m, Errors: 0, Skipped: 0, Time elapsed: 8.314 s[1;31m <<< FAILURE![m -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+[[1;31mERROR[m] com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldRequireTokenForProtectedEndpoints -- Time elapsed: 0.113 s <<< FAILURE!
+java.lang.AssertionError: JSON path "$.error" expected:<É necessário autenticação para acessar este recurso.> but was:<É necessário estar autenticado para acessar este recurso.>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:61)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:128)
+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:172)
+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:112)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest.shouldRequireTokenForProtectedEndpoints(AuthIntegrationTest.java:92)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+--
+Hibernate: select coalesce(sum(pe1_0.quantity),0) from productions pe1_0 where pe1_0.animal_id=? and pe1_0.status='ACTIVE'
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select coalesce(sum(pe1_0.quantity),0) from productions pe1_0 where pe1_0.animal_id=? and pe1_0.status='ACTIVE'
+Hibernate: select coalesce(sum((fe1_0.quantity*fte1_0.cost_per_kg)),0) from feedings fe1_0 join feed_types fte1_0 on fe1_0.feed_type_id=fte1_0.id where fe1_0.animal_id=? and fe1_0.status='ACTIVE'
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select count(*) from farms fe1_0 where fe1_0.id=?
+Hibernate: select mpe1_0.id,mpe1_0.created_at,mpe1_0.created_by,mpe1_0.effective_date,mpe1_0.farm_id,mpe1_0.price from milk_prices mpe1_0 where mpe1_0.farm_id=? and mpe1_0.effective_date<=? order by mpe1_0.effective_date desc,mpe1_0.created_at desc fetch first ? rows only
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.718 s -- in com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
+2026-04-27T23:15:35.147-03:00  INFO 7070 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest]: FeedingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-27T23:15:35.155-03:00  INFO 7070 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: delete from productions where id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: delete from feedings where id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+--
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=? and ae1_0.farm_id=?
+Hibernate: select count(*) from feed_types fte1_0 where fte1_0.id=?
+Hibernate: select fte1_0.id from feed_types fte1_0 where fte1_0.id=? and fte1_0.farm_id=? fetch first ? rows only
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.614 s -- in com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
+2026-04-27T23:15:35.763-03:00  INFO 7070 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest]: AnimalIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-27T23:15:35.772-03:00  INFO 7070 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: delete from feedings where id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+--
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.295 s -- in com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
+2026-04-27T23:15:36.059-03:00  INFO 7070 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.user.UserIntegrationTest]: UserIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-27T23:15:36.067-03:00  INFO 7070 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.user.UserIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+--
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_0.owner_id=?
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m13[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.871 s -- in com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+--
+	Maximum pool size: undefined/unknown
+2026-04-27T23:15:39.360-03:00  INFO 7070 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: alter table if exists user_farm_assignments drop constraint if exists UK9k021clhmghjjepfpvejsguce
+Hibernate: alter table if exists user_farm_assignments add constraint UK9k021clhmghjjepfpvejsguce unique (user_id, farm_id)
+2026-04-27T23:15:39.369-03:00  INFO 7070 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-27T23:15:39.639-03:00  WARN 7070 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-27T23:15:39.784-03:00  INFO 7070 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Started FarmAppApplicationTests in 0.851 seconds (process running for 21.46)
+Hibernate: select count(*) from users ue1_0
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.864 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] Results:
+[[1;34mINFO[m] 
+[[1;31mERROR[m] [1;31mFailures: [m
+[[1;31mERROR[m] [1;31m  AuthIntegrationTest.shouldRequireTokenForProtectedEndpoints:92 JSON path "$.error" expected:<É necessário autenticação para acessar este recurso.> but was:<É necessário estar autenticado para acessar este recurso.>[m
+[[1;34mINFO[m] 
+[[1;31mERROR[m] [1;31mTests run: 235, Failures: 1, Errors: 0, Skipped: 0[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] [1;31mBUILD FAILURE[m
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] Total time:  22.968 s
+[[1;34mINFO[m] Finished at: 2026-04-27T23:15:39-03:00
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;31mERROR[m] Failed to execute goal [32morg.apache.maven.plugins:maven-surefire-plugin:3.5.2:test[m [1m(default-test)[m on project [36mfarmapp[m: [1;31mThere are test failures.[m
+[[1;31mERROR[m] [1;31m[m
+[[1;31mERROR[m] [1;31mSee /home/juaneugenio/programmig/farm_app/backend/farmapp/target/surefire-reports for the individual test results.[m
+[[1;31mERROR[m] [1;31mSee dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.[m
+[[1;31mERROR[m] -> [1m[Help 1][m
+[[1;31mERROR[m] 
+[[1;31mERROR[m] To see the full stack trace of the errors, re-run Maven with the [1m-e[m switch.
+[[1;31mERROR[m] Re-run Maven using the [1m-X[m switch to enable full debug logging.
+[[1;31mERROR[m] 
+[[1;31mERROR[m] For more information about the errors and possible solutions, please read the following articles:
+[[1;31mERROR[m] [1m[Help 1][m http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+
+Rules:
+- Do NOT delete, disable, or skip tests
+- Do NOT refactor unrelated code
+- Keep the fix minimal
+- If the issue is a test expectation mismatch, align the correct side with the existing system contract
+- If unsure, make the smallest safe correction
+warning: Codex could not find bubblewrap on PATH. Install bubblewrap with your OS package manager. See the sandbox prerequisites: https://developers.openai.com/codex/concepts/sandboxing#prerequisites. Codex will use the vendored bubblewrap in the meantime.
+codex
+Vou validar as regras em `AI_CONTEXT.md` e inspecionar o fluxo de autenticação/erro para decidir se o contrato correto está no teste ou na implementação.
+exec
+/bin/bash -lc "rg --files -g 'AI_CONTEXT.md' -g 'backend/farmapp/**/AuthIntegrationTest.java' -g 'backend/farmapp/**/ErrorMessageTranslator*.java' -g 'backend/farmapp/**/GlobalExceptionHandler*.java' -g 'backend/farmapp/**/LocalizedErrorAttributes*.java' -g 'backend/farmapp/**/Security*.java'" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+AI_CONTEXT.md
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandlerTest.java
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/LocalizedErrorAttributesTest.java
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/auth/infrastructure/SecurityConfig.java
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/LocalizedErrorAttributes.java
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandler.java
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java
+
+exec
+/bin/bash -lc 'git status --short' in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+?? workspace/logs/add-language-translation_error_focus.txt
+?? workspace/logs/add-language-translation_fixer_attempt_1.log
+?? workspace/logs/add-language-translation_mvn_attempt_1.log
+
+codex
+Encontrei apenas artefatos não rastreados em `workspace/logs`; não vou tocá-los. Agora vou conferir o contrato de mensagens e o teste que falhou.
+exec
+/bin/bash -lc "sed -n '1,220p' AI_CONTEXT.md" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+ SCOPE
+  Active backend: backend/farmapp. Active frontend: frontend/web/farm_web. Farm management system for farms, animals,
+  feedings, productions, feed types, milk prices, users, dashboard, analytics, CSV export. Runtime DB: PostgreSQL. Local
+  fallback: Spring local profile with H2. Tests use H2. Schema mode: spring.jpa.hibernate.ddl-auto=create.
+
+  ARCHITECTURE
+  Backend: Spring Boot modular monolith. Preserve current layers: controller, service, repository, mapper, entity/dto,
+  shared, auth. Controllers thin; services own validation, business rules, orchestration, transactions. Persistence is
+  scalar-ID based, not relation-heavy. Do not assume strict Clean Architecture package split; evolve incrementally only.
+  Shared backend utilities: milkprice.service.MilkPriceService resolves current milk price; shared.util.CsvExportUtils
+  generates CSV rows; shared.util.CsvResponseFactory builds CSV responses; shared.currency centralizes BRL/USD
+  conversion.
+  Frontend: React + TypeScript + Vite. Preserve separation: src/pages, src/components, src/services, src/types, src/
+  layout, src/context, src/hooks. Use typed service layer for API calls. Farm selection via FarmContext. Display
+  currency via CurrencyContext. JWT attachment and 401 handling centralized in Axios layer. First authenticated 401
+  clears auth state and forces logout; /auth/login failures do not auto-logout. Reuse shared listing filter/pagination/
+  export patterns. CSV downloads go through service layer and csvExportService.ts. Use shared currency helpers, not
+  hardcoded formatting.
+
+  GLOBAL RULES
+  Base URL: http://localhost:8080. Content type: JSON. Protected endpoints require Authorization: Bearer <jwt>. Public
+  paths: /auth/, /v3/api-docs/, /swagger-ui/**, /swagger-ui.html.
+  Error envelope: timestamp, status, error, path.
+  Pagination applies only when both page and size are provided; paginated payload is content, page, size, totalElements,
+  totalPages.
+  Delete semantics: animals/feedings/productions soft-delete via status=INACTIVE; feed types soft-delete via
+  active=false; users hard-delete row plus farm assignments.
+  MANAGER role is required for dashboard, analytics, all DELETE requests, and user create/update/activate/inactivate/
+  delete.
+  Financial values are derived at read/export time, not persisted. Current reporting uses current effective farm milk
+  price by default.
+  Do not change API contracts, validations, JWT protection, or financial logic without explicit approval.
+
+  DOMAIN RULES
+  Farms
+  Endpoints: GET /farms, POST /farms.
+  POST requires nonblank name; authenticated creator becomes owner.
+  GET /farms returns farms accessible byScope:
+  Active backend: backend/farmapp
+  Active frontend: frontend/web/farm_web
+  System: farm/cattle management for farms, animals, feedings, productions, feed types, milk prices, users, dashboard,
+  analytics, CSV export
+  Runtime DB: PostgreSQL; local fallback profile: local with H2; tests use H2
+  Use backend/farmapp as the single backend source of truth
+
+  Architecture:
+  Backend is a Spring Boot 3.4.x modular monolith
+  Preserve current layering: controller, service, repository, mapper, entity/dto, shared, auth
+  Controllers stay thin; services own validation, business rules, orchestration, transactions
+  Persistence is scalar-ID oriented; avoid relation-heavy JPA modeling
+  Do not assume strict Clean Architecture package separation exists; evolve incrementally only
+  CSV backend utilities are centralized in shared.util.CsvExportUtils and shared.util.CsvResponseFactory
+  Currency conversion is centralized in shared.currency; supported currencies: BRL, USD
+  Milk price resolution is centralized in milkprice.service.MilkPriceService
+
+  Frontend:
+  React + TypeScript + Vite
+  Keep separation: pages, components, services, types, layout, context, hooks
+  Use typed service layer for HTTP; do not hardcode API contracts in components
+  Default visible language is pt-BR; avoid mixed-language UI
+  Frontend user-facing labels live in frontend/web/farm_web/src/i18n and should be consumed via LanguageContext/useTranslation
+  Enum values such as MANAGER, WORKER, ACTIVE, INACTIVE, SOLD, PURCHASED, and BORN remain internal/API values and must be mapped to localized labels in the UI
+  Backend error responses returned to the frontend are localized centrally in shared.exception so services can keep internal canonical messages when needed
+  JWT attachment is centralized in Axios service layer
+  On first authenticated 401, clear auth state and force logout; /auth/login failures do not trigger auto-logout
+  Farm selection is centralized in FarmContext
+  Display currency is centralized in CurrencyContext
+  Reuse shared listing filters/pagination/export patterns; do not duplicate filter/query wiring
+  Listing filters use page-local draft state and separate applied state so pagination/refresh/export reuse the same
+  query params
+  Dashboard filters follow the same draft/applied pattern so refresh and CSV export reuse the exact selected scope
+  Dashboard animal filtering supports a single animalId or a multi-select animalIds scope; the selected farm still comes from FarmContext
+  Shared listing filter component: frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx
+  CSV downloads are triggered from service layer; frontend helper is centralized in frontend/web/farm_web/src/services/
+  csvExportService.ts
+  Use shared currency helpers; do not hardcode currency symbols or Intl currency config in components
+
+  Security and cross-cutting behavior:
+  All endpoints except /auth/, /v3/api-docs/, /swagger-ui/**, /swagger-ui.html require JWT
+  Authorization header: Bearer <jwt>
+  JWT auth is stateless; filter runs before UsernamePasswordAuthenticationFilter; passwords use BCrypt
+  Inactive users are rejected by login and JWT-authenticated access
+  Standard error envelope: timestamp, status, error, path
+  List pagination is optional and only applies when both page and size are provided; paginated response shape: content,
+  page, size, totalElements, totalPages
+  Non-manager authenticated users get 403 for dashboard, analytics, user creation, and delete operations
+  MANAGER is required for dashboard, analytics, all DELETE requests, and user create/update/activate/inactivate/delete
+  Any authenticated user may call PUT /users/me/password
+
+  Domain rules:
+  Farm is the operating boundary for animals, feeding, production, feed types, dashboard, and analytics
+  Farms:
+  GET /farms returns farms accessible to the authenticated user via ownership or explicit assignment
+  GET /farms?ownedOnly=true returns only farms owned by the authenticated user
+  POST /farms requires nonblank name; authenticated user becomes owner
+
+  Animals:
+  Endpoints: POST /animals, GET /animals, GET /animals/export, GET /animals/{id}, PUT /animals/{id}, POST /animals/{id}/
+  sell, DELETE /animals/{id}
+  Required create fields: tag, breed, birthDate, origin, farmId
+  origin must be PURCHASED or BORN
+  acquisitionCost is required and > 0 when origin=PURCHASED; cleared when origin=BORN
+  tag is unique
+  new animals default to ACTIVE
+  PUT /animals/{id} is partial; provided string fields must be nonblank
+  Selling must use POST /animals/{id}/sell; generic update cannot replace sell flow
+  Sell stores salePrice, optional saleDate default current date, and changes status to SOLD
+  Only ACTIVE animals can be sold
+  Sold animals cannot transition back through generic update
+  DELETE /animals/{id} is soft delete to INACTIVE and requires MANAGER
+  GET /animals supports optional farmId, search, status, origin, page, size
+  Responses include optional salePrice and saleDate
+
+  Productions:
+  Endpoints: GET /productions, GET /productions/export, GET /productions/{id}, GET /productions/summary/by-animal, GET /
+  productions/summary/profit/by-animal, POST /productions, PUT /productions/{id}, DELETE /productions/{id}
+  Required create fields: animalId, date, quantity, userId
+  animalId and userId nonblank; userId must be valid UUID and existing user
+  date nonnull and not future
+  quantity > 0
+  animal must exist and be ACTIVE
+  Authenticated user context may override/fill createdBy
+  If authenticated role is WORKER, create ignores incoming date and stores current server date
+  If authenticated role is MANAGER, create still requires explicit date
+  GET /productions supports optional search, animalId, date, farmId, page, size
+  PUT /productions/{id} may change animalId, date, quantity
+  DELETE /productions/{id} is soft delete to INACTIVE and requires MANAGER
+  Profit summary includeAcquisitionCost defaults to true
+  Profit summary uses current milk price for the animal farm
+  Responses include embedded animal summary and do not expose createdBy
+
+  Feedings:
+  Endpoints: POST /feedings, GET /feedings, GET /feedings/export, GET /feedings/{id}, PUT /feedings/{id}, DELETE /
+  feedings/{id}
+  Required create fields: animalId, feedTypeId, date, quantity, userId
+  All IDs nonblank; userId must be valid UUID and existing user
+  date nonnull
+  quantity > 0
+  animal must exist and be ACTIVE
+  feed type must exist
+  Authenticated user context may override/fill createdBy
+  If authenticated role is WORKER, create ignores incoming date and stores current server date
+  If authenticated role is MANAGER, create still requires explicit date
+  GET /feedings supports optional search, animalId, feedTypeId, date, farmId, page, size
+  PUT /feedings/{id} may change animalId, feedTypeId, date, quantity
+  DELETE /feedings/{id} is soft delete to INACTIVE and requires MANAGER
+  Responses include embedded animal summary and feed type summary and do not expose calculated feeding cost
+
+  Feed types:
+  Endpoints: POST /feed-types, GET /feed-types, GET /feed-types/export, GET /feed-types/{id}, PUT /feed-types/{id},
+  DELETE /feed-types/{id}
+  POST requires farmId query param plus name and costPerKg
+  name nonblank
+  costPerKg > 0
+  New feed types default active=true
+  List and read return active feed types
+  GET /feed-types supports optional search, page, size
+  PUT /feed-types/{id} updates name and costPerKg
+  DELETE /feed-types/{id} is soft delete to active=false and requires MANAGER
+
+  Milk prices:
+  Endpoints: POST /milk-prices?farmId=..., GET /milk-prices/current?farmId=..., GET /milk-prices?farmId=..., GET /milk-
+  prices/export?farmId=...
+  POST requires accessible existing farmId, price, effectiveDate
+  price > 0 and max 2 decimal places
+  effectiveDate nonnull
+  Create is append-only history; never overwrite previous prices
+  Current price is the latest record effective on or before today
+  If no effective price exists, current returns default price 2.0 with fallbackDefault=true
+  GET /milk-prices returns full history newest to oldest and supports optional search, effectiveDate, page, size
+  Response fields: id, farmId, price, effectiveDate, createdAt, createdBy, fallbackDefault
+
+  Users:
+  Endpoints: POST /users, GET /users, GET /users/export, GET /users/{id}, PUT /users/{id}, PATCH /users/{id}/activate,
+  PATCH /users/{id}/inactivate, DELETE /users/{id}, PUT /users/me/password
+  Required fields on create/update: name, email, role, active, farmIds
+  password is required if active=true on create
+  avatarUrl is optional
+  name, email, role nonblank
+  active nonnull
+  farmIds must contain at least one value
+  GET /users/{id} requires valid UUID
+  email is unique
+  Only authenticated MANAGER can call POST /users, PUT /users/{id}, PATCH /users/{id}/activate, PATCH /users/{id}/
+  inactivate, DELETE /users/{id}
+  Every assigned farmId must belong to the authenticated manager
+  PATCH /users/{id}/activate reactivates the user and may replace the password
+  PATCH /users/{id}/inactivate sets active=false
+  DELETE /users/{id} removes the user row and its farm assignments
+  Users who own farms cannot be inactivated or deleted
+  Users who own farms cannot be changed from MANAGER to another role
+  PUT /users/me/password is self-service only; currentPassword and newPassword must be nonblank; current must match
+  stored password; new must differ from current
+  GET /users supports optional search, active, role, page, size
+  GET /users and GET /users/{id} require JWT
+
+  Auth:
+  Endpoint: POST /auth/login
+  Required fields: email, password; both nonblank
+  Invalid credentials return 401
+  Success returns accessToken and user object with id, name, email, role
+  Default admin is created on startup if user table is empty
+  Default admin env/fallback: ADMIN_EMAIL default admin@farmapp.com; ADMIN_PASSWORD default admin123
+
+  Dashboard, analytics, CSV, financial behavior:
+  GET /dashboard and GET /dashboard/export require MANAGER
+  All /analytics/** endpoints require MANAGER
+  GET /dashboard and GET /analytics/profit accept includeAcquisitionCost; default true
+  GET /dashboard and GET /dashboard/export support optional startDate, endDate, animalId, animalIds, and status filters
+  Dashboard default filter scope is all time, all animals, all statuses within the selected farm context
+  Dashboard date range filters production, feeding cost, milk revenue, and sale revenue; animal count and acquisition
+  cost remain scoped by farm/animal/status because acquisition date is not modeled
+  GET /dashboard, GET /dashboard/export, GET /analytics/feeding, GET /analytics/feeding/export, GET /analytics/profit,
+  GET /analytics/profit/export accept optional currency
+  Dashboard revenue includes milk revenue plus sold-animal revenue
+  Dashboard total profit subtracts feeding cost and, when enabled, acquisition cost
+  Analytics profit series applies acquisition cost once to the earliest returned period
+  Analytics profit series recognizes sold-animal revenue on each animal saleDate
+  Current dashboard and analytics milk revenue use the current effective milk price for each farm
+  Historical milk prices are preserved; current reporting still uses latest effective farm price by default
+
+exec
+/bin/bash -lc "sed -n '1,180p' backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+package com.jpsoftware.farmapp.integration.auth;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.jpsoftware.farmapp.base.BaseIntegrationTest;
+import com.jpsoftware.farmapp.user.entity.UserEntity;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+
+class AuthIntegrationTest extends BaseIntegrationTest {
+
+    @Test
+    void shouldLoginAndReturnJwtToken() throws Exception {
+        userRepository.save(new UserEntity(
+                null,
+                "Jane Doe",
+                "jane@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "jane@farm.com",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isString())
+                .andExpect(jsonPath("$.user.email").value("jane@farm.com"))
+                .andExpect(jsonPath("$.user.role").value("MANAGER"));
+    }
+
+    @Test
+    void shouldReturn401ForInvalidCredentials() throws Exception {
+        userRepository.save(new UserEntity(
+                null,
+                "Jane Doe",
+                "jane@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "jane@farm.com",
+                                  "password": "wrong-password"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("E-mail ou senha inválidos."));
+    }
+
+    @Test
+    void shouldReturn401ForInactiveUser() throws Exception {
+        userRepository.save(new UserEntity(
+                null,
+                "Jane Doe",
+                "jane@farm.com",
+                "WORKER",
+                passwordEncoder.encode("farmapp@123"),
+                false));
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "jane@farm.com",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("E-mail ou senha inválidos."));
+    }
+
+    @Test
+    void shouldRequireTokenForProtectedEndpoints() throws Exception {
+        UserEntity user = createAuthenticatedUser();
+
+        mockMvc.perform(get("/animals"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
+                .andExpect(jsonPath("$.path").value("/animals"));
+
+        mockMvc.perform(get("/animals/export"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
+                .andExpect(jsonPath("$.path").value("/animals/export"));
+
+        mockMvc.perform(get("/animals")
+                        .header("Authorization", bearerToken(user)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/animals/export")
+                        .header("Authorization", bearerToken(user)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"));
+    }
+
+    @Test
+    void shouldAllowOnlyManagersToAccessDashboardAndAnalytics() throws Exception {
+        UserEntity manager = createAuthenticatedUser("MANAGER");
+        UserEntity worker = createAuthenticatedUser("WORKER");
+
+        mockMvc.perform(get("/dashboard")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Acesso negado."))
+                .andExpect(jsonPath("$.path").value("/dashboard"));
+
+        mockMvc.perform(get("/analytics/production")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Acesso negado."))
+                .andExpect(jsonPath("$.path").value("/analytics/production"));
+
+        mockMvc.perform(get("/dashboard/export")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Acesso negado."))
+                .andExpect(jsonPath("$.path").value("/dashboard/export"));
+
+        mockMvc.perform(get("/analytics/production/export")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Acesso negado."))
+                .andExpect(jsonPath("$.path").value("/analytics/production/export"));
+
+        mockMvc.perform(get("/dashboard")
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/analytics/production")
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/dashboard/export")
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"));
+
+        mockMvc.perform(get("/analytics/production/export")
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"));
+    }
+
+    @Test
+    void shouldAllowOnlyManagersToReachDeleteEndpoints() throws Exception {
+        UserEntity manager = createAuthenticatedUser("MANAGER");
+        UserEntity worker = createAuthenticatedUser("WORKER");
+
+        mockMvc.perform(delete("/animals/missing")
+                        .header("Authorization", bearerToken(worker)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Acesso negado."))
+                .andExpect(jsonPath("$.path").value("/animals/missing"));
+
+        mockMvc.perform(delete("/animals/missing")
+                        .header("Authorization", bearerToken(manager)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+
+exec
+/bin/bash -lc "sed -n '1,220p' backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+package com.jpsoftware.farmapp.shared.exception;
+
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public final class ErrorMessageTranslator {
+
+    private static final String VALIDATION_FALLBACK = "Falha de validação.";
+    private static final Pattern REQUIRED_FIELD_PATTERN =
+            Pattern.compile("^(?:Animal )?([A-Za-z]+) must not be (?:blank|null)$");
+    private static final Pattern EMPTY_FIELD_PATTERN =
+            Pattern.compile("^([A-Za-z]+) must not be empty$");
+    private static final Pattern POSITIVE_FIELD_PATTERN =
+            Pattern.compile("^(?:Animal )?([A-Za-z]+) must be greater than zero$");
+    private static final Pattern SCALE_FIELD_PATTERN =
+            Pattern.compile("^([A-Za-z]+) must have at most 2 decimal places$");
+
+    private static final Map<String, String> EXACT_TRANSLATIONS = Map.ofEntries(
+            Map.entry("Validation failed", VALIDATION_FALLBACK),
+            Map.entry("Malformed request body", "Corpo da requisição inválido."),
+            Map.entry("Internal server error", "Erro interno do servidor."),
+            Map.entry("Resource not found", "Recurso não encontrado."),
+            Map.entry("Bad Request", "Requisição inválida."),
+            Map.entry("Forbidden", "Acesso negado."),
+            Map.entry("Not Found", "Recurso não encontrado."),
+            Map.entry("Unauthorized", "Não autorizado."),
+            Map.entry("Access is denied", "Acesso negado."),
+            Map.entry("Access Denied", "Acesso negado."),
+            Map.entry("Full authentication is required to access this resource", "É necessário estar autenticado para acessar este recurso."),
+            Map.entry("Invalid or expired token", "Token inválido ou expirado."),
+            Map.entry("request must not be null", "Requisição obrigatória."),
+            Map.entry("Create animal request must not be null", "Requisição obrigatória."),
+            Map.entry("Update animal request must not be null", "Requisição obrigatória."),
+            Map.entry("Sell animal request must not be null", "Requisição obrigatória."),
+            Map.entry("Authenticated manager is required", "É necessário estar autenticado como gerente."),
+            Map.entry("Authenticated user is required", "É necessário estar autenticado."),
+            Map.entry("Authenticated user is required to register milk price", "É necessário estar autenticado para registrar o preço do leite."),
+            Map.entry("currentPassword is incorrect", "A senha atual está incorreta."),
+            Map.entry("newPassword must be different from currentPassword", "A nova senha deve ser diferente da senha atual."),
+            Map.entry("farmIds must reference farms owned by the authenticated manager", "Selecione apenas fazendas pertencentes ao gerente autenticado."),
+            Map.entry("User with this email already exists", "Já existe um usuário com este e-mail."),
+            Map.entry("password must not be blank when active is true", "A senha é obrigatória para usuários ativos."),
+            Map.entry("User who owns farms must remain a manager", "Usuários proprietários de fazendas devem permanecer com a função de gerente."),
+            Map.entry("Inactive user who owns farms cannot be updated", "Não é possível atualizar um usuário inativo que possui fazendas."),
+            Map.entry("id must be a valid UUID", "Informe um identificador válido."),
+            Map.entry("userId must be a valid UUID", "Selecione um usuário válido."),
+            Map.entry("Farm not found", "Fazenda não encontrada."),
+            Map.entry("User not found", "Usuário não encontrado."),
+            Map.entry("Animal not found", "Animal não encontrado."),
+            Map.entry("Feed type not found", "Tipo de ração não encontrado."),
+            Map.entry("Production not found", "Produção não encontrada."),
+            Map.entry("Feeding not found", "Alimentação não encontrada."),
+            Map.entry("Date cannot be in the future", "A data não pode estar no futuro."),
+            Map.entry("Animal must be ACTIVE for production operations", "O animal deve estar ativo para registrar produção."),
+            Map.entry("Animal must be ACTIVE for feeding operations", "O animal deve estar ativo para registrar alimentação."),
+            Map.entry("Animal with this tag already exists", "Já existe um animal com esta tag."),
+            Map.entry("Animal entity must not be null", "Animal obrigatório."),
+            Map.entry("Animal status must be ACTIVE, SOLD, DEAD, or INACTIVE", "O status do animal deve ser Ativo, Vendido, Morto ou Inativo."),
+            Map.entry("Use the sell action to mark an animal as SOLD", "Use a ação de venda para marcar o animal como vendido."),
+            Map.entry("Sold animals cannot transition to another status", "Animais vendidos não podem mudar para outro status."),
+            Map.entry("Animal origin must be PURCHASED or BORN", "A origem do animal deve ser Comprado ou Nascido."),
+            Map.entry("Animal acquisitionCost must be greater than zero for purchased animals", "O custo de aquisição deve ser maior que zero para animais comprados."),
+            Map.entry("Animal is already sold", "O animal já foi vendido."),
+            Map.entry("Only active animals can be sold", "Apenas animais ativos podem ser vendidos."),
+            Map.entry("startDate must be before or equal to endDate", "A data inicial deve ser anterior ou igual à data final."),
+            Map.entry("groupBy must be day or month", "O agrupamento deve ser por dia ou mês."),
+            Map.entry("status must be ACTIVE, INACTIVE, SOLD, or DEAD", "O status deve ser Ativo, Inativo, Vendido ou Morto."),
+            Map.entry("currency must be BRL or USD", "A moeda deve ser BRL ou USD."),
+            Map.entry("measurementUnit must be LITER or MILLILITER", "A unidade deve ser LITER ou MILLILITER."),
+            Map.entry("measurementUnit must be KILOGRAM or GRAM", "A unidade deve ser KILOGRAM ou GRAM."),
+            Map.entry("productionUnit must be LITER or MILLILITER", "A unidade de produção deve ser LITER ou MILLILITER."),
+            Map.entry("Invalid email or password", "E-mail ou senha inválidos."),
+            Map.entry("Inactive production cannot be updated", "Não é possível atualizar uma produção inativa."),
+            Map.entry("Inactive feeding cannot be updated", "Não é possível atualizar uma alimentação inativa."),
+            Map.entry("Cannot inactivate user who owns farms", "Não é possível inativar um usuário que possui fazendas."),
+            Map.entry("Cannot delete user who owns farms", "Não é possível excluir um usuário que possui fazendas."),
+            Map.entry("Data integrity violation", "Violação de integridade de dados."),
+            Map.entry("must be greater than 0", "O valor deve ser maior que zero."));
+
+    private ErrorMessageTranslator() {
+    }
+
+    public static String translate(String message) {
+        if (message == null || message.isBlank()) {
+            return VALIDATION_FALLBACK;
+        }
+
+        String trimmedMessage = message.trim();
+        String exactTranslation = EXACT_TRANSLATIONS.get(trimmedMessage);
+        if (exactTranslation != null) {
+            return exactTranslation;
+        }
+
+        String requiredFieldTranslation = translateFieldMessage(trimmedMessage, REQUIRED_FIELD_PATTERN, TranslationKind.REQUIRED);
+        if (requiredFieldTranslation != null) {
+            return requiredFieldTranslation;
+        }
+
+        String emptyFieldTranslation = translateFieldMessage(trimmedMessage, EMPTY_FIELD_PATTERN, TranslationKind.REQUIRED);
+        if (emptyFieldTranslation != null) {
+            return emptyFieldTranslation;
+        }
+
+        String positiveFieldTranslation = translateFieldMessage(trimmedMessage, POSITIVE_FIELD_PATTERN, TranslationKind.POSITIVE);
+        if (positiveFieldTranslation != null) {
+            return positiveFieldTranslation;
+        }
+
+        String scaleFieldTranslation = translateFieldMessage(trimmedMessage, SCALE_FIELD_PATTERN, TranslationKind.SCALE);
+        if (scaleFieldTranslation != null) {
+            return scaleFieldTranslation;
+        }
+
+        return trimmedMessage;
+    }
+
+    private static String translateFieldMessage(String message, Pattern pattern, TranslationKind translationKind) {
+        Matcher matcher = pattern.matcher(message);
+        if (!matcher.matches()) {
+            return null;
+        }
+
+        String fieldName = matcher.group(1);
+        return switch (translationKind) {
+            case REQUIRED -> translateRequiredField(fieldName);
+            case POSITIVE -> translatePositiveField(fieldName);
+            case SCALE -> translateScaleField(fieldName);
+        };
+    }
+
+    private static String translateRequiredField(String fieldName) {
+        return switch (fieldName) {
+            case "name" -> "O nome é obrigatório.";
+            case "email" -> "O e-mail é obrigatório.";
+            case "password" -> "A senha é obrigatória.";
+            case "currentPassword" -> "A senha atual é obrigatória.";
+            case "newPassword" -> "A nova senha é obrigatória.";
+            case "role" -> "A função é obrigatória.";
+            case "status" -> "O status do animal é obrigatório.";
+            case "farmIds" -> "Selecione ao menos uma fazenda.";
+            case "active" -> "Informe se o usuário está ativo.";
+            case "farmId" -> "Selecione uma fazenda.";
+            case "animalId" -> "Selecione um animal.";
+            case "feedTypeId" -> "Selecione um tipo de ração.";
+            case "userId" -> "Selecione um usuário.";
+            case "quantity" -> "A quantidade é obrigatória.";
+            case "price" -> "O preço é obrigatório.";
+            case "effectiveDate" -> "A data de vigência é obrigatória.";
+            case "date" -> "A data é obrigatória.";
+            case "costPerKg" -> "O custo por kg é obrigatório.";
+            case "acquisitionCost" -> "O custo de aquisição é obrigatório.";
+            case "salePrice" -> "O valor da venda é obrigatório.";
+            case "tag" -> "A tag do animal é obrigatória.";
+            case "breed" -> "A raça do animal é obrigatória.";
+            case "birthDate" -> "A data de nascimento do animal é obrigatória.";
+            case "origin" -> "A origem do animal é obrigatória.";
+            case "id" -> "O identificador é obrigatório.";
+            case "request" -> "Requisição obrigatória.";
+            default -> null;
+        };
+    }
+
+    private static String translatePositiveField(String fieldName) {
+        return switch (fieldName) {
+            case "quantity" -> "A quantidade deve ser maior que zero.";
+            case "price" -> "O preço deve ser maior que zero.";
+            case "costPerKg" -> "O custo por kg deve ser maior que zero.";
+            case "acquisitionCost" -> "O custo de aquisição deve ser maior que zero.";
+            case "salePrice" -> "O valor da venda deve ser maior que zero.";
+            default -> null;
+        };
+    }
+
+    private static String translateScaleField(String fieldName) {
+        return switch (fieldName) {
+            case "quantity" -> "A quantidade deve ter no máximo 2 casas decimais.";
+            case "price" -> "O preço deve ter no máximo 2 casas decimais.";
+            case "costPerKg" -> "O custo por kg deve ter no máximo 2 casas decimais.";
+            case "acquisitionCost" -> "O custo de aquisição deve ter no máximo 2 casas decimais.";
+            case "salePrice" -> "O valor da venda deve ter no máximo 2 casas decimais.";
+            default -> null;
+        };
+    }
+
+    private enum TranslationKind {
+        REQUIRED,
+        POSITIVE,
+        SCALE
+    }
+}
+
+exec
+/bin/bash -lc "sed -n '1,220p' backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+package com.jpsoftware.farmapp.shared.exception;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+
+class ErrorMessageTranslatorTest {
+
+    @Test
+    void shouldTranslatePositiveFieldValidationMessages() {
+        assertEquals(
+                "A quantidade deve ser maior que zero.",
+                ErrorMessageTranslator.translate("quantity must be greater than zero"));
+    }
+
+    @Test
+    void shouldTranslateScaleFieldValidationMessages() {
+        assertEquals(
+                "A quantidade deve ter no máximo 2 casas decimais.",
+                ErrorMessageTranslator.translate("quantity must have at most 2 decimal places"));
+    }
+
+    @Test
+    void shouldTranslateEmptyFieldValidationMessages() {
+        assertEquals("O nome é obrigatório.", ErrorMessageTranslator.translate("name must not be empty"));
+    }
+
+    @Test
+    void shouldTranslateSecurityMessages() {
+        assertEquals("Não autorizado.", ErrorMessageTranslator.translate("Unauthorized"));
+        assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Access is denied"));
+        assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Access Denied"));
+        assertEquals("Acesso negado.", ErrorMessageTranslator.translate("Forbidden"));
+        assertEquals(
+                "É necessário estar autenticado para acessar este recurso.",
+                ErrorMessageTranslator.translate("Full authentication is required to access this resource"));
+        assertEquals(
+                "É necessário estar autenticado como gerente.",
+                ErrorMessageTranslator.translate("Authenticated manager is required"));
+        assertEquals(
+                "É necessário estar autenticado.",
+                ErrorMessageTranslator.translate("Authenticated user is required"));
+    }
+
+    @Test
+    void shouldTranslateMapperMessages() {
+        assertEquals("Animal obrigatório.", ErrorMessageTranslator.translate("Animal entity must not be null"));
+    }
+
+    @Test
+    void shouldTranslateAnimalFieldValidationMessagesWithDomainPrefixes() {
+        assertEquals(
+                "A data de nascimento do animal é obrigatória.",
+                ErrorMessageTranslator.translate("Animal birthDate must not be null"));
+        assertEquals(
+                "O status do animal é obrigatório.",
+                ErrorMessageTranslator.translate("Animal status must not be blank"));
+        assertEquals(
+                "O valor da venda deve ser maior que zero.",
+                ErrorMessageTranslator.translate("Animal salePrice must be greater than zero"));
+    }
+
+    @Test
+    void shouldTranslateMeasurementUnitValidationMessages() {
+        assertEquals(
+                "A unidade deve ser LITER ou MILLILITER.",
+                ErrorMessageTranslator.translate("measurementUnit must be LITER or MILLILITER"));
+        assertEquals(
+                "A unidade deve ser KILOGRAM ou GRAM.",
+                ErrorMessageTranslator.translate("measurementUnit must be KILOGRAM or GRAM"));
+        assertEquals(
+                "A unidade de produção deve ser LITER ou MILLILITER.",
+                ErrorMessageTranslator.translate("productionUnit must be LITER or MILLILITER"));
+    }
+
+    @Test
+    void shouldReturnValidationFallbackForBlankMessages() {
+        assertEquals("Falha de validação.", ErrorMessageTranslator.translate("  "));
+    }
+}
+
+codex
+O desvio está entre o contrato da integração e a tradução centralizada. Vou localizar onde cada variante da mensagem é usada para decidir o lado correto.
+exec
+/bin/bash -lc "sed -n '1,220p' backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/LocalizedErrorAttributes.java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+package com.jpsoftware.farmapp.shared.exception;
+
+import java.util.Map;
+import org.springframework.boot.web.error.ErrorAttributeOptions;
+import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.WebRequest;
+
+@Component
+public class LocalizedErrorAttributes extends DefaultErrorAttributes {
+
+    @Override
+    public Map<String, Object> getErrorAttributes(WebRequest webRequest, ErrorAttributeOptions options) {
+        Map<String, Object> attributes = super.getErrorAttributes(webRequest, options);
+        Object error = attributes.get("error");
+        if (error instanceof String errorMessage) {
+            attributes.put("error", ErrorMessageTranslator.translate(errorMessage));
+        }
+        return attributes;
+    }
+}
+
+exec
+/bin/bash -lc "sed -n '1,260p' backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/GlobalExceptionHandler.java" in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+package com.jpsoftware.farmapp.shared.exception;
+
+import jakarta.validation.ConstraintViolationException;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(
+            ResourceNotFoundException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(
+            ValidationException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException exception,
+            HttpServletRequest request) {
+        String errorMessage = exception.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(FieldError::getDefaultMessage)
+                .orElse("Validation failed");
+
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, errorMessage, request.getRequestURI());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(
+            ConstraintViolationException exception,
+            HttpServletRequest request) {
+        String errorMessage = exception.getConstraintViolations()
+                .stream()
+                .findFirst()
+                .map(constraintViolation -> constraintViolation.getMessage())
+                .orElse("Validation failed");
+
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, errorMessage, request.getRequestURI());
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponse> handleHandlerMethodValidationException(
+            HandlerMethodValidationException exception,
+            HttpServletRequest request) {
+        String errorMessage = exception.getAllErrors()
+                .stream()
+                .findFirst()
+                .map(error -> error.getDefaultMessage())
+                .orElse("Validation failed");
+
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, errorMessage, request.getRequestURI());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(
+            MissingServletRequestParameterException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "O parâmetro '" + exception.getParameterName() + "' é obrigatório.",
+                request.getRequestURI());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Malformed request body", request.getRequestURI());
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(
+            BusinessException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflictException(
+            ConflictException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(
+            InvalidCredentialsException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                resolveDataIntegrityMessage(exception),
+                request.getRequestURI());
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFoundException(
+            NoResourceFoundException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "Not Found", request.getRequestURI());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+            IllegalArgumentException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGenericException(
+            Exception exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", request.getRequestURI());
+    }
+
+    private ResponseEntity<ErrorResponse> buildErrorResponse(
+            HttpStatus status,
+            String error,
+            String path) {
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .status(status.value())
+                .error(ErrorMessageTranslator.translate(error))
+                .path(path)
+                .build();
+
+        return ResponseEntity.status(status).body(response);
+    }
+
+    private String resolveDataIntegrityMessage(DataIntegrityViolationException exception) {
+        String message = exception.getMostSpecificCause() != null
+                ? exception.getMostSpecificCause().getMessage()
+                : exception.getMessage();
+
+        if (message != null && message.toLowerCase().contains("tag")) {
+            return "Animal with this tag already exists";
+        }
+        if (message != null && message.toLowerCase().contains("email")) {
+            return "User with this email already exists";
+        }
+
+        return "Data integrity violation";
+    }
+}
+
+exec
+/bin/bash -lc 'rg -n "É necessário autenticação para acessar este recurso|É necessário estar autenticado para acessar este recurso|Full authentication is required to access this resource" backend/farmapp' in /home/juaneugenio/programmig/farm_app
+ succeeded in 0ms:
+backend/farmapp/src/main/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslator.java:30:            Map.entry("Full authentication is required to access this resource", "É necessário estar autenticado para acessar este recurso."),
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java:92:                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java:98:                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java:35:                "É necessário estar autenticado para acessar este recurso.",
+backend/farmapp/src/test/java/com/jpsoftware/farmapp/shared/exception/ErrorMessageTranslatorTest.java:36:                ErrorMessageTranslator.translate("Full authentication is required to access this resource"));
+
+codex
+A implementação e o teste unitário da tradução já concordam na mesma mensagem; o contrato divergente está só nessa integração. Vou alinhar o teste ao contrato centralizado sem tocar na lógica.
+apply patch
+patch: completed
+/home/juaneugenio/programmig/farm_app/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+index 6dda4e83b0a9ed2518ec64310330204c6986f9ee..7c262cf5f8153c41ec40c3493956aff879144540
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+@@ -89,13 +89,13 @@
+         mockMvc.perform(get("/animals"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals"));
+ 
+         mockMvc.perform(get("/animals/export"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals/export"));
+ 
+         mockMvc.perform(get("/animals")
+
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+index 6dda4e83b0a9ed2518ec64310330204c6986f9ee..7c262cf5f8153c41ec40c3493956aff879144540
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+@@ -89,13 +89,13 @@
+         mockMvc.perform(get("/animals"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals"));
+ 
+         mockMvc.perform(get("/animals/export"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals/export"));
+ 
+         mockMvc.perform(get("/animals")
+
+codex
+Editei apenas a expectativa da integração autenticada. Agora vou validar o teste afetado para confirmar que o contrato ficou consistente.
+exec
+/bin/bash -lc 'mvn -Dtest=AuthIntegrationTest test' in /home/juaneugenio/programmig/farm_app/backend/farmapp
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+index 6dda4e83b0a9ed2518ec64310330204c6986f9ee..7c262cf5f8153c41ec40c3493956aff879144540
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+@@ -89,13 +89,13 @@
+         mockMvc.perform(get("/animals"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals"));
+ 
+         mockMvc.perform(get("/animals/export"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals/export"));
+ 
+         mockMvc.perform(get("/animals")
+
+codex
+O teste está em execução. Estou aguardando o resultado do escopo mínimo para fechar a correção com evidência.
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+index 6dda4e83b0a9ed2518ec64310330204c6986f9ee..7c262cf5f8153c41ec40c3493956aff879144540
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+@@ -89,13 +89,13 @@
+         mockMvc.perform(get("/animals"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals"));
+ 
+         mockMvc.perform(get("/animals/export"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals/export"));
+ 
+         mockMvc.perform(get("/animals")
+
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+index 6dda4e83b0a9ed2518ec64310330204c6986f9ee..7c262cf5f8153c41ec40c3493956aff879144540
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+@@ -89,13 +89,13 @@
+         mockMvc.perform(get("/animals"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals"));
+ 
+         mockMvc.perform(get("/animals/export"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals/export"));
+ 
+         mockMvc.perform(get("/animals")
+
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+index 6dda4e83b0a9ed2518ec64310330204c6986f9ee..7c262cf5f8153c41ec40c3493956aff879144540
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+@@ -89,13 +89,13 @@
+         mockMvc.perform(get("/animals"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals"));
+ 
+         mockMvc.perform(get("/animals/export"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals/export"));
+ 
+         mockMvc.perform(get("/animals")
+
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+index 6dda4e83b0a9ed2518ec64310330204c6986f9ee..7c262cf5f8153c41ec40c3493956aff879144540
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+@@ -89,13 +89,13 @@
+         mockMvc.perform(get("/animals"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals"));
+ 
+         mockMvc.perform(get("/animals/export"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals/export"));
+ 
+         mockMvc.perform(get("/animals")
+
+ succeeded in 29071ms:
+[[1;34mINFO[m] Scanning for projects...
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m-----------------------< [0;36mcom.jpsoftware:farmapp[0;1m >-----------------------[m
+[[1;34mINFO[m] [1mBuilding farmapp 0.0.1-SNAPSHOT[m
+[[1;34mINFO[m] [1m--------------------------------[ jar ]---------------------------------[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mjacoco-maven-plugin:0.8.11:prepare-agent[m [1m(default)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] argLine set to -javaagent:/home/juaneugenio/.m2/repository/org/jacoco/org.jacoco.agent/0.8.11/org.jacoco.agent-0.8.11-runtime.jar=destfile=/home/juaneugenio/programmig/farm_app/backend/farmapp/target/jacoco.exec
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:resources[m [1m(default-resources)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Copying 2 resources from src/main/resources to target/classes
+[[1;34mINFO[m] Copying 0 resource from src/main/resources to target/classes
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.13.0:compile[m [1m(default-compile)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Nothing to compile - all classes are up to date.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:testResources[m [1m(default-testResources)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Copying 2 resources from src/test/resources to target/test-classes
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.13.0:testCompile[m [1m(default-testCompile)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Recompiling the module because of [1mchanged source code[m.
+[[1;34mINFO[m] Compiling 34 source files with javac [debug parameters release 21] to target/test-classes
+[[1;34mINFO[m] Annotation processing is enabled because one or more processors were found
+  on the class path. A future release of javac may disable annotation processing
+  unless at least one processor is specified by name (-processor), or a search
+  path is specified (--processor-path, --processor-module-path), or annotation
+  processing is enabled explicitly (-proc:only, -proc:full).
+  Use -Xlint:-options to suppress this message.
+  Use -proc:none to disable annotation processing.
+[[1;34mINFO[m] /home/juaneugenio/programmig/farm_app/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/animal/AnimalServiceTest.java: /home/juaneugenio/programmig/farm_app/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/animal/AnimalServiceTest.java uses unchecked or unsafe operations.
+[[1;34mINFO[m] /home/juaneugenio/programmig/farm_app/backend/farmapp/src/test/java/com/jpsoftware/farmapp/unit/animal/AnimalServiceTest.java: Recompile with -Xlint:unchecked for details.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-surefire-plugin:3.5.2:test[m [1m(default-test)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[[1;34mINFO[m] 
+[[1;34mINFO[m] -------------------------------------------------------
+[[1;34mINFO[m]  T E S T S
+[[1;34mINFO[m] -------------------------------------------------------
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+23:16:24.029 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest]: AuthIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+23:16:24.278 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.4)
+
+2026-04-27T23:16:24.957-03:00  INFO 60 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Starting AuthIntegrationTest using Java 21.0.7 with PID 60 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
+2026-04-27T23:16:24.960-03:00  INFO 60 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : No active profile set, falling back to 1 default profile: "default"
+2026-04-27T23:16:26.176-03:00  INFO 60 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-27T23:16:26.283-03:00  INFO 60 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 94 ms. Found 8 JPA repository interfaces.
+2026-04-27T23:16:26.993-03:00  INFO 60 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-27T23:16:27.075-03:00  INFO 60 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.11.Final
+2026-04-27T23:16:27.120-03:00  INFO 60 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-27T23:16:27.486-03:00  INFO 60 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-27T23:16:27.531-03:00  INFO 60 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-27T23:16:27.905-03:00  INFO 60 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:farmdb user=SA
+2026-04-27T23:16:27.909-03:00  INFO 60 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-27T23:16:27.950-03:00  WARN 60 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-04-27T23:16:27.984-03:00  INFO 60 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 2.3.232
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-27T23:16:29.366-03:00  INFO 60 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: create table animals (id varchar(255) not null, acquisition_cost float(53), birth_date date not null, breed varchar(255) not null, farm_id varchar(255) not null, origin varchar(255) not null, sale_date date, sale_price float(53), status varchar(255) not null, tag varchar(255) not null, primary key (id))
+Hibernate: create table farms (id varchar(255) not null, name varchar(255) not null, owner_id uuid not null, primary key (id))
+Hibernate: create table feed_types (id varchar(255) not null, active boolean not null, cost_per_kg float(53) not null, farm_id varchar(255), name varchar(255) not null, primary key (id))
+Hibernate: create table feedings (id varchar(255) not null, animal_id varchar(255) not null, created_by varchar(255) not null, date date not null, farm_id varchar(255), feed_type_id varchar(255) not null, quantity float(53) not null, status varchar(255) not null, primary key (id))
+Hibernate: create table milk_prices (id varchar(255) not null, created_at timestamp(6) not null, created_by varchar(255) not null, effective_date date not null, farm_id varchar(255) not null, price float(53) not null, primary key (id))
+Hibernate: create table productions (id varchar(255) not null, animal_id varchar(255) not null, created_by varchar(255) not null, date date not null, farm_id varchar(255), quantity float(53) not null, status varchar(255) not null, primary key (id))
+Hibernate: create table user_farm_assignments (id uuid not null, farm_id varchar(255) not null, user_id uuid not null, primary key (id))
+Hibernate: create table users (id uuid not null, active boolean not null, avatar_url TEXT, email varchar(255) not null, name varchar(255) not null, password varchar(255) not null, role varchar(255) not null, primary key (id))
+Hibernate: alter table if exists animals drop constraint if exists UKgd2jjlu5ce2g9v7dg0k240lg1
+Hibernate: alter table if exists animals add constraint UKgd2jjlu5ce2g9v7dg0k240lg1 unique (tag)
+Hibernate: alter table if exists user_farm_assignments drop constraint if exists UK9k021clhmghjjepfpvejsguce
+Hibernate: alter table if exists user_farm_assignments add constraint UK9k021clhmghjjepfpvejsguce unique (user_id, farm_id)
+Hibernate: alter table if exists users drop constraint if exists UK6dotkott2kjsp8vw4d0m25fb7
+Hibernate: alter table if exists users add constraint UK6dotkott2kjsp8vw4d0m25fb7 unique (email)
+2026-04-27T23:16:29.491-03:00  INFO 60 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-27T23:16:29.786-03:00  INFO 60 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-27T23:16:31.349-03:00  WARN 60 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-27T23:16:32.256-03:00  INFO 60 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-04-27T23:16:32.256-03:00  INFO 60 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-04-27T23:16:32.258-03:00  INFO 60 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-04-27T23:16:32.292-03:00  INFO 60 --- [           main] c.j.f.i.auth.AuthIntegrationTest         : Started AuthIntegrationTest in 7.775 seconds (process running for 9.501)
+Hibernate: select count(*) from users ue1_0
+2026-04-27T23:16:32.500-03:00  INFO 60 --- [           main] c.j.f.s.config.DefaultAdminInitializer   : Default admin user created
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 order by ae1_0.tag
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 order by ae1_0.tag
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 21.50 s -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] Results:
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1;32mTests run: 7, Failures: 0, Errors: 0, Skipped: 0[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mjacoco-maven-plugin:0.8.11:report[m [1m(report)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Loading execution data file /home/juaneugenio/programmig/farm_app/backend/farmapp/target/jacoco.exec
+[[1;34mINFO[m] Analyzed bundle 'farmapp' with 91 classes
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] [1;32mBUILD SUCCESS[m
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] Total time:  27.627 s
+[[1;34mINFO[m] Finished at: 2026-04-27T23:16:46-03:00
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+
+codex
+{"summary":"Aligned the failing auth integration test with the centralized localized unauthorized-message contract.","root_cause":"The failure was caused by an outdated test expectation in AuthIntegrationTest. The application and translation layer already use the centralized message \"É necessário estar autenticado para acessar este recurso.\", but the integration test still expected the older wording.","changed_files":["backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java"],"changes":[{"file":"backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java","description":"Updated the unauthorized error message assertions for protected endpoints to match the current centralized translation contract.","code":".andExpect(jsonPath(\"$.error\").value(\"É necessário estar autenticado para acessar este recurso.\"))"}]}
+diff --git a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+index 6dda4e83b0a9ed2518ec64310330204c6986f9ee..7c262cf5f8153c41ec40c3493956aff879144540
+--- a/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
++++ b/backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java
+@@ -89,13 +89,13 @@
+         mockMvc.perform(get("/animals"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals"));
+ 
+         mockMvc.perform(get("/animals/export"))
+                 .andExpect(status().isUnauthorized())
+                 .andExpect(jsonPath("$.status").value(401))
+-                .andExpect(jsonPath("$.error").value("É necessário autenticação para acessar este recurso."))
++                .andExpect(jsonPath("$.error").value("É necessário estar autenticado para acessar este recurso."))
+                 .andExpect(jsonPath("$.path").value("/animals/export"));
+ 
+         mockMvc.perform(get("/animals")
+
+tokens used
+54,631
+{"summary":"Aligned the failing auth integration test with the centralized localized unauthorized-message contract.","root_cause":"The failure was caused by an outdated test expectation in AuthIntegrationTest. The application and translation layer already use the centralized message \"É necessário estar autenticado para acessar este recurso.\", but the integration test still expected the older wording.","changed_files":["backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java"],"changes":[{"file":"backend/farmapp/src/test/java/com/jpsoftware/farmapp/integration/auth/AuthIntegrationTest.java","description":"Updated the unauthorized error message assertions for protected endpoints to match the current centralized translation contract.","code":".andExpect(jsonPath(\"$.error\").value(\"É necessário estar autenticado para acessar este recurso.\"))"}]}

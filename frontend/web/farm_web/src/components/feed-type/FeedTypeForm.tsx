@@ -1,7 +1,16 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useCurrency } from '../../hooks/useCurrency'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { FeedTypeFormData } from '../../types/feedType'
 import { hasAtMostTwoDecimals, parseTwoDecimalInput } from '../../utils/decimal'
+import { appendCurrencyCode } from '../../utils/currency'
+import {
+  convertFeedCostFromBase,
+  convertFeedCostToBase,
+  getFeedCostInputStep,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 
 interface FeedTypeFormProps {
   initialValues: FeedTypeFormData
@@ -21,22 +30,37 @@ function FeedTypeForm({
   errorMessage,
 }: FeedTypeFormProps) {
   const { t } = useTranslation()
-  const [formData, setFormData] = useState<FeedTypeFormData>(initialValues)
+  const { currency } = useCurrency()
+  const { feedingUnit } = useMeasurementUnits()
+  const [formData, setFormData] = useState<FeedTypeFormData>(() => initialValues)
   const [validationMessage, setValidationMessage] = useState('')
-
-  useEffect(() => {
-    setFormData(initialValues)
-    setValidationMessage('')
-  }, [initialValues])
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const { name, value } = event.target
     setValidationMessage('')
 
-    setFormData((currentData) => ({
-      ...currentData,
-      [name]: name === 'costPerKg' ? parseTwoDecimalInput(value, currentData.costPerKg) : value,
-    }))
+    setFormData((currentData) => {
+      if (name !== 'costPerKg') {
+        return {
+          ...currentData,
+          [name]: value,
+        }
+      }
+
+      const currentDisplayCost = convertFeedCostFromBase(currentData.costPerKg, feedingUnit)
+      const nextDisplayCost = feedingUnit === 'GRAM'
+        ? value === ''
+          ? 0
+          : Number.isFinite(Number(value))
+            ? Number(value)
+            : currentDisplayCost
+        : parseTwoDecimalInput(value, currentDisplayCost)
+
+      return {
+        ...currentData,
+        costPerKg: convertFeedCostToBase(nextDisplayCost, feedingUnit),
+      }
+    })
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -48,12 +72,20 @@ function FeedTypeForm({
     }
 
     if (!hasAtMostTwoDecimals(formData.costPerKg)) {
-      setValidationMessage(t('feedType.errors.costPrecision'))
+      setValidationMessage(
+        feedingUnit === 'GRAM'
+          ? t('measurementUnits.errors.feedCostStep')
+          : t('feedType.errors.costPrecision'),
+      )
       return
     }
 
     await onSubmit(formData)
   }
+
+  const unitLabel = t(getMeasurementUnitShortLabelKey(feedingUnit))
+  const costLabel = `${appendCurrencyCode(t('feedType.form.costPerKg'), currency)} / ${unitLabel}`
+  const displayCost = convertFeedCostFromBase(formData.costPerKg, feedingUnit)
 
   return (
     <form className="animal-form" onSubmit={handleSubmit}>
@@ -65,21 +97,21 @@ function FeedTypeForm({
             type="text"
             value={formData.name}
             onChange={handleChange}
-            placeholder="Corn silage"
+            placeholder={t('feedType.form.placeholders.name')}
             required
           />
         </label>
 
         <label className="animal-form__field">
-          <span>{t('feedType.form.costPerKg')}</span>
+          <span>{costLabel}</span>
           <input
             name="costPerKg"
             type="number"
             min="0"
-            step="0.01"
-            value={formData.costPerKg}
+            step={getFeedCostInputStep(feedingUnit)}
+            value={displayCost}
             onChange={handleChange}
-            placeholder="0"
+            placeholder={t('common.placeholders.numericValue')}
             required
           />
         </label>

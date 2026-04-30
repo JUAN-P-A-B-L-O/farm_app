@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 
 class AnimalServiceTest {
 
@@ -124,7 +125,7 @@ class AnimalServiceTest {
                 .origin(AnimalEntity.ORIGIN_BORN)
                 .farmId("farm-1")
                 .build();
-        when(animalRepository.findByFarmId(eq("farm-1"), any(org.springframework.data.domain.Pageable.class)))
+        when(animalRepository.findAll(any(Specification.class), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(animalEntity), PageRequest.of(0, 10), 1));
 
         PaginatedResponse<AnimalResponse> response = animalService.findAllPaginated("farm-1", 0, 10);

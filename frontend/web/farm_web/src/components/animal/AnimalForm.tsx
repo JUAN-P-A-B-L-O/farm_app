@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { ANIMAL_STATUSES, getAnimalOriginLabel, getAnimalStatusLabel } from '../../i18n/domainLabels'
 import { useTranslation } from '../../hooks/useTranslation'
 import type { AnimalFormData } from '../../types/animal'
 
@@ -26,8 +27,8 @@ function AnimalForm({
   const { t } = useTranslation()
   const [formData, setFormData] = useState<AnimalFormData>(initialValues)
   const availableStatuses = formData.status === 'SOLD'
-    ? ['ACTIVE', 'SOLD', 'DEAD', 'INACTIVE'] as const
-    : ['ACTIVE', 'DEAD', 'INACTIVE'] as const
+    ? ANIMAL_STATUSES
+    : ANIMAL_STATUSES.filter((status) => status !== 'SOLD')
 
   useEffect(() => {
     setFormData(initialValues)
@@ -59,7 +60,7 @@ function AnimalForm({
             type="text"
             value={formData.tag}
             onChange={handleChange}
-            placeholder="A-102"
+            placeholder={t('animals.form.placeholders.tag')}
             required
           />
         </label>
@@ -71,7 +72,7 @@ function AnimalForm({
             type="text"
             value={formData.breed}
             onChange={handleChange}
-            placeholder="Holstein"
+            placeholder={t('animals.form.placeholders.breed')}
             required
           />
         </label>
@@ -90,8 +91,8 @@ function AnimalForm({
         <label className="animal-form__field">
           <span>{t('animals.form.origin')}</span>
           <select name="origin" value={formData.origin} onChange={handleChange} required>
-            <option value="BORN">{t('animals.origins.BORN')}</option>
-            <option value="PURCHASED">{t('animals.origins.PURCHASED')}</option>
+            <option value="BORN">{getAnimalOriginLabel(t, 'BORN')}</option>
+            <option value="PURCHASED">{getAnimalOriginLabel(t, 'PURCHASED')}</option>
           </select>
         </label>
 
@@ -115,7 +116,7 @@ function AnimalForm({
             <span>{t('animals.form.status')}</span>
             <select name="status" value={formData.status ?? 'ACTIVE'} onChange={handleChange}>
               {availableStatuses.map((status) => (
-                <option key={status} value={status}>{t(`animals.statuses.${status}`)}</option>
+                <option key={status} value={status}>{getAnimalStatusLabel(t, status)}</option>
               ))}
             </select>
           </label>
@@ -134,7 +135,7 @@ function AnimalForm({
               type="text"
               value={formData.farmId}
               onChange={handleChange}
-              placeholder="farm-001"
+              placeholder={t('animals.form.placeholders.farmId')}
               required
             />
           </label>

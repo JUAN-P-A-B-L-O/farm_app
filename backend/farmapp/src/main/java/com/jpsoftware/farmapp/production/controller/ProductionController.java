@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.production.controller;
 
 import com.jpsoftware.farmapp.production.dto.CreateProductionRequest;
+import com.jpsoftware.farmapp.production.dto.CreateBatchProductionRequest;
 import com.jpsoftware.farmapp.production.dto.ProductionProfitResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionResponse;
 import com.jpsoftware.farmapp.production.dto.ProductionSummaryResponse;
@@ -21,6 +22,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -71,8 +73,13 @@ public class ProductionController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String animalId,
             @RequestParam(required = false) LocalDate date,
-            @RequestParam(required = false) String farmId) {
-        return CsvResponseFactory.buildDownload("productions.csv", productionService.exportAll(search, animalId, date, farmId));
+            @RequestParam(required = false) String farmId,
+            @RequestParam(required = false) String measurementUnit) {
+        return CsvResponseFactory.buildDownload(
+                "productions.csv",
+                StringUtils.hasText(measurementUnit)
+                        ? productionService.exportAll(search, animalId, date, farmId, measurementUnit)
+                        : productionService.exportAll(search, animalId, date, farmId));
     }
 
     @GetMapping("/{id}")
@@ -137,6 +144,22 @@ public class ProductionController {
             @Valid @RequestBody CreateProductionRequest request,
             @RequestParam(required = false) String farmId) {
         ProductionResponse response = productionService.create(request, farmId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/batch")
+    @Operation(summary = "Create production batch", description = "Creates production records for all animals in a batch.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Production batch created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Related resource not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<List<ProductionResponse>> createBatch(
+            @Valid @RequestBody CreateBatchProductionRequest request,
+            @RequestParam String farmId) {
+        List<ProductionResponse> response = productionService.createBatch(request, farmId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

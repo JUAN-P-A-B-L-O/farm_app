@@ -1,9 +1,18 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getAllUsers } from '../../services/userService'
 import { hasAtMostTwoDecimals, parseTwoDecimalInput } from '../../utils/decimal'
+import {
+  appendUnitToLabel,
+  convertMeasurementFromBase,
+  convertMeasurementToBase,
+  getMeasurementInputStep,
+  getMeasurementUnitShortLabelKey,
+} from '../../utils/measurementUnits'
 import type {
   FeedingAnimalOption,
+  FeedingBatchOption,
   FeedingFeedTypeOption,
   FeedingFormData,
 } from '../../types/feeding'
@@ -12,6 +21,7 @@ import type { User } from '../../types/user'
 interface FeedingFormProps {
   initialValues: FeedingFormData
   animals: FeedingAnimalOption[]
+  batches: FeedingBatchOption[]
   feedTypes: FeedingFeedTypeOption[]
   onSubmit: (data: FeedingFormData) => Promise<void>
   onCancel?: () => void
@@ -25,6 +35,7 @@ interface FeedingFormProps {
 function FeedingForm({
   initialValues,
   animals,
+  batches,
   feedTypes,
   onSubmit,
   onCancel,
@@ -35,6 +46,7 @@ function FeedingForm({
   allowDateSelection = true,
 }: FeedingFormProps) {
   const { t, language } = useTranslation()
+  const { feedingUnit } = useMeasurementUnits()
   const [formData, setFormData] = useState<FeedingFormData>(initialValues)
   const [users, setUsers] = useState<User[]>([])
   const [isUsersLoading, setIsUsersLoading] = useState(true)
@@ -75,18 +87,36 @@ function FeedingForm({
 
     setValidationMessage('')
 
-    setFormData((currentData) => ({
-      ...currentData,
-      [name]: name === 'quantity' ? parseTwoDecimalInput(value, currentData.quantity) : value,
-    }))
+    setFormData((currentData) => {
+      if (name !== 'quantity') {
+        return {
+          ...currentData,
+          [name]: value,
+        }
+      }
+
+      const currentDisplayQuantity = convertMeasurementFromBase(currentData.quantity, feedingUnit)
+      const nextDisplayQuantity = parseTwoDecimalInput(value, currentDisplayQuantity)
+
+      return {
+        ...currentData,
+        quantity: convertMeasurementToBase(nextDisplayQuantity, feedingUnit),
+      }
+    })
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const submissionDate = allowDateSelection ? formData.date : ''
+    const isBatchMode = formData.operationMode === 'BATCH'
 
-    if (!formData.animalId) {
+    if (!isBatchMode && !formData.animalId) {
       setValidationMessage(t('feeding.errors.selectAnimal'))
+      return
+    }
+
+    if (isBatchMode && !formData.batchId) {
+      setValidationMessage(t('feeding.errors.selectBatch'))
       return
     }
 
@@ -95,8 +125,17 @@ function FeedingForm({
       return
     }
 
+    if (!Number.isFinite(formData.quantity) || formData.quantity <= 0) {
+      setValidationMessage(t('feeding.errors.quantity'))
+      return
+    }
+
     if (!hasAtMostTwoDecimals(formData.quantity)) {
-      setValidationMessage(t('feeding.errors.quantityPrecision'))
+      setValidationMessage(
+        feedingUnit === 'GRAM'
+          ? t('measurementUnits.errors.feedingStep')
+          : t('feeding.errors.quantityPrecision'),
+      )
       return
     }
 
@@ -111,36 +150,76 @@ function FeedingForm({
     })
   }
 
+  const isBatchMode = formData.operationMode === 'BATCH'
   const isFormDisabled =
     isSubmitting ||
-    animals.length === 0 ||
+    (isBatchMode ? batches.length === 0 : animals.length === 0) ||
     feedTypes.length === 0 ||
     (requireUserSelection &&
       (isUsersLoading || users.length === 0 || usersErrorMessage.length > 0))
 
   const feedbackMessage =
     validationMessage || (requireUserSelection ? usersErrorMessage : '') || errorMessage
+  const quantityUnitLabel = t(getMeasurementUnitShortLabelKey(feedingUnit))
+  const displayQuantity = convertMeasurementFromBase(formData.quantity, feedingUnit)
 
   return (
     <form className="animal-form" onSubmit={handleSubmit}>
       <div className="animal-form__grid">
-        <label className="animal-form__field">
-          <span>{t('feeding.form.animal')}</span>
-          <select
-            name="animalId"
-            value={formData.animalId}
-            onChange={handleChange}
-            required
-            disabled={isFormDisabled}
-          >
-            <option value="">{t('feeding.form.selectAnimal')}</option>
-            {animals.map((animal) => (
-              <option key={animal.id} value={animal.id}>
-                {animal.tag}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!onCancel && (
+          <label className="animal-form__field">
+            <span>{t('feeding.form.operationMode')}</span>
+            <select
+              name="operationMode"
+              value={formData.operationMode}
+              onChange={handleChange}
+              disabled={isSubmitting}
+            >
+              <option value="INDIVIDUAL">{t('feeding.form.operationOptions.individual')}</option>
+              <option value="BATCH">{t('feeding.form.operationOptions.batch')}</option>
+            </select>
+          </label>
+        )}
+
+        {!isBatchMode && (
+          <label className="animal-form__field">
+            <span>{t('feeding.form.animal')}</span>
+            <select
+              name="animalId"
+              value={formData.animalId}
+              onChange={handleChange}
+              required
+              disabled={isFormDisabled}
+            >
+              <option value="">{t('feeding.form.selectAnimal')}</option>
+              {animals.map((animal) => (
+                <option key={animal.id} value={animal.id}>
+                  {animal.tag}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {isBatchMode && (
+          <label className="animal-form__field">
+            <span>{t('feeding.form.batch')}</span>
+            <select
+              name="batchId"
+              value={formData.batchId}
+              onChange={handleChange}
+              required
+              disabled={isFormDisabled}
+            >
+              <option value="">{t('feeding.form.selectBatch')}</option>
+              {batches.map((batch) => (
+                <option key={batch.id} value={batch.id}>
+                  {`${batch.name} (${batch.animals.length})`}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className="animal-form__field">
           <span>{t('feeding.form.feedType')}</span>
@@ -196,15 +275,15 @@ function FeedingForm({
         )}
 
         <label className="animal-form__field">
-          <span>{t('feeding.form.quantity')}</span>
+          <span>{appendUnitToLabel(t('feeding.form.quantity'), quantityUnitLabel)}</span>
           <input
             name="quantity"
             type="number"
             min="0"
-            step="0.01"
-            value={formData.quantity}
+            step={getMeasurementInputStep(feedingUnit)}
+            value={displayQuantity}
             onChange={handleChange}
-            placeholder="0"
+            placeholder={t('common.placeholders.numericValue')}
             required
           />
         </label>

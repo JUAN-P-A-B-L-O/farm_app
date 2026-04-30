@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.feeding.service;
 
+import com.jpsoftware.farmapp.animalbatch.service.AnimalBatchService;
 import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
 import com.jpsoftware.farmapp.animal.dto.AnimalSummaryResponse;
 import com.jpsoftware.farmapp.animal.entity.AnimalEntity;
@@ -8,6 +9,7 @@ import com.jpsoftware.farmapp.feed.dto.FeedTypeSummaryResponse;
 import com.jpsoftware.farmapp.feed.entity.FeedTypeEntity;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
+import com.jpsoftware.farmapp.feeding.dto.CreateBatchFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.CreateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.dto.FeedingResponse;
 import com.jpsoftware.farmapp.feeding.dto.UpdateFeedingRequest;
@@ -16,6 +18,8 @@ import com.jpsoftware.farmapp.feeding.mapper.FeedingMapper;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
@@ -48,6 +52,7 @@ public class FeedingService {
     private final FeedingMapper feedingMapper;
     private final AuthenticationContextService authenticationContextService;
     private final FarmAccessService farmAccessService;
+    private final AnimalBatchService animalBatchService;
 
     @Autowired
     public FeedingService(
@@ -57,7 +62,8 @@ public class FeedingService {
             UserRepository userRepository,
             FeedingMapper feedingMapper,
             AuthenticationContextService authenticationContextService,
-            FarmAccessService farmAccessService) {
+            FarmAccessService farmAccessService,
+            AnimalBatchService animalBatchService) {
         this.feedingRepository = feedingRepository;
         this.animalRepository = animalRepository;
         this.feedTypeRepository = feedTypeRepository;
@@ -65,6 +71,7 @@ public class FeedingService {
         this.feedingMapper = feedingMapper;
         this.authenticationContextService = authenticationContextService;
         this.farmAccessService = farmAccessService;
+        this.animalBatchService = animalBatchService;
     }
 
     public FeedingService(
@@ -81,6 +88,7 @@ public class FeedingService {
                 userRepository,
                 feedingMapper,
                 authenticationContextService,
+                null,
                 null);
     }
 
@@ -91,21 +99,40 @@ public class FeedingService {
         validateInput(request, createdBy, effectiveDate);
         String resolvedFarmId = resolveFarmId(request, farmId);
         validateRelations(request, createdBy, resolvedFarmId);
-
-        FeedingEntity feedingEntity = feedingMapper.toEntity(request);
-        feedingEntity.setDate(effectiveDate);
-        feedingEntity.setQuantity(DecimalScaleUtils.normalize(feedingEntity.getQuantity()));
-        feedingEntity.setCreatedBy(createdBy);
-        feedingEntity.setFarmId(resolvedFarmId);
-        feedingEntity.setStatus(FeedingEntity.STATUS_ACTIVE);
-        FeedingEntity savedFeeding = feedingRepository.save(feedingEntity);
-
-        return toEnrichedResponse(savedFeeding);
+        return toEnrichedResponse(saveFeeding(
+                request.getAnimalId(),
+                request.getFeedTypeId(),
+                effectiveDate,
+                request.getQuantity(),
+                createdBy,
+                resolvedFarmId));
     }
 
     @Transactional
     public FeedingResponse create(CreateFeedingRequest request) {
         return create(request, null);
+    }
+
+    @Transactional
+    public List<FeedingResponse> createBatch(CreateBatchFeedingRequest request, String farmId) {
+        String createdBy = authenticationContextService.resolveUserId(request != null ? request.getUserId() : null);
+        LocalDate effectiveDate = resolveCreationDate(request);
+        validateBatchInput(request, createdBy, effectiveDate);
+        List<AnimalEntity> animals = getBatchAnimals(request.getBatchId(), farmId);
+        String resolvedFarmId = animals.get(0).getFarmId();
+        validateFeedTypeExists(request.getFeedTypeId(), resolvedFarmId);
+        validateUserExists(createdBy);
+
+        return animals.stream()
+                .map(animal -> saveFeeding(
+                        animal.getId(),
+                        request.getFeedTypeId(),
+                        effectiveDate,
+                        request.getQuantity(),
+                        createdBy,
+                        resolvedFarmId))
+                .map(this::toEnrichedResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -115,6 +142,18 @@ public class FeedingService {
 
     @Transactional(readOnly = true)
     public String exportAll(String search, String animalId, String feedTypeId, LocalDate date, String farmId) {
+        return exportAll(search, animalId, feedTypeId, date, farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportAll(
+            String search,
+            String animalId,
+            String feedTypeId,
+            LocalDate date,
+            String farmId,
+            String measurementUnitParam) {
+        MeasurementUnit measurementUnit = MeasurementUnit.fromFeedingParam(measurementUnitParam, "measurementUnit");
         return CsvExportUtils.write(findAll(search, animalId, feedTypeId, date, farmId), List.of(
                 new CsvColumn<>("id", FeedingResponse::getId),
                 new CsvColumn<>("animalId", FeedingResponse::getAnimalId),
@@ -122,7 +161,10 @@ public class FeedingService {
                 new CsvColumn<>("feedTypeId", FeedingResponse::getFeedTypeId),
                 new CsvColumn<>("feedTypeName", feeding -> feeding.getFeedType() != null ? feeding.getFeedType().getName() : null),
                 new CsvColumn<>("date", FeedingResponse::getDate),
-                new CsvColumn<>("quantity", FeedingResponse::getQuantity)));
+                new CsvColumn<>("quantity", feeding -> MeasurementUnitConverter.convertFromBase(
+                        feeding.getQuantity(),
+                        measurementUnit)),
+                new CsvColumn<>("quantityUnit", row -> measurementUnit.getSymbol())));
     }
 
     @Transactional(readOnly = true)
@@ -313,9 +355,35 @@ public class FeedingService {
         }
     }
 
+    private void validateBatchInput(CreateBatchFeedingRequest request, String createdBy, LocalDate effectiveDate) {
+        if (request == null) {
+            throw new ValidationException("request must not be null");
+        }
+        if (!StringUtils.hasText(request.getBatchId())) {
+            throw new ValidationException("batchId must not be blank");
+        }
+        if (!StringUtils.hasText(request.getFeedTypeId())) {
+            throw new ValidationException("feedTypeId must not be blank");
+        }
+        if (effectiveDate == null) {
+            throw new ValidationException("date must not be null");
+        }
+        if (request.getQuantity() == null || request.getQuantity() <= 0) {
+            throw new ValidationException("quantity must be greater than zero");
+        }
+        DecimalScaleUtils.requireMaxScale(request.getQuantity(), "quantity");
+        if (!StringUtils.hasText(createdBy)) {
+            throw new ValidationException("userId must not be blank");
+        }
+    }
+
     private void validateRelations(CreateFeedingRequest request, String createdBy, String farmId) {
         validateAnimalExists(request.getAnimalId(), farmId);
         validateFeedTypeExists(request.getFeedTypeId(), farmId);
+        validateUserExists(createdBy);
+    }
+
+    private void validateUserExists(String createdBy) {
         if (!userRepository.existsById(parseUserId(createdBy))) {
             throw new ResourceNotFoundException("User not found");
         }
@@ -428,6 +496,24 @@ public class FeedingService {
         }
     }
 
+    private FeedingEntity saveFeeding(
+            String animalId,
+            String feedTypeId,
+            LocalDate effectiveDate,
+            Double quantity,
+            String createdBy,
+            String farmId) {
+        FeedingEntity feedingEntity = new FeedingEntity();
+        feedingEntity.setAnimalId(animalId);
+        feedingEntity.setFeedTypeId(feedTypeId);
+        feedingEntity.setDate(effectiveDate);
+        feedingEntity.setQuantity(DecimalScaleUtils.normalize(quantity));
+        feedingEntity.setCreatedBy(createdBy);
+        feedingEntity.setFarmId(farmId);
+        feedingEntity.setStatus(FeedingEntity.STATUS_ACTIVE);
+        return feedingRepository.save(feedingEntity);
+    }
+
     private String resolveFarmId(CreateFeedingRequest request, String farmId) {
         if (StringUtils.hasText(farmId)) {
             return farmAccessService != null ? farmAccessService.validateAccessibleFarm(farmId) : farmId;
@@ -470,6 +556,21 @@ public class FeedingService {
         }
 
         return request != null ? request.getDate() : null;
+    }
+
+    private LocalDate resolveCreationDate(CreateBatchFeedingRequest request) {
+        if (authenticationContextService.hasRole(WORKER_ROLE)) {
+            return LocalDate.now();
+        }
+
+        return request != null ? request.getDate() : null;
+    }
+
+    private List<AnimalEntity> getBatchAnimals(String batchId, String farmId) {
+        if (animalBatchService == null) {
+            throw new ResourceNotFoundException("Batch not found");
+        }
+        return animalBatchService.getActiveAnimals(batchId, farmId);
     }
 
     private void validateAccessibleFarmIfPresent(String farmId) {

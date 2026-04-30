@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.jpsoftware.farmapp.feed.controller.FeedTypeController;
 import com.jpsoftware.farmapp.feed.dto.CreateFeedTypeRequest;
@@ -105,6 +107,25 @@ class FeedTypeControllerContractTest {
                 .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
                 .andExpect(header().string("Content-Disposition", Matchers.containsString("feed-types.csv")))
                 .andExpect(content().string("id,name\nfeed-type-1,Corn Silage\n"));
+
+        assertEquals("farm-1", feedTypeService.lastExportFarmId);
+        assertNull(feedTypeService.lastExportMeasurementUnit);
+    }
+
+    @Test
+    void shouldExportFeedTypesWithMeasurementUnit() throws Exception {
+        feedTypeService.exportResponseWithMeasurementUnit = "id,name,costPerUnit,costUnit\nfeed-type-1,Corn Silage,0.00175,g\n";
+
+        mockMvc.perform(get("/feed-types/export")
+                        .queryParam("farmId", "farm-1")
+                        .queryParam("measurementUnit", "GRAM"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("feed-types.csv")))
+                .andExpect(content().string("id,name,costPerUnit,costUnit\nfeed-type-1,Corn Silage,0.00175,g\n"));
+
+        assertEquals("farm-1", feedTypeService.lastExportFarmId);
+        assertEquals("GRAM", feedTypeService.lastExportMeasurementUnit);
     }
 
     @Test
@@ -125,7 +146,7 @@ class FeedTypeControllerContractTest {
         mockMvc.perform(get("/feed-types/missing-id"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Feed type not found"))
+                .andExpect(jsonPath("$.error").value("Tipo de ração não encontrado."))
                 .andExpect(jsonPath("$.path").value("/feed-types/missing-id"));
     }
 
@@ -155,7 +176,10 @@ class FeedTypeControllerContractTest {
         private PaginatedResponse<FeedTypeResponse> paginatedResponse = new PaginatedResponse<>(List.of(), 0, 10, 0, 0);
         private FeedTypeResponse findByIdResponse;
         private String exportResponse = "";
+        private String exportResponseWithMeasurementUnit = "";
         private RuntimeException findByIdException;
+        private String lastExportFarmId;
+        private String lastExportMeasurementUnit;
 
         TestFeedTypeService() {
             super(dummyRepository(), new FeedTypeMapper(), dummyFarmAccessService());
@@ -167,18 +191,27 @@ class FeedTypeControllerContractTest {
         }
 
         @Override
-        public List<FeedTypeResponse> findAll(String farmId) {
+        public List<FeedTypeResponse> findAll(String farmId, String search) {
             return findAllResponse;
         }
 
         @Override
-        public PaginatedResponse<FeedTypeResponse> findAllPaginated(String farmId, int page, int size) {
+        public PaginatedResponse<FeedTypeResponse> findAllPaginated(String farmId, String search, int page, int size) {
             return paginatedResponse;
         }
 
         @Override
-        public String exportAll(String farmId) {
+        public String exportAll(String farmId, String search, String currency) {
+            lastExportFarmId = farmId;
+            lastExportMeasurementUnit = null;
             return exportResponse;
+        }
+
+        @Override
+        public String exportAll(String farmId, String search, String currency, String measurementUnitParam) {
+            lastExportFarmId = farmId;
+            lastExportMeasurementUnit = measurementUnitParam;
+            return exportResponseWithMeasurementUnit;
         }
 
         @Override

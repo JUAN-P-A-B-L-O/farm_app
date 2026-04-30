@@ -32,10 +32,11 @@ function PaginationControls({
   return (
     <div className="pagination-controls">
       <p className="pagination-controls__summary">
-        {t('common.pagination.summary')
-          .replace('{from}', String(from))
-          .replace('{to}', String(to))
-          .replace('{total}', String(pagination.totalElements))}
+        {t('common.pagination.summary', {
+          from,
+          to,
+          total: pagination.totalElements,
+        })}
       </p>
 
       <div className="pagination-controls__actions">
@@ -56,9 +57,10 @@ function PaginationControls({
         </label>
 
         <span className="pagination-controls__page">
-          {t('common.pagination.page')
-            .replace('{page}', String(currentPage + 1))
-            .replace('{totalPages}', String(totalPages))}
+          {t('common.pagination.page', {
+            page: currentPage + 1,
+            totalPages,
+          })}
         </span>
 
         <div className="pagination-controls__buttons">

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CsvExportUtils.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">farmapp</a> &gt; <a href="index.source.html" class="el_package">com.jpsoftware.farmapp.shared.util</a> &gt; <span class="el_source">CsvExportUtils.java</span></div><h1>CsvExportUtils.java</h1><pre class="source lang-java linenums">package com.jpsoftware.farmapp.shared.util;
+
+import java.util.Collection;
+import java.util.List;
+
+public final class CsvExportUtils {
+
+    private CsvExportUtils() {
+    }
+
+    public static &lt;T&gt; String write(Collection&lt;T&gt; rows, List&lt;CsvColumn&lt;T&gt;&gt; columns) {
+<span class="fc" id="L12">        StringBuilder builder = new StringBuilder();</span>
+<span class="fc" id="L13">        appendRow(builder, columns.stream().map(CsvColumn::header).toList());</span>
+
+<span class="fc bfc" id="L15" title="All 2 branches covered.">        for (T row : rows) {</span>
+<span class="fc" id="L16">            appendRow(builder, columns.stream()</span>
+<span class="fc" id="L17">                    .map(column -&gt; formatValue(column.valueExtractor().apply(row)))</span>
+<span class="fc" id="L18">                    .toList());</span>
+<span class="fc" id="L19">        }</span>
+
+<span class="fc" id="L21">        return builder.toString();</span>
+    }
+
+    private static void appendRow(StringBuilder builder, List&lt;String&gt; values) {
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        for (int index = 0; index &lt; values.size(); index++) {</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">            if (index &gt; 0) {</span>
+<span class="fc" id="L27">                builder.append(',');</span>
+            }
+<span class="fc" id="L29">            builder.append(escape(values.get(index)));</span>
+        }
+<span class="fc" id="L31">        builder.append('\n');</span>
+<span class="fc" id="L32">    }</span>
+
+    private static String formatValue(Object value) {
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        return value == null ? &quot;&quot; : value.toString();</span>
+    }
+
+    private static String escape(String value) {
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        boolean mustQuote = value.contains(&quot;,&quot;)</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">                || value.contains(&quot;\&quot;&quot;)</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">                || value.contains(&quot;\n&quot;)</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">                || value.contains(&quot;\r&quot;);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (!mustQuote) {</span>
+<span class="fc" id="L44">            return value;</span>
+        }
+<span class="fc" id="L46">        return &quot;\&quot;&quot; + value.replace(&quot;\&quot;&quot;, &quot;\&quot;\&quot;&quot;) + &quot;\&quot;&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

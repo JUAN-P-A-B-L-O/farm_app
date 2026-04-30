@@ -17,6 +17,8 @@ import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.shared.currency.CurrencyConversionUtils;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnit;
+import com.jpsoftware.farmapp.shared.measurement.MeasurementUnitConverter;
 import com.jpsoftware.farmapp.shared.util.CsvColumn;
 import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
@@ -103,9 +105,22 @@ public class AnalyticsService {
             String animalId,
             String groupByParam,
             String farmId) {
+        return exportProductionSeries(startDate, endDate, animalId, groupByParam, farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportProductionSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            String productionUnitParam) {
+        MeasurementUnit productionUnit = MeasurementUnit.fromProductionParam(productionUnitParam, "productionUnit");
         return CsvExportUtils.write(getProductionSeries(startDate, endDate, animalId, groupByParam, farmId), List.of(
                 new CsvColumn<>("period", AnalyticsTimeSeriesPointResponse::getPeriod),
-                new CsvColumn<>("value", AnalyticsTimeSeriesPointResponse::getValue)));
+                new CsvColumn<>("value", point -> MeasurementUnitConverter.convertFromBase(point.getValue(), productionUnit)),
+                new CsvColumn<>("valueUnit", row -> productionUnit.getSymbol())));
     }
 
     @Transactional(readOnly = true)
@@ -262,11 +277,36 @@ public class AnalyticsService {
             String farmId,
             boolean includeAcquisitionCost,
             String currency) {
+        return exportProfitSeries(
+                startDate,
+                endDate,
+                animalId,
+                groupByParam,
+                farmId,
+                includeAcquisitionCost,
+                currency,
+                null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportProfitSeries(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String groupByParam,
+            String farmId,
+            boolean includeAcquisitionCost,
+            String currency,
+            String productionUnitParam) {
+        MeasurementUnit productionUnit = MeasurementUnit.fromProductionParam(productionUnitParam, "productionUnit");
         return CsvExportUtils.write(
                 getProfitSeries(startDate, endDate, animalId, groupByParam, farmId, includeAcquisitionCost, currency),
                 List.of(
                         new CsvColumn<>("period", AnalyticsProfitPointResponse::getPeriod),
-                        new CsvColumn<>("production", AnalyticsProfitPointResponse::getProduction),
+                        new CsvColumn<>("production", point -> MeasurementUnitConverter.convertFromBase(
+                                point.getProduction(),
+                                productionUnit)),
+                        new CsvColumn<>("productionUnit", row -> productionUnit.getSymbol()),
                         new CsvColumn<>("feedingCost", AnalyticsProfitPointResponse::getFeedingCost),
                         new CsvColumn<>("revenue", AnalyticsProfitPointResponse::getRevenue),
                         new CsvColumn<>("profit", AnalyticsProfitPointResponse::getProfit)));
@@ -302,10 +342,24 @@ public class AnalyticsService {
             LocalDate endDate,
             String animalId,
             String farmId) {
+        return exportProductionByAnimal(startDate, endDate, animalId, farmId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public String exportProductionByAnimal(
+            LocalDate startDate,
+            LocalDate endDate,
+            String animalId,
+            String farmId,
+            String productionUnitParam) {
+        MeasurementUnit productionUnit = MeasurementUnit.fromProductionParam(productionUnitParam, "productionUnit");
         return CsvExportUtils.write(getProductionByAnimal(startDate, endDate, animalId, farmId), List.of(
                 new CsvColumn<>("animalId", AnalyticsAnimalProductionPointResponse::getAnimalId),
                 new CsvColumn<>("animalTag", AnalyticsAnimalProductionPointResponse::getAnimalTag),
-                new CsvColumn<>("quantity", AnalyticsAnimalProductionPointResponse::getQuantity)));
+                new CsvColumn<>("quantity", point -> MeasurementUnitConverter.convertFromBase(
+                        point.getQuantity(),
+                        productionUnit)),
+                new CsvColumn<>("quantityUnit", row -> productionUnit.getSymbol())));
     }
 
     private AnalyticsGroupBy validateFilters(

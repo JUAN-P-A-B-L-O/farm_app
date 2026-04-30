@@ -1,8 +1,10 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
 import { normalizeToTwoDecimals } from '../utils/decimal'
+import type { ProductionUnit } from '../utils/measurementUnits'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 import type {
+  CreateBatchProductionPayload,
   CreateProductionPayload,
   Production,
   ProductionFormData,
@@ -22,6 +24,21 @@ function buildProductionListParams(farmId?: string, filters?: ProductionListFilt
 
 export async function getAllProductions(farmId?: string): Promise<Production[]> {
   const response = await api.get<Production[]>('/productions', {
+    params: buildProductionListParams(farmId),
+  })
+
+  return response.data
+}
+
+export async function createBatchProduction(data: ProductionFormData, farmId?: string): Promise<Production[]> {
+  const payload: CreateBatchProductionPayload = {
+    batchId: data.batchId,
+    quantity: normalizeToTwoDecimals(data.quantity),
+    userId: data.userId,
+    ...(data.date ? { date: data.date } : {}),
+  }
+
+  const response = await api.post<Production[]>('/productions/batch', payload, {
     params: buildProductionListParams(farmId),
   })
 
@@ -95,6 +112,17 @@ export async function deleteProduction(id: string, farmId?: string): Promise<voi
   })
 }
 
-export async function exportProductionsCsv(farmId?: string, filters?: ProductionListFilters): Promise<void> {
-  await downloadCsv('/productions/export', buildProductionListParams(farmId, filters), 'productions.csv')
+export async function exportProductionsCsv(
+  farmId?: string,
+  filters?: ProductionListFilters,
+  measurementUnit?: ProductionUnit,
+): Promise<void> {
+  await downloadCsv(
+    '/productions/export',
+    {
+      ...buildProductionListParams(farmId, filters),
+      ...(measurementUnit ? { measurementUnit } : {}),
+    },
+    'productions.csv',
+  )
 }
