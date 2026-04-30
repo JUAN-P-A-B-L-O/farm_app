@@ -61,6 +61,7 @@ function compileServices() {
         "import { clearAuthSession, getStoredToken } from './authStorage'\n",
         "import { clearAuthSession, getStoredToken } from './authStorage.js'\n",
       )
+      .replaceAll('import.meta.env.VITE_API_URL', 'globalThis.__TEST_VITE_API_URL__')
       .replace('type UnauthorizedHandler = () => void\n\n', '')
       .replaceAll(': UnauthorizedHandler | null', '')
       .replaceAll(': unknown', ''),
@@ -75,25 +76,54 @@ function buildAxiosError(url, status) {
   }
 }
 
-compileServices()
-
 const localStorage = new LocalStorageMock()
 globalThis.window = { localStorage }
+globalThis.__TEST_VITE_API_URL__ = undefined
 
-const apiModuleUrl = `${pathToFileURL(path.join(compiledRoot, 'api.js')).href}?t=${Date.now()}`
-const authStorageModuleUrl = `${pathToFileURL(path.join(compiledRoot, 'authStorage.js')).href}?t=${Date.now()}`
+async function loadApiModules(viteApiUrl) {
+  globalThis.__TEST_VITE_API_URL__ = viteApiUrl
+  compileServices()
 
-const apiModule = await import(apiModuleUrl)
-const authStorage = await import(authStorageModuleUrl)
+  const cacheKey = Date.now() + Math.random()
+  const apiModuleUrl = `${pathToFileURL(path.join(compiledRoot, 'api.js')).href}?t=${cacheKey}`
+  const authStorageModuleUrl =
+    `${pathToFileURL(path.join(compiledRoot, 'authStorage.js')).href}?t=${cacheKey}`
 
-const api = apiModule.default
-const requestHandler = api.interceptors.request.handlers[0].fulfilled
-const responseErrorHandler = api.interceptors.response.handlers[0].rejected
+  const apiModule = await import(apiModuleUrl)
+  const authStorage = await import(authStorageModuleUrl)
+  const api = apiModule.default
 
-test.beforeEach(() => {
+  return {
+    api,
+    apiModule,
+    authStorage,
+    requestHandler: api.interceptors.request.handlers[0].fulfilled,
+    responseErrorHandler: api.interceptors.response.handlers[0].rejected,
+  }
+}
+
+let apiModule
+let authStorage
+let api
+let requestHandler
+let responseErrorHandler
+
+test.beforeEach(async () => {
+  ;({ api, apiModule, authStorage, requestHandler, responseErrorHandler } = await loadApiModules())
   window.localStorage.clear()
   apiModule.registerUnauthorizedHandler(null)
   apiModule.resetUnauthorizedHandling()
+})
+
+test('uses localhost as the default API base URL when VITE_API_URL is not set', () => {
+  assert.equal(api.defaults.baseURL, 'http://localhost:8080')
+})
+
+test('uses VITE_API_URL as the API base URL when it is configured', async () => {
+  const configuredApiUrl = 'https://farm.example/api'
+  const loadedModules = await loadApiModules(configuredApiUrl)
+
+  assert.equal(loadedModules.api.defaults.baseURL, configuredApiUrl)
 })
 
 test('attaches the stored JWT to protected requests', async () => {
