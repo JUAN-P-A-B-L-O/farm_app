@@ -12,34 +12,1366 @@
 [[1;34mINFO[m] Copying 0 resource from src/main/resources to target/classes
 [[1;34mINFO[m] 
 [[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.13.0:compile[m [1m(default-compile)[m @ [36mfarmapp[0;1m ---[m
-[[1;34mINFO[m] Recompiling the module because of [1mchanged source code[m.
-[[1;34mINFO[m] Compiling 119 source files with javac [debug parameters release 21] to target/classes
-[[1;34mINFO[m] Annotation processing is enabled because one or more processors were found
-  on the class path. A future release of javac may disable annotation processing
-  unless at least one processor is specified by name (-processor), or a search
-  path is specified (--processor-path, --processor-module-path), or annotation
-  processing is enabled explicitly (-proc:only, -proc:full).
-  Use -Xlint:-options to suppress this message.
-  Use -proc:none to disable annotation processing.
-[[1;34mINFO[m] -------------------------------------------------------------
-[[1;31mERROR[m] COMPILATION ERROR : 
-[[1;34mINFO[m] -------------------------------------------------------------
-[[1;31mERROR[m] /home/juaneugenio/programmig/farm_app/backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/controller/AnalyticsController.java:[24,8] error while writing com.jpsoftware.farmapp.analytics.controller.AnalyticsController: /home/juaneugenio/programmig/farm_app/backend/farmapp/target/classes/com/jpsoftware/farmapp/analytics/controller/AnalyticsController.class
-[[1;34mINFO[m] 1 error
-[[1;34mINFO[m] -------------------------------------------------------------
+[[1;34mINFO[m] Nothing to compile - all classes are up to date.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:testResources[m [1m(default-testResources)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Copying 2 resources from src/test/resources to target/test-classes
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.13.0:testCompile[m [1m(default-testCompile)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Nothing to compile - all classes are up to date.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-surefire-plugin:3.5.2:test[m [1m(default-test)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[[1;34mINFO[m] 
+[[1;34mINFO[m] -------------------------------------------------------
+[[1;34mINFO[m]  T E S T S
+[[1;34mINFO[m] -------------------------------------------------------
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
+01:53:22.686 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 8.0.2.Final
+01:53:24.031 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:24.032 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:24.038 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 4 ms
+01:53:24.340 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:24.340 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:24.340 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:24.576 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:24.576 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:24.576 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:24.601 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:24.601 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:24.602 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.246 s -- in com.jpsoftware.farmapp.shared.exception.[1mGlobalExceptionHandlerTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.035 s -- in com.jpsoftware.farmapp.shared.exception.[1mErrorMessageTranslatorTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.exception.[1mLocalizedErrorAttributesTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.jpsoftware.farmapp.shared.exception.[1mLocalizedErrorAttributesTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.jpsoftware.farmapp.shared.util.[1mCsvExportUtilsTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/home/juaneugenio/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m10[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.419 s -- in com.jpsoftware.farmapp.unit.dashboard.[1mDashboardServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m29[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.096 s -- in com.jpsoftware.farmapp.unit.production.[1mProductionServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
+01:53:26.386 [main] INFO com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer -- Default admin user created
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.260 s -- in com.jpsoftware.farmapp.unit.shared.config.[1mDefaultAdminInitializerTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m22[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.062 s -- in com.jpsoftware.farmapp.unit.feeding.[1mFeedingServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.018 s -- in com.jpsoftware.farmapp.unit.animal.[1mAnimalServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.044 s -- in com.jpsoftware.farmapp.unit.analytics.[1mAnalyticsServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m10[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.029 s -- in com.jpsoftware.farmapp.unit.feed.[1mFeedTypeServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m19[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.118 s -- in com.jpsoftware.farmapp.unit.user.[1mUserServiceTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animalbatch.[1mAnimalBatchControllerContractTest[m
+01:53:27.862 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:27.862 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:27.862 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:27.935 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:27.935 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:27.935 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:27.969 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:27.969 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:27.970 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.011 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.011 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.011 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.076 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.076 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.077 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+01:53:28.103 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.103 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.103 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.130 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.130 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.130 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.176 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.176 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.177 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m8[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.455 s -- in com.jpsoftware.farmapp.contract.animalbatch.[1mAnimalBatchControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
+01:53:28.270 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.270 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.271 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+01:53:28.290 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.290 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.290 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.308 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.309 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.309 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.338 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.338 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.338 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m4[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.139 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
+01:53:28.361 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.361 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.361 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.382 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.382 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.382 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.402 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.402 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.402 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.413 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.413 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.413 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.423 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.423 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.423 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.435 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.435 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.435 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m6[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.092 s -- in com.jpsoftware.farmapp.contract.dashboard.[1mDashboardExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
+01:53:28.455 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.455 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.456 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+01:53:28.496 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.496 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.496 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.523 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.523 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.523 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.540 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.540 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.540 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.558 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.559 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.559 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.573 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.574 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.574 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.588 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.588 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.589 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.610 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.611 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.611 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.631 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.632 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.632 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.657 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.657 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.657 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.677 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.678 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.678 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.692 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.692 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.693 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+01:53:28.707 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.707 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.707 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.723 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.724 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.724 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.751 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.751 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.752 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.773 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.773 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.773 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.784 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.785 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.785 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.802 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.802 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.802 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.821 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.821 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.821 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.847 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.847 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.847 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.858 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.858 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.859 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+01:53:28.870 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.870 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.870 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.877 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.878 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.878 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m23[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.442 s -- in com.jpsoftware.farmapp.contract.production.[1mProductionControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
+01:53:28.896 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.896 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.896 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.913 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.913 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.914 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+01:53:28.938 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.938 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.939 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.963 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.963 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.964 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:28.985 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:28.986 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:28.986 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.006 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.006 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.006 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.024 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.024 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.025 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.050 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.050 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.050 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.064 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.065 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.065 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.089 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.089 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.090 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.110 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.110 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.110 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.134 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.135 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.135 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.156 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.156 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.156 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.177 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.177 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.177 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.196 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.196 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.196 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.210 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.210 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.210 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.235 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.236 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.236 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.254 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.254 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.255 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.269 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.270 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.270 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.282 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.282 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.282 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.294 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.295 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.295 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m21[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.419 s -- in com.jpsoftware.farmapp.contract.feeding.[1mFeedingControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
+01:53:29.357 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.357 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.357 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.368 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.368 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.368 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.067 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
+01:53:29.379 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.379 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.380 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+01:53:29.388 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.389 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.389 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.408 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.409 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.409 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.449 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.449 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.450 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+01:53:29.465 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.465 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.465 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.481 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.481 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.481 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.515 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.515 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.516 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.162 s -- in com.jpsoftware.farmapp.contract.animal.[1mAnimalControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
+01:53:29.590 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.590 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.590 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.071 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
+01:53:29.619 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.619 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.619 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.632 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.633 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.633 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.027 s -- in com.jpsoftware.farmapp.contract.milkprice.[1mMilkPriceExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
+01:53:29.715 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.715 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.715 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.727 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.727 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.727 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.739 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.739 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.740 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+01:53:29.752 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.752 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.753 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+01:53:29.763 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.763 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.763 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.774 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.775 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.775 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.787 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.787 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.788 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.799 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.800 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.800 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.813 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.814 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.814 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m9[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.180 s -- in com.jpsoftware.farmapp.contract.analytics.[1mAnalyticsExportControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
+01:53:29.829 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.829 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.829 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.843 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.843 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.843 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.852 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.853 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.853 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.864 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.864 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.864 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.874 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.874 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.874 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.891 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.891 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.891 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.903 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.903 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.903 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.917 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.917 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.917 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m8[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.106 s -- in com.jpsoftware.farmapp.contract.feed.[1mFeedTypeControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
+01:53:29.946 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.946 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.946 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.964 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.965 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.965 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.983 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.983 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.984 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:29.997 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:29.997 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:29.997 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:30.008 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:30.008 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:30.008 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:30.023 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:30.023 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:30.024 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 1 ms
+01:53:30.034 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:30.035 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:30.035 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:30.060 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:30.060 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:30.060 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:30.074 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:30.075 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:30.075 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:30.100 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:30.100 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:30.100 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:30.114 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:30.114 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:30.114 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+01:53:30.134 [main] INFO org.springframework.mock.web.MockServletContext -- Initializing Spring TestDispatcherServlet ''
+01:53:30.135 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Initializing Servlet ''
+01:53:30.135 [main] INFO org.springframework.test.web.servlet.TestDispatcherServlet -- Completed initialization in 0 ms
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m12[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.218 s -- in com.jpsoftware.farmapp.contract.user.[1mUserControllerContractTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.140 s -- in com.jpsoftware.farmapp.config.[1mLocalProfilePropertiesTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.animalbatch.[1mAnimalBatchIntegrationTest[m
+01:53:30.350 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.animalbatch.AnimalBatchIntegrationTest]: AnimalBatchIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+01:53:30.627 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.animalbatch.AnimalBatchIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.4)
+
+2026-04-28T01:53:31.192-03:00  INFO 62088 --- [           main] c.j.f.i.a.AnimalBatchIntegrationTest     : Starting AnimalBatchIntegrationTest using Java 21.0.7 with PID 62088 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
+2026-04-28T01:53:31.193-03:00  INFO 62088 --- [           main] c.j.f.i.a.AnimalBatchIntegrationTest     : No active profile set, falling back to 1 default profile: "default"
+2026-04-28T01:53:31.928-03:00  INFO 62088 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-28T01:53:32.010-03:00  INFO 62088 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 67 ms. Found 10 JPA repository interfaces.
+2026-04-28T01:53:32.540-03:00  INFO 62088 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-28T01:53:32.622-03:00  INFO 62088 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.11.Final
+2026-04-28T01:53:32.687-03:00  INFO 62088 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-28T01:53:33.077-03:00  INFO 62088 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-28T01:53:33.163-03:00  INFO 62088 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-28T01:53:33.892-03:00  INFO 62088 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:farmdb user=SA
+2026-04-28T01:53:33.895-03:00  INFO 62088 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-28T01:53:33.937-03:00  WARN 62088 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-04-28T01:53:33.972-03:00  INFO 62088 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 2.3.232
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-28T01:53:35.379-03:00  INFO 62088 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: create table animal_batch_members (id varchar(255) not null, animal_id varchar(255) not null, batch_id varchar(255) not null, primary key (id))
+Hibernate: create table animal_batches (id varchar(255) not null, farm_id varchar(255) not null, name varchar(255) not null, primary key (id))
+Hibernate: create table animals (id varchar(255) not null, acquisition_cost float(53), birth_date date not null, breed varchar(255) not null, farm_id varchar(255) not null, origin varchar(255) not null, sale_date date, sale_price float(53), status varchar(255) not null, tag varchar(255) not null, primary key (id))
+Hibernate: create table farms (id varchar(255) not null, name varchar(255) not null, owner_id uuid not null, primary key (id))
+Hibernate: create table feed_types (id varchar(255) not null, active boolean not null, cost_per_kg float(53) not null, farm_id varchar(255), name varchar(255) not null, primary key (id))
+Hibernate: create table feedings (id varchar(255) not null, animal_id varchar(255) not null, created_by varchar(255) not null, date date not null, farm_id varchar(255), feed_type_id varchar(255) not null, quantity float(53) not null, status varchar(255) not null, primary key (id))
+Hibernate: create table milk_prices (id varchar(255) not null, created_at timestamp(6) not null, created_by varchar(255) not null, effective_date date not null, farm_id varchar(255) not null, price float(53) not null, primary key (id))
+Hibernate: create table productions (id varchar(255) not null, animal_id varchar(255) not null, created_by varchar(255) not null, date date not null, farm_id varchar(255), quantity float(53) not null, status varchar(255) not null, primary key (id))
+Hibernate: create table user_farm_assignments (id uuid not null, farm_id varchar(255) not null, user_id uuid not null, primary key (id))
+Hibernate: create table users (id uuid not null, active boolean not null, avatar_url TEXT, email varchar(255) not null, name varchar(255) not null, password varchar(255) not null, role varchar(255) not null, primary key (id))
+Hibernate: alter table if exists animals drop constraint if exists UKgd2jjlu5ce2g9v7dg0k240lg1
+Hibernate: alter table if exists animals add constraint UKgd2jjlu5ce2g9v7dg0k240lg1 unique (tag)
+Hibernate: alter table if exists user_farm_assignments drop constraint if exists UK9k021clhmghjjepfpvejsguce
+Hibernate: alter table if exists user_farm_assignments add constraint UK9k021clhmghjjepfpvejsguce unique (user_id, farm_id)
+Hibernate: alter table if exists users drop constraint if exists UK6dotkott2kjsp8vw4d0m25fb7
+Hibernate: alter table if exists users add constraint UK6dotkott2kjsp8vw4d0m25fb7 unique (email)
+2026-04-28T01:53:35.510-03:00  INFO 62088 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-28T01:53:35.864-03:00  INFO 62088 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-28T01:53:38.574-03:00  WARN 62088 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-28T01:53:39.546-03:00  INFO 62088 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-04-28T01:53:39.546-03:00  INFO 62088 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-04-28T01:53:39.548-03:00  INFO 62088 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
+2026-04-28T01:53:39.592-03:00  INFO 62088 --- [           main] c.j.f.i.a.AnimalBatchIntegrationTest     : Started AnimalBatchIntegrationTest in 8.779 seconds (process running for 18.419)
+Hibernate: select count(*) from users ue1_0
+2026-04-28T01:53:39.912-03:00  INFO 62088 --- [           main] c.j.f.s.config.DefaultAdminInitializer   : Default admin user created
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id in (?,?)
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id in (?,?)
+Hibernate: insert into animal_batches (farm_id,name,id) values (?,?,?)
+Hibernate: insert into animal_batch_members (animal_id,batch_id,id) values (?,?,?)
+Hibernate: insert into animal_batch_members (animal_id,batch_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0 where abe1_0.farm_id=?
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0 where abme1_0.batch_id in (?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id in (?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0 where abe1_0.id=? and abe1_0.farm_id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id in (?)
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0 where abme1_0.batch_id=?
+Hibernate: insert into animal_batch_members (animal_id,batch_id,id) values (?,?,?)
+Hibernate: update animal_batches set farm_id=?,name=? where id=?
+Hibernate: delete from animal_batch_members where id=?
+Hibernate: delete from animal_batch_members where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0 where abe1_0.id=? and abe1_0.farm_id=?
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0 where abme1_0.batch_id=?
+Hibernate: delete from animal_batch_members where id=?
+Hibernate: delete from animal_batches where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0 where abe1_0.id=? and abe1_0.farm_id=?
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 10.63 s -- in com.jpsoftware.farmapp.integration.animalbatch.[1mAnimalBatchIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+2026-04-28T01:53:40.931-03:00  INFO 62088 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest]: AuthIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-28T01:53:40.949-03:00  INFO 62088 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.auth.AuthIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 order by ae1_0.tag
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 order by ae1_0.tag
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status='ACTIVE'
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m7[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.627 s -- in com.jpsoftware.farmapp.integration.auth.[1mAuthIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
+2026-04-28T01:53:42.559-03:00  INFO 62088 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest]: ProductionIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-28T01:53:42.568-03:00  INFO 62088 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.production.ProductionIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=? and ae1_0.farm_id=?
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: insert into productions (animal_id,created_by,date,farm_id,quantity,status,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.id=? and pe1_0.status='ACTIVE'
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: delete from productions where id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=? and ae1_0.farm_id=?
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: insert into productions (animal_id,created_by,date,farm_id,quantity,status,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.id=?
+Hibernate: update productions set animal_id=?,created_by=?,date=?,farm_id=?,quantity=?,status=? where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.id=? and pe1_0.status='ACTIVE'
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: delete from productions where id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=? and ae1_0.farm_id=?
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: insert into productions (animal_id,created_by,date,farm_id,quantity,status,id) values (?,?,?,?,?,?,?)
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: delete from productions where id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into feed_types (active,cost_per_kg,farm_id,name,id) values (?,?,?,?,?)
+Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=? and ae1_0.farm_id=?
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: insert into productions (animal_id,created_by,date,farm_id,quantity,status,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.id=? and pe1_0.status='ACTIVE'
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: update productions set animal_id=?,created_by=?,date=?,farm_id=?,quantity=?,status=? where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select coalesce(sum(pe1_0.quantity),0) from productions pe1_0 where pe1_0.animal_id=? and pe1_0.status='ACTIVE'
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select coalesce(sum(pe1_0.quantity),0) from productions pe1_0 where pe1_0.animal_id=? and pe1_0.status='ACTIVE'
+Hibernate: select coalesce(sum((fe1_0.quantity*fte1_0.cost_per_kg)),0) from feedings fe1_0 join feed_types fte1_0 on fe1_0.feed_type_id=fte1_0.id where fe1_0.animal_id=? and fe1_0.status='ACTIVE'
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select count(*) from farms fe1_0 where fe1_0.id=?
+Hibernate: select mpe1_0.id,mpe1_0.created_at,mpe1_0.created_by,mpe1_0.effective_date,mpe1_0.farm_id,mpe1_0.price from milk_prices mpe1_0 where mpe1_0.farm_id=? and mpe1_0.effective_date<=? order by mpe1_0.effective_date desc,mpe1_0.created_at desc fetch first ? rows only
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: delete from productions where id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: delete from feedings where id=?
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: delete from feed_types where id=?
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id in (?,?)
+Hibernate: insert into animal_batches (farm_id,name,id) values (?,?,?)
+Hibernate: insert into animal_batch_members (animal_id,batch_id,id) values (?,?,?)
+Hibernate: insert into animal_batch_members (animal_id,batch_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0 where abe1_0.id=? and abe1_0.farm_id=?
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0 where abme1_0.batch_id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id in (?,?)
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: insert into productions (animal_id,created_by,date,farm_id,quantity,status,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into productions (animal_id,created_by,date,farm_id,quantity,status,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0 where pe1_0.status=? and pe1_0.farm_id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id in (?,?)
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m5[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.137 s -- in com.jpsoftware.farmapp.integration.production.[1mProductionIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
+2026-04-28T01:53:43.697-03:00  INFO 62088 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest]: FeedingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-28T01:53:43.710-03:00  INFO 62088 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.feeding.FeedingIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: delete from productions where id=?
+Hibernate: delete from productions where id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: delete from animal_batch_members where id=?
+Hibernate: delete from animal_batch_members where id=?
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: delete from animal_batches where id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into feed_types (active,cost_per_kg,farm_id,name,id) values (?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=? and ae1_0.farm_id=?
+Hibernate: select count(*) from feed_types fte1_0 where fte1_0.id=?
+Hibernate: select fte1_0.id from feed_types fte1_0 where fte1_0.id=? and fte1_0.farm_id=? fetch first ? rows only
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0 where fe1_0.id=? and fe1_0.status='ACTIVE'
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0 where fe1_0.status=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id in (?)
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id in (?)
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: delete from feedings where id=?
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: delete from feed_types where id=?
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into feed_types (active,cost_per_kg,farm_id,name,id) values (?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=? and ae1_0.farm_id=?
+Hibernate: select count(*) from feed_types fte1_0 where fte1_0.id=?
+Hibernate: select fte1_0.id from feed_types fte1_0 where fte1_0.id=? and fte1_0.farm_id=? fetch first ? rows only
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0 where fe1_0.id=? and fe1_0.status='ACTIVE'
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: delete from feedings where id=?
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: delete from feed_types where id=?
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into feed_types (active,cost_per_kg,farm_id,name,id) values (?,?,?,?,?)
+Hibernate: insert into feed_types (active,cost_per_kg,farm_id,name,id) values (?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=? and ae1_0.farm_id=?
+Hibernate: select count(*) from feed_types fte1_0 where fte1_0.id=?
+Hibernate: select fte1_0.id from feed_types fte1_0 where fte1_0.id=? and fte1_0.farm_id=? fetch first ? rows only
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0 where fe1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select count(*) from feed_types fte1_0 where fte1_0.id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+Hibernate: update feedings set animal_id=?,created_by=?,date=?,farm_id=?,feed_type_id=?,quantity=?,status=? where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0 where fe1_0.id=?
+Hibernate: update feedings set animal_id=?,created_by=?,date=?,farm_id=?,feed_type_id=?,quantity=?,status=? where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0 where fe1_0.id=? and fe1_0.status='ACTIVE'
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0 where fe1_0.status=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: delete from feedings where id=?
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: delete from feed_types where id=?
+Hibernate: delete from feed_types where id=?
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into feed_types (active,cost_per_kg,farm_id,name,id) values (?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id in (?,?)
+Hibernate: insert into animal_batches (farm_id,name,id) values (?,?,?)
+Hibernate: insert into animal_batch_members (animal_id,batch_id,id) values (?,?,?)
+Hibernate: insert into animal_batch_members (animal_id,batch_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0 where abe1_0.id=? and abe1_0.farm_id=?
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0 where abme1_0.batch_id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id in (?,?)
+Hibernate: select count(*) from feed_types fte1_0 where fte1_0.id=?
+Hibernate: select fte1_0.id from feed_types fte1_0 where fte1_0.id=? and fte1_0.farm_id=? fetch first ? rows only
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
+Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0 where fe1_0.status=? and fe1_0.farm_id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id in (?,?)
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id in (?)
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: delete from feedings where id=?
+Hibernate: delete from feedings where id=?
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: delete from animal_batch_members where id=?
+Hibernate: delete from animal_batch_members where id=?
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: delete from animal_batches where id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: delete from feed_types where id=?
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into feed_types (active,cost_per_kg,farm_id,name,id) values (?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=? and ae1_0.farm_id=?
+Hibernate: select count(*) from feed_types fte1_0 where fte1_0.id=?
+Hibernate: select fte1_0.id from feed_types fte1_0 where fte1_0.id=? and fte1_0.farm_id=? fetch first ? rows only
+Hibernate: select count(*) from users ue1_0 where ue1_0.id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0 where fte1_0.id=?
+Hibernate: insert into feedings (animal_id,created_by,date,farm_id,feed_type_id,quantity,status,id) values (?,?,?,?,?,?,?,?)
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m5[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.062 s -- in com.jpsoftware.farmapp.integration.feeding.[1mFeedingIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
+2026-04-28T01:53:44.761-03:00  INFO 62088 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest]: AnimalIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-28T01:53:44.770-03:00  INFO 62088 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.animal.AnimalIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: delete from feedings where id=?
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: delete from feed_types where id=?
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: update animals set acquisition_cost=?,birth_date=?,breed=?,farm_id=?,origin=?,sale_date=?,sale_price=?,status=?,tag=? where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m2[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.396 s -- in com.jpsoftware.farmapp.integration.animal.[1mAnimalIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
+2026-04-28T01:53:45.158-03:00  INFO 62088 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.jpsoftware.farmapp.integration.user.UserIntegrationTest]: UserIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-28T01:53:45.166-03:00  INFO 62088 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.jpsoftware.farmapp.FarmAppApplication for test class com.jpsoftware.farmapp.integration.user.UserIntegrationTest
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: update users set active=?,avatar_url=?,email=?,name=?,password=?,role=? where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into user_farm_assignments (farm_id,user_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_0.owner_id=?
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0 where ufae1_0.user_id=?
+Hibernate: update users set active=?,avatar_url=?,email=?,name=?,password=?,role=? where id=?
+Hibernate: delete from user_farm_assignments where id=?
+Hibernate: insert into user_farm_assignments (farm_id,user_id,id) values (?,?,?)
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0 where ufae1_0.user_id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: delete from user_farm_assignments where id=?
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into user_farm_assignments (farm_id,user_id,id) values (?,?,?)
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0 where ufae1_0.user_id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_0.owner_id=?
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0 where ufae1_0.user_id=?
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id from farms fe1_0 where fe1_0.id=? and fe1_0.owner_id=? fetch first ? rows only
+Hibernate: select ufae1_0.id from user_farm_assignments ufae1_0 where ufae1_0.user_id=? and ufae1_0.farm_id=? fetch first ? rows only
+Hibernate: select ae1_0.id from animals ae1_0 where ae1_0.tag=? fetch first ? rows only
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0 where ae1_0.id=?
+Hibernate: insert into animals (acquisition_cost,birth_date,breed,farm_id,origin,sale_date,sale_price,status,tag,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: delete from animals where id=?
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: delete from user_farm_assignments where id=?
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: delete from farms where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_0.owner_id=?
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0 where ufae1_0.user_id=?
+Hibernate: delete from users where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: update users set active=?,avatar_url=?,email=?,name=?,password=?,role=? where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 order by ue1_0.name,ue1_0.email
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0 where ufae1_0.user_id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_0.owner_id=?
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0 where ufae1_0.user_id=?
+Hibernate: update users set active=?,avatar_url=?,email=?,name=?,password=?,role=? where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: update users set active=?,avatar_url=?,email=?,name=?,password=?,role=? where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0 where ufae1_0.user_id=?
+Hibernate: update users set active=?,avatar_url=?,email=?,name=?,password=?,role=? where id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.email=?
+Hibernate: select pe1_0.id,pe1_0.animal_id,pe1_0.created_by,pe1_0.date,pe1_0.farm_id,pe1_0.quantity,pe1_0.status from productions pe1_0
+Hibernate: select fe1_0.id,fe1_0.animal_id,fe1_0.created_by,fe1_0.date,fe1_0.farm_id,fe1_0.feed_type_id,fe1_0.quantity,fe1_0.status from feedings fe1_0
+Hibernate: select abme1_0.id,abme1_0.animal_id,abme1_0.batch_id from animal_batch_members abme1_0
+Hibernate: select abe1_0.id,abe1_0.farm_id,abe1_0.name from animal_batches abe1_0
+Hibernate: select ae1_0.id,ae1_0.acquisition_cost,ae1_0.birth_date,ae1_0.breed,ae1_0.farm_id,ae1_0.origin,ae1_0.sale_date,ae1_0.sale_price,ae1_0.status,ae1_0.tag from animals ae1_0
+Hibernate: select fte1_0.id,fte1_0.active,fte1_0.cost_per_kg,fte1_0.farm_id,fte1_0.name from feed_types fte1_0
+Hibernate: select ufae1_0.id,ufae1_0.farm_id,ufae1_0.user_id from user_farm_assignments ufae1_0
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0
+Hibernate: delete from users where id=?
+Hibernate: delete from users where id=?
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into users (active,avatar_url,email,name,password,role,id) values (?,?,?,?,?,?,?)
+Hibernate: insert into farms (name,owner_id,id) values (?,?,?)
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select ue1_0.id,ue1_0.active,ue1_0.avatar_url,ue1_0.email,ue1_0.name,ue1_0.password,ue1_0.role from users ue1_0 where ue1_0.id=?
+Hibernate: select fe1_0.id,fe1_0.name,fe1_0.owner_id from farms fe1_0 where fe1_0.owner_id=?
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m13[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.940 s -- in com.jpsoftware.farmapp.integration.user.[1mUserIntegrationTest[m
+[[1;34mINFO[m] Running com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.4)
+
+2026-04-28T01:53:49.132-03:00  INFO 62088 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Starting FarmAppApplicationTests using Java 21.0.7 with PID 62088 (started by juaneugenio in /home/juaneugenio/programmig/farm_app/backend/farmapp)
+2026-04-28T01:53:49.133-03:00  INFO 62088 --- [           main] c.j.farmapp.FarmAppApplicationTests      : No active profile set, falling back to 1 default profile: "default"
+2026-04-28T01:53:49.408-03:00  INFO 62088 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-28T01:53:49.441-03:00  INFO 62088 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 32 ms. Found 10 JPA repository interfaces.
+2026-04-28T01:53:49.581-03:00  INFO 62088 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-28T01:53:49.582-03:00  INFO 62088 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-28T01:53:49.591-03:00  INFO 62088 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-28T01:53:49.591-03:00  INFO 62088 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-04-28T01:53:49.593-03:00  INFO 62088 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn10: url=jdbc:h2:mem:farmdb user=SA
+2026-04-28T01:53:49.593-03:00  INFO 62088 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-04-28T01:53:49.594-03:00  WARN 62088 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-04-28T01:53:49.594-03:00  INFO 62088 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-2)']
+	Database driver: undefined/unknown
+	Database version: 2.3.232
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-28T01:53:49.747-03:00  INFO 62088 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: alter table if exists user_farm_assignments drop constraint if exists UK9k021clhmghjjepfpvejsguce
+Hibernate: alter table if exists user_farm_assignments add constraint UK9k021clhmghjjepfpvejsguce unique (user_id, farm_id)
+2026-04-28T01:53:49.763-03:00  INFO 62088 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-28T01:53:50.054-03:00  WARN 62088 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-28T01:53:50.234-03:00  INFO 62088 --- [           main] c.j.farmapp.FarmAppApplicationTests      : Started FarmAppApplicationTests in 1.127 seconds (process running for 29.061)
+Hibernate: select count(*) from users ue1_0
+[[1;34mINFO[m] [1;32mTests run: [0;1;32m1[m, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.147 s -- in com.jpsoftware.farmapp.[1mFarmAppApplicationTests[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] Results:
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1;32mTests run: 258, Failures: 0, Errors: 0, Skipped: 0[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mjacoco-maven-plugin:0.8.11:report[m [1m(report)[m @ [36mfarmapp[0;1m ---[m
+[[1;34mINFO[m] Loading execution data file /home/juaneugenio/programmig/farm_app/backend/farmapp/target/jacoco.exec
+[[1;34mINFO[m] Analyzed bundle 'farmapp' with 101 classes
 [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
-[[1;34mINFO[m] [1;31mBUILD FAILURE[m
+[[1;34mINFO[m] [1;32mBUILD SUCCESS[m
 [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
-[[1;34mINFO[m] Total time:  4.365 s
-[[1;34mINFO[m] Finished at: 2026-04-28T01:19:38-03:00
+[[1;34mINFO[m] Total time:  31.606 s
+[[1;34mINFO[m] Finished at: 2026-04-28T01:53:51-03:00
 [[1;34mINFO[m] [1m------------------------------------------------------------------------[m
-[[1;31mERROR[m] Failed to execute goal [32morg.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile[m [1m(default-compile)[m on project [36mfarmapp[m: [1;31mCompilation failure[m
-[[1;31mERROR[m] [1;31m/home/juaneugenio/programmig/farm_app/backend/farmapp/src/main/java/com/jpsoftware/farmapp/analytics/controller/AnalyticsController.java:[24,8] error while writing com.jpsoftware.farmapp.analytics.controller.AnalyticsController: /home/juaneugenio/programmig/farm_app/backend/farmapp/target/classes/com/jpsoftware/farmapp/analytics/controller/AnalyticsController.class[m
-[[1;31mERROR[m] [1;31m[m
-[[1;31mERROR[m] -> [1m[Help 1][m
-[[1;31mERROR[m] 
-[[1;31mERROR[m] To see the full stack trace of the errors, re-run Maven with the [1m-e[m switch.
-[[1;31mERROR[m] Re-run Maven using the [1m-X[m switch to enable full debug logging.
-[[1;31mERROR[m] 
-[[1;31mERROR[m] For more information about the errors and possible solutions, please read the following articles:
-[[1;31mERROR[m] [1m[Help 1][m http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

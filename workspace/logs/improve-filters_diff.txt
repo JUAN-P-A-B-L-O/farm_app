@@ -1,300 +1,224 @@
 --- a/frontend/web/farm_web/src/App.css
 +++ b/frontend/web/farm_web/src/App.css
-+.listing-filters__controls select[multiple] {
-+  min-height: 156px;
-+}
-+
-+.listing-filters__help {
-+  margin: 0;
-+  font-size: 0.82rem;
-+  font-weight: 500;
-+  color: #617080;
-+}
-+
-+.listing-filters__checkbox {
++.dashboard-layout {
++  max-width: 1200px;
++  margin: 0 auto;
 +  display: grid;
-+  gap: 8px;
-+  align-content: start;
++  gap: 24px;
 +}
 +
-+.listing-filters__checkbox-control {
-+  display: flex;
-+  align-items: center;
-+  gap: 10px;
-+  min-height: 48px;
++.dashboard-grid {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
++  gap: 24px;
 +}
 +
-+.listing-filters__checkbox-control input {
-+  width: auto;
-+  margin: 0;
-+  padding: 0;
-+  border: 0;
-+}
+--- a/frontend/web/farm_web/src/pages/dashboard/DashboardPage.tsx
++++ b/frontend/web/farm_web/src/pages/dashboard/DashboardPage.tsx
+-    <main className="dashboard-page">
+-      <section className="dashboard-page__header">
+-        <div className="dashboard-page__header-actions">
+-          <div>
+-            <p className="dashboard-page__eyebrow">{t('dashboard.eyebrow')}</p>
+-            <h1>{t('dashboard.title')}</h1>
+-            <p className="dashboard-page__description">
+-              {t('dashboard.description')}
+-            </p>
++    <main className="animals-page dashboard-page">
++      <section className="animals-page__header">
++        <p className="animals-page__eyebrow">{t('dashboard.eyebrow')}</p>
++        <h1>{t('dashboard.title')}</h1>
++        <p className="animals-page__description">
++          {t('dashboard.description')}
++        </p>
++      </section>
 +
---- /dev/null
-+++ b/frontend/web/farm_web/src/components/common/FilterFields.tsx
-+import type { ReactNode } from 'react'
++      <section className="dashboard-layout">
++        <article className="animals-panel">
++          <div className="animals-panel__header animals-panel__header--actions">
++            <div>
++              <h2>{t('dashboard.title')}</h2>
++              <p>{t('dashboard.description')}</p>
++            </div>
++            <ExportCsvButton
++              onClick={() => void handleExport()}
++              label={t('common.exportCsv')}
++              loadingLabel={t('common.exportingCsv')}
++              isLoading={isExporting}
++              disabled={!selectedFarmId || isLoading || !summary}
++            />
+-          <ExportCsvButton
+-            onClick={() => void handleExport()}
+-            label={t('common.exportCsv')}
+-            loadingLabel={t('common.exportingCsv')}
+-            isLoading={isExporting}
+-            disabled={!selectedFarmId || isLoading || !summary}
 +
-+export interface FilterOption {
-+  value: string
-+  label: string
-+}
++          <ListingFiltersBar
++            onClear={clearFilters}
++            clearLabel={t('dashboard.filters.clear')}
++            filters={[
++              {
++                type: 'date',
++                id: 'dashboard-start-date',
++                label: t('dashboard.filters.startDateLabel'),
++                value: filters.startDate,
++                onChange: (value) => updateFilter('startDate', value),
++              },
++              {
++                type: 'date',
++                id: 'dashboard-end-date',
++                label: t('dashboard.filters.endDateLabel'),
++                value: filters.endDate,
++                onChange: (value) => updateFilter('endDate', value),
++              },
++              {
++                type: 'multiselect',
++                id: 'dashboard-animal-select',
++                label: t('dashboard.filters.animalLabel'),
++                value: filters.animalIds,
++                disabled: isAnimalsLoading || animals.length === 0,
++                helpText: t('dashboard.filters.allAnimalsHint'),
++                onChange: (value) => updateFilter('animalIds', value),
++                options: animals.map((animal) => ({ value: animal.id, label: animal.tag })),
++              },
++              {
++                type: 'select',
++                id: 'dashboard-status-select',
++                label: t('dashboard.filters.statusLabel'),
++                value: filters.status,
++                onChange: (value) => updateFilter('status', value as DashboardFilterState['status']),
++                options: [
++                  { value: '', label: t('dashboard.filters.allStatuses') },
++                  ...animalStatusOptions.map((status) => ({
++                    value: status,
++                    label: getAnimalStatusLabel(t, status),
++                  })),
++                ],
++              },
++              {
++                type: 'checkbox',
++                id: 'dashboard-include-acquisition-cost',
++                label: t('dashboard.includeAcquisitionCost'),
++                checked: filters.includeAcquisitionCost,
++                onChange: (checked) => updateFilter('includeAcquisitionCost', checked),
++              },
++            ]}
+-        </div>
+-        <ListingFiltersBar
+-          onClear={clearFilters}
+-          clearLabel={t('dashboard.filters.clear')}
+-          filters={[
+-            {
+-              type: 'date',
+-              id: 'dashboard-start-date',
+-              label: t('dashboard.filters.startDateLabel'),
+-              value: filters.startDate,
+-              onChange: (value) => updateFilter('startDate', value),
+-            },
+-            {
+-              type: 'date',
+-              id: 'dashboard-end-date',
+-              label: t('dashboard.filters.endDateLabel'),
+-              value: filters.endDate,
+-              onChange: (value) => updateFilter('endDate', value),
+-            },
+-            {
+-              type: 'multiselect',
+-              id: 'dashboard-animal-select',
+-              label: t('dashboard.filters.animalLabel'),
+-              value: filters.animalIds,
+-              disabled: isAnimalsLoading || animals.length === 0,
+-              helpText: t('dashboard.filters.allAnimalsHint'),
+-              size: Math.min(Math.max(animals.length, 2), 6),
+-              onChange: (value) => updateFilter('animalIds', value),
+-              options: animals.map((animal) => ({ value: animal.id, label: animal.tag })),
+-            },
+-            {
+-              type: 'select',
+-              id: 'dashboard-status-select',
+-              label: t('dashboard.filters.statusLabel'),
+-              value: filters.status,
+-              onChange: (value) => updateFilter('status', value as DashboardFilterState['status']),
+-              options: [
+-                { value: '', label: t('dashboard.filters.allStatuses') },
+-                ...animalStatusOptions.map((status) => ({
+-                  value: status,
+-                  label: getAnimalStatusLabel(t, status),
+-                })),
+-              ],
+-            },
+-            {
+-              type: 'checkbox',
+-              id: 'dashboard-include-acquisition-cost',
+-              label: t('dashboard.includeAcquisitionCost'),
+-              checked: filters.includeAcquisitionCost,
+-              onChange: (checked) => updateFilter('includeAcquisitionCost', checked),
+-            },
+-          ]}
+-        />
+-      </section>
+-      {isAnimalsLoading && <p className="dashboard-page__status">{t('dashboard.loadingAnimals')}</p>}
++          {isAnimalsLoading && <p className="animals-page__status">{t('dashboard.loadingAnimals')}</p>}
+-      {animalsErrorMessage && (
+-        <p className="dashboard-page__status dashboard-page__status--error">
+-          {animalsErrorMessage}
+-        </p>
+-      )}
++          {animalsErrorMessage && (
++            <p className="animals-page__status animals-page__status--error">
++              {animalsErrorMessage}
++            </p>
++          )}
+-      {isLoading && <p className="dashboard-page__status">{t('dashboard.loading')}</p>}
++          {isLoading && <p className="animals-page__status">{t('dashboard.loading')}</p>}
+-      {summaryErrorMessage && (
+-        <p className="dashboard-page__status dashboard-page__status--error">
+-          {summaryErrorMessage}
+-        </p>
+-      )}
+-
+-      {summary && !isLoading && !summaryErrorMessage && (
+-        <section className="dashboard-grid" aria-label={t('dashboard.ariaSummary')}>
+-          {dashboardStats.map((stat) => (
+-            <StatCard
+-              key={stat.key}
+-              title={stat.key === 'totalProduction'
+-                ? productionTitle
+-                : stat.format === 'currency'
+-                  ? appendCurrencyCode(t(stat.titleKey), currency)
+-                  : t(stat.titleKey)}
+-              value={stat.key === 'totalProduction'
+-                ? convertMeasurementFromBase(summary.totalProduction, productionUnit)
+-                : summary[stat.key] ?? 0}
+-              format={stat.format}
+-            />
+-          ))}
+-        </section>
+-      )}
++          {summaryErrorMessage && (
++            <p className="animals-page__status animals-page__status--error">
++              {summaryErrorMessage}
++            </p>
++          )}
++        </article>
 +
-+interface BaseFilterFieldProps {
-+  id: string
-+  label: string
-+  disabled?: boolean
-+  helpText?: string
-+}
-+
-+interface FilterFieldLabelProps extends BaseFilterFieldProps {
-+  className?: string
-+  children: ReactNode
-+}
-+
-+interface SearchFilterFieldProps extends BaseFilterFieldProps {
-+  value: string
-+  placeholder: string
-+  onChange: (value: string) => void
-+}
-+
-+interface SelectFilterFieldProps extends BaseFilterFieldProps {
-+  value: string
-+  options: FilterOption[]
-+  onChange: (value: string) => void
-+}
-+
-+interface DateFilterFieldProps extends BaseFilterFieldProps {
-+  value: string
-+  min?: string
-+  max?: string
-+  onChange: (value: string) => void
-+}
-+
-+interface MultiSelectFilterFieldProps extends BaseFilterFieldProps {
-+  value: string[]
-+  options: FilterOption[]
-+  size?: number
-+  onChange: (value: string[]) => void
-+}
-+
-+interface CheckboxFilterFieldProps extends BaseFilterFieldProps {
-+  checked: boolean
-+  onChange: (checked: boolean) => void
-+}
-+
-+function FilterFieldLabel({
-+  id,
-+  label,
-+  helpText,
-+  className,
-+  children,
-+}: FilterFieldLabelProps) {
-+  return (
-+    <label htmlFor={id} className={className}>
-+      <span>{label}</span>
-+      {children}
-+      {helpText ? <small className="listing-filters__help">{helpText}</small> : null}
-+    </label>
-+  )
-+}
-+
-+export function SearchFilterField({
-+  id,
-+  label,
-+  value,
-+  placeholder,
-+  disabled,
-+  helpText,
-+  onChange,
-+}: SearchFilterFieldProps) {
-+  return (
-+    <FilterFieldLabel id={id} label={label} disabled={disabled} helpText={helpText}>
-+      <input
-+        id={id}
-+        type="search"
-+        value={value}
-+        disabled={disabled}
-+        placeholder={placeholder}
-+        onChange={(event) => onChange(event.target.value)}
-+      />
-+    </FilterFieldLabel>
-+  )
-+}
-+
-+export function SelectFilterField({
-+  id,
-+  label,
-+  value,
-+  options,
-+  disabled,
-+  helpText,
-+  onChange,
-+}: SelectFilterFieldProps) {
-+  return (
-+    <FilterFieldLabel id={id} label={label} disabled={disabled} helpText={helpText}>
-+      <select
-+        id={id}
-+        value={value}
-+        disabled={disabled}
-+        onChange={(event) => onChange(event.target.value)}
-+      >
-+        {options.map((option) => (
-+          <option key={option.value} value={option.value}>
-+            {option.label}
-+          </option>
-+        ))}
-+      </select>
-+    </FilterFieldLabel>
-+  )
-+}
-+
-+export function DateFilterField({
-+  id,
-+  label,
-+  value,
-+  min,
-+  max,
-+  disabled,
-+  helpText,
-+  onChange,
-+}: DateFilterFieldProps) {
-+  return (
-+    <FilterFieldLabel id={id} label={label} disabled={disabled} helpText={helpText}>
-+      <input
-+        id={id}
-+        type="date"
-+        value={value}
-+        min={min}
-+        max={max}
-+        disabled={disabled}
-+        onChange={(event) => onChange(event.target.value)}
-+      />
-+    </FilterFieldLabel>
-+  )
-+}
-+
-+export function MultiSelectFilterField({
-+  id,
-+  label,
-+  value,
-+  options,
-+  size = 4,
-+  disabled,
-+  helpText,
-+  onChange,
-+}: MultiSelectFilterFieldProps) {
-+  return (
-+    <FilterFieldLabel id={id} label={label} disabled={disabled} helpText={helpText}>
-+      <select
-+        id={id}
-+        multiple
-+        size={size}
-+        value={value}
-+        disabled={disabled}
-+        onChange={(event) => onChange(Array.from(event.target.selectedOptions, (option) => option.value))}
-+      >
-+        {options.map((option) => (
-+          <option key={option.value} value={option.value}>
-+            {option.label}
-+          </option>
-+        ))}
-+      </select>
-+    </FilterFieldLabel>
-+  )
-+}
-+
-+export function CheckboxFilterField({
-+  id,
-+  label,
-+  checked,
-+  disabled,
-+  helpText,
-+  onChange,
-+}: CheckboxFilterFieldProps) {
-+  return (
-+    <label htmlFor={id} className="listing-filters__checkbox">
-+      <span className="listing-filters__checkbox-control">
-+        <input
-+          id={id}
-+          type="checkbox"
-+          checked={checked}
-+          disabled={disabled}
-+          onChange={(event) => onChange(event.target.checked)}
-+        />
-+        <span>{label}</span>
-+      </span>
-+      {helpText ? <small className="listing-filters__help">{helpText}</small> : null}
-+    </label>
-+  )
-+}
---- a/frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx
-+++ b/frontend/web/farm_web/src/components/common/ListingFiltersBar.tsx
--interface FilterOption {
--  value: string
-+import {
-+  CheckboxFilterField,
-+  DateFilterField,
-+  MultiSelectFilterField,
-+  SearchFilterField,
-+  SelectFilterField,
-+  type FilterOption,
-+} from './FilterFields'
-+
-+interface SearchFilterConfig {
-+  id: string
-+  value: string
-+  placeholder: string
-+  disabled?: boolean
-+  helpText?: string
-+  onChange: (value: string) => void
--  value: string
--  onChange: (value: string) => void
-+  disabled?: boolean
-+  helpText?: string
-+  type: 'select'
-+  value: string
-+  onChange: (value: string) => void
-+  type: 'date'
-+  value: string
-+  min?: string
-+  onChange: (value: string) => void
-+interface MultiSelectFilterConfig extends BaseFilterConfig {
-+  type: 'multiselect'
-+  value: string[]
-+  options: FilterOption[]
-+  size?: number
-+  onChange: (value: string[]) => void
-+}
-+
-+interface CheckboxFilterConfig extends BaseFilterConfig {
-+  type: 'checkbox'
-+  checked: boolean
-+  onChange: (checked: boolean) => void
-+}
-+
-+type ListingFilterConfig =
-+  | SelectFilterConfig
-+  | DateFilterConfig
-+  | MultiSelectFilterConfig
-+  | CheckboxFilterConfig
-+
--  searchId: string
--  searchLabel: string
--  searchPlaceholder: string
--  searchValue: string
--  onSearchChange: (value: string) => void
-+  search?: SearchFilterConfig
--  filters?: Array<SelectFilterConfig | DateFilterConfig>
-+  filters?: ListingFilterConfig[]
--  searchId,
--  searchLabel,
--  searchPlaceholder,
--  searchValue,
--  onSearchChange,
-+  search,
--      <div className="listing-filters__controls">
--        <label htmlFor={searchId}>
--          {searchLabel}
--          <input
--            id={searchId}
++        {summary && !isLoading && !summaryErrorMessage && (
++          <section className="dashboard-grid" aria-label={t('dashboard.ariaSummary')}>
++            {dashboardStats.map((stat) => (
++              <StatCard
++                key={stat.key}
++                title={stat.key === 'totalProduction'
++                  ? productionTitle
++                  : stat.format === 'currency'
++                    ? appendCurrencyCode(t(stat.titleKey), currency)
++                    : t(stat.titleKey)}
++                value={stat.key === 'totalProduction'
++                  ? convertMeasurementFromBase(summary.totalProduction, productionUnit)
++                  : summary[stat.key] ?? 0}
++                format={stat.format}
++              />
++            ))}
++          </section>
++        )}
++      </section>
