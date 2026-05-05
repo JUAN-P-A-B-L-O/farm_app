@@ -1,5 +1,6 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import { publishSuccess } from './feedbackService'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 import type { User, UserFormData, UserListFilters } from '../types/user'
 
@@ -46,6 +47,7 @@ export async function createUser(data: UserFormData): Promise<User> {
   }
 
   const response = await api.post<User>('/users', payload)
+  publishSuccess('accessControl.success.create', { dedupeKey: 'users:create' })
 
   return response.data
 }
@@ -60,12 +62,14 @@ export async function updateUser(id: string, data: UserFormData): Promise<User> 
   }
 
   const response = await api.put<User>(`/users/${id}`, payload)
+  publishSuccess('accessControl.success.update', { dedupeKey: 'users:update' })
 
   return response.data
 }
 
 export async function inactivateUser(id: string): Promise<User> {
   const response = await api.patch<User>(`/users/${id}/inactivate`)
+  publishSuccess('accessControl.success.inactivate', { dedupeKey: 'users:inactivate' })
 
   return response.data
 }
@@ -74,12 +78,14 @@ export async function activateUser(id: string, password?: string): Promise<User>
   const response = await api.patch<User>(`/users/${id}/activate`, {
     password: password || undefined,
   })
+  publishSuccess('accessControl.success.activate', { dedupeKey: 'users:activate' })
 
   return response.data
 }
 
 export async function deleteUser(id: string): Promise<void> {
   await api.delete(`/users/${id}`)
+  publishSuccess('accessControl.success.delete', { dedupeKey: 'users:delete' })
 }
 
 export async function updateOwnPassword(currentPassword: string, newPassword: string): Promise<void> {
@@ -87,8 +93,13 @@ export async function updateOwnPassword(currentPassword: string, newPassword: st
     currentPassword,
     newPassword,
   })
+  publishSuccess('settings.success.passwordUpdated', { dedupeKey: 'settings:update-password' })
 }
 
 export async function exportUsersCsv(filters?: UserListFilters): Promise<void> {
-  await downloadCsv('/users/export', buildUserListParams(filters), 'users.csv')
+  await downloadCsv('/users/export', buildUserListParams(filters), {
+    fallbackFileName: 'users.csv',
+    successDedupeKey: 'users:export',
+    successMessageKey: 'accessControl.success.export',
+  })
 }

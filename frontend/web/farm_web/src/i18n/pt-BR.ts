@@ -60,6 +60,10 @@ const ptBR = {
     exportCsv: 'Exportar CSV',
     exportingCsv: 'Exportando...',
     exportError: 'Não foi possível exportar o CSV.',
+    feedback: {
+      close: 'Fechar notificação',
+      dismiss: 'Fechar',
+    },
     selectAnimal: 'Selecione um animal',
     selectUser: 'Selecione um usuário',
     placeholders: {
@@ -116,6 +120,9 @@ const ptBR = {
       totalProfit: 'Lucro',
       animalCount: 'Número de animais',
     },
+    success: {
+      export: 'Painel exportado em CSV com sucesso.',
+    },
   },
   farm: {
     eyebrow: 'Limite da fazenda',
@@ -131,6 +138,9 @@ const ptBR = {
     form: {
       name: 'Nome da fazenda',
       placeholder: 'Fazenda Norte',
+    },
+    success: {
+      create: 'Fazenda criada com sucesso.',
     },
     errors: {
       create: 'Não foi possível criar a fazenda.',
@@ -223,6 +233,13 @@ const ptBR = {
     },
     noAcquisitionCost: 'Não se aplica',
     noSaleData: 'Não vendido',
+    success: {
+      create: 'Animal criado com sucesso.',
+      update: 'Animal atualizado com sucesso.',
+      delete: 'Animal excluído com sucesso.',
+      sell: 'Animal vendido com sucesso.',
+      export: 'Animais exportados em CSV com sucesso.',
+    },
     errors: {
       notFound: 'Animal não encontrado.',
       duplicateTag: 'Já existe um animal com esta tag.',
@@ -286,6 +303,13 @@ const ptBR = {
       apply: 'Aplicar filtros',
       clear: 'Limpar',
     },
+    success: {
+      create: 'Registro de produção criado com sucesso.',
+      createBatch: 'Produção em lote registrada com sucesso.',
+      update: 'Registro de produção atualizado com sucesso.',
+      delete: 'Registro de produção excluído com sucesso.',
+      export: 'Produções exportadas em CSV com sucesso.',
+    },
     errors: {
       validationSave: 'Erro de validação ao salvar a produção.',
       animalNotFound: 'Animal não encontrado.',
@@ -340,6 +364,10 @@ const ptBR = {
       price: 'Preço',
       effectiveDate: 'Data de vigência',
       createdAt: 'Registrado em',
+    },
+    success: {
+      create: 'Preço do leite registrado com sucesso.',
+      export: 'Preços do leite exportados em CSV com sucesso.',
     },
     errors: {
       load: 'Não foi possível carregar os preços do leite.',
@@ -405,6 +433,13 @@ const ptBR = {
       apply: 'Aplicar filtros',
       clear: 'Limpar',
     },
+    success: {
+      create: 'Registro de alimentação criado com sucesso.',
+      createBatch: 'Alimentação em lote registrada com sucesso.',
+      update: 'Registro de alimentação atualizado com sucesso.',
+      delete: 'Registro de alimentação excluído com sucesso.',
+      export: 'Alimentações exportadas em CSV com sucesso.',
+    },
     errors: {
       validationSave: 'Erro de validação ao salvar a alimentação.',
       notFound: 'Animal ou tipo de ração não encontrado.',
@@ -459,6 +494,12 @@ const ptBR = {
       apply: 'Aplicar filtros',
       clear: 'Limpar',
     },
+    success: {
+      create: 'Tipo de ração criado com sucesso.',
+      update: 'Tipo de ração atualizado com sucesso.',
+      delete: 'Tipo de ração excluído com sucesso.',
+      export: 'Tipos de ração exportados em CSV com sucesso.',
+    },
     errors: {
       validationSave: 'Erro de validação ao salvar o tipo de ração.',
       notFound: 'Tipo de ração não encontrado.',
@@ -510,6 +551,11 @@ const ptBR = {
       searchPlaceholder: 'Buscar por nome do lote',
       apply: 'Aplicar filtros',
       clear: 'Limpar',
+    },
+    success: {
+      create: 'Lote criado com sucesso.',
+      update: 'Lote atualizado com sucesso.',
+      delete: 'Lote excluído com sucesso.',
     },
     errors: {
       validationSave: 'Erro de validação ao salvar o lote.',
@@ -600,6 +646,14 @@ const ptBR = {
       MANAGER: 'Gerente',
       WORKER: 'Trabalhador',
     },
+    success: {
+      create: 'Usuário criado com sucesso.',
+      update: 'Usuário atualizado com sucesso.',
+      activate: 'Usuário ativado com sucesso.',
+      inactivate: 'Usuário inativado com sucesso.',
+      delete: 'Usuário excluído com sucesso.',
+      export: 'Usuários exportados em CSV com sucesso.',
+    },
     errors: {
       validationSave: 'Erro de validação ao salvar o usuário.',
       notFound: 'Usuário não encontrado.',
@@ -674,6 +728,12 @@ const ptBR = {
     profitDescription: 'Receita menos custo de alimentação em cada período.',
     productionByAnimalTitle: 'Produção por animal',
     productionByAnimalDescription: 'Compare a produção total de cada animal no intervalo filtrado.',
+    success: {
+      exportProduction: 'Análise de produção exportada em CSV com sucesso.',
+      exportFeeding: 'Análise de alimentação exportada em CSV com sucesso.',
+      exportProfit: 'Análise de lucro exportada em CSV com sucesso.',
+      exportProductionByAnimal: 'Análise de produção por animal exportada em CSV com sucesso.',
+    },
   },
 } as const
 

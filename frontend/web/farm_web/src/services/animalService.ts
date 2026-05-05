@@ -1,5 +1,6 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import { publishSuccess } from './feedbackService'
 import type { CurrencyCode } from '../context/CurrencyContext'
 import type { Animal, AnimalFormData, AnimalListFilters, SellAnimalData } from '../types/animal'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
@@ -62,6 +63,7 @@ export async function getAnimalById(id: string, farmId?: string): Promise<Animal
 
 export async function createAnimal(data: AnimalFormData): Promise<Animal> {
   const response = await api.post<Animal>('/animals', data)
+  publishSuccess('animals.success.create', { dedupeKey: 'animals:create' })
 
   return response.data
 }
@@ -70,6 +72,7 @@ export async function updateAnimal(id: string, data: AnimalFormData, farmId?: st
   const response = await api.put<Animal>(`/animals/${id}`, data, {
     params: buildAnimalListParams(farmId),
   })
+  publishSuccess('animals.success.update', { dedupeKey: 'animals:update' })
 
   return response.data
 }
@@ -78,12 +81,14 @@ export async function deleteAnimal(id: string, farmId?: string): Promise<void> {
   await api.delete(`/animals/${id}`, {
     params: buildAnimalListParams(farmId),
   })
+  publishSuccess('animals.success.delete', { dedupeKey: 'animals:delete' })
 }
 
 export async function sellAnimal(id: string, data: SellAnimalData, farmId?: string): Promise<Animal> {
   const response = await api.post<Animal>(`/animals/${id}/sell`, data, {
     params: buildAnimalListParams(farmId),
   })
+  publishSuccess('animals.success.sell', { dedupeKey: 'animals:sell' })
 
   return response.data
 }
@@ -93,5 +98,9 @@ export async function exportAnimalsCsv(
   currency?: CurrencyCode,
   filters?: AnimalListFilters,
 ): Promise<void> {
-  await downloadCsv('/animals/export', buildAnimalListParams(farmId, filters, currency), 'animals.csv')
+  await downloadCsv('/animals/export', buildAnimalListParams(farmId, filters, currency), {
+    fallbackFileName: 'animals.csv',
+    successDedupeKey: 'animals:export',
+    successMessageKey: 'animals.success.export',
+  })
 }

@@ -1,7 +1,14 @@
 import api from './api'
+import { publishSuccess } from './feedbackService'
 
 type CsvParamValue = string | number | boolean | null | undefined
 type CsvParams = Record<string, CsvParamValue>
+
+interface CsvDownloadOptions {
+  fallbackFileName?: string
+  successDedupeKey?: string
+  successMessageKey?: string
+}
 
 function sanitizeParams(params?: CsvParams) {
   if (!params) {
@@ -30,14 +37,14 @@ function parseFileName(contentDisposition: string | undefined, fallbackFileName:
 export async function downloadCsv(
   endpoint: string,
   params?: CsvParams,
-  fallbackFileName = 'export.csv',
+  options?: CsvDownloadOptions,
 ): Promise<void> {
   const response = await api.get<Blob>(endpoint, {
     params: sanitizeParams(params),
     responseType: 'blob',
   })
 
-  const fileName = parseFileName(response.headers['content-disposition'], fallbackFileName)
+  const fileName = parseFileName(response.headers['content-disposition'], options?.fallbackFileName ?? 'export.csv')
   const blob = response.data instanceof Blob
     ? response.data
     : new Blob([response.data], { type: 'text/csv;charset=utf-8' })
@@ -50,4 +57,10 @@ export async function downloadCsv(
   link.click()
   link.remove()
   window.URL.revokeObjectURL(downloadUrl)
+
+  if (options?.successMessageKey) {
+    publishSuccess(options.successMessageKey, {
+      dedupeKey: options.successDedupeKey ?? endpoint,
+    })
+  }
 }
