@@ -151,4 +151,11 @@ grep -F "DEV_CHANGE" <<<"$second_call" >/dev/null || {
   exit 1
 }
 
+committed_files_since_setup="$(git diff --name-only HEAD~2 HEAD)"
+
+if grep -q '^workspace/' <<<"$committed_files_since_setup"; then
+  echo "workspace artifacts should not be committed by GIT_ADD_SAFE"
+  exit 1
+fi
+
 popd >/dev/null
