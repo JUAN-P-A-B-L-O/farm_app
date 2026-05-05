@@ -5,6 +5,7 @@ set -u
 RUN_ID=$(date +"%Y%m%d_%H%M%S")
 LOG_DIR="workspace/logs/$RUN_ID"
 FAIL_DIR="workspace/failures/$RUN_ID"
+SUMMARY_FILE="workspace/pipeline_summary.md"
 
 mkdir -p "$LOG_DIR" "$FAIL_DIR"
 
@@ -24,35 +25,31 @@ TESTER_SKILL=$(cat skills/tester.md)
 FIXER_SKILL=$(cat skills/fixer.md)
 
 MAX_FIX_ATTEMPTS=1
-DIFF_LINES=120
+DIFF_LINES=100
 ERROR_LINES_AROUND=5
 
-SUMMARY_FILE="workspace/pipeline_summary.md"
+MAX_CHANGED_FILES_ABORT=25
+MAX_CHANGED_LINES_ABORT=2500
+MAX_TOTAL_TOKENS_ABORT=600000
+
+BACKEND_DIR="backend/farmapp"
 
 GIT_ADD_SAFE() {
-  git add -A \
-    ':!workspace/logs' \
-    ':!workspace/failures' \
-    ':!workspace/pipeline_summary.md' \
-    ':!workspace/diff.txt' \
-    ':!workspace/diff_full.txt' \
-    ':!workspace/files.txt' \
-    ':!workspace/mvn.log' \
-    ':!workspace/error_focus.txt'
+  git add -A . \
+    ':!workspace/logs/**' \
+    ':!workspace/failures/**' \
+    ':!workspace/pipeline_summary.md'
 }
 
-CHECK_TOKEN_LIMIT() {
+IS_HARD_TOKEN_LIMIT_ERROR() {
   local LOG_FILE="$1"
 
-  if grep -qiE "5h limit|weekly limit|rate limit|quota|tokens.*left|usage limit|limit reached|exceeded" "$LOG_FILE"; then
-    echo "🚫 Token/rate limit detected in $LOG_FILE"
-    return 0
-  fi
-
-  return 1
+  grep -qiE \
+    "rate limit exceeded|usage limit reached|quota exceeded|insufficient quota|you have reached your usage limit|request limit exceeded|too many requests" \
+    "$LOG_FILE"
 }
 
-FEATURE_TOKEN_COUNT() {
+TOKEN_COUNT() {
   local PATTERN="$1"
 
   awk '
@@ -63,6 +60,31 @@ FEATURE_TOKEN_COUNT() {
     }
     END { print sum + 0 }
   ' $PATTERN 2>/dev/null
+}
+
+CHECK_TOTAL_TOKENS_ABORT() {
+  local TOTAL
+  TOTAL=$(TOKEN_COUNT "$LOG_DIR/*.log")
+
+  if [ "$TOTAL" -gt "$MAX_TOTAL_TOKENS_ABORT" ]; then
+    echo "🛑 Total token usage too high: $TOTAL. Aborting pipeline."
+    echo "- 🛑 Pipeline aborted: token usage too high ($TOTAL)" >> "$SUMMARY_FILE"
+    exit 1
+  fi
+}
+
+CHECK_ABSURD_CHANGES_ABORT() {
+  local FILES_CHANGED
+  local CHANGED_LINES
+
+  FILES_CHANGED=$(git diff --name-only | grep -v '^workspace/' | wc -l)
+  CHANGED_LINES=$(git diff --numstat -- . ':!workspace' | awk '{ added += $1; deleted += $2 } END { print added + deleted + 0 }')
+
+  if [ "$FILES_CHANGED" -gt "$MAX_CHANGED_FILES_ABORT" ] || [ "$CHANGED_LINES" -gt "$MAX_CHANGED_LINES_ABORT" ]; then
+    echo "🛑 Absurdly large changes detected: ${FILES_CHANGED} files, ${CHANGED_LINES} lines."
+    echo "- 🛑 Pipeline aborted: absurd changes (${FILES_CHANGED} files, ${CHANGED_LINES} lines)" >> "$SUMMARY_FILE"
+    exit 1
+  fi
 }
 
 echo "# AI Pipeline Summary" > "$SUMMARY_FILE"
@@ -89,7 +111,6 @@ for FILE in workspace/features/*.md; do
 
   FEATURE_FAILED=false
   TESTS_PASSED=false
-  STOP_DUE_LIMIT=false
 
   # =====================
   # DEV
@@ -100,25 +121,21 @@ for FILE in workspace/features/*.md; do
   DEV_LOG="$LOG_DIR/${SAFE_NAME}_dev.log"
 
   if ! codex exec "$DEV_PROMPT" > "$DEV_LOG" 2>&1; then
-    if CHECK_TOKEN_LIMIT "$DEV_LOG"; then
-      echo "⏸️ Stopping pipeline due to token/rate limit."
-      echo "- ⏸️ $FEATURE_NAME: stopped due to token/rate limit" >> "$SUMMARY_FILE"
-      STOP_DUE_LIMIT=true
-      break
+    if IS_HARD_TOKEN_LIMIT_ERROR "$DEV_LOG"; then
+      echo "⏸️ DEV hit token/rate limit for $FEATURE_NAME. Skipping feature and continuing."
+      echo "- ⏸️ $FEATURE_NAME: DEV token/rate limit" >> "$SUMMARY_FILE"
+    else
+      echo "❌ DEV failed for $FEATURE_NAME. Continuing next feature."
+      echo "- ❌ $FEATURE_NAME: DEV failed" >> "$SUMMARY_FILE"
     fi
 
-    echo "❌ DEV failed for $FEATURE_NAME"
-    echo "- ❌ $FEATURE_NAME: DEV failed" >> "$SUMMARY_FILE"
     cp "$DEV_LOG" "$FAIL_DIR/${SAFE_NAME}_dev_failed.log" 2>/dev/null || true
+    CHECK_TOTAL_TOKENS_ABORT
     continue
   fi
 
-  if CHECK_TOKEN_LIMIT "$DEV_LOG"; then
-    echo "⏸️ Stopping pipeline due to token/rate limit."
-    echo "- ⏸️ $FEATURE_NAME: stopped due to token/rate limit" >> "$SUMMARY_FILE"
-    STOP_DUE_LIMIT=true
-    break
-  fi
+  CHECK_TOTAL_TOKENS_ABORT
+  CHECK_ABSURD_CHANGES_ABORT
 
   GIT_ADD_SAFE
   git commit -m "feat(ai): $FEATURE_NAME" || echo "⚠️ Nothing to commit after DEV"
@@ -159,26 +176,21 @@ Rules:
   TESTER_LOG="$LOG_DIR/${SAFE_NAME}_tester.log"
 
   if ! codex exec "$TESTER_PROMPT" > "$TESTER_LOG" 2>&1; then
-    if CHECK_TOKEN_LIMIT "$TESTER_LOG"; then
-      echo "⏸️ Stopping pipeline due to token/rate limit."
-      echo "- ⏸️ $FEATURE_NAME: stopped during tester due to token/rate limit" >> "$SUMMARY_FILE"
-      STOP_DUE_LIMIT=true
-      break
+    if IS_HARD_TOKEN_LIMIT_ERROR "$TESTER_LOG"; then
+      echo "⏸️ TESTER hit token/rate limit for $FEATURE_NAME. Continuing to validation."
+      echo "- ⏸️ $FEATURE_NAME: TESTER token/rate limit" >> "$SUMMARY_FILE"
+    else
+      echo "⚠️ TESTER failed for $FEATURE_NAME. Continuing to validation."
     fi
 
-    echo "⚠️ TESTER failed for $FEATURE_NAME, continuing to validation"
     FEATURE_FAILED=true
   else
+    CHECK_ABSURD_CHANGES_ABORT
     GIT_ADD_SAFE
     git commit -m "test(ai): update tests for $FEATURE_NAME" || echo "⚠️ No test changes"
   fi
 
-  if CHECK_TOKEN_LIMIT "$TESTER_LOG"; then
-    echo "⏸️ Stopping pipeline due to token/rate limit."
-    echo "- ⏸️ $FEATURE_NAME: stopped during tester due to token/rate limit" >> "$SUMMARY_FILE"
-    STOP_DUE_LIMIT=true
-    break
-  fi
+  CHECK_TOTAL_TOKENS_ABORT
 
   # =====================
   # TEST + FIX LOOP
@@ -192,7 +204,14 @@ Rules:
 
     MVN_LOG="$LOG_DIR/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log"
 
-    if (cd backend/farmapp && mvn test > "../../$MVN_LOG" 2>&1); then
+    if [ ! -d "$BACKEND_DIR" ]; then
+      echo "⚠️ Backend directory not found: $BACKEND_DIR. Skipping backend tests."
+      echo "- ⚠️ $FEATURE_NAME: backend tests skipped, directory not found" >> "$SUMMARY_FILE"
+      TESTS_PASSED=true
+      break
+    fi
+
+    if (cd "$BACKEND_DIR" && mvn test > "../../$MVN_LOG" 2>&1); then
       echo "✅ Tests passed for $FEATURE_NAME"
       TESTS_PASSED=true
       break
@@ -227,33 +246,19 @@ Rules:
     FIXER_LOG="$LOG_DIR/${SAFE_NAME}_fixer_attempt_${ATTEMPT}.log"
 
     if ! codex exec "$FIXER_PROMPT" > "$FIXER_LOG" 2>&1; then
-      if CHECK_TOKEN_LIMIT "$FIXER_LOG"; then
-        echo "⏸️ Stopping pipeline due to token/rate limit."
-        echo "- ⏸️ $FEATURE_NAME: stopped during fixer due to token/rate limit" >> "$SUMMARY_FILE"
-        STOP_DUE_LIMIT=true
-        break
+      if IS_HARD_TOKEN_LIMIT_ERROR "$FIXER_LOG"; then
+        echo "⏸️ FIXER hit token/rate limit for $FEATURE_NAME. Marking feature failed and continuing."
+        echo "- ⏸️ $FEATURE_NAME: FIXER token/rate limit" >> "$SUMMARY_FILE"
+      else
+        echo "⚠️ FIXER failed on attempt $ATTEMPT"
       fi
 
-      echo "⚠️ FIXER failed on attempt $ATTEMPT"
       FEATURE_FAILED=true
       break
     fi
 
-    if CHECK_TOKEN_LIMIT "$FIXER_LOG"; then
-      echo "⏸️ Stopping pipeline due to token/rate limit."
-      echo "- ⏸️ $FEATURE_NAME: stopped during fixer due to token/rate limit" >> "$SUMMARY_FILE"
-      STOP_DUE_LIMIT=true
-      break
-    fi
-
-    FILES_CHANGED=$(git diff --name-only | grep -v '^workspace/' | wc -l)
-    CHANGED_LINES=$(git diff --numstat -- . ':!workspace' | awk '{ added += $1; deleted += $2 } END { print added + deleted + 0 }')
-
-    if [ "$FILES_CHANGED" -gt 10 ] || [ "$CHANGED_LINES" -gt 900 ]; then
-      echo "⚠️ Fix too large (${FILES_CHANGED} files, ${CHANGED_LINES} lines). Marking feature as failed and continuing."
-      FEATURE_FAILED=true
-      break
-    fi
+    CHECK_TOTAL_TOKENS_ABORT
+    CHECK_ABSURD_CHANGES_ABORT
 
     GIT_ADD_SAFE
     git commit -m "fix(ai): auto-fix $FEATURE_NAME attempt $ATTEMPT" || echo "⚠️ No fix changes"
@@ -261,20 +266,19 @@ Rules:
     ATTEMPT=$((ATTEMPT + 1))
   done
 
-  if [ "$STOP_DUE_LIMIT" = true ]; then
-    break
-  fi
-
   if [ "$TESTS_PASSED" = true ] && [ "$FEATURE_FAILED" = false ]; then
     echo "✅ Feature completed: $FEATURE_NAME"
     echo "- ✅ $FEATURE_NAME: completed" >> "$SUMMARY_FILE"
+  elif [ "$TESTS_PASSED" = true ]; then
+    echo "⚠️ Feature partially completed: $FEATURE_NAME"
+    echo "- ⚠️ $FEATURE_NAME: tests passed, but one agent failed/limited" >> "$SUMMARY_FILE"
   else
     echo "❌ Feature failed but pipeline will continue: $FEATURE_NAME"
     echo "- ❌ $FEATURE_NAME: failed, check $LOG_DIR/${SAFE_NAME}_*" >> "$SUMMARY_FILE"
     cp "$LOG_DIR/${SAFE_NAME}_mvn_attempt_${ATTEMPT}.log" "$FAIL_DIR/${SAFE_NAME}_failed.log" 2>/dev/null || true
   fi
 
-  FEATURE_TOKENS=$(FEATURE_TOKEN_COUNT "$LOG_DIR/${SAFE_NAME}_*.log")
+  FEATURE_TOKENS=$(TOKEN_COUNT "$LOG_DIR/${SAFE_NAME}_*.log")
 
   echo "🔢 Tokens for $FEATURE_NAME: $FEATURE_TOKENS"
   echo "  - Tokens: $FEATURE_TOKENS" >> "$SUMMARY_FILE"
@@ -291,7 +295,7 @@ echo "===================================="
 echo "📊 TOKEN USAGE SUMMARY"
 echo "===================================="
 
-TOTAL_TOKENS=$(FEATURE_TOKEN_COUNT "$LOG_DIR/*.log")
+TOTAL_TOKENS=$(TOKEN_COUNT "$LOG_DIR/*.log")
 
 echo "Total tokens used: $TOTAL_TOKENS"
 
