@@ -1,4 +1,0 @@
-backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/animalbatch/AnimalBatchControllerContractTest.java
-backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/feeding/FeedingControllerContractTest.java
-backend/farmapp/src/test/java/com/jpsoftware/farmapp/contract/production/ProductionControllerContractTest.java
-ia_pipeline.sh

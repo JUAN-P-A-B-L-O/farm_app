@@ -1,2 +1,0 @@
-frontend/web/farm_web/src/App.css
-frontend/web/farm_web/src/pages/dashboard/DashboardPage.tsx
