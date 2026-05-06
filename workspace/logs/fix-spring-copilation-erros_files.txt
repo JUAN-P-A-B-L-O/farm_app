@@ -1,0 +1,8 @@
+backend/farmapp/pom.xml
+backend/farmapp/target_blocked_1777567931/classes/application-local.properties
+backend/farmapp/target_blocked_1777567931/classes/application.properties
+frontend/web/farm_web/package-lock.json
+frontend/web/farm_web/src/services/api.ts
+workspace/backlog/improve-visual-identity.md
+workspace/backlog/infinite-loading-bug-fix.md
+workspace/features/fix-spring-copilation-erros.md
