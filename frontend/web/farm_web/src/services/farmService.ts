@@ -1,4 +1,5 @@
 import api from './api'
+import { publishSuccess } from './feedbackService'
 import type { Farm, FarmFormData } from '../types/farm'
 
 interface GetAccessibleFarmsOptions {
@@ -15,6 +16,7 @@ export async function getAccessibleFarms(options?: GetAccessibleFarmsOptions): P
 
 export async function createFarm(data: FarmFormData): Promise<Farm> {
   const response = await api.post<Farm>('/farms', data)
+  publishSuccess('farm.success.create', { dedupeKey: 'farm:create' })
 
   return response.data
 }

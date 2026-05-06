@@ -376,11 +376,8 @@ public class AnalyticsService {
             farmAccessService.validateAccessibleFarmIfPresent(farmId);
         }
 
-        if (StringUtils.hasText(animalId) && !animalRepository.existsById(animalId)) {
-            throw new ResourceNotFoundException("Animal not found");
-        }
-        if (StringUtils.hasText(animalId) && StringUtils.hasText(farmId) && !animalRepository.existsByIdAndFarmId(animalId, farmId)) {
-            throw new ResourceNotFoundException("Animal not found");
+        if (StringUtils.hasText(animalId)) {
+            requireAccessibleAnimal(animalId, farmId);
         }
 
         try {
@@ -391,9 +388,14 @@ public class AnalyticsService {
     }
 
     private List<ProductionEntity> filterProductions(LocalDate startDate, LocalDate endDate, String animalId, String farmId) {
+        Set<String> accessibleFarmIds = !StringUtils.hasText(farmId)
+                ? farmAccessService.getAccessibleFarmIds().orElse(null)
+                : null;
         List<ProductionEntity> productions = StringUtils.hasText(farmId)
                 ? productionRepository.findByFarmIdAndStatus(farmId, ProductionEntity.STATUS_ACTIVE)
-                : productionRepository.findAll();
+                : productionRepository.findAll().stream()
+                        .filter(production -> matchesFarmScope(production.getFarmId(), accessibleFarmIds))
+                        .toList();
 
         return productions.stream()
                 .filter(production -> matchesAnimal(production.getAnimalId(), animalId))
@@ -402,9 +404,14 @@ public class AnalyticsService {
     }
 
     private List<FeedingEntity> filterFeedings(LocalDate startDate, LocalDate endDate, String animalId, String farmId) {
+        Set<String> accessibleFarmIds = !StringUtils.hasText(farmId)
+                ? farmAccessService.getAccessibleFarmIds().orElse(null)
+                : null;
         List<FeedingEntity> feedings = StringUtils.hasText(farmId)
                 ? feedingRepository.findByFarmIdAndStatus(farmId, FeedingEntity.STATUS_ACTIVE)
-                : feedingRepository.findAll();
+                : feedingRepository.findAll().stream()
+                        .filter(feeding -> matchesFarmScope(feeding.getFarmId(), accessibleFarmIds))
+                        .toList();
 
         return feedings.stream()
                 .filter(feeding -> matchesAnimal(feeding.getAnimalId(), animalId))
@@ -473,19 +480,38 @@ public class AnalyticsService {
     }
 
     private List<AnimalEntity> filterAnimalsForFinancials(String animalId, String farmId) {
+        Set<String> accessibleFarmIds = !StringUtils.hasText(farmId)
+                ? farmAccessService.getAccessibleFarmIds().orElse(null)
+                : null;
         List<AnimalEntity> animals;
         if (StringUtils.hasText(animalId)) {
-            AnimalEntity animal = StringUtils.hasText(farmId)
-                    ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)
-                    : animalRepository.findById(animalId).orElse(null);
-            animals = animal != null ? List.of(animal) : List.of();
+            animals = List.of(requireAccessibleAnimal(animalId, farmId));
         } else if (StringUtils.hasText(farmId)) {
             animals = animalRepository.findByFarmId(farmId);
         } else {
-            animals = animalRepository.findAll();
+            animals = animalRepository.findAll().stream()
+                    .filter(animal -> matchesFarmScope(animal.getFarmId(), accessibleFarmIds))
+                    .toList();
         }
 
         return animals;
+    }
+
+    private AnimalEntity requireAccessibleAnimal(String animalId, String farmId) {
+        AnimalEntity animal = StringUtils.hasText(farmId)
+                ? animalRepository.findByIdAndFarmId(animalId, farmId).orElse(null)
+                : animalRepository.findById(animalId).orElse(null);
+        if (animal == null) {
+            throw new ResourceNotFoundException("Animal not found");
+        }
+        if (!StringUtils.hasText(farmId)) {
+            farmAccessService.validateEntityFarmAccess(animal.getFarmId(), "Animal not found");
+        }
+        return animal;
+    }
+
+    private boolean matchesFarmScope(String entityFarmId, Set<String> accessibleFarmIds) {
+        return accessibleFarmIds == null || accessibleFarmIds.contains(entityFarmId);
     }
 
     private <T> List<AnalyticsTimeSeriesPointResponse> aggregateSeries(

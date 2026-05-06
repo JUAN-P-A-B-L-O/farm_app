@@ -64,6 +64,8 @@ function compileServices() {
       .replaceAll('import.meta.env.VITE_API_URL', 'globalThis.__TEST_VITE_API_URL__')
       .replace('type UnauthorizedHandler = () => void\n\n', '')
       .replaceAll(': UnauthorizedHandler | null', '')
+      .replaceAll(': string', '')
+      .replaceAll(': boolean', '')
       .replaceAll(': unknown', ''),
   )
 }

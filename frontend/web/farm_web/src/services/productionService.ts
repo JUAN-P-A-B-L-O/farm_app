@@ -1,5 +1,6 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import { publishSuccess } from './feedbackService'
 import { normalizeToTwoDecimals } from '../utils/decimal'
 import type { ProductionUnit } from '../utils/measurementUnits'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
@@ -41,6 +42,7 @@ export async function createBatchProduction(data: ProductionFormData, farmId?: s
   const response = await api.post<Production[]>('/productions/batch', payload, {
     params: buildProductionListParams(farmId),
   })
+  publishSuccess('production.success.createBatch', { dedupeKey: 'production:create-batch' })
 
   return response.data
 }
@@ -80,6 +82,7 @@ export async function createProduction(data: ProductionFormData, farmId?: string
   const response = await api.post<Production>('/productions', payload, {
     params: buildProductionListParams(farmId),
   })
+  publishSuccess('production.success.create', { dedupeKey: 'production:create' })
 
   return response.data
 }
@@ -102,6 +105,7 @@ export async function updateProduction(id: string, data: ProductionFormData, far
   const response = await api.put<Production>(`/productions/${id}`, payload, {
     params: buildProductionListParams(farmId),
   })
+  publishSuccess('production.success.update', { dedupeKey: 'production:update' })
 
   return response.data
 }
@@ -110,6 +114,7 @@ export async function deleteProduction(id: string, farmId?: string): Promise<voi
   await api.delete(`/productions/${id}`, {
     params: buildProductionListParams(farmId),
   })
+  publishSuccess('production.success.delete', { dedupeKey: 'production:delete' })
 }
 
 export async function exportProductionsCsv(
@@ -123,6 +128,10 @@ export async function exportProductionsCsv(
       ...buildProductionListParams(farmId, filters),
       ...(measurementUnit ? { measurementUnit } : {}),
     },
-    'productions.csv',
+    {
+      fallbackFileName: 'productions.csv',
+      successDedupeKey: 'production:export',
+      successMessageKey: 'production.success.export',
+    },
   )
 }

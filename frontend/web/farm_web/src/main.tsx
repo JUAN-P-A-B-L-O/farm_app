@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './context/AuthContext.tsx'
 import { CurrencyProvider } from './context/CurrencyContext.tsx'
+import { FeedbackProvider } from './context/FeedbackContext.tsx'
 import { FarmProvider } from './context/FarmContext.tsx'
 import { LanguageProvider } from './context/LanguageContext.tsx'
 import { MeasurementUnitProvider } from './context/MeasurementUnitContext.tsx'
@@ -14,13 +15,15 @@ createRoot(document.getElementById('root')!).render(
     <AuthProvider>
       <FarmProvider>
         <LanguageProvider>
-          <CurrencyProvider>
-            <MeasurementUnitProvider>
-              <BrowserRouter>
-                <App />
-              </BrowserRouter>
-            </MeasurementUnitProvider>
-          </CurrencyProvider>
+          <FeedbackProvider>
+            <CurrencyProvider>
+              <MeasurementUnitProvider>
+                <BrowserRouter>
+                  <App />
+                </BrowserRouter>
+              </MeasurementUnitProvider>
+            </CurrencyProvider>
+          </FeedbackProvider>
         </LanguageProvider>
       </FarmProvider>
     </AuthProvider>

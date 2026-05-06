@@ -13,6 +13,7 @@ import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.service.FarmAccessService;
 import com.jpsoftware.farmapp.production.entity.ProductionEntity;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
+import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import java.time.LocalDate;
 import java.util.List;
@@ -256,5 +257,23 @@ animal-1,TAG-001,12500.0,mL
         assertEquals(10.0, response.getFirst().getFeedingCost());
         assertEquals(64.0, response.getFirst().getRevenue());
         assertEquals(54.0, response.getFirst().getProfit());
+    }
+
+    @Test
+    void shouldRejectInaccessibleAnimalWhenFarmIdIsOmitted() {
+        AnimalEntity animal = AnimalEntity.builder()
+                .id("animal-1")
+                .farmId("farm-2")
+                .build();
+        when(animalRepository.findById("animal-1")).thenReturn(Optional.of(animal));
+        org.mockito.Mockito.doThrow(new ResourceNotFoundException("Animal not found"))
+                .when(farmAccessService)
+                .validateEntityFarmAccess("farm-2", "Animal not found");
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> analyticsService.getProfitSeries(null, null, "animal-1", "day", null, true));
+
+        assertEquals("Animal not found", exception.getMessage());
     }
 }

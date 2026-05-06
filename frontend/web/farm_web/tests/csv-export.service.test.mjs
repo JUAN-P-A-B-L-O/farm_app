@@ -22,8 +22,13 @@ function compileCsvExportService() {
     path.join(compiledRoot, 'csvExportService.js'),
     csvExportSource
       .replace("import api from './api'\n", "import api from './api.js'\n")
+      .replace(
+        "import { publishSuccess } from './feedbackService'\n",
+        "import { publishSuccess } from './feedbackService.js'\n",
+      )
       .replace(/type CsvParamValue = .*\n/g, '')
       .replace(/type CsvParams = .*\n/g, '')
+      .replace(/interface CsvDownloadOptions \{[\s\S]*?\}\n\n/, '')
       .replace('function sanitizeParams(params?: CsvParams) {', 'function sanitizeParams(params) {')
       .replace(
         'function parseFileName(contentDisposition: string | undefined, fallbackFileName: string) {',
@@ -33,12 +38,12 @@ function compileCsvExportService() {
         `export async function downloadCsv(
   endpoint: string,
   params?: CsvParams,
-  fallbackFileName = 'export.csv',
+  options?: CsvDownloadOptions,
 ): Promise<void> {`,
         `export async function downloadCsv(
   endpoint,
   params,
-  fallbackFileName = 'export.csv',
+  options,
 ) {`,
       )
       .replace('api.get<Blob>', 'api.get'),
@@ -64,11 +69,21 @@ writeFileSync(
   `const api = globalThis.__csvExportApiStub;\nexport default api;\n`,
 )
 
+writeFileSync(
+  path.join(compiledRoot, 'feedbackService.js'),
+  `export function publishSuccess(messageKey, options) {
+  globalThis.__csvExportPublishSuccessCalls.push({ messageKey, options })
+}
+`,
+)
+
 const createdLinks = []
 const createObjectUrlCalls = []
 const revokeObjectUrlCalls = []
+const publishSuccessCalls = []
 
 globalThis.__csvExportApiStub = apiStub
+globalThis.__csvExportPublishSuccessCalls = publishSuccessCalls
 globalThis.document = {
   body: {
     appendChild(link) {
@@ -113,6 +128,7 @@ test.beforeEach(() => {
   createdLinks.length = 0
   createObjectUrlCalls.length = 0
   revokeObjectUrlCalls.length = 0
+  publishSuccessCalls.length = 0
 })
 
 test('downloadCsv sanitizes params but preserves false and zero values', async () => {
@@ -122,7 +138,9 @@ test('downloadCsv sanitizes params but preserves false and zero values', async (
     page: 0,
     role: null,
     farmId: 'farm-1',
-  }, 'users.csv')
+  }, {
+    fallbackFileName: 'users.csv',
+  })
 
   assert.deepEqual(apiStub.requests[0], {
     url: '/users/export',
@@ -135,9 +153,10 @@ test('downloadCsv sanitizes params but preserves false and zero values', async (
       responseType: 'blob',
     },
   })
+  assert.deepEqual(publishSuccessCalls, [])
 })
 
-test('downloadCsv uses the UTF-8 filename from the response headers', async () => {
+test('downloadCsv uses the UTF-8 filename from the response headers and publishes success feedback', async () => {
   apiStub.response = {
     data: new Blob(['header\nvalue\n'], { type: 'text/csv;charset=utf-8' }),
     headers: {
@@ -145,7 +164,11 @@ test('downloadCsv uses the UTF-8 filename from the response headers', async () =
     },
   }
 
-  await downloadCsv('/dashboard/export', { includeAcquisitionCost: true }, 'fallback.csv')
+  await downloadCsv('/dashboard/export', { includeAcquisitionCost: true }, {
+    fallbackFileName: 'fallback.csv',
+    successDedupeKey: 'dashboard:export',
+    successMessageKey: 'dashboard.success.export',
+  })
 
   assert.equal(createdLinks.length, 1)
   assert.equal(createdLinks[0].href, 'blob:csv-download')
@@ -154,4 +177,28 @@ test('downloadCsv uses the UTF-8 filename from the response headers', async () =
   assert.equal(createdLinks[0].removed, true)
   assert.equal(createObjectUrlCalls.length, 1)
   assert.equal(revokeObjectUrlCalls[0], 'blob:csv-download')
+  assert.deepEqual(publishSuccessCalls, [
+    {
+      messageKey: 'dashboard.success.export',
+      options: {
+        dedupeKey: 'dashboard:export',
+      },
+    },
+  ])
+})
+
+test('downloadCsv falls back to the endpoint when a success key is provided without a dedupe key', async () => {
+  await downloadCsv('/analytics/feeding/export', undefined, {
+    fallbackFileName: 'analytics.csv',
+    successMessageKey: 'analytics.success.exportFeeding',
+  })
+
+  assert.deepEqual(publishSuccessCalls, [
+    {
+      messageKey: 'analytics.success.exportFeeding',
+      options: {
+        dedupeKey: '/analytics/feeding/export',
+      },
+    },
+  ])
 })

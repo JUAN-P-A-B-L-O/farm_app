@@ -60,6 +60,10 @@ const en = {
     exportCsv: 'Export CSV',
     exportingCsv: 'Exporting...',
     exportError: 'Unable to export CSV.',
+    feedback: {
+      close: 'Close notification',
+      dismiss: 'Dismiss',
+    },
     selectAnimal: 'Select an animal',
     selectUser: 'Select a user',
     placeholders: {
@@ -116,6 +120,9 @@ const en = {
       totalProfit: 'Profit',
       animalCount: 'Number of Animals',
     },
+    success: {
+      export: 'Dashboard exported to CSV successfully.',
+    },
   },
   farm: {
     eyebrow: 'Farm Boundary',
@@ -131,6 +138,9 @@ const en = {
     form: {
       name: 'Farm name',
       placeholder: 'North Dairy',
+    },
+    success: {
+      create: 'Farm created successfully.',
     },
     errors: {
       create: 'Unable to create farm.',
@@ -223,6 +233,13 @@ const en = {
     },
     noAcquisitionCost: 'Not applicable',
     noSaleData: 'Not sold',
+    success: {
+      create: 'Animal created successfully.',
+      update: 'Animal updated successfully.',
+      delete: 'Animal deleted successfully.',
+      sell: 'Animal sold successfully.',
+      export: 'Animals exported to CSV successfully.',
+    },
     errors: {
       notFound: 'Animal not found.',
       duplicateTag: 'Animal with this tag already exists.',
@@ -286,6 +303,13 @@ const en = {
       apply: 'Apply filters',
       clear: 'Clear',
     },
+    success: {
+      create: 'Production record created successfully.',
+      createBatch: 'Batch production registered successfully.',
+      update: 'Production record updated successfully.',
+      delete: 'Production record deleted successfully.',
+      export: 'Production records exported to CSV successfully.',
+    },
     errors: {
       validationSave: 'Validation error while saving production.',
       animalNotFound: 'Animal not found.',
@@ -340,6 +364,10 @@ const en = {
       price: 'Price',
       effectiveDate: 'Effective date',
       createdAt: 'Registered at',
+    },
+    success: {
+      create: 'Milk price registered successfully.',
+      export: 'Milk prices exported to CSV successfully.',
     },
     errors: {
       load: 'Unable to load milk prices.',
@@ -405,6 +433,13 @@ const en = {
       apply: 'Apply filters',
       clear: 'Clear',
     },
+    success: {
+      create: 'Feeding record created successfully.',
+      createBatch: 'Batch feeding registered successfully.',
+      update: 'Feeding record updated successfully.',
+      delete: 'Feeding record deleted successfully.',
+      export: 'Feeding records exported to CSV successfully.',
+    },
     errors: {
       validationSave: 'Validation error while saving feeding.',
       notFound: 'Animal or feed type not found.',
@@ -459,6 +494,12 @@ const en = {
       apply: 'Apply filters',
       clear: 'Clear',
     },
+    success: {
+      create: 'Feed type created successfully.',
+      update: 'Feed type updated successfully.',
+      delete: 'Feed type deleted successfully.',
+      export: 'Feed types exported to CSV successfully.',
+    },
     errors: {
       validationSave: 'Validation error while saving feed type.',
       notFound: 'Feed type not found.',
@@ -510,6 +551,11 @@ const en = {
       searchPlaceholder: 'Search by batch name',
       apply: 'Apply filters',
       clear: 'Clear',
+    },
+    success: {
+      create: 'Batch created successfully.',
+      update: 'Batch updated successfully.',
+      delete: 'Batch deleted successfully.',
     },
     errors: {
       validationSave: 'Validation error while saving the batch.',
@@ -600,6 +646,14 @@ const en = {
       MANAGER: 'Manager',
       WORKER: 'Worker',
     },
+    success: {
+      create: 'User created successfully.',
+      update: 'User updated successfully.',
+      activate: 'User activated successfully.',
+      inactivate: 'User inactivated successfully.',
+      delete: 'User deleted successfully.',
+      export: 'Users exported to CSV successfully.',
+    },
     errors: {
       validationSave: 'Validation error while saving user.',
       notFound: 'User not found.',
@@ -616,6 +670,9 @@ const en = {
       emailRequired: 'Email is required.',
       roleRequired: 'Role is required.',
       passwordRequired: 'Password is required for active users.',
+      avatarInvalid: 'Enter a valid http(s) URL or a PNG, JPG, GIF, or WEBP avatar image.',
+      avatarFileTypeInvalid: 'Upload a PNG, JPG, GIF, or WEBP avatar.',
+      avatarFileTooLarge: 'The avatar must be 1 MB or smaller.',
       farmsRequired: 'Select at least one farm.',
     },
   },
@@ -671,6 +728,12 @@ const en = {
     profitDescription: 'Revenue minus feeding cost for each period.',
     productionByAnimalTitle: 'Production by Animal',
     productionByAnimalDescription: 'Compare the total production of each animal in the current filter range.',
+    success: {
+      exportProduction: 'Production analytics exported to CSV successfully.',
+      exportFeeding: 'Feeding analytics exported to CSV successfully.',
+      exportProfit: 'Profit analytics exported to CSV successfully.',
+      exportProductionByAnimal: 'Production-by-animal analytics exported to CSV successfully.',
+    },
   },
 } as const
 

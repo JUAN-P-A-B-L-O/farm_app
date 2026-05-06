@@ -1,5 +1,6 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import { publishSuccess } from './feedbackService'
 import type { CurrencyCode } from '../context/CurrencyContext'
 import type { FeedingUnit } from '../utils/measurementUnits'
 import type { FeedType, FeedTypeFormData, FeedTypeListFilters } from '../types/feedType'
@@ -45,6 +46,7 @@ export async function createFeedType(data: FeedTypeFormData, farmId?: string): P
   }, {
     params: buildFeedTypeListParams(farmId),
   })
+  publishSuccess('feedType.success.create', { dedupeKey: 'feed-type:create' })
 
   return response.data
 }
@@ -56,6 +58,7 @@ export async function updateFeedType(id: string, data: FeedTypeFormData, farmId?
   }, {
     params: buildFeedTypeListParams(farmId),
   })
+  publishSuccess('feedType.success.update', { dedupeKey: 'feed-type:update' })
 
   return response.data
 }
@@ -64,6 +67,7 @@ export async function deleteFeedType(id: string, farmId?: string): Promise<void>
   await api.delete(`/feed-types/${id}`, {
     params: buildFeedTypeListParams(farmId),
   })
+  publishSuccess('feedType.success.delete', { dedupeKey: 'feed-type:delete' })
 }
 
 export async function exportFeedTypesCsv(
@@ -78,6 +82,10 @@ export async function exportFeedTypesCsv(
       ...buildFeedTypeListParams(farmId, filters, currency),
       ...(measurementUnit ? { measurementUnit } : {}),
     },
-    'feed-types.csv',
+    {
+      fallbackFileName: 'feed-types.csv',
+      successDedupeKey: 'feed-type:export',
+      successMessageKey: 'feedType.success.export',
+    },
   )
 }

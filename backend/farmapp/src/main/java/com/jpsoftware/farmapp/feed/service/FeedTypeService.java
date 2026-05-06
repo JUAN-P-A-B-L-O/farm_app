@@ -17,6 +17,7 @@ import com.jpsoftware.farmapp.shared.util.CsvExportUtils;
 import com.jpsoftware.farmapp.shared.util.DecimalScaleUtils;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -193,29 +194,44 @@ public class FeedTypeService {
     private FeedTypeEntity findActiveFeedType(String id, String farmId) {
         farmAccessService.validateAccessibleFarmIfPresent(farmId);
 
-        return (StringUtils.hasText(farmId)
+        FeedTypeEntity feedType = (StringUtils.hasText(farmId)
                 ? feedTypeRepository.findByIdAndFarmIdAndActiveTrue(id, farmId)
                 : feedTypeRepository.findByIdAndActiveTrue(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Feed type not found"));
+        if (!StringUtils.hasText(farmId)) {
+            farmAccessService.validateEntityFarmAccess(feedType.getFarmId(), "Feed type not found");
+        }
+        return feedType;
     }
 
     private FeedTypeEntity findAnyFeedType(String id, String farmId) {
         farmAccessService.validateAccessibleFarmIfPresent(farmId);
 
-        return (StringUtils.hasText(farmId)
+        FeedTypeEntity feedType = (StringUtils.hasText(farmId)
                 ? feedTypeRepository.findByIdAndFarmId(id, farmId)
                 : feedTypeRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Feed type not found"));
+        if (!StringUtils.hasText(farmId)) {
+            farmAccessService.validateEntityFarmAccess(feedType.getFarmId(), "Feed type not found");
+        }
+        return feedType;
     }
 
     private Specification<FeedTypeEntity> buildFeedTypeSpecification(String farmId, String search) {
         String normalizedSearch = normalizeFilter(search);
+        Set<String> accessibleFarmIds = !StringUtils.hasText(farmId)
+                ? farmAccessService.getAccessibleFarmIds().orElse(null)
+                : null;
         Specification<FeedTypeEntity> specification = Specification.where((root, query, criteriaBuilder) ->
                 criteriaBuilder.isTrue(root.get("active")));
 
         if (StringUtils.hasText(farmId)) {
             specification = specification.and((root, query, criteriaBuilder) ->
                     criteriaBuilder.equal(root.get("farmId"), farmId));
+        } else if (accessibleFarmIds != null) {
+            specification = accessibleFarmIds.isEmpty()
+                    ? specification.and((root, query, criteriaBuilder) -> criteriaBuilder.disjunction())
+                    : specification.and((root, query, criteriaBuilder) -> root.get("farmId").in(accessibleFarmIds));
         }
         if (normalizedSearch != null) {
             String searchPattern = "%" + normalizedSearch + "%";

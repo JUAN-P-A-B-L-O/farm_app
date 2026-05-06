@@ -218,6 +218,9 @@ public class ProductionService {
                 ? productionRepository.findByIdAndFarmIdAndStatus(validateId(id), farmId, ProductionEntity.STATUS_ACTIVE)
                 : productionRepository.findById(validateId(id)))
                 .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
+        if (!StringUtils.hasText(farmId)) {
+            validateEntityFarmAccess(productionEntity.getFarmId(), "Production not found");
+        }
 
         return toEnrichedResponse(productionEntity);
     }
@@ -292,7 +295,7 @@ public class ProductionService {
         ensureProductionIsActive(productionEntity, "Inactive production cannot be updated");
 
         if (StringUtils.hasText(request.getAnimalId())) {
-            validateAnimalIsActive(request.getAnimalId(), farmId);
+            validateAnimalIsActive(request.getAnimalId(), productionEntity.getFarmId());
             productionEntity.setAnimalId(request.getAnimalId());
         }
         if (request.getDate() != null) {
@@ -443,12 +446,19 @@ public class ProductionService {
 
     private Specification<ProductionEntity> buildProductionSpecification(String search, String animalId, LocalDate date, String farmId) {
         String normalizedSearch = normalizeFilter(search);
+        Set<String> accessibleFarmIds = !StringUtils.hasText(farmId) && farmAccessService != null
+                ? farmAccessService.getAccessibleFarmIds().orElse(null)
+                : null;
         Specification<ProductionEntity> specification = Specification.where((root, query, criteriaBuilder) ->
                 criteriaBuilder.equal(root.get("status"), ProductionEntity.STATUS_ACTIVE));
 
         if (StringUtils.hasText(farmId)) {
             specification = specification.and((root, query, criteriaBuilder) ->
                     criteriaBuilder.equal(root.get("farmId"), farmId));
+        } else if (accessibleFarmIds != null) {
+            specification = accessibleFarmIds.isEmpty()
+                    ? specification.and((root, query, criteriaBuilder) -> criteriaBuilder.disjunction())
+                    : specification.and((root, query, criteriaBuilder) -> root.get("farmId").in(accessibleFarmIds));
         }
         if (StringUtils.hasText(animalId)) {
             specification = specification.and((root, query, criteriaBuilder) ->
@@ -476,10 +486,14 @@ public class ProductionService {
 
     private ProductionEntity getProductionIncludingInactive(String id, String farmId) {
         validateAccessibleFarmIfPresent(farmId);
-        return (StringUtils.hasText(farmId)
+        ProductionEntity productionEntity = (StringUtils.hasText(farmId)
                 ? productionRepository.findAnyByIdAndFarmId(validateId(id), farmId)
                 : productionRepository.findAnyById(validateId(id)))
                 .orElseThrow(() -> new ResourceNotFoundException("Production not found"));
+        if (!StringUtils.hasText(farmId)) {
+            validateEntityFarmAccess(productionEntity.getFarmId(), "Production not found");
+        }
+        return productionEntity;
     }
 
     private void ensureProductionIsActive(ProductionEntity productionEntity, String message) {
@@ -517,6 +531,9 @@ public class ProductionService {
                 : animalRepository.findById(animalId).orElse(null);
         if (animal == null) {
             throw new ResourceNotFoundException("Animal not found");
+        }
+        if (!StringUtils.hasText(farmId)) {
+            validateEntityFarmAccess(animal.getFarmId(), "Animal not found");
         }
         return animal;
     }
@@ -566,6 +583,12 @@ public class ProductionService {
     private void validateAccessibleFarmIfPresent(String farmId) {
         if (farmAccessService != null) {
             farmAccessService.validateAccessibleFarmIfPresent(farmId);
+        }
+    }
+
+    private void validateEntityFarmAccess(String entityFarmId, String notFoundMessage) {
+        if (farmAccessService != null) {
+            farmAccessService.validateEntityFarmAccess(entityFarmId, notFoundMessage);
         }
     }
 

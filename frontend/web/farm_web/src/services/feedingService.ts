@@ -1,5 +1,6 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import { publishSuccess } from './feedbackService'
 import { normalizeToTwoDecimals } from '../utils/decimal'
 import type { FeedingUnit } from '../utils/measurementUnits'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
@@ -68,6 +69,7 @@ export async function createFeeding(data: FeedingFormData, farmId?: string): Pro
   const response = await api.post<Feeding>('/feedings', payload, {
     params: buildFeedingListParams(farmId),
   })
+  publishSuccess('feeding.success.create', { dedupeKey: 'feeding:create' })
 
   return response.data
 }
@@ -84,6 +86,7 @@ export async function createBatchFeeding(data: FeedingFormData, farmId?: string)
   const response = await api.post<Feeding[]>('/feedings/batch', payload, {
     params: buildFeedingListParams(farmId),
   })
+  publishSuccess('feeding.success.createBatch', { dedupeKey: 'feeding:create-batch' })
 
   return response.data
 }
@@ -107,6 +110,7 @@ export async function updateFeeding(id: string, data: FeedingFormData, farmId?: 
   const response = await api.put<Feeding>(`/feedings/${id}`, payload, {
     params: buildFeedingListParams(farmId),
   })
+  publishSuccess('feeding.success.update', { dedupeKey: 'feeding:update' })
 
   return response.data
 }
@@ -115,6 +119,7 @@ export async function deleteFeeding(id: string, farmId?: string): Promise<void> 
   await api.delete(`/feedings/${id}`, {
     params: buildFeedingListParams(farmId),
   })
+  publishSuccess('feeding.success.delete', { dedupeKey: 'feeding:delete' })
 }
 
 export async function exportFeedingsCsv(
@@ -128,6 +133,10 @@ export async function exportFeedingsCsv(
       ...buildFeedingListParams(farmId, filters),
       ...(measurementUnit ? { measurementUnit } : {}),
     },
-    'feedings.csv',
+    {
+      fallbackFileName: 'feedings.csv',
+      successDedupeKey: 'feeding:export',
+      successMessageKey: 'feeding.success.export',
+    },
   )
 }

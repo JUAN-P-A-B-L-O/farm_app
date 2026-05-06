@@ -74,14 +74,24 @@ function collectSourceFiles(dir, result = []) {
 }
 
 function extractTranslationKeys() {
-  const keyPattern = /(?:^|[^A-Za-z0-9_$.])t\((['"`])([^'"`$]+)\1/g
+  const translationCallPattern = /(?:^|[^A-Za-z0-9_$.])t\((['"`])([^'"`$]+)\1/g
+  const publishSuccessPattern = /publishSuccess\(\s*(['"`])([^'"`$]+)\1/g
+  const successMessageKeyPattern = /successMessageKey:\s*(['"`])([^'"`$]+)\1/g
   const keys = new Set()
 
   for (const file of collectSourceFiles(sourceRoot)) {
     const contents = readFileSync(file, 'utf8')
     let match
 
-    while ((match = keyPattern.exec(contents)) !== null) {
+    while ((match = translationCallPattern.exec(contents)) !== null) {
+      keys.add(match[2])
+    }
+
+    while ((match = publishSuccessPattern.exec(contents)) !== null) {
+      keys.add(match[2])
+    }
+
+    while ((match = successMessageKeyPattern.exec(contents)) !== null) {
       keys.add(match[2])
     }
   }
@@ -125,7 +135,7 @@ function createTranslator(language) {
   return (key) => flattenedKeys.has(key) ? key.split('.').reduce((current, part) => current?.[part], translations[language]) : key
 }
 
-test('every translation key referenced by the frontend exists in both catalogs', () => {
+test('every translation key referenced by the frontend and feedback services exists in both catalogs', () => {
   const usedKeys = extractTranslationKeys()
   const ptKeys = flattenTranslations(translations['pt-BR'])
   const enKeys = flattenTranslations(translations.en)
@@ -142,6 +152,18 @@ test('layout navigation labels include the mobile menu affordances in both catal
   assert.equal(translations['pt-BR'].layout.closeNavigation, 'Fechar')
   assert.equal(translations.en.layout.openNavigation, 'Menu')
   assert.equal(translations.en.layout.closeNavigation, 'Close')
+})
+
+test('feedback toast labels and service-published success messages are localized in both catalogs', () => {
+  assert.equal(translations['pt-BR'].common.feedback.close, 'Fechar notificação')
+  assert.equal(translations['pt-BR'].common.feedback.dismiss, 'Fechar')
+  assert.equal(translations['pt-BR'].settings.success.passwordUpdated, 'Senha atualizada com sucesso.')
+  assert.equal(translations['pt-BR'].analytics.success.exportProductionByAnimal, 'Análise de produção por animal exportada em CSV com sucesso.')
+
+  assert.equal(translations.en.common.feedback.close, 'Close notification')
+  assert.equal(translations.en.common.feedback.dismiss, 'Dismiss')
+  assert.equal(translations.en.settings.success.passwordUpdated, 'Password updated successfully.')
+  assert.equal(translations.en.analytics.success.exportProductionByAnimal, 'Production-by-animal analytics exported to CSV successfully.')
 })
 
 test('domain label helpers centralize enum and boolean display labels with safe fallback', () => {

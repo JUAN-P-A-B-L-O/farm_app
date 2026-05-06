@@ -20,7 +20,6 @@ function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [validationMessage, setValidationMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -29,35 +28,30 @@ function SettingsPage() {
     if (!currentPassword.trim()) {
       setValidationMessage(t('settings.errors.currentPasswordRequired'))
       setErrorMessage('')
-      setSuccessMessage('')
       return
     }
 
     if (!newPassword.trim()) {
       setValidationMessage(t('settings.errors.newPasswordRequired'))
       setErrorMessage('')
-      setSuccessMessage('')
       return
     }
 
     if (newPassword !== confirmPassword) {
       setValidationMessage(t('settings.errors.passwordMismatch'))
       setErrorMessage('')
-      setSuccessMessage('')
       return
     }
 
     setIsSubmitting(true)
     setValidationMessage('')
     setErrorMessage('')
-    setSuccessMessage('')
 
     try {
       await updateOwnPassword(currentPassword.trim(), newPassword.trim())
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-      setSuccessMessage(t('settings.success.passwordUpdated'))
     } catch (error) {
       setErrorMessage(getErrorMessage(error, t('settings.errors.updatePassword')))
     } finally {
@@ -129,12 +123,6 @@ function SettingsPage() {
             {errorMessage && (
               <p className="animal-form__feedback animal-form__feedback--error">
                 {errorMessage}
-              </p>
-            )}
-
-            {successMessage && (
-              <p className="animal-form__feedback">
-                {successMessage}
               </p>
             )}
 

@@ -53,6 +53,16 @@ class ErrorMessageTranslatorTest {
     }
 
     @Test
+    void shouldTranslateAvatarValidationMessages() {
+        assertEquals(
+                "Informe uma URL http(s) válida ou uma imagem inline suportada para o avatar.",
+                ErrorMessageTranslator.translate("avatarUrl must be a valid http(s) URL or supported image data URL"));
+        assertEquals(
+                "O avatar excede o tamanho máximo permitido.",
+                ErrorMessageTranslator.translate("avatarUrl must not exceed 2000000 characters"));
+    }
+
+    @Test
     void shouldTranslateMapperMessages() {
         assertEquals("Animal obrigatório.", ErrorMessageTranslator.translate("Animal entity must not be null"));
     }

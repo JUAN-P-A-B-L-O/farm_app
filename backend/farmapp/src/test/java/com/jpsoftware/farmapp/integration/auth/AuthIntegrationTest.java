@@ -8,6 +8,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jpsoftware.farmapp.base.BaseIntegrationTest;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -187,5 +192,29 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("Recurso não encontrado."))
                 .andExpect(jsonPath("$.path").value("/missing-route"));
+    }
+
+    @Test
+    void shouldRejectTokenWithNonUuidSubjectOnProtectedEndpoint() throws Exception {
+        String token = buildTokenWithSubject("not-a-uuid");
+
+        mockMvc.perform(get("/animals")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("Token inválido ou expirado."))
+                .andExpect(jsonPath("$.path").value("/animals"));
+    }
+
+    private String buildTokenWithSubject(String subject) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .subject(subject)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusSeconds(3600)))
+                .signWith(Keys.hmacShaKeyFor(
+                        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                                .getBytes(StandardCharsets.UTF_8)))
+                .compact();
     }
 }

@@ -3,6 +3,7 @@ import { clearAuthSession, getStoredToken } from './authStorage.js'
 
 let unauthorizedHandler = null
 let isHandlingUnauthorized = false
+const PUBLIC_PATH_PREFIXES = ['/auth/', '/v3/api-docs/', '/swagger-ui/', '/swagger-ui.html']
 
 export function registerUnauthorizedHandler(handler) {
   unauthorizedHandler = handler
@@ -24,15 +25,22 @@ function shouldHandleUnauthorized(error) {
   return hasStoredToken && !isLoginRequest && error.response?.status === 401
 }
 
+function isPublicRequest(url) {
+  return PUBLIC_PATH_PREFIXES.some((prefix) => url.startsWith(prefix))
+}
+
 const api = axios.create({
   baseURL: 'http://localhost:8080',
 })
 
 api.interceptors.request.use((config) => {
   const token = getStoredToken()
+  const requestUrl = config.url ?? ''
 
-  if (token) {
+  if (token && !isPublicRequest(requestUrl)) {
     config.headers.Authorization = `Bearer ${token}`
+  } else if (config.headers?.Authorization) {
+    delete config.headers.Authorization
   }
 
   return config

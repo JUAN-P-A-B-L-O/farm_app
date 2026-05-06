@@ -1,4 +1,5 @@
 import api from './api'
+import { publishSuccess } from './feedbackService'
 import type { PaginatedResponse, PaginationParams } from '../types/pagination'
 import type {
   AnimalBatch,
@@ -41,6 +42,7 @@ export async function createAnimalBatch(data: AnimalBatchFormData, farmId?: stri
   const response = await api.post<AnimalBatch>('/animal-batches', data, {
     params: buildAnimalBatchListParams(farmId),
   })
+  publishSuccess('batches.success.create', { dedupeKey: 'batches:create' })
 
   return response.data
 }
@@ -49,6 +51,7 @@ export async function updateAnimalBatch(id: string, data: AnimalBatchFormData, f
   const response = await api.put<AnimalBatch>(`/animal-batches/${id}`, data, {
     params: buildAnimalBatchListParams(farmId),
   })
+  publishSuccess('batches.success.update', { dedupeKey: 'batches:update' })
 
   return response.data
 }
@@ -57,4 +60,5 @@ export async function deleteAnimalBatch(id: string, farmId?: string): Promise<vo
   await api.delete(`/animal-batches/${id}`, {
     params: buildAnimalBatchListParams(farmId),
   })
+  publishSuccess('batches.success.delete', { dedupeKey: 'batches:delete' })
 }

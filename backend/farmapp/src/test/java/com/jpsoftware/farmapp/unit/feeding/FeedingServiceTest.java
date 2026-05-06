@@ -151,6 +151,25 @@ class FeedingServiceTest {
     }
 
     @Test
+    void shouldFailWhenFeedTypeIsInactive() {
+        animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
+        feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage", false);
+        userRepositoryHandler.add(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> feedingService.create(
+                        new CreateFeedingRequest(
+                                "animal-1",
+                                "feed-type-1",
+                                LocalDate.of(2026, 3, 24),
+                                8.5,
+                                "11111111-1111-1111-1111-111111111111")));
+
+        assertEquals("Feed type not found", exception.getMessage());
+    }
+
+    @Test
     void shouldFailWhenUserNotFound() {
         animalRepositoryHandler.addAnimal("animal-1", "TAG-001");
         feedTypeRepositoryHandler.addFeedType("feed-type-1", "Corn Silage");
@@ -670,6 +689,10 @@ feeding-1,animal-1,TAG-001,feed-type-1,Corn Silage,2026-03-24,8500.0,g
             feedTypesById.put(id, new FeedTypeEntity(id, name, 1.75, true, "farm-1"));
         }
 
+        void addFeedType(String id, String name, boolean active) {
+            feedTypesById.put(id, new FeedTypeEntity(id, name, 1.75, active, "farm-1"));
+        }
+
         AnimalRepository createAnimalProxy() {
             return (AnimalRepository) createProxy(AnimalRepository.class);
         }
@@ -695,6 +718,15 @@ feeding-1,animal-1,TAG-001,feed-type-1,Corn Silage,2026-03-24,8500.0,g
                         }
                         if ("findByIdAndFarmId".equals(methodName) && AnimalRepository.class.equals(repositoryType)) {
                             return Optional.ofNullable(animalsById.get(args[0]))
+                                    .filter(entity -> entity.getFarmId().equals(args[1]));
+                        }
+                        if ("findByIdAndActiveTrue".equals(methodName) && FeedTypeRepository.class.equals(repositoryType)) {
+                            return Optional.ofNullable(feedTypesById.get(args[0]))
+                                    .filter(entity -> Boolean.TRUE.equals(entity.getActive()));
+                        }
+                        if ("findByIdAndFarmIdAndActiveTrue".equals(methodName) && FeedTypeRepository.class.equals(repositoryType)) {
+                            return Optional.ofNullable(feedTypesById.get(args[0]))
+                                    .filter(entity -> Boolean.TRUE.equals(entity.getActive()))
                                     .filter(entity -> entity.getFarmId().equals(args[1]));
                         }
                         if ("existsByIdAndFarmId".equals(methodName) && FeedTypeRepository.class.equals(repositoryType)) {

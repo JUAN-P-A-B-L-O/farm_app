@@ -64,6 +64,7 @@ interface ListingFiltersBarProps {
   onClear: () => void
   clearLabel: string
   filters?: ListingFilterConfig[]
+  className?: string
 }
 
 function ListingFiltersBar({
@@ -71,9 +72,12 @@ function ListingFiltersBar({
   onClear,
   clearLabel,
   filters = [],
+  className = '',
 }: ListingFiltersBarProps) {
+  const rootClassName = ['listing-filters', className].filter(Boolean).join(' ')
+
   return (
-    <div className="listing-filters">
+    <div className={rootClassName}>
       {(search || filters.length > 0) && (
         <div className="listing-filters__controls">
           {search ? (

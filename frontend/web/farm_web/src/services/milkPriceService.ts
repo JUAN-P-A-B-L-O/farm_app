@@ -1,5 +1,6 @@
 import api from './api'
 import { downloadCsv } from './csvExportService'
+import { publishSuccess } from './feedbackService'
 import type { CurrencyCode } from '../context/CurrencyContext'
 import { normalizeToTwoDecimals } from '../utils/decimal'
 import type { CreateMilkPricePayload, MilkPrice, MilkPriceListFilters } from '../types/milkPrice'
@@ -21,6 +22,7 @@ export async function createMilkPrice(data: CreateMilkPricePayload, farmId?: str
   }, {
     params: buildMilkPriceListParams(farmId),
   })
+  publishSuccess('milkPrice.success.create', { dedupeKey: 'milk-price:create' })
 
   return response.data
 }
@@ -62,5 +64,9 @@ export async function exportMilkPriceHistoryCsv(
   currency?: CurrencyCode,
   filters?: MilkPriceListFilters,
 ): Promise<void> {
-  await downloadCsv('/milk-prices/export', buildMilkPriceListParams(farmId, filters, currency), 'milk-prices.csv')
+  await downloadCsv('/milk-prices/export', buildMilkPriceListParams(farmId, filters, currency), {
+    fallbackFileName: 'milk-prices.csv',
+    successDedupeKey: 'milk-price:export',
+    successMessageKey: 'milkPrice.success.export',
+  })
 }

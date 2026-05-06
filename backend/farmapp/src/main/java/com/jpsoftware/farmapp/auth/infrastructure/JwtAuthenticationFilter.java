@@ -52,6 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = header.substring(BEARER_PREFIX.length());
         if (!tokenService.validateToken(token)) {
+            SecurityContextHolder.clearContext();
             authenticationEntryPoint.commence(
                     request,
                     response,
@@ -61,6 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         UserEntity user = userRepository.findById(tokenService.extractUserId(token)).orElse(null);
         if (user == null) {
+            SecurityContextHolder.clearContext();
             authenticationEntryPoint.commence(
                     request,
                     response,
@@ -69,6 +71,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (!user.isActive()) {
+            SecurityContextHolder.clearContext();
             authenticationEntryPoint.commence(
                     request,
                     response,

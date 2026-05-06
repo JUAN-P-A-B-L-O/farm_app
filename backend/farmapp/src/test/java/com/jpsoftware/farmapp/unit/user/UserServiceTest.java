@@ -186,6 +186,75 @@ class UserServiceTest {
     }
 
     @Test
+    void shouldFailWhenAvatarUrlUsesUnsafeScheme() {
+        CreateUserRequest request = new CreateUserRequest(
+                "Jane Doe",
+                "jane@farm.com",
+                "WORKER",
+                "farmapp@123",
+                true,
+                "javascript:alert('xss')",
+                List.of("farm-1"));
+
+        when(farmRepository.existsByIdAndOwnerId("farm-1", managerId)).thenReturn(true);
+        when(userRepository.findByEmail("jane@farm.com")).thenReturn(Optional.empty());
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> userService.create(request));
+
+        assertEquals("avatarUrl must be a valid http(s) URL or supported image data URL", exception.getMessage());
+    }
+
+    @Test
+    void shouldFailWhenAvatarUrlExceedsMaximumLength() {
+        CreateUserRequest request = new CreateUserRequest(
+                "Jane Doe",
+                "jane@farm.com",
+                "WORKER",
+                "farmapp@123",
+                true,
+                "https://example.com/" + "a".repeat(2_000_001),
+                List.of("farm-1"));
+
+        when(farmRepository.existsByIdAndOwnerId("farm-1", managerId)).thenReturn(true);
+        when(userRepository.findByEmail("jane@farm.com")).thenReturn(Optional.empty());
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> userService.create(request));
+
+        assertEquals("avatarUrl must not exceed 2000000 characters", exception.getMessage());
+    }
+
+    @Test
+    void shouldAllowSupportedAvatarDataUrl() {
+        String avatarDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA";
+        CreateUserRequest request = new CreateUserRequest(
+                "Jane Doe",
+                "jane@farm.com",
+                "WORKER",
+                "farmapp@123",
+                true,
+                avatarDataUrl,
+                List.of("farm-1"));
+
+        when(farmRepository.existsByIdAndOwnerId("farm-1", managerId)).thenReturn(true);
+        when(userRepository.findByEmail("jane@farm.com")).thenReturn(Optional.empty());
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> {
+            UserEntity entity = invocation.getArgument(0);
+            entity.setId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+            return entity;
+        });
+        when(userFarmAssignmentRepository.findByUserId(UUID.fromString("00000000-0000-0000-0000-000000000001")))
+                .thenReturn(List.of(
+                        new com.jpsoftware.farmapp.user.entity.UserFarmAssignmentEntity(
+                                UUID.randomUUID(),
+                                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                                "farm-1")));
+
+        UserResponse response = userService.create(request);
+
+        assertEquals(avatarDataUrl, response.getAvatarUrl());
+    }
+
+    @Test
     void shouldCreateInactiveUserWithoutPassword() {
         CreateUserRequest request = new CreateUserRequest(
                 "Jane Doe",

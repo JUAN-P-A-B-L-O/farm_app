@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -33,6 +34,11 @@ import org.springframework.util.StringUtils;
 
 @Service
 public class UserService {
+
+    private static final int MAX_AVATAR_URL_LENGTH = 2_000_000;
+    private static final Pattern SUPPORTED_AVATAR_DATA_URL = Pattern.compile(
+            "^data:image/(?:png|jpeg|jpg|gif|webp);base64,[A-Za-z0-9+/=\\r\\n]+$",
+            Pattern.CASE_INSENSITIVE);
 
     private final UserRepository userRepository;
     private final UserFarmAssignmentRepository userFarmAssignmentRepository;
@@ -398,7 +404,27 @@ public class UserService {
         if (!StringUtils.hasText(avatarUrl)) {
             return null;
         }
-        return avatarUrl.trim();
+
+        String normalizedAvatarUrl = avatarUrl.trim();
+        if (normalizedAvatarUrl.length() > MAX_AVATAR_URL_LENGTH) {
+            throw new ValidationException("avatarUrl must not exceed 2000000 characters");
+        }
+
+        if (SUPPORTED_AVATAR_DATA_URL.matcher(normalizedAvatarUrl).matches()) {
+            return normalizedAvatarUrl;
+        }
+
+        try {
+            java.net.URI uri = java.net.URI.create(normalizedAvatarUrl);
+            String scheme = uri.getScheme();
+            if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
+                return normalizedAvatarUrl;
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new ValidationException("avatarUrl must be a valid http(s) URL or supported image data URL");
+        }
+
+        throw new ValidationException("avatarUrl must be a valid http(s) URL or supported image data URL");
     }
 
     private UUID validateId(String id) {

@@ -78,4 +78,42 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag."));
     }
+
+    @Test
+    void shouldRestrictAnimalReadsToAccessibleFarmsWhenFarmIdIsOmitted() throws Exception {
+        UserEntity authorizedUser = createAuthenticatedUser();
+        UserEntity otherUser = createAuthenticatedUser();
+        FarmEntity authorizedFarm = createFarmOwnedBy(authorizedUser, "North Dairy");
+        FarmEntity otherFarm = createFarmOwnedBy(otherUser, "South Dairy");
+        AnimalEntity authorizedAnimal = animalRepository.save(AnimalEntity.builder()
+                .id("animal-authorized")
+                .tag("AUTH-001")
+                .breed("Holstein")
+                .birthDate(java.time.LocalDate.of(2023, 1, 10))
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(AnimalEntity.ORIGIN_BORN)
+                .farmId(authorizedFarm.getId())
+                .build());
+        AnimalEntity unauthorizedAnimal = animalRepository.save(AnimalEntity.builder()
+                .id("animal-unauthorized")
+                .tag("OTHER-001")
+                .breed("Jersey")
+                .birthDate(java.time.LocalDate.of(2023, 2, 12))
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(AnimalEntity.ORIGIN_BORN)
+                .farmId(otherFarm.getId())
+                .build());
+
+        mockMvc.perform(get("/animals")
+                        .header("Authorization", bearerToken(authorizedUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(authorizedAnimal.getId()))
+                .andExpect(jsonPath("$[0].farmId").value(authorizedFarm.getId()));
+
+        mockMvc.perform(get("/animals/{id}", unauthorizedAnimal.getId())
+                        .header("Authorization", bearerToken(authorizedUser)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Animal não encontrado."));
+    }
 }

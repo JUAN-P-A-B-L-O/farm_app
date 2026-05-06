@@ -19,6 +19,7 @@ import {
 } from '../../services/userService'
 import type { Farm } from '../../types/farm'
 import type { User, UserApiErrorResponse, UserFormData, UserListFilters } from '../../types/user'
+import { isValidAvatarUrl } from '../../utils/avatar'
 import { createEmptyPaginatedResponse, DEFAULT_PAGE_SIZE } from '../../utils/pagination'
 import '../../App.css'
 
@@ -479,7 +480,7 @@ function UsersPage() {
                     <tr key={user.id}>
                       <td>
                         <div className="user-table__identity">
-                          {user.avatarUrl ? (
+                          {user.avatarUrl && isValidAvatarUrl(user.avatarUrl) ? (
                             <img src={user.avatarUrl} alt={user.name} className="user-avatar" />
                           ) : (
                             <span className="user-avatar user-avatar--fallback">{getInitials(user)}</span>

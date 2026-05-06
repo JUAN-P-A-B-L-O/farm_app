@@ -5,6 +5,7 @@ type UnauthorizedHandler = () => void
 
 let unauthorizedHandler: UnauthorizedHandler | null = null
 let isHandlingUnauthorized = false
+const PUBLIC_PATH_PREFIXES = ['/auth/', '/v3/api-docs/', '/swagger-ui/', '/swagger-ui.html']
 
 export function registerUnauthorizedHandler(handler: UnauthorizedHandler | null) {
   unauthorizedHandler = handler
@@ -26,6 +27,10 @@ function shouldHandleUnauthorized(error: unknown) {
   return hasStoredToken && !isLoginRequest && error.response?.status === 401
 }
 
+function isPublicRequest(url: string) {
+  return PUBLIC_PATH_PREFIXES.some((prefix) => url.startsWith(prefix))
+}
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
 });
@@ -33,9 +38,12 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = getStoredToken()
+  const requestUrl = config.url ?? ''
 
-  if (token) {
+  if (token && !isPublicRequest(requestUrl)) {
     config.headers.Authorization = `Bearer ${token}`
+  } else if (config.headers?.Authorization) {
+    delete config.headers.Authorization
   }
 
   return config

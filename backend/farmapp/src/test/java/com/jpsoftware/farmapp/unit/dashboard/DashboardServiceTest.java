@@ -20,6 +20,7 @@ import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -132,8 +133,15 @@ totalProduction,totalProductionUnit,totalFeedingCost,totalRevenue,totalProfit,an
 
     @Test
     void shouldFilterDashboardByDateAnimalAndStatus() {
-        when(animalRepository.existsById("animal-1")).thenReturn(true);
-        when(animalRepository.existsByIdAndFarmId("animal-1", "farm-1")).thenReturn(true);
+        when(animalRepository.findByIdAndFarmId("animal-1", "farm-1")).thenReturn(Optional.of(
+                AnimalEntity.builder()
+                        .id("animal-1")
+                        .farmId("farm-1")
+                        .status(AnimalEntity.STATUS_SOLD)
+                        .acquisitionCost(60.0)
+                        .salePrice(200.0)
+                        .saleDate(LocalDate.parse("2026-01-20"))
+                        .build()));
         when(animalRepository.findAllById(java.util.Set.of("animal-1"))).thenReturn(List.of(
                 AnimalEntity.builder()
                         .id("animal-1")
@@ -169,10 +177,23 @@ totalProduction,totalProductionUnit,totalFeedingCost,totalRevenue,totalProfit,an
 
     @Test
     void shouldFilterDashboardByMultipleAnimals() {
-        when(animalRepository.existsById("animal-1")).thenReturn(true);
-        when(animalRepository.existsById("animal-2")).thenReturn(true);
-        when(animalRepository.existsByIdAndFarmId("animal-1", "farm-1")).thenReturn(true);
-        when(animalRepository.existsByIdAndFarmId("animal-2", "farm-1")).thenReturn(true);
+        when(animalRepository.findByIdAndFarmId("animal-1", "farm-1")).thenReturn(Optional.of(
+                AnimalEntity.builder()
+                        .id("animal-1")
+                        .farmId("farm-1")
+                        .status(AnimalEntity.STATUS_ACTIVE)
+                        .acquisitionCost(60.0)
+                        .salePrice(null)
+                        .build()));
+        when(animalRepository.findByIdAndFarmId("animal-2", "farm-1")).thenReturn(Optional.of(
+                AnimalEntity.builder()
+                        .id("animal-2")
+                        .farmId("farm-1")
+                        .status(AnimalEntity.STATUS_ACTIVE)
+                        .acquisitionCost(40.0)
+                        .salePrice(180.0)
+                        .saleDate(LocalDate.parse("2026-01-18"))
+                        .build()));
         when(animalRepository.findAllById(java.util.Set.of("animal-1", "animal-2"))).thenReturn(List.of(
                 AnimalEntity.builder()
                         .id("animal-1")
@@ -217,8 +238,13 @@ totalProduction,totalProductionUnit,totalFeedingCost,totalRevenue,totalProfit,an
 
     @Test
     void shouldNormalizeDuplicateAndBlankAnimalIdsBeforeFiltering() {
-        when(animalRepository.existsById("animal-1")).thenReturn(true);
-        when(animalRepository.existsByIdAndFarmId("animal-1", "farm-1")).thenReturn(true);
+        when(animalRepository.findByIdAndFarmId("animal-1", "farm-1")).thenReturn(Optional.of(
+                AnimalEntity.builder()
+                        .id("animal-1")
+                        .farmId("farm-1")
+                        .status(AnimalEntity.STATUS_ACTIVE)
+                        .acquisitionCost(25.0)
+                        .build()));
         when(animalRepository.findAllById(Set.of("animal-1"))).thenReturn(List.of(
                 AnimalEntity.builder()
                         .id("animal-1")
@@ -275,8 +301,7 @@ totalProduction,totalProductionUnit,totalFeedingCost,totalRevenue,totalProfit,an
 
     @Test
     void shouldRejectAnimalThatDoesNotBelongToRequestedFarm() {
-        when(animalRepository.existsById("animal-1")).thenReturn(true);
-        when(animalRepository.existsByIdAndFarmId("animal-1", "farm-1")).thenReturn(false);
+        when(animalRepository.findByIdAndFarmId("animal-1", "farm-1")).thenReturn(Optional.empty());
 
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,

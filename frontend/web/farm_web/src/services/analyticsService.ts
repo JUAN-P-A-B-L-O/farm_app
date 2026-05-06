@@ -126,7 +126,11 @@ export async function exportAnalyticsProductionCsv(
       ...buildAnalyticsParams(filters, farmId, currency),
       ...(productionUnit ? { productionUnit } : {}),
     },
-    'analytics-production.csv',
+    {
+      fallbackFileName: 'analytics-production.csv',
+      successDedupeKey: 'analytics:export-production',
+      successMessageKey: 'analytics.success.exportProduction',
+    },
   )
 }
 
@@ -135,7 +139,11 @@ export async function exportAnalyticsFeedingCsv(
   farmId?: string,
   currency?: CurrencyCode,
 ): Promise<void> {
-  await downloadCsv('/analytics/feeding/export', buildAnalyticsParams(filters, farmId, currency), 'analytics-feeding.csv')
+  await downloadCsv('/analytics/feeding/export', buildAnalyticsParams(filters, farmId, currency), {
+    fallbackFileName: 'analytics-feeding.csv',
+    successDedupeKey: 'analytics:export-feeding',
+    successMessageKey: 'analytics.success.exportFeeding',
+  })
 }
 
 export async function exportAnalyticsProfitCsv(
@@ -150,7 +158,11 @@ export async function exportAnalyticsProfitCsv(
       ...buildAnalyticsParams(filters, farmId, currency),
       ...(productionUnit ? { productionUnit } : {}),
     },
-    'analytics-profit.csv',
+    {
+      fallbackFileName: 'analytics-profit.csv',
+      successDedupeKey: 'analytics:export-profit',
+      successMessageKey: 'analytics.success.exportProfit',
+    },
   )
 }
 
@@ -166,6 +178,10 @@ export async function exportAnalyticsProductionByAnimalCsv(
       ...buildProductionByAnimalParams(filters, farmId, currency),
       ...(productionUnit ? { productionUnit } : {}),
     },
-    'analytics-production-by-animal.csv',
+    {
+      fallbackFileName: 'analytics-production-by-animal.csv',
+      successDedupeKey: 'analytics:export-production-by-animal',
+      successMessageKey: 'analytics.success.exportProductionByAnimal',
+    },
   )
 }
