@@ -1,42 +1,47 @@
-# Feature: Fix Compilation & Startup Errors (Spring Boot)
+# Feature: Fix Database Schema Mismatch (Migration Issues)
 
 ## Goal
-Identify and resolve compilation and startup errors (e.g., missing beans, dependency injection failures) to restore stable build and application execution.
+Resolve runtime errors caused by mismatches between application entities and database schema (e.g., missing columns), ensuring a safe and scalable migration approach.
 
 ## Scope
-- Backend: Spring Boot configuration, services, dependency injection
-- Build process (Maven)
+- Backend: JPA entities and database schema
+- Database migration mechanism (e.g., Flyway or equivalent)
+- Environment: dev and production consistency
 
 ## Requirements
-- Identify root cause of startup/compilation failure
-- Resolve missing bean definitions or incorrect dependency injection
-- Ensure all required components are properly registered
-- Maintain consistency with existing dependency injection patterns
-- Ensure application starts successfully
+- Identify missing or inconsistent columns between entity and database (e.g., email_confirmed)
+- Ensure database schema matches current entity definitions
+- Apply proper migration strategy (no manual fixes in production)
+- Support safe evolution of schema across environments
+- Avoid data loss in production scenarios
 
 ## Constraints
-- Do NOT refactor unrelated business logic
-- Do NOT create unnecessary classes or beans
-- Keep changes minimal and localized
-- Follow existing architecture and patterns
+- Do NOT recreate or drop production database
+- Do NOT apply destructive changes without migration control
+- Keep changes incremental and controlled
+- Follow existing migration/versioning strategy
+- Maintain compatibility with existing data
 
 ## Implementation Notes
-- Inspect failing class and its constructor dependencies
-- Verify if required beans exist and are properly annotated/registered
-- Check package scanning and configuration issues
-- Ensure implementations exist for required interfaces
-- Align with existing patterns used in other services
-- Avoid duplicating or incorrectly wiring beans
+- Inspect entity vs actual database schema
+- Identify missing migration(s) for new fields
+- Use migration tool (e.g., Flyway) to create versioned schema updates
+- Ensure migrations are idempotent and ordered
+- For local/dev:
+  - Allow reset/recreate if needed
+- For production:
+  - Apply forward-only migrations
+- Avoid relying on Hibernate auto-ddl for schema evolution
 
 ## Validation
-- Project compiles successfully
-- Application starts without errors
-- All required beans are correctly injected
-- No additional dependency injection errors appear
-- No regression in existing features
+- Application runs without SQL errors
+- All required columns exist in database
+- Existing data remains intact
+- Migrations run successfully in clean and existing databases
+- No regression in persistence behavior
 
 ## Done Criteria
-- Build process completes successfully
-- Application runs without startup failures
-- Dependency injection is consistent and stable
-- No unresolved bean or compilation issues remain
+- Schema is aligned with entity model
+- Migration process is properly defined and working
+- No runtime SQL errors remain
+- System is safe for production deployment
