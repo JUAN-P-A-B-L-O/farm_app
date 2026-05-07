@@ -1,15 +1,24 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useTranslation } from '../../hooks/useTranslation'
-import { registerAccount } from '../../services/authService'
+import {
+  confirmAccountEmail,
+  registerAccount,
+  resendConfirmationEmail,
+} from '../../services/authService'
 import { isManager } from '../../utils/authorization'
 import '../../App.css'
+
+interface ApiErrorResponse {
+  error?: string
+}
 
 interface LoginLocationState {
   registrationSuccess?: boolean
   registrationEmail?: string
+  confirmationSuccess?: boolean
   from?: {
     pathname?: string
   }
@@ -17,16 +26,73 @@ interface LoginLocationState {
 
 function LoginPage() {
   const { isAuthenticated, login, user } = useAuth()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const locationState = (location.state as LoginLocationState | null) ?? null
-  const isSignupMode = new URLSearchParams(location.search).get('mode') === 'signup'
+  const searchParams = new URLSearchParams(location.search)
+  const mode = searchParams.get('mode')
+  const isSignupMode = mode === 'signup'
+  const isConfirmationMode = mode === 'confirm'
+  const confirmationToken = searchParams.get('token')?.trim() ?? ''
   const [name, setName] = useState('')
   const [email, setEmail] = useState(locationState?.registrationEmail ?? '')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [infoMessage, setInfoMessage] = useState(
+    locationState?.confirmationSuccess
+      ? t('auth.success.confirmation')
+      : locationState?.registrationSuccess
+        ? t('auth.success.registration')
+        : '',
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false)
+  const [showResendConfirmation, setShowResendConfirmation] = useState(
+    Boolean(locationState?.registrationSuccess),
+  )
+  const [confirmationStatus, setConfirmationStatus] = useState<'loading' | 'success' | 'error'>('loading')
+  const [confirmationMessage, setConfirmationMessage] = useState(t('auth.confirmation.loading'))
+
+  useEffect(() => {
+    if (!isConfirmationMode) {
+      return
+    }
+
+    if (!confirmationToken) {
+      setConfirmationStatus('error')
+      setConfirmationMessage(t('auth.confirmation.errors.invalidLink'))
+      return
+    }
+
+    let isMounted = true
+
+    confirmAccountEmail(confirmationToken)
+      .then(() => {
+        if (!isMounted) {
+          return
+        }
+
+        setConfirmationStatus('success')
+        setConfirmationMessage(t('auth.confirmation.success'))
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return
+        }
+
+        if (axios.isAxiosError<ApiErrorResponse>(error)) {
+          setConfirmationMessage(error.response?.data?.error ?? t('auth.confirmation.errors.generic'))
+        } else {
+          setConfirmationMessage(t('auth.confirmation.errors.generic'))
+        }
+        setConfirmationStatus('error')
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [confirmationToken, isConfirmationMode, language])
 
   if (isAuthenticated) {
     return <Navigate to={isManager(user) ? '/dashboard' : '/animals'} replace />
@@ -35,6 +101,8 @@ function LoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorMessage('')
+    setInfoMessage('')
+    setShowResendConfirmation(false)
     setIsSubmitting(true)
 
     try {
@@ -57,16 +125,71 @@ function LoginPage() {
 
       navigate(nextPath, { replace: true })
     } catch (error) {
-      if (isSignupMode && axios.isAxiosError<{ error?: string }>(error)) {
+      if (isSignupMode && axios.isAxiosError<ApiErrorResponse>(error)) {
         setErrorMessage(error.response?.data?.error ?? t('auth.signup.errors.generic'))
       } else if (axios.isAxiosError(error) && error.response?.status === 401) {
         setErrorMessage(t('auth.errors.invalidCredentials'))
+      } else if (axios.isAxiosError<ApiErrorResponse>(error) && error.response?.status === 403) {
+        setErrorMessage(error.response?.data?.error ?? t('auth.errors.confirmationRequired'))
+        setShowResendConfirmation(true)
+      } else if (axios.isAxiosError<ApiErrorResponse>(error) && error.response?.data?.error) {
+        setErrorMessage(error.response.data.error)
       } else {
         setErrorMessage(isSignupMode ? t('auth.signup.errors.generic') : t('auth.errors.generic'))
       }
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  async function handleResendConfirmation() {
+    setErrorMessage('')
+    setInfoMessage('')
+    setIsResendingConfirmation(true)
+
+    try {
+      await resendConfirmationEmail(email)
+      setInfoMessage(t('auth.success.confirmationResent'))
+      setShowResendConfirmation(true)
+    } catch (error) {
+      if (axios.isAxiosError<ApiErrorResponse>(error) && error.response?.data?.error) {
+        setErrorMessage(error.response.data.error)
+      } else {
+        setErrorMessage(t('auth.errors.resendConfirmation'))
+      }
+    } finally {
+      setIsResendingConfirmation(false)
+    }
+  }
+
+  if (isConfirmationMode) {
+    return (
+      <main className="login-page">
+        <section className="login-page__panel">
+          <div className="login-page__header">
+            <p className="login-page__eyebrow">{t('auth.eyebrow')}</p>
+            <h1>{t('auth.confirmation.title')}</h1>
+            <p className="login-page__description">{t('auth.confirmation.description')}</p>
+          </div>
+
+          <p className={`animal-form__feedback ${confirmationStatus === 'success' ? 'animal-form__feedback--success' : 'animal-form__feedback--error'}`}>
+            {confirmationMessage}
+          </p>
+
+          <p className="login-page__supporting-action">
+            <Link
+              className="login-page__supporting-link"
+              to="/login"
+              state={confirmationStatus === 'success' ? { confirmationSuccess: true } : undefined}
+            >
+              {confirmationStatus === 'success'
+                ? t('auth.confirmation.loginAction')
+                : t('auth.confirmation.backToLogin')}
+            </Link>
+          </p>
+        </section>
+      </main>
+    )
   }
 
   return (
@@ -120,10 +243,23 @@ function LoginPage() {
           </label>
 
           {errorMessage && <p className="animal-form__feedback animal-form__feedback--error">{errorMessage}</p>}
-          {!isSignupMode && locationState?.registrationSuccess && (
+          {!isSignupMode && infoMessage && (
             <p className="animal-form__feedback animal-form__feedback--success">
-              {t('auth.success.registration')}
+              {infoMessage}
             </p>
+          )}
+          {!isSignupMode && showResendConfirmation && (
+            <div className="animal-form__actions">
+              <button
+                type="button"
+                disabled={isResendingConfirmation || !email.trim()}
+                onClick={handleResendConfirmation}
+              >
+                {isResendingConfirmation
+                  ? t('auth.actions.resendingConfirmation')
+                  : t('auth.actions.resendConfirmation')}
+              </button>
+            </div>
           )}
 
           <div className="animal-form__actions">

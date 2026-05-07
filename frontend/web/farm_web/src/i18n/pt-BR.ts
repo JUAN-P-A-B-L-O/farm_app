@@ -84,11 +84,17 @@ const ptBR = {
     submit: 'Entrar',
     submitting: 'Entrando...',
     success: {
-      registration: 'Conta criada com sucesso. Entre com seu novo e-mail e senha para continuar.',
+      registration: 'Conta criada com sucesso. Verifique seu e-mail para confirmar o acesso.',
+      confirmation: 'E-mail confirmado com sucesso. Agora você já pode entrar.',
+      confirmationResent: 'Enviamos um novo e-mail de confirmação.',
     },
     form: {
       email: 'E-mail',
       password: 'Senha',
+    },
+    actions: {
+      resendConfirmation: 'Reenviar confirmação',
+      resendingConfirmation: 'Reenviando confirmação...',
     },
     signup: {
       title: 'Criar conta',
@@ -110,7 +116,21 @@ const ptBR = {
     },
     errors: {
       invalidCredentials: 'E-mail ou senha inválidos.',
+      confirmationRequired: 'Confirme seu e-mail antes de entrar.',
+      resendConfirmation: 'Não foi possível reenviar o e-mail de confirmação.',
       generic: 'Não foi possível entrar. Tente novamente.',
+    },
+    confirmation: {
+      title: 'Confirmação de e-mail',
+      description: 'Estamos validando o seu link de confirmação.',
+      loading: 'Validando confirmação...',
+      success: 'E-mail confirmado com sucesso. Você já pode entrar no sistema.',
+      loginAction: 'Ir para o login',
+      backToLogin: 'Voltar para o login',
+      errors: {
+        invalidLink: 'O link de confirmação é inválido.',
+        generic: 'Não foi possível confirmar o e-mail.',
+      },
     },
   },
   dashboard: {

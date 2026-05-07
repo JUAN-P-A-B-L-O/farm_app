@@ -9,4 +9,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 public interface UserRepository extends JpaRepository<UserEntity, UUID>, JpaSpecificationExecutor<UserEntity> {
 
     Optional<UserEntity> findByEmail(String email);
+
+    Optional<UserEntity> findByEmailConfirmationTokenHash(String emailConfirmationTokenHash);
 }

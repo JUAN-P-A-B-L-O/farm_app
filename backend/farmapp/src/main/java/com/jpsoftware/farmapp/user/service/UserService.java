@@ -83,6 +83,7 @@ public class UserService {
         userEntity.setEmail(normalizeEmail(request.getEmail()));
         userEntity.setRole(normalizeRole(request.getRole()));
         userEntity.setActive(Boolean.TRUE.equals(request.getActive()));
+        userEntity.setEmailConfirmed(true);
         userEntity.setAvatarUrl(normalizeAvatarUrl(request.getAvatarUrl()));
         userEntity.setPassword(passwordEncoder.encode(resolveRawPassword(request)));
         UserEntity savedUser = userRepository.save(userEntity);

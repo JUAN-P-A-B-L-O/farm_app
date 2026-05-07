@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.base;
 
 import com.jpsoftware.farmapp.auth.service.TokenService;
+import com.jpsoftware.farmapp.auth.service.EmailConfirmationTokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.animalbatch.repository.AnimalBatchMemberRepository;
@@ -62,6 +63,9 @@ public abstract class BaseIntegrationTest {
     protected TokenService tokenService;
 
     @Autowired
+    protected EmailConfirmationTokenService emailConfirmationTokenService;
+
+    @Autowired
     protected PasswordEncoder passwordEncoder;
 
     @BeforeEach
@@ -88,6 +92,7 @@ public abstract class BaseIntegrationTest {
         user.setRole(role);
         user.setPassword(passwordEncoder.encode("farmapp@123"));
         user.setActive(true);
+        user.setEmailConfirmed(true);
         return userRepository.save(user);
     }
 

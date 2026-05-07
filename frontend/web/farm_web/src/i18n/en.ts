@@ -84,11 +84,17 @@ const en = {
     submit: 'Login',
     submitting: 'Signing in...',
     success: {
-      registration: 'Account created successfully. Sign in with your new email and password to continue.',
+      registration: 'Account created successfully. Check your email to confirm access.',
+      confirmation: 'Email confirmed successfully. You can sign in now.',
+      confirmationResent: 'A new confirmation email has been sent.',
     },
     form: {
       email: 'Email',
       password: 'Password',
+    },
+    actions: {
+      resendConfirmation: 'Resend confirmation',
+      resendingConfirmation: 'Resending confirmation...',
     },
     signup: {
       title: 'Create account',
@@ -110,7 +116,21 @@ const en = {
     },
     errors: {
       invalidCredentials: 'Invalid credentials',
+      confirmationRequired: 'Confirm your email before signing in.',
+      resendConfirmation: 'Unable to resend the confirmation email.',
       generic: 'Unable to sign in. Please try again.',
+    },
+    confirmation: {
+      title: 'Email confirmation',
+      description: 'We are validating your confirmation link.',
+      loading: 'Validating confirmation...',
+      success: 'Email confirmed successfully. You can now sign in.',
+      loginAction: 'Go to login',
+      backToLogin: 'Back to login',
+      errors: {
+        invalidLink: 'The confirmation link is invalid.',
+        generic: 'Unable to confirm the email.',
+      },
     },
   },
   dashboard: {

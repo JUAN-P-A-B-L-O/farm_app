@@ -49,6 +49,7 @@ public class DefaultAdminInitializer implements CommandLineRunner {
         admin.setRole("MANAGER");
         admin.setPassword(passwordEncoder.encode(adminPassword));
         admin.setActive(true);
+        admin.setEmailConfirmed(true);
 
         userRepository.save(admin);
         farmRepository.save(new FarmEntity(null, "Fazenda padrão", admin.getId()));

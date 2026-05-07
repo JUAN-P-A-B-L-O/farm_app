@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -31,6 +32,15 @@ public class UserEntity {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    @Column(nullable = false)
+    private boolean emailConfirmed = true;
+
+    @Column
+    private String emailConfirmationTokenHash;
+
+    @Column
+    private Instant emailConfirmationTokenExpiresAt;
 
     @Column(columnDefinition = "TEXT")
     private String avatarUrl;
@@ -101,6 +111,30 @@ public class UserEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public boolean isEmailConfirmed() {
+        return emailConfirmed;
+    }
+
+    public void setEmailConfirmed(boolean emailConfirmed) {
+        this.emailConfirmed = emailConfirmed;
+    }
+
+    public String getEmailConfirmationTokenHash() {
+        return emailConfirmationTokenHash;
+    }
+
+    public void setEmailConfirmationTokenHash(String emailConfirmationTokenHash) {
+        this.emailConfirmationTokenHash = emailConfirmationTokenHash;
+    }
+
+    public Instant getEmailConfirmationTokenExpiresAt() {
+        return emailConfirmationTokenExpiresAt;
+    }
+
+    public void setEmailConfirmationTokenExpiresAt(Instant emailConfirmationTokenExpiresAt) {
+        this.emailConfirmationTokenExpiresAt = emailConfirmationTokenExpiresAt;
     }
 
     public String getAvatarUrl() {

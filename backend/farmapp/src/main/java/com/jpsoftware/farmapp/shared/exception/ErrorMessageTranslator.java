@@ -29,6 +29,7 @@ public final class ErrorMessageTranslator {
             Map.entry("Access Denied", "Acesso negado."),
             Map.entry("Full authentication is required to access this resource", "É necessário estar autenticado para acessar este recurso."),
             Map.entry("Invalid or expired token", "Token inválido ou expirado."),
+            Map.entry("Invalid or expired email confirmation token", "O token de confirmação é inválido ou expirou."),
             Map.entry("request must not be null", "Requisição obrigatória."),
             Map.entry("Create animal request must not be null", "Requisição obrigatória."),
             Map.entry("Update animal request must not be null", "Requisição obrigatória."),
@@ -36,6 +37,11 @@ public final class ErrorMessageTranslator {
             Map.entry("Authenticated manager is required", "É necessário estar autenticado como gerente."),
             Map.entry("Authenticated user is required", "É necessário estar autenticado."),
             Map.entry("Authenticated user is required to register milk price", "É necessário estar autenticado para registrar o preço do leite."),
+            Map.entry("Email confirmation is required before login", "Confirme seu e-mail antes de entrar."),
+            Map.entry("Email already confirmed", "O e-mail já foi confirmado."),
+            Map.entry("Email confirmed successfully", "E-mail confirmado com sucesso."),
+            Map.entry("Confirmation email sent successfully", "E-mail de confirmação enviado com sucesso."),
+            Map.entry("Unable to send confirmation email", "Não foi possível enviar o e-mail de confirmação."),
             Map.entry("currentPassword is incorrect", "A senha atual está incorreta."),
             Map.entry("newPassword must be different from currentPassword", "A nova senha deve ser diferente da senha atual."),
             Map.entry("avatarUrl must be a valid http(s) URL or supported image data URL", "Informe uma URL http(s) válida ou uma imagem inline suportada para o avatar."),
@@ -139,6 +145,7 @@ public final class ErrorMessageTranslator {
         return switch (fieldName) {
             case "name" -> "O nome é obrigatório.";
             case "email" -> "O e-mail é obrigatório.";
+            case "token" -> "O token é obrigatório.";
             case "password" -> "A senha é obrigatória.";
             case "currentPassword" -> "A senha atual é obrigatória.";
             case "newPassword" -> "A nova senha é obrigatória.";
