@@ -23,9 +23,9 @@ test('app routes source gates dashboard and analytics behind the shared plan rou
 test('shared export button source centralizes csv plan checks', () => {
   const source = readSource('src/components/common/ExportCsvButton.tsx')
 
-  assert.match(source, /hasFeatureAccess\(user, 'CSV_EXPORT'\)/)
+  assert.match(source, /getFeatureAccessState\(user, 'CSV_EXPORT'\)/)
   assert.match(source, /disabled=\{disabled \|\| isLoading \|\| isPlanRestricted\}/)
-  assert.match(source, /title=\{isPlanRestricted \? t\(getFeatureMetadata\('CSV_EXPORT'\)\.descriptionKey\) : undefined\}/)
+  assert.match(source, /title=\{isPlanRestricted \? t\(accessState\.metadata\.descriptionKey\) : undefined\}/)
 })
 
 test('app layout source exposes premium navigation items without duplicating rules', () => {
@@ -33,7 +33,9 @@ test('app layout source exposes premium navigation items without duplicating rul
 
   assert.match(source, /feature: 'DASHBOARD'/)
   assert.match(source, /feature: 'ANALYTICS'/)
-  assert.match(source, /restrictedFeature !== undefined && !hasFeatureAccess\(user, restrictedFeature\)/)
+  assert.match(source, /getFeatureAccessState\(user, restrictedFeature\)/)
+  assert.match(source, /featureAccessState !== null && !featureAccessState\.allowed/)
   assert.match(source, /className="app-layout__nav-link app-layout__nav-link--disabled"/)
   assert.match(source, /t\('plan\.badge'\)/)
+  assert.match(source, /t\('plan\.currentLabel'\)/)
 })

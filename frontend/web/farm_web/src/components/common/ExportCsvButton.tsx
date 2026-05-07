@@ -1,6 +1,6 @@
 import { useAuth } from '../../hooks/useAuth'
 import { useTranslation } from '../../hooks/useTranslation'
-import { getFeatureMetadata, hasFeatureAccess } from '../../utils/planAccess'
+import { getFeatureAccessState } from '../../utils/planAccess'
 
 interface ExportCsvButtonProps {
   onClick: () => void
@@ -21,8 +21,8 @@ function ExportCsvButton({
 }: ExportCsvButtonProps) {
   const { user } = useAuth()
   const { t } = useTranslation()
-  const hasExportAccess = hasFeatureAccess(user, 'CSV_EXPORT')
-  const isPlanRestricted = !hasExportAccess
+  const accessState = getFeatureAccessState(user, 'CSV_EXPORT')
+  const isPlanRestricted = !accessState.allowed
   const visibleLabel = isLoading
     ? loadingLabel
     : isPlanRestricted
@@ -35,7 +35,7 @@ function ExportCsvButton({
       className={className}
       onClick={onClick}
       disabled={disabled || isLoading || isPlanRestricted}
-      title={isPlanRestricted ? t(getFeatureMetadata('CSV_EXPORT').descriptionKey) : undefined}
+      title={isPlanRestricted ? t(accessState.metadata.descriptionKey) : undefined}
     >
       {visibleLabel}
     </button>

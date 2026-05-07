@@ -82,6 +82,11 @@ const en = {
     title: 'Premium Feature',
     description: 'The free plan keeps the basic operational workflows available, while advanced capabilities stay on the Premium plan.',
     badge: 'Premium',
+    currentLabel: 'Current plan',
+    labels: {
+      FREE: 'Free',
+      PRO: 'Premium',
+    },
     upgradeHint: 'Upgrade the account plan to unlock this feature without changing the rest of the workflow.',
     features: {
       dashboard: {

@@ -6,7 +6,7 @@ import { useFarm } from '../hooks/useFarm'
 import { useMeasurementUnits } from '../hooks/useMeasurementUnits'
 import { useLanguage, type Language } from '../context/LanguageContext'
 import { useTranslation } from '../hooks/useTranslation'
-import { getFeatureMetadata, hasFeatureAccess, type AppFeature } from '../utils/planAccess'
+import { getCurrentPlanMetadata, getFeatureAccessState, type AppFeature } from '../utils/planAccess'
 import { isManager } from '../utils/authorization'
 
 interface NavigationItem {
@@ -52,6 +52,7 @@ function AppLayout() {
   const { language, setLanguage } = useLanguage()
   const { t } = useTranslation()
   const canManageRestrictedFeatures = isManager(user)
+  const currentPlanMetadata = getCurrentPlanMetadata(user)
   const activeNavigationItem = navigationItems.find(
     (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
   )
@@ -102,14 +103,17 @@ function AppLayout() {
           <nav className="app-layout__nav">
             {navigationItems.filter((item) => !item.managerOnly || canManageRestrictedFeatures).map((item) => {
               const restrictedFeature = item.feature
-              const isPlanRestricted = restrictedFeature !== undefined && !hasFeatureAccess(user, restrictedFeature)
+              const featureAccessState = restrictedFeature
+                ? getFeatureAccessState(user, restrictedFeature)
+                : null
+              const isPlanRestricted = featureAccessState !== null && !featureAccessState.allowed
 
               if (isPlanRestricted) {
                 return (
                   <span
                     key={item.to}
                     className="app-layout__nav-link app-layout__nav-link--disabled"
-                    title={restrictedFeature ? t(getFeatureMetadata(restrictedFeature).descriptionKey) : undefined}
+                    title={featureAccessState ? t(featureAccessState.metadata.descriptionKey) : undefined}
                   >
                     <span>{t(item.labelKey)}</span>
                     <span className="app-layout__nav-badge">{t('plan.badge')}</span>
@@ -236,6 +240,14 @@ function AppLayout() {
 
           <div className="app-layout__session">
             <p className="app-layout__session-user">{user?.name ?? user?.email}</p>
+            <div className="app-layout__session-plan">
+              <span className="app-layout__language-label">{t('plan.currentLabel')}</span>
+              <span
+                className={`app-layout__plan-badge${currentPlanMetadata.paid ? ' app-layout__plan-badge--premium' : ''}`}
+              >
+                {t(currentPlanMetadata.labelKey)}
+              </span>
+            </div>
             <button type="button" className="app-layout__logout-button" onClick={handleLogout}>
               {t('layout.logout')}
             </button>

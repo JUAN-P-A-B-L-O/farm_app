@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import PlanUpgradeNotice from '../common/PlanUpgradeNotice'
-import { hasFeatureAccess, type AppFeature } from '../../utils/planAccess'
+import { getFeatureAccessState, type AppFeature } from '../../utils/planAccess'
 
 interface PlanRouteProps {
   children: ReactElement
@@ -10,8 +10,9 @@ interface PlanRouteProps {
 
 function PlanRoute({ children, feature }: PlanRouteProps) {
   const { user } = useAuth()
+  const accessState = getFeatureAccessState(user, feature)
 
-  if (!hasFeatureAccess(user, feature)) {
+  if (!accessState.allowed) {
     return <PlanUpgradeNotice feature={feature} />
   }
 

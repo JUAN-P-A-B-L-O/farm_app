@@ -199,6 +199,27 @@
   overflow-wrap: anywhere;
 }
 
+.app-layout__session-plan {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-layout__plan-badge {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #495867;
+  background: #e6edf5;
+}
+
+.app-layout__plan-badge--premium {
+  color: #7a4a08;
+  background: #f6e4bf;
+}
+
 .app-layout__logout-button {
   border: 0;
   border-radius: 999px;

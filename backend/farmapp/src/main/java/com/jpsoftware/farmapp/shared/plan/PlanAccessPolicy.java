@@ -6,17 +6,26 @@ import org.springframework.stereotype.Service;
 @Service
 public class PlanAccessPolicy {
 
-    public boolean hasAccess(UserPlan plan, PlanFeature feature) {
+    public PlanAccessDecision evaluate(UserPlan plan, PlanFeature feature) {
+        UserPlan resolvedPlan = plan == null ? UserPlan.defaultPlan() : plan;
         if (feature == null) {
-            return true;
+            return new PlanAccessDecision(resolvedPlan, null, UserPlan.defaultPlan(), true);
         }
 
-        UserPlan resolvedPlan = plan == null ? UserPlan.defaultPlan() : plan;
-        return resolvedPlan.ordinal() >= feature.getMinimumPlan().ordinal();
+        return new PlanAccessDecision(
+                resolvedPlan,
+                feature,
+                feature.getMinimumPlan(),
+                feature.isAvailableFor(resolvedPlan));
+    }
+
+    public boolean hasAccess(UserPlan plan, PlanFeature feature) {
+        return evaluate(plan, feature).allowed();
     }
 
     public void assertHasAccess(UserPlan plan, PlanFeature feature) {
-        if (!hasAccess(plan, feature)) {
+        PlanAccessDecision decision = evaluate(plan, feature);
+        if (!decision.allowed()) {
             throw new PlanAccessDeniedException("This feature requires the PRO plan");
         }
     }

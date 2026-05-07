@@ -16,4 +16,9 @@ public enum PlanFeature {
     public UserPlan getMinimumPlan() {
         return minimumPlan;
     }
+
+    public boolean isAvailableFor(UserPlan plan) {
+        UserPlan resolvedPlan = plan == null ? UserPlan.defaultPlan() : plan;
+        return resolvedPlan.includes(minimumPlan);
+    }
 }

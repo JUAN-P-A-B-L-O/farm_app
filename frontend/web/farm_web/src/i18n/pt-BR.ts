@@ -82,6 +82,11 @@ const ptBR = {
     title: 'Recurso Premium',
     description: 'O plano gratuito mantém o uso operacional básico, enquanto os recursos avançados ficam reservados ao plano Premium.',
     badge: 'Premium',
+    currentLabel: 'Plano atual',
+    labels: {
+      FREE: 'Gratuito',
+      PRO: 'Premium',
+    },
     upgradeHint: 'Atualize o plano da conta para liberar este recurso sem alterar o restante do seu fluxo.',
     features: {
       dashboard: {

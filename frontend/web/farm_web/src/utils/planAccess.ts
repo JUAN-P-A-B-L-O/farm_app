@@ -8,9 +8,31 @@ interface FeatureMetadata {
   titleKey: string
 }
 
-const planRanks: Record<UserPlan, number> = {
-  FREE: 0,
-  PRO: 1,
+interface PlanMetadata {
+  labelKey: string
+  paid: boolean
+  rank: number
+}
+
+export interface FeatureAccessState {
+  allowed: boolean
+  currentPlan: UserPlan
+  feature: AppFeature
+  metadata: FeatureMetadata
+  minimumPlan: UserPlan
+}
+
+const planMetadata: Record<UserPlan, PlanMetadata> = {
+  FREE: {
+    labelKey: 'plan.labels.FREE',
+    paid: false,
+    rank: 0,
+  },
+  PRO: {
+    labelKey: 'plan.labels.PRO',
+    paid: true,
+    rank: 1,
+  },
 }
 
 const featureMetadata: Record<AppFeature, FeatureMetadata> = {
@@ -31,13 +53,36 @@ const featureMetadata: Record<AppFeature, FeatureMetadata> = {
   },
 }
 
-function resolvePlan(user: Pick<User, 'plan'> | null | undefined): UserPlan {
+export function resolvePlan(user: Pick<User, 'plan'> | null | undefined): UserPlan {
   return user?.plan ?? 'FREE'
 }
 
-export function hasFeatureAccess(user: Pick<User, 'plan'> | null | undefined, feature: AppFeature) {
+export function getPlanMetadata(plan: UserPlan) {
+  return planMetadata[plan]
+}
+
+export function getCurrentPlanMetadata(user: Pick<User, 'plan'> | null | undefined) {
+  return getPlanMetadata(resolvePlan(user))
+}
+
+export function getFeatureAccessState(
+  user: Pick<User, 'plan'> | null | undefined,
+  feature: AppFeature,
+): FeatureAccessState {
+  const currentPlan = resolvePlan(user)
   const metadata = featureMetadata[feature]
-  return planRanks[resolvePlan(user)] >= planRanks[metadata.minimumPlan]
+
+  return {
+    allowed: planMetadata[currentPlan].rank >= planMetadata[metadata.minimumPlan].rank,
+    currentPlan,
+    feature,
+    metadata,
+    minimumPlan: metadata.minimumPlan,
+  }
+}
+
+export function hasFeatureAccess(user: Pick<User, 'plan'> | null | undefined, feature: AppFeature) {
+  return getFeatureAccessState(user, feature).allowed
 }
 
 export function getFeatureMetadata(feature: AppFeature) {
