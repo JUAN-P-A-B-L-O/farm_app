@@ -16,6 +16,7 @@ import java.util.Base64;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -26,6 +27,7 @@ public class SmtpEmailSender implements EmailSender {
     private final EmailProperties emailProperties;
     private final SmtpTransport smtpTransport;
 
+    @Autowired
     public SmtpEmailSender(EmailProperties emailProperties) {
         this(emailProperties, new SocketSmtpTransport());
     }
