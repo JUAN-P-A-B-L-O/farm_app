@@ -83,9 +83,30 @@ const en = {
     description: 'Enter your account credentials to access the application.',
     submit: 'Login',
     submitting: 'Signing in...',
+    success: {
+      registration: 'Account created successfully. Sign in with your new email and password to continue.',
+    },
     form: {
       email: 'Email',
       password: 'Password',
+    },
+    signup: {
+      title: 'Create account',
+      description: 'Register only the essential details to start accessing the system.',
+      submit: 'Create account',
+      submitting: 'Creating account...',
+      entryLabel: "Don't have an account?",
+      entryAction: 'Create account',
+      loginPrompt: 'Already have an account?',
+      loginAction: 'Sign in',
+      form: {
+        name: 'Name',
+        email: 'Email',
+        password: 'Password',
+      },
+      errors: {
+        generic: 'Unable to create the account. Please try again.',
+      },
     },
     errors: {
       invalidCredentials: 'Invalid credentials',

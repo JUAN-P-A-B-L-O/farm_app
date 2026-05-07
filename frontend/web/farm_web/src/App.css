@@ -289,6 +289,22 @@
   color: #556476;
 }
 
+.login-page__supporting-action {
+  margin-top: 20px;
+  color: #556476;
+  text-align: center;
+}
+
+.login-page__supporting-link {
+  color: #2e6a46;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.login-page__supporting-link:hover {
+  text-decoration: underline;
+}
+
 .animals-page {
   min-height: 100vh;
   padding: 24px 16px 32px;
@@ -517,6 +533,12 @@
   border-color: #efc0c0;
   background: #fff3f3;
   color: #a12626;
+}
+
+.animal-form__feedback--success {
+  border-color: #b7d8bf;
+  background: #f2fbf4;
+  color: #1f5b30;
 }
 
 .animals-table-wrapper {

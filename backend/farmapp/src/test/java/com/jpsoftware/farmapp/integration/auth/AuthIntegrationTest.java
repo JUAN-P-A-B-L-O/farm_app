@@ -14,10 +14,75 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MvcResult;
 
 class AuthIntegrationTest extends BaseIntegrationTest {
+
+    @Test
+    void shouldRegisterAccountAndAllowLogin() throws Exception {
+        MvcResult registerResult = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Maria Silva",
+                                  "email": "maria@farm.com",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Maria Silva"))
+                .andExpect(jsonPath("$.email").value("maria@farm.com"))
+                .andExpect(jsonPath("$.role").value("MANAGER"))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.farmIds").isArray())
+                .andExpect(jsonPath("$.farmIds").isEmpty())
+                .andReturn();
+
+        UserEntity registeredUser = userRepository.findByEmail("maria@farm.com").orElseThrow();
+        Assertions.assertTrue(registeredUser.isActive());
+        Assertions.assertEquals("MANAGER", registeredUser.getRole());
+        Assertions.assertTrue(passwordEncoder.matches("farmapp@123", registeredUser.getPassword()));
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "maria@farm.com",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isString())
+                .andExpect(jsonPath("$.user.id").value(
+                        objectMapper.readTree(registerResult.getResponse().getContentAsString()).get("id").asText()))
+                .andExpect(jsonPath("$.user.role").value("MANAGER"));
+    }
+
+    @Test
+    void shouldRejectDuplicateEmailDuringRegistration() throws Exception {
+        userRepository.save(new UserEntity(
+                null,
+                "Existing User",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Maria Silva",
+                                  "email": "maria@farm.com",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Já existe um usuário com este e-mail."));
+    }
 
     @Test
     void shouldLoginAndReturnJwtToken() throws Exception {
