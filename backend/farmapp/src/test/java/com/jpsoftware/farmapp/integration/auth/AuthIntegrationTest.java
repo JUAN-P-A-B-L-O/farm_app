@@ -8,8 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.verify;
 
-import com.jpsoftware.farmapp.auth.service.EmailConfirmationSender;
 import com.jpsoftware.farmapp.base.BaseIntegrationTest;
+import com.jpsoftware.farmapp.shared.email.model.EmailMessage;
+import com.jpsoftware.farmapp.shared.email.service.EmailSender;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
@@ -25,7 +26,7 @@ import org.mockito.ArgumentCaptor;
 class AuthIntegrationTest extends BaseIntegrationTest {
 
     @MockBean
-    private EmailConfirmationSender emailConfirmationSender;
+    private EmailSender emailSender;
 
     @Test
     void shouldRegisterAccountAsPendingConfirmation() throws Exception {
@@ -54,14 +55,16 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         Assertions.assertNotNull(registeredUser.getEmailConfirmationTokenHash());
         Assertions.assertNotNull(registeredUser.getEmailConfirmationTokenExpiresAt());
 
-        ArgumentCaptor<String> confirmationUrlCaptor = ArgumentCaptor.forClass(String.class);
-        verify(emailConfirmationSender).sendConfirmationEmail(
-                org.mockito.ArgumentMatchers.eq("maria@farm.com"),
-                org.mockito.ArgumentMatchers.eq("Maria Silva"),
-                confirmationUrlCaptor.capture());
-        Assertions.assertTrue(confirmationUrlCaptor.getValue().startsWith("http://localhost:5173/login?mode=confirm&token="));
-        String rawToken = confirmationUrlCaptor.getValue()
-                .substring(confirmationUrlCaptor.getValue().indexOf("token=") + "token=".length());
+        ArgumentCaptor<EmailMessage> emailCaptor = ArgumentCaptor.forClass(EmailMessage.class);
+        verify(emailSender).send(emailCaptor.capture());
+        EmailMessage sentEmail = emailCaptor.getValue();
+        Assertions.assertEquals("maria@farm.com", sentEmail.recipientEmail());
+        Assertions.assertEquals("Confirme sua conta no Farm App", sentEmail.subject());
+        Assertions.assertTrue(sentEmail.body().contains("Olá Maria Silva,"));
+        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/login?mode=confirm&token="));
+        String rawToken = sentEmail.body()
+                .substring(sentEmail.body().indexOf("token=") + "token=".length())
+                .split("\\s", 2)[0];
         Assertions.assertEquals(
                 emailConfirmationTokenService.hashToken(rawToken),
                 registeredUser.getEmailConfirmationTokenHash());
@@ -345,13 +348,14 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         Assertions.assertNotEquals(previousTokenHash, updatedUser.getEmailConfirmationTokenHash());
         Assertions.assertTrue(updatedUser.getEmailConfirmationTokenExpiresAt().isAfter(Instant.now()));
 
-        ArgumentCaptor<String> confirmationUrlCaptor = ArgumentCaptor.forClass(String.class);
-        verify(emailConfirmationSender).sendConfirmationEmail(
-                org.mockito.ArgumentMatchers.eq("maria@farm.com"),
-                org.mockito.ArgumentMatchers.eq("Maria Silva"),
-                confirmationUrlCaptor.capture());
-        String rawToken = confirmationUrlCaptor.getValue()
-                .substring(confirmationUrlCaptor.getValue().indexOf("token=") + "token=".length());
+        ArgumentCaptor<EmailMessage> emailCaptor = ArgumentCaptor.forClass(EmailMessage.class);
+        verify(emailSender).send(emailCaptor.capture());
+        EmailMessage sentEmail = emailCaptor.getValue();
+        Assertions.assertEquals("maria@farm.com", sentEmail.recipientEmail());
+        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/login?mode=confirm&token="));
+        String rawToken = sentEmail.body()
+                .substring(sentEmail.body().indexOf("token=") + "token=".length())
+                .split("\\s", 2)[0];
         Assertions.assertEquals(
                 emailConfirmationTokenService.hashToken(rawToken),
                 updatedUser.getEmailConfirmationTokenHash());

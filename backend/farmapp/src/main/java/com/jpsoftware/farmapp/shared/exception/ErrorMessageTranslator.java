@@ -41,7 +41,7 @@ public final class ErrorMessageTranslator {
             Map.entry("Email already confirmed", "O e-mail já foi confirmado."),
             Map.entry("Email confirmed successfully", "E-mail confirmado com sucesso."),
             Map.entry("Confirmation email sent successfully", "E-mail de confirmação enviado com sucesso."),
-            Map.entry("Unable to send confirmation email", "Não foi possível enviar o e-mail de confirmação."),
+            Map.entry("Unable to send email", "Não foi possível enviar o e-mail."),
             Map.entry("currentPassword is incorrect", "A senha atual está incorreta."),
             Map.entry("newPassword must be different from currentPassword", "A nova senha deve ser diferente da senha atual."),
             Map.entry("avatarUrl must be a valid http(s) URL or supported image data URL", "Informe uma URL http(s) válida ou uma imagem inline suportada para o avatar."),

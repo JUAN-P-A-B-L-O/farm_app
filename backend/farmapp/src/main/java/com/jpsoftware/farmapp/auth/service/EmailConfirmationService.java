@@ -1,5 +1,7 @@
 package com.jpsoftware.farmapp.auth.service;
 
+import com.jpsoftware.farmapp.shared.email.model.EmailMessage;
+import com.jpsoftware.farmapp.shared.email.service.EmailSender;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
@@ -18,20 +20,23 @@ public class EmailConfirmationService {
 
     private final UserRepository userRepository;
     private final EmailConfirmationTokenService tokenService;
-    private final EmailConfirmationSender emailConfirmationSender;
+    private final EmailSender emailSender;
     private final String frontendBaseUrl;
+    private final String confirmationSubject;
     private final long tokenExpirationHours;
 
     public EmailConfirmationService(
             UserRepository userRepository,
             EmailConfirmationTokenService tokenService,
-            EmailConfirmationSender emailConfirmationSender,
+            EmailSender emailSender,
             @Value("${app.auth.email-confirmation.frontend-base-url}") String frontendBaseUrl,
+            @Value("${app.email.confirmation.subject}") String confirmationSubject,
             @Value("${app.auth.email-confirmation.token-expiration-hours}") long tokenExpirationHours) {
         this.userRepository = userRepository;
         this.tokenService = tokenService;
-        this.emailConfirmationSender = emailConfirmationSender;
+        this.emailSender = emailSender;
         this.frontendBaseUrl = frontendBaseUrl;
+        this.confirmationSubject = confirmationSubject;
         this.tokenExpirationHours = tokenExpirationHours;
     }
 
@@ -83,14 +88,27 @@ public class EmailConfirmationService {
         userEntity.setEmailConfirmationTokenExpiresAt(Instant.now().plus(tokenExpirationHours, ChronoUnit.HOURS));
         userRepository.save(userEntity);
 
-        emailConfirmationSender.sendConfirmationEmail(
+        emailSender.send(new EmailMessage(
                 userEntity.getEmail(),
-                userEntity.getName(),
-                buildConfirmationUrl(rawToken));
+                confirmationSubject,
+                buildConfirmationBody(userEntity.getName(), buildConfirmationUrl(rawToken))));
     }
 
     private String buildConfirmationUrl(String rawToken) {
         return frontendBaseUrl.replaceAll("/+$", "") + "/login?mode=confirm&token=" + rawToken;
+    }
+
+    private String buildConfirmationBody(String recipientName, String confirmationUrl) {
+        String resolvedName = StringUtils.hasText(recipientName) ? recipientName.trim() : "usuário";
+        return """
+                Olá %s,
+
+                Recebemos o cadastro da sua conta no Farm App.
+                Confirme seu e-mail acessando o link abaixo:
+                %s
+
+                Se você não solicitou este cadastro, ignore esta mensagem.
+                """.formatted(resolvedName, confirmationUrl);
     }
 
     private String normalizeEmail(String email) {

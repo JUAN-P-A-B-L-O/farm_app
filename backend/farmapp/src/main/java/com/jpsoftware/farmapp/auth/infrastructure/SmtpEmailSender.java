@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.auth.infrastructure;
 
-import com.jpsoftware.farmapp.auth.service.EmailConfirmationSender;
+import com.jpsoftware.farmapp.shared.email.model.EmailMessage;
+import com.jpsoftware.farmapp.shared.email.service.EmailSender;
 import com.jpsoftware.farmapp.shared.exception.EmailDispatchException;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -20,30 +21,46 @@ import org.springframework.util.StringUtils;
 
 @Component
 @ConditionalOnProperty(prefix = "app.email", name = "enabled", havingValue = "true")
-public class SmtpEmailConfirmationSender implements EmailConfirmationSender {
+public class SmtpEmailSender implements EmailSender {
 
     private final EmailProperties emailProperties;
     private final SmtpTransport smtpTransport;
 
-    public SmtpEmailConfirmationSender(EmailProperties emailProperties) {
+    public SmtpEmailSender(EmailProperties emailProperties) {
         this(emailProperties, new SocketSmtpTransport());
     }
 
-    public SmtpEmailConfirmationSender(EmailProperties emailProperties, SmtpTransport smtpTransport) {
+    public SmtpEmailSender(EmailProperties emailProperties, SmtpTransport smtpTransport) {
         this.emailProperties = emailProperties;
         this.smtpTransport = smtpTransport;
     }
 
     @Override
-    public void sendConfirmationEmail(String recipientEmail, String recipientName, String confirmationUrl) {
+    public void send(EmailMessage emailMessage) {
+        validateEmailMessage(emailMessage);
         try {
             smtpTransport.send(
                     emailProperties,
                     resolveFromAddress(),
-                    recipientEmail.trim(),
-                    buildMessage(recipientEmail, recipientName, confirmationUrl));
+                    emailMessage.recipientEmail().trim(),
+                    buildMessage(emailMessage));
         } catch (IOException exception) {
-            throw new EmailDispatchException("Unable to send confirmation email", exception);
+            throw new EmailDispatchException("Unable to send email", exception);
+        }
+    }
+
+    private void validateEmailMessage(EmailMessage emailMessage) {
+        if (emailMessage == null) {
+            throw new IllegalArgumentException("emailMessage must not be null");
+        }
+        if (!StringUtils.hasText(emailMessage.recipientEmail())) {
+            throw new IllegalArgumentException("recipientEmail must not be blank");
+        }
+        if (!StringUtils.hasText(emailMessage.subject())) {
+            throw new IllegalArgumentException("subject must not be blank");
+        }
+        if (!StringUtils.hasText(emailMessage.body())) {
+            throw new IllegalArgumentException("body must not be blank");
         }
     }
 
@@ -54,44 +71,30 @@ public class SmtpEmailConfirmationSender implements EmailConfirmationSender {
         return emailProperties.getFrom().trim();
     }
 
-    private String buildMessage(String recipientEmail, String recipientName, String confirmationUrl) {
-        String body = buildBody(recipientName, confirmationUrl);
+    private String buildMessage(EmailMessage emailMessage) {
         return "From: <" + resolveFromAddress() + ">\r\n"
-                + "To: <" + recipientEmail.trim() + ">\r\n"
-                + "Subject: " + emailProperties.getConfirmation().getSubject().trim() + "\r\n"
+                + "To: <" + emailMessage.recipientEmail().trim() + ">\r\n"
+                + "Subject: " + encodeHeader(emailMessage.subject().trim()) + "\r\n"
                 + "MIME-Version: 1.0\r\n"
-                + "Content-Type: text/plain; charset=US-ASCII\r\n"
-                + "Content-Transfer-Encoding: 7bit\r\n"
+                + "Content-Type: text/plain; charset=UTF-8\r\n"
+                + "Content-Transfer-Encoding: base64\r\n"
                 + "\r\n"
-                + escapeMessageBody(body);
+                + escapeMessageBody(encodeBody(emailMessage.body()));
     }
 
-    private String buildBody(String recipientName, String confirmationUrl) {
-        String resolvedName = resolveRecipientName(recipientName);
-        return """
-                Ola %s,
-
-                Recebemos o cadastro da sua conta no Farm App.
-                Confirme seu e-mail acessando o link abaixo:
-                %s
-
-                Se voce nao solicitou este cadastro, ignore esta mensagem.
-                """.formatted(resolvedName, confirmationUrl);
+    private String encodeHeader(String headerValue) {
+        String encoded = Base64.getEncoder().encodeToString(headerValue.getBytes(StandardCharsets.UTF_8));
+        return "=?UTF-8?B?" + encoded + "?=";
     }
 
-    private String resolveRecipientName(String recipientName) {
-        if (!StringUtils.hasText(recipientName)) {
-            return "usuario";
-        }
-
-        String trimmedName = recipientName.trim();
-        return StandardCharsets.US_ASCII.newEncoder().canEncode(trimmedName) ? trimmedName : "usuario";
+    private String encodeBody(String body) {
+        byte[] bodyBytes = body.replace("\r\n", "\n").replace('\r', '\n').getBytes(StandardCharsets.UTF_8);
+        return Base64.getMimeEncoder(76, "\r\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(bodyBytes);
     }
 
     private String escapeMessageBody(String body) {
-        String normalizedBody = body.replace("\r\n", "\n").replace('\r', '\n');
-        String[] lines = normalizedBody.split("\n", -1);
-        StringBuilder escapedBody = new StringBuilder();
+        String[] lines = body.split("\r\n", -1);
+        StringBuilder escapedBody = new StringBuilder(body.length() + 16);
         for (int index = 0; index < lines.length; index++) {
             String line = lines[index];
             if (line.startsWith(".")) {
@@ -222,18 +225,19 @@ public class SmtpEmailConfirmationSender implements EmailConfirmationSender {
         }
 
         String readResponse() throws IOException {
-            StringBuilder response = new StringBuilder();
-            String line;
-            do {
+            String line = reader.readLine();
+            if (line == null) {
+                throw new IOException("SMTP server closed the connection unexpectedly");
+            }
+
+            StringBuilder response = new StringBuilder(line);
+            while (line.length() > 3 && line.charAt(3) == '-') {
                 line = reader.readLine();
                 if (line == null) {
                     throw new IOException("SMTP server closed the connection unexpectedly");
                 }
-                if (!response.isEmpty()) {
-                    response.append('\n');
-                }
-                response.append(line);
-            } while (line.length() >= 4 && line.charAt(3) == '-');
+                response.append("\n").append(line);
+            }
             return response.toString();
         }
 
@@ -241,24 +245,29 @@ public class SmtpEmailConfirmationSender implements EmailConfirmationSender {
             if (response.length() < 3) {
                 throw new IOException("Invalid SMTP response: " + response);
             }
-            int actualCode = Integer.parseInt(response.substring(0, 3));
-            if (actualCode != expectedCode) {
-                throw new IOException("Unexpected SMTP response (" + actualCode + "): " + response);
+            int responseCode;
+            try {
+                responseCode = Integer.parseInt(response.substring(0, 3));
+            } catch (NumberFormatException exception) {
+                throw new IOException("Invalid SMTP response: " + response, exception);
+            }
+            if (responseCode != expectedCode) {
+                throw new IOException("Unexpected SMTP response " + responseCode + ": " + response);
             }
         }
 
-        private void refreshStreams(Socket activeSocket) throws IOException {
-            reader = new BufferedReader(new InputStreamReader(activeSocket.getInputStream(), StandardCharsets.US_ASCII));
-            writer = new BufferedWriter(new OutputStreamWriter(activeSocket.getOutputStream(), StandardCharsets.US_ASCII));
-        }
-
-        private String base64(String value) {
-            return Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.US_ASCII));
+        private void refreshStreams(Socket socket) throws IOException {
+            reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.US_ASCII));
+            writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.US_ASCII));
         }
 
         @Override
         public void close() throws IOException {
             socket.close();
+        }
+
+        private String base64(String value) {
+            return Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
         }
     }
 }
