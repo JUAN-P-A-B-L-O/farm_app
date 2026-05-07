@@ -7,7 +7,10 @@ LOG_DIR="workspace/logs/$RUN_ID"
 FAIL_DIR="workspace/failures/$RUN_ID"
 SUMMARY_FILE="workspace/pipeline_summary.md"
 
-mkdir -p "$LOG_DIR" "$FAIL_DIR"
+FEATURES_DIR="workspace/features"
+DONE_DIR="workspace/done"
+
+mkdir -p "$LOG_DIR" "$FAIL_DIR" "$DONE_DIR"
 
 echo "===================================="
 echo "🚀 AI PIPELINE START"
@@ -39,6 +42,24 @@ GIT_ADD_SAFE() {
     ':!workspace/logs/**' \
     ':!workspace/failures/**' \
     ':!workspace/pipeline_summary.md'
+}
+
+MOVE_FEATURE_TO_DONE() {
+  local FILE="$1"
+  local BASENAME
+  local TARGET
+
+  [ -f "$FILE" ] || return 0
+
+  BASENAME=$(basename "$FILE")
+  TARGET="$DONE_DIR/$BASENAME"
+
+  if [ -e "$TARGET" ]; then
+    TARGET="$DONE_DIR/${RUN_ID}_$BASENAME"
+  fi
+
+  mv "$FILE" "$TARGET"
+  echo "📦 Moved feature file to $TARGET"
 }
 
 IS_HARD_TOKEN_LIMIT_ERROR() {
@@ -93,12 +114,13 @@ echo "- Run ID: $RUN_ID" >> "$SUMMARY_FILE"
 echo "- Context file: $CONTEXT_FILE" >> "$SUMMARY_FILE"
 echo "" >> "$SUMMARY_FILE"
 
-for FILE in workspace/features/*.md; do
-  [ -e "$FILE" ] || {
-    echo "⚠️ No feature files found in workspace/features"
-    break
-  }
+mapfile -t FEATURE_FILES < <(find "$FEATURES_DIR" -maxdepth 1 -type f -name "*.md" | sort -V)
 
+if [ "${#FEATURE_FILES[@]}" -eq 0 ]; then
+  echo "⚠️ No feature files found in $FEATURES_DIR"
+fi
+
+for FILE in "${FEATURE_FILES[@]}"; do
   FEATURE_NAME=$(basename "$FILE" .md)
   SAFE_NAME=$(echo "$FEATURE_NAME" | tr ' /' '__')
 
@@ -112,9 +134,6 @@ for FILE in workspace/features/*.md; do
   FEATURE_FAILED=false
   TESTS_PASSED=false
 
-  # =====================
-  # DEV
-  # =====================
   echo "👨‍💻 Running DEV..."
 
   DEV_PROMPT="$AI_CONTEXT"$'\n\n'"$DEV_SKILL"$'\n\n'"$FEATURE"
@@ -131,6 +150,7 @@ for FILE in workspace/features/*.md; do
 
     cp "$DEV_LOG" "$FAIL_DIR/${SAFE_NAME}_dev_failed.log" 2>/dev/null || true
     CHECK_TOTAL_TOKENS_ABORT
+    MOVE_FEATURE_TO_DONE "$FILE"
     continue
   fi
 
@@ -140,9 +160,6 @@ for FILE in workspace/features/*.md; do
   GIT_ADD_SAFE
   git commit -m "feat(ai): $FEATURE_NAME" || echo "⚠️ Nothing to commit after DEV"
 
-  # =====================
-  # DIFF
-  # =====================
   git diff "$BASE_COMMIT" HEAD > "$LOG_DIR/${SAFE_NAME}_diff_full.txt"
   git diff --name-only "$BASE_COMMIT" HEAD > "$LOG_DIR/${SAFE_NAME}_files.txt"
   git diff "$BASE_COMMIT" HEAD | grep -E "^[+-]" | head -n "$DIFF_LINES" > "$LOG_DIR/${SAFE_NAME}_diff.txt" || true
@@ -150,12 +167,10 @@ for FILE in workspace/features/*.md; do
   if [ ! -s "$LOG_DIR/${SAFE_NAME}_files.txt" ]; then
     echo "⚠️ No changes detected for $FEATURE_NAME"
     echo "- ⚠️ $FEATURE_NAME: no changes detected" >> "$SUMMARY_FILE"
+    MOVE_FEATURE_TO_DONE "$FILE"
     continue
   fi
 
-  # =====================
-  # TESTER
-  # =====================
   echo "🧪 Running TESTER..."
 
   TESTER_INPUT="Update or add tests only for the changed behavior.
@@ -192,9 +207,6 @@ Rules:
 
   CHECK_TOTAL_TOKENS_ABORT
 
-  # =====================
-  # TEST + FIX LOOP
-  # =====================
   echo "🧪 Running backend tests..."
 
   ATTEMPT=1
@@ -282,6 +294,8 @@ Rules:
 
   echo "🔢 Tokens for $FEATURE_NAME: $FEATURE_TOKENS"
   echo "  - Tokens: $FEATURE_TOKENS" >> "$SUMMARY_FILE"
+
+  MOVE_FEATURE_TO_DONE "$FILE"
 
 done
 
