@@ -50,6 +50,7 @@ class ErrorMessageTranslatorTest {
         assertEquals(
                 "É necessário estar autenticado.",
                 ErrorMessageTranslator.translate("Authenticated user is required"));
+        assertEquals("Não foi possível enviar o e-mail.", ErrorMessageTranslator.translate("Unable to send email"));
     }
 
     @Test

@@ -26,7 +26,7 @@ class SmtpEmailSenderTest {
         });
 
         sender.send(new EmailMessage(
-                "maria@farm.com",
+                "  maria@farm.com  ",
                 "Confirme sua conta no Farm App",
                 "Olá Maria Silva,\n\nUse o link para confirmar."));
 
@@ -55,6 +55,51 @@ class SmtpEmailSenderTest {
                         "Olá Maria Silva")));
 
         assertEquals("Unable to send email", exception.getMessage());
+    }
+
+    @Test
+    void shouldRejectInvalidEmailMessageBeforeSending() {
+        EmailProperties emailProperties = buildEmailProperties();
+        SmtpEmailSender sender = new SmtpEmailSender(
+                emailProperties,
+                (properties, fromAddress, recipientEmail, message) -> {
+                    throw new AssertionError("transport should not be called");
+                });
+
+        IllegalArgumentException nullMessageException = assertThrows(IllegalArgumentException.class, () -> sender.send(null));
+        assertEquals("emailMessage must not be null", nullMessageException.getMessage());
+
+        IllegalArgumentException blankRecipientException = assertThrows(
+                IllegalArgumentException.class,
+                () -> sender.send(new EmailMessage(" ", "Confirme sua conta", "Olá Maria")));
+        assertEquals("recipientEmail must not be blank", blankRecipientException.getMessage());
+
+        IllegalArgumentException blankSubjectException = assertThrows(
+                IllegalArgumentException.class,
+                () -> sender.send(new EmailMessage("maria@farm.com", " ", "Olá Maria")));
+        assertEquals("subject must not be blank", blankSubjectException.getMessage());
+
+        IllegalArgumentException blankBodyException = assertThrows(
+                IllegalArgumentException.class,
+                () -> sender.send(new EmailMessage("maria@farm.com", "Confirme sua conta", " ")));
+        assertEquals("body must not be blank", blankBodyException.getMessage());
+    }
+
+    @Test
+    void shouldRequireConfiguredFromAddressWhenSending() {
+        EmailProperties emailProperties = buildEmailProperties();
+        emailProperties.setFrom("   ");
+        SmtpEmailSender sender = new SmtpEmailSender(
+                emailProperties,
+                (properties, fromAddress, recipientEmail, message) -> {
+                    throw new AssertionError("transport should not be called");
+                });
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> sender.send(new EmailMessage("maria@farm.com", "Confirme sua conta", "Olá Maria")));
+
+        assertEquals("app.email.from must be configured when app.email.enabled is true", exception.getMessage());
     }
 
     private String decodeBody(String rawMessage) {
