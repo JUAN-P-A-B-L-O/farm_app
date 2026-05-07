@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.shared.config;
 import com.jpsoftware.farmapp.farm.entity.FarmEntity;
 import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class DefaultAdminInitializer implements CommandLineRunner {
         admin.setPassword(passwordEncoder.encode(adminPassword));
         admin.setActive(true);
         admin.setEmailConfirmed(true);
+        admin.setPlan(UserPlan.defaultPlan());
 
         userRepository.save(admin);
         farmRepository.save(new FarmEntity(null, "Fazenda padrão", admin.getId()));

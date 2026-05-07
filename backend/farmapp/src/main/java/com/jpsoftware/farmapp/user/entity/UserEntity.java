@@ -2,6 +2,8 @@ package com.jpsoftware.farmapp.user.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -45,6 +47,10 @@ public class UserEntity {
     @Column(columnDefinition = "TEXT")
     private String avatarUrl;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserPlan plan = UserPlan.defaultPlan();
+
     public UserEntity() {
     }
 
@@ -63,6 +69,7 @@ public class UserEntity {
         this.role = role;
         this.password = password;
         this.active = active;
+        this.plan = UserPlan.defaultPlan();
     }
 
     public UUID getId() {
@@ -143,5 +150,13 @@ public class UserEntity {
 
     public void setAvatarUrl(String avatarUrl) {
         this.avatarUrl = avatarUrl;
+    }
+
+    public UserPlan getPlan() {
+        return plan;
+    }
+
+    public void setPlan(UserPlan plan) {
+        this.plan = plan == null ? UserPlan.defaultPlan() : plan;
     }
 }

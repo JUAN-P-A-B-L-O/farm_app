@@ -1,4 +1,4 @@
-import type { User } from '../types/user'
+import type { User, UserPlan, UserRole } from '../types/user'
 
 export const AUTH_TOKEN_STORAGE_KEY = 'auth_token'
 export const AUTH_USER_STORAGE_KEY = 'auth_user'
@@ -25,7 +25,34 @@ export function getStoredUser(): User | null {
   }
 
   try {
-    return JSON.parse(rawUser) as User
+    const parsedUser = JSON.parse(rawUser) as Partial<User> & {
+      id?: string
+      name?: string
+      email?: string
+      role?: UserRole
+      active?: boolean
+      farmIds?: string[]
+      plan?: UserPlan
+    }
+
+    if (
+      typeof parsedUser.id !== 'string' ||
+      typeof parsedUser.name !== 'string' ||
+      typeof parsedUser.email !== 'string' ||
+      typeof parsedUser.role !== 'string' ||
+      typeof parsedUser.active !== 'boolean' ||
+      !Array.isArray(parsedUser.farmIds)
+    ) {
+      clearAuthSession()
+      return null
+    }
+
+    return {
+      ...parsedUser,
+      avatarUrl: parsedUser.avatarUrl ?? null,
+      plan: parsedUser.plan ?? 'FREE',
+      farmIds: parsedUser.farmIds,
+    } as User
   } catch {
     clearAuthSession()
     return null

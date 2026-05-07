@@ -13,12 +13,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jpsoftware.farmapp.base.BaseIntegrationTest;
 import com.jpsoftware.farmapp.farm.entity.FarmEntity;
+import com.jpsoftware.farmapp.shared.email.service.EmailSender;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
 class UserIntegrationTest extends BaseIntegrationTest {
+
+    @MockBean
+    private EmailSender emailSender;
 
     @Test
     void shouldAllowManagerToCreateUserAndGrantAccessToAssignedFarm() throws Exception {
@@ -43,10 +49,12 @@ class UserIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Worker One"))
                 .andExpect(jsonPath("$.email").value("worker.one@farm.com"))
                 .andExpect(jsonPath("$.role").value("WORKER"))
+                .andExpect(jsonPath("$.plan").value("FREE"))
                 .andExpect(jsonPath("$.avatarUrl").value("https://example.com/avatar.png"));
 
         UserEntity createdUser = userRepository.findByEmail("worker.one@farm.com").orElseThrow();
         assertTrue(createdUser.isActive());
+        assertEquals(UserPlan.FREE, createdUser.getPlan());
 
         MvcResult loginResult = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

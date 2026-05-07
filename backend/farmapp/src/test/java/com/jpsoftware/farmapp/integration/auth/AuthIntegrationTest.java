@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -44,6 +45,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.email").value("maria@farm.com"))
                 .andExpect(jsonPath("$.role").value("MANAGER"))
                 .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.plan").value("FREE"))
                 .andExpect(jsonPath("$.farmIds").isArray())
                 .andExpect(jsonPath("$.farmIds").isEmpty());
 
@@ -51,6 +53,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         Assertions.assertTrue(registeredUser.isActive());
         Assertions.assertFalse(registeredUser.isEmailConfirmed());
         Assertions.assertEquals("MANAGER", registeredUser.getRole());
+        Assertions.assertEquals(UserPlan.FREE, registeredUser.getPlan());
         Assertions.assertTrue(passwordEncoder.matches("farmapp@123", registeredUser.getPassword()));
         Assertions.assertNotNull(registeredUser.getEmailConfirmationTokenHash());
         Assertions.assertNotNull(registeredUser.getEmailConfirmationTokenExpiresAt());
@@ -176,7 +179,8 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isString())
                 .andExpect(jsonPath("$.user.email").value("jane@farm.com"))
-                .andExpect(jsonPath("$.user.role").value("MANAGER"));
+                .andExpect(jsonPath("$.user.role").value("MANAGER"))
+                .andExpect(jsonPath("$.user.plan").value("FREE"));
     }
 
     @Test

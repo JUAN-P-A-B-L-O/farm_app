@@ -27,6 +27,9 @@ public class UserResponse {
             example = "https://example.com/avatar.png")
     private String avatarUrl;
 
+    @Schema(description = "User plan.", example = "FREE")
+    private String plan;
+
     @Schema(description = "Farm identifiers assigned to the user.", example = "[\"farm-001\"]")
     private List<String> farmIds;
 
@@ -34,16 +37,29 @@ public class UserResponse {
     }
 
     public UserResponse(UUID id, String name, String email, String role) {
-        this(id, name, email, role, null, null, null);
+        this(id, name, email, role, null, null, null, null);
     }
 
     public UserResponse(UUID id, String name, String email, String role, Boolean active, String avatarUrl, List<String> farmIds) {
+        this(id, name, email, role, active, avatarUrl, null, farmIds);
+    }
+
+    public UserResponse(
+            UUID id,
+            String name,
+            String email,
+            String role,
+            Boolean active,
+            String avatarUrl,
+            String plan,
+            List<String> farmIds) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.role = role;
         this.active = active;
         this.avatarUrl = avatarUrl;
+        this.plan = plan;
         this.farmIds = farmIds;
     }
 
@@ -93,6 +109,14 @@ public class UserResponse {
 
     public void setAvatarUrl(String avatarUrl) {
         this.avatarUrl = avatarUrl;
+    }
+
+    public String getPlan() {
+        return plan;
+    }
+
+    public void setPlan(String plan) {
+        this.plan = plan;
     }
 
     public List<String> getFarmIds() {

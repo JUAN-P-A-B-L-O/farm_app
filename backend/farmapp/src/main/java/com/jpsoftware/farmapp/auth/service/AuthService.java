@@ -9,6 +9,7 @@ import com.jpsoftware.farmapp.shared.exception.InvalidCredentialsException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.dto.UserResponse;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import com.jpsoftware.farmapp.user.mapper.UserMapper;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.util.List;
@@ -80,6 +81,7 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
         user.setActive(true);
         user.setEmailConfirmed(false);
+        user.setPlan(UserPlan.defaultPlan());
 
         UserEntity savedUser = userRepository.save(user);
         emailConfirmationService.initializePendingConfirmation(savedUser);

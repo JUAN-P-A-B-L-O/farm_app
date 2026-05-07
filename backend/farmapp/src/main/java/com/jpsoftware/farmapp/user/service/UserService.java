@@ -15,6 +15,7 @@ import com.jpsoftware.farmapp.user.dto.UpdateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UserResponse;
 import com.jpsoftware.farmapp.user.entity.UserFarmAssignmentEntity;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import com.jpsoftware.farmapp.user.mapper.UserMapper;
 import com.jpsoftware.farmapp.user.repository.UserFarmAssignmentRepository;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -85,6 +86,7 @@ public class UserService {
         userEntity.setActive(Boolean.TRUE.equals(request.getActive()));
         userEntity.setEmailConfirmed(true);
         userEntity.setAvatarUrl(normalizeAvatarUrl(request.getAvatarUrl()));
+        userEntity.setPlan(UserPlan.defaultPlan());
         userEntity.setPassword(passwordEncoder.encode(resolveRawPassword(request)));
         UserEntity savedUser = userRepository.save(userEntity);
         persistFarmAssignments(savedUser.getId(), normalizedFarmIds);

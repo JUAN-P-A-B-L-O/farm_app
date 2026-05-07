@@ -1,4 +1,5 @@
 export type UserRole = 'MANAGER' | 'WORKER'
+export type UserPlan = 'FREE' | 'PRO'
 
 export interface User {
   id: string
@@ -7,6 +8,7 @@ export interface User {
   role: UserRole
   active: boolean
   avatarUrl?: string | null
+  plan: UserPlan
   farmIds: string[]
 }
 
