@@ -1,47 +1,44 @@
-# Feature: Fix Database Schema Mismatch (Migration Issues)
+# Feature: Fix Flyway Compatibility Issue with PostgreSQL
 
 ## Goal
-Resolve runtime errors caused by mismatches between application entities and database schema (e.g., missing columns), ensuring a safe and scalable migration approach.
+Resolve startup failure caused by Flyway incompatibility with the current PostgreSQL version, ensuring migrations run correctly and the application starts successfully.
 
 ## Scope
-- Backend: JPA entities and database schema
-- Database migration mechanism (e.g., Flyway or equivalent)
-- Environment: dev and production consistency
+- Backend: database migration setup (Flyway)
+- Build configuration (dependencies)
+- Application startup flow (JPA initialization)
 
 ## Requirements
-- Identify missing or inconsistent columns between entity and database (e.g., email_confirmed)
-- Ensure database schema matches current entity definitions
-- Apply proper migration strategy (no manual fixes in production)
-- Support safe evolution of schema across environments
-- Avoid data loss in production scenarios
+- Identify incompatibility between Flyway and PostgreSQL version
+- Ensure Flyway can execute migrations successfully
+- Restore proper initialization of JPA (EntityManagerFactory)
+- Ensure dependent beans (repositories, filters) are created correctly
+- Maintain compatibility across environments (dev and production)
 
 ## Constraints
-- Do NOT recreate or drop production database
-- Do NOT apply destructive changes without migration control
-- Keep changes incremental and controlled
-- Follow existing migration/versioning strategy
-- Maintain compatibility with existing data
+- Do NOT remove migration mechanism
+- Do NOT bypass migrations permanently
+- Do NOT apply unsafe database changes
+- Keep changes minimal and controlled
+- Follow existing architecture and dependency patterns
 
 ## Implementation Notes
-- Inspect entity vs actual database schema
-- Identify missing migration(s) for new fields
-- Use migration tool (e.g., Flyway) to create versioned schema updates
-- Ensure migrations are idempotent and ordered
-- For local/dev:
-  - Allow reset/recreate if needed
-- For production:
-  - Apply forward-only migrations
-- Avoid relying on Hibernate auto-ddl for schema evolution
+- Verify current PostgreSQL version and Flyway version
+- Align versions to a compatible combination
+- Adjust dependency versions if necessary (without breaking other components)
+- Avoid relying on unsupported configurations
+- Ensure migrations are executed before JPA initialization
+- Keep solution consistent with project setup
 
 ## Validation
-- Application runs without SQL errors
-- All required columns exist in database
-- Existing data remains intact
-- Migrations run successfully in clean and existing databases
-- No regression in persistence behavior
+- Flyway starts and executes migrations successfully
+- Application starts without errors
+- EntityManagerFactory is initialized
+- Repositories and dependent beans are created
+- No regression in database behavior
 
 ## Done Criteria
-- Schema is aligned with entity model
-- Migration process is properly defined and working
-- No runtime SQL errors remain
-- System is safe for production deployment
+- Flyway is compatible with the database version
+- Migrations execute without failure
+- Application starts fully
+- No cascading bean creation errors remain
