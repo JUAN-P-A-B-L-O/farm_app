@@ -77,6 +77,32 @@ const enTranslations = {
       summary: 'Showing {from}-{to} of {total}',
     },
   },
+  plan: {
+    eyebrow: 'Plan',
+    title: 'Premium Feature',
+    description: 'The free plan keeps the basic operational workflows available, while advanced capabilities stay on the Premium plan.',
+    badge: 'Premium',
+    currentLabel: 'Current plan',
+    labels: {
+      FREE: 'Free',
+      PRO: 'Premium',
+    },
+    upgradeHint: 'Upgrade the account plan to unlock this feature without changing the rest of the workflow.',
+    features: {
+      dashboard: {
+        title: 'Management dashboard',
+        description: 'The consolidated financial and operational dashboard is part of the Premium plan.',
+      },
+      analytics: {
+        title: 'Advanced analytics',
+        description: 'The analytical time series and visual comparisons require the Premium plan.',
+      },
+      csvExport: {
+        title: 'CSV export',
+        description: 'Data and report exports in CSV are available only on the Premium plan.',
+      },
+    },
+  },
   auth: {
     eyebrow: 'Authentication',
     title: 'Login',
@@ -84,11 +110,17 @@ const enTranslations = {
     submit: 'Login',
     submitting: 'Signing in...',
     success: {
-      registration: 'Account created successfully. Sign in with your new email and password to continue.',
+      registration: 'Account created successfully. Check your email to confirm access.',
+      confirmation: 'Email confirmed successfully. You can sign in now.',
+      confirmationResent: 'A new confirmation email has been sent.',
     },
     form: {
       email: 'Email',
       password: 'Password',
+    },
+    actions: {
+      resendConfirmation: 'Resend confirmation',
+      resendingConfirmation: 'Resending confirmation...',
     },
     signup: {
       title: 'Create account',
@@ -110,7 +142,21 @@ const enTranslations = {
     },
     errors: {
       invalidCredentials: 'Invalid credentials',
+      confirmationRequired: 'Confirm your email before signing in.',
+      resendConfirmation: 'Unable to resend the confirmation email.',
       generic: 'Unable to sign in. Please try again.',
+    },
+    confirmation: {
+      title: 'Email confirmation',
+      description: 'We are validating your confirmation link.',
+      loading: 'Validating confirmation...',
+      success: 'Email confirmed successfully. You can now sign in.',
+      loginAction: 'Go to login',
+      backToLogin: 'Back to login',
+      errors: {
+        invalidLink: 'The confirmation link is invalid.',
+        generic: 'Unable to confirm the email.',
+      },
     },
   },
   dashboard: {
@@ -149,9 +195,14 @@ const enTranslations = {
     eyebrow: 'Farm Boundary',
     createTitle: 'Create Farm',
     createDescription: 'Create the farm boundary before entering the operational modules.',
+    onboardingTitle: 'Create your first farm',
+    onboardingDescription: 'Before using the system, create the initial farm to unlock the operational modules.',
     formTitle: 'Farm Setup',
     formDescription: 'This farm will become the active operating context for animals, feeding, production, and analytics.',
+    onboardingFormTitle: 'Initial setup',
+    onboardingFormDescription: 'Enter only the farm name to finish first access and start using the system.',
     submitCreate: 'Create farm',
+    onboardingSubmit: 'Finish setup',
     createAction: 'Create farm',
     loadError: 'Unable to load farms.',
     selectionRequiredTitle: 'Select a farm to continue.',
@@ -839,6 +890,32 @@ const ptBRTranslations = {
       summary: 'Exibindo {from}-{to} de {total}',
     },
   },
+  plan: {
+    eyebrow: 'Plano',
+    title: 'Recurso Premium',
+    description: 'O plano gratuito mantém o uso operacional básico, enquanto os recursos avançados ficam reservados ao plano Premium.',
+    badge: 'Premium',
+    currentLabel: 'Plano atual',
+    labels: {
+      FREE: 'Gratuito',
+      PRO: 'Premium',
+    },
+    upgradeHint: 'Atualize o plano da conta para liberar este recurso sem alterar o restante do seu fluxo.',
+    features: {
+      dashboard: {
+        title: 'Painel gerencial',
+        description: 'O painel consolidado com indicadores financeiros e operacionais faz parte do plano Premium.',
+      },
+      analytics: {
+        title: 'Análises avançadas',
+        description: 'As séries analíticas e comparativos visuais exigem o plano Premium.',
+      },
+      csvExport: {
+        title: 'Exportação em CSV',
+        description: 'A exportação de dados e relatórios em CSV está disponível apenas no plano Premium.',
+      },
+    },
+  },
   auth: {
     eyebrow: 'Autenticação',
     title: 'Entrar',
@@ -846,11 +923,17 @@ const ptBRTranslations = {
     submit: 'Entrar',
     submitting: 'Entrando...',
     success: {
-      registration: 'Conta criada com sucesso. Entre com seu novo e-mail e senha para continuar.',
+      registration: 'Conta criada com sucesso. Verifique seu e-mail para confirmar o acesso.',
+      confirmation: 'E-mail confirmado com sucesso. Agora você já pode entrar.',
+      confirmationResent: 'Enviamos um novo e-mail de confirmação.',
     },
     form: {
       email: 'E-mail',
       password: 'Senha',
+    },
+    actions: {
+      resendConfirmation: 'Reenviar confirmação',
+      resendingConfirmation: 'Reenviando confirmação...',
     },
     signup: {
       title: 'Criar conta',
@@ -872,7 +955,21 @@ const ptBRTranslations = {
     },
     errors: {
       invalidCredentials: 'E-mail ou senha inválidos.',
+      confirmationRequired: 'Confirme seu e-mail antes de entrar.',
+      resendConfirmation: 'Não foi possível reenviar o e-mail de confirmação.',
       generic: 'Não foi possível entrar. Tente novamente.',
+    },
+    confirmation: {
+      title: 'Confirmação de e-mail',
+      description: 'Estamos validando o seu link de confirmação.',
+      loading: 'Validando confirmação...',
+      success: 'E-mail confirmado com sucesso. Você já pode entrar no sistema.',
+      loginAction: 'Ir para o login',
+      backToLogin: 'Voltar para o login',
+      errors: {
+        invalidLink: 'O link de confirmação é inválido.',
+        generic: 'Não foi possível confirmar o e-mail.',
+      },
     },
   },
   dashboard: {
@@ -911,9 +1008,14 @@ const ptBRTranslations = {
     eyebrow: 'Limite da fazenda',
     createTitle: 'Criar fazenda',
     createDescription: 'Crie o limite da fazenda antes de entrar nos módulos operacionais.',
+    onboardingTitle: 'Crie sua primeira fazenda',
+    onboardingDescription: 'Antes de usar o sistema, crie a fazenda inicial para liberar os módulos operacionais.',
     formTitle: 'Configuração da fazenda',
     formDescription: 'Esta fazenda será o contexto ativo para animais, alimentação, produção e análises.',
+    onboardingFormTitle: 'Configuração inicial',
+    onboardingFormDescription: 'Informe apenas o nome da fazenda para concluir o primeiro acesso e começar a usar o sistema.',
     submitCreate: 'Criar fazenda',
+    onboardingSubmit: 'Concluir configuração',
     createAction: 'Criar fazenda',
     loadError: 'Não foi possível carregar as fazendas.',
     selectionRequiredTitle: 'Selecione uma fazenda para continuar.',

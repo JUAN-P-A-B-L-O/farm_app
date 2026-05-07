@@ -405,7 +405,8 @@ class AuthIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldRequireTokenForProtectedEndpoints() throws Exception {
-        UserEntity user = createAuthenticatedUser();
+        UserEntity user = createAuthenticatedUser("MANAGER", UserPlan.PRO);
+        createFarmOwnedBy(user, "North Dairy");
 
         mockMvc.perform(get("/animals"))
                 .andExpect(status().isUnauthorized())
@@ -431,8 +432,9 @@ class AuthIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldAllowOnlyManagersToAccessDashboardAndAnalytics() throws Exception {
-        UserEntity manager = createAuthenticatedUser("MANAGER");
+        UserEntity manager = createAuthenticatedUser("MANAGER", UserPlan.PRO);
         UserEntity worker = createAuthenticatedUser("WORKER");
+        createFarmOwnedBy(manager, "North Dairy");
 
         mockMvc.perform(get("/dashboard")
                         .header("Authorization", bearerToken(worker)))
@@ -485,6 +487,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     void shouldAllowOnlyManagersToReachDeleteEndpoints() throws Exception {
         UserEntity manager = createAuthenticatedUser("MANAGER");
         UserEntity worker = createAuthenticatedUser("WORKER");
+        createFarmOwnedBy(manager, "North Dairy");
 
         mockMvc.perform(delete("/animals/missing")
                         .header("Authorization", bearerToken(worker)))

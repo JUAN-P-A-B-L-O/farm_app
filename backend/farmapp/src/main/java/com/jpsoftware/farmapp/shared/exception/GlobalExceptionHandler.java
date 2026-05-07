@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.shared.exception;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import com.jpsoftware.farmapp.shared.onboarding.FarmOnboardingRequiredException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -121,6 +122,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PlanAccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handlePlanAccessDeniedException(
             PlanAccessDeniedException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(FarmOnboardingRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleFarmOnboardingRequiredException(
+            FarmOnboardingRequiredException exception,
             HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request.getRequestURI());
     }

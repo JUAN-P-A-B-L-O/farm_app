@@ -9,5 +9,7 @@ public interface FarmRepository extends JpaRepository<FarmEntity, String> {
 
     List<FarmEntity> findByOwnerId(UUID ownerId);
 
+    boolean existsByOwnerId(UUID ownerId);
+
     boolean existsByIdAndOwnerId(String id, UUID ownerId);
 }

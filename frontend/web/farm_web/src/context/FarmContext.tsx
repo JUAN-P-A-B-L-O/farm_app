@@ -16,6 +16,7 @@ export function FarmProvider({ children }: { children: ReactNode }) {
   const [farms, setFarms] = useState<Farm[]>([])
   const [selectedFarmId, setSelectedFarmIdState] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [hasResolvedFarms, setHasResolvedFarms] = useState(!isAuthenticated)
   const [errorMessage, setErrorMessage] = useState('')
 
   const setSelectedFarmId = useCallback((farmId: string) => {
@@ -35,11 +36,13 @@ export function FarmProvider({ children }: { children: ReactNode }) {
       setSelectedFarmIdState('')
       setErrorMessage('')
       setIsLoading(false)
+      setHasResolvedFarms(true)
       clearStoredFarmId()
       return
     }
 
     setIsLoading(true)
+    setHasResolvedFarms(false)
     setErrorMessage('')
 
     try {
@@ -69,6 +72,7 @@ export function FarmProvider({ children }: { children: ReactNode }) {
       clearStoredFarmId()
     } finally {
       setIsLoading(false)
+      setHasResolvedFarms(true)
     }
   }, [isAuthenticated])
 
@@ -80,6 +84,7 @@ export function FarmProvider({ children }: { children: ReactNode }) {
     () => farms.find((farm) => farm.id === selectedFarmId) ?? null,
     [farms, selectedFarmId],
   )
+  const needsOnboarding = isAuthenticated && hasResolvedFarms && farms.length === 0
 
   const value = useMemo(
     () => ({
@@ -87,11 +92,23 @@ export function FarmProvider({ children }: { children: ReactNode }) {
       selectedFarmId,
       selectedFarm,
       isLoading,
+      hasResolvedFarms,
+      needsOnboarding,
       errorMessage,
       setSelectedFarmId,
       refreshFarms,
     }),
-    [errorMessage, farms, isLoading, refreshFarms, selectedFarm, selectedFarmId, setSelectedFarmId],
+    [
+      errorMessage,
+      farms,
+      hasResolvedFarms,
+      isLoading,
+      needsOnboarding,
+      refreshFarms,
+      selectedFarm,
+      selectedFarmId,
+      setSelectedFarmId,
+    ],
   )
 
   return <FarmContext.Provider value={value}>{children}</FarmContext.Provider>

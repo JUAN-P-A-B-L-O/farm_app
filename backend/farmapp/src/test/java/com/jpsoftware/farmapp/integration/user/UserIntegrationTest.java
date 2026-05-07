@@ -169,6 +169,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
     void shouldRequireCreatorOwnedFarmsDuringUserCreation() throws Exception {
         UserEntity manager = createAuthenticatedUser("MANAGER");
         UserEntity anotherManager = createAuthenticatedUser("MANAGER");
+        createFarmOwnedBy(manager, "North Dairy");
         FarmEntity otherFarm = createFarmOwnedBy(anotherManager, "Other Farm");
 
         mockMvc.perform(post("/users")
@@ -247,6 +248,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
     void shouldAllowManagerToInactivateUserAndBlockLogin() throws Exception {
         UserEntity manager = createAuthenticatedUser("MANAGER");
         UserEntity worker = createAuthenticatedUser("WORKER");
+        createFarmOwnedBy(manager, "North Dairy");
 
         mockMvc.perform(patch("/users/" + worker.getId() + "/inactivate")
                         .header("Authorization", bearerToken(manager)))
@@ -271,6 +273,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
     void shouldAllowManagerToReactivateUserAndRestoreLogin() throws Exception {
         UserEntity manager = createAuthenticatedUser("MANAGER");
         UserEntity worker = createAuthenticatedUser("WORKER");
+        createFarmOwnedBy(manager, "North Dairy");
         worker.setActive(false);
         userRepository.save(worker);
 
@@ -303,6 +306,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
     void shouldAllowManagerToDeleteUser() throws Exception {
         UserEntity manager = createAuthenticatedUser("MANAGER");
         UserEntity worker = createAuthenticatedUser("WORKER");
+        createFarmOwnedBy(manager, "North Dairy");
 
         mockMvc.perform(delete("/users/" + worker.getId())
                         .header("Authorization", bearerToken(manager)))
@@ -315,6 +319,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
     void shouldRejectDeletingUserWhoOwnsFarms() throws Exception {
         UserEntity manager = createAuthenticatedUser("MANAGER");
         UserEntity owner = createAuthenticatedUser("MANAGER");
+        createFarmOwnedBy(manager, "North Dairy");
         createFarmOwnedBy(owner, "Owner Farm");
 
         mockMvc.perform(delete("/users/" + owner.getId())
@@ -362,6 +367,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldFilterUsersBySearchStatusAndRole() throws Exception {
         UserEntity manager = createAuthenticatedUser("MANAGER");
+        createFarmOwnedBy(manager, "North Dairy");
         UserEntity inactiveWorker = createAuthenticatedUser("WORKER");
         inactiveWorker.setName("Pedro Worker");
         inactiveWorker.setEmail("pedro.worker@farm.com");

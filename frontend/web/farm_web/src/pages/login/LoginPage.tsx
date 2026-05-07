@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useFarm } from '../../hooks/useFarm'
 import { useTranslation } from '../../hooks/useTranslation'
 import {
   confirmAccountEmail,
@@ -26,6 +27,7 @@ interface LoginLocationState {
 
 function LoginPage() {
   const { isAuthenticated, login, user } = useAuth()
+  const { hasResolvedFarms, needsOnboarding } = useFarm()
   const { t, language } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
@@ -95,6 +97,14 @@ function LoginPage() {
   }, [confirmationToken, isConfirmationMode, language])
 
   if (isAuthenticated) {
+    if (!hasResolvedFarms) {
+      return null
+    }
+
+    if (needsOnboarding) {
+      return <Navigate to="/onboarding/farm" replace />
+    }
+
     return <Navigate to={isManager(user) ? '/dashboard' : '/animals'} replace />
   }
 

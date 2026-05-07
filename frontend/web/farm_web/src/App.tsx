@@ -16,6 +16,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 import ManagerRoute from './components/auth/ManagerRoute'
 import PlanRoute from './components/auth/PlanRoute'
 import FarmCreatePage from './pages/farm/FarmCreatePage'
+import FarmOnboardingPage from './pages/farm/FarmOnboardingPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import { useAuth } from './hooks/useAuth'
 import { hasFeatureAccess } from './utils/planAccess'
@@ -45,6 +46,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
+        <Route path="/onboarding/farm" element={<FarmOnboardingPage />} />
         <Route element={<AppLayout />}>
           <Route index element={<DefaultRoute />} />
           <Route

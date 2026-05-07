@@ -6,6 +6,8 @@ export interface FarmContextValue {
   selectedFarmId: string
   selectedFarm: Farm | null
   isLoading: boolean
+  hasResolvedFarms: boolean
+  needsOnboarding: boolean
   errorMessage: string
   setSelectedFarmId: (farmId: string) => void
   refreshFarms: () => Promise<void>
