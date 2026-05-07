@@ -277,6 +277,26 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldRejectExpiredConfirmationToken() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
+                null,
+                "Maria Silva",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+        user.setEmailConfirmed(false);
+        user.setEmailConfirmationTokenHash(emailConfirmationTokenService.hashToken("expired-token"));
+        user.setEmailConfirmationTokenExpiresAt(Instant.now().minusSeconds(60));
+        userRepository.save(user);
+
+        mockMvc.perform(get("/auth/confirm-email")
+                        .param("token", "expired-token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("O token de confirmação é inválido ou expirou."));
+    }
+
+    @Test
     void shouldResendConfirmationEmail() throws Exception {
         UserEntity user = userRepository.save(new UserEntity(
                 null,
@@ -295,7 +315,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "email": "maria@farm.com"
+                                  "email": "  MARIA@FARM.COM  "
                                 }
                                 """))
                 .andExpect(status().isOk())
@@ -305,6 +325,44 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         Assertions.assertFalse(updatedUser.isEmailConfirmed());
         Assertions.assertNotEquals(previousTokenHash, updatedUser.getEmailConfirmationTokenHash());
         Assertions.assertTrue(updatedUser.getEmailConfirmationTokenExpiresAt().isAfter(Instant.now()));
+    }
+
+    @Test
+    void shouldRejectResendConfirmationForUnknownUser() throws Exception {
+        mockMvc.perform(post("/auth/confirm-email/resend")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "missing@farm.com"
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Usuário não encontrado."))
+                .andExpect(jsonPath("$.path").value("/auth/confirm-email/resend"));
+    }
+
+    @Test
+    void shouldRejectResendConfirmationForConfirmedUser() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
+                null,
+                "Maria Silva",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+        user.setEmailConfirmed(true);
+        userRepository.save(user);
+
+        mockMvc.perform(post("/auth/confirm-email/resend")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "maria@farm.com"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("O e-mail já foi confirmado."))
+                .andExpect(jsonPath("$.path").value("/auth/confirm-email/resend"));
     }
 
     @Test
