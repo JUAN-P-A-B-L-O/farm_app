@@ -29,8 +29,36 @@ class LocalProfilePropertiesTest {
         assertThat(localProperties.getProperty("spring.jpa.database-platform")).isNull();
     }
 
+    @Test
+    void baseApplicationPropertiesEnableFlywayAndHibernateValidation() throws IOException {
+        Properties applicationProperties = loadMainResourceProperties("application.properties");
+
+        assertThat(applicationProperties.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
+        assertThat(applicationProperties.getProperty("spring.flyway.enabled")).isEqualTo("true");
+        assertThat(applicationProperties.getProperty("spring.flyway.locations"))
+                .isEqualTo("classpath:db/migration");
+        assertThat(applicationProperties.getProperty("spring.flyway.baseline-on-migrate")).isEqualTo("true");
+        assertThat(applicationProperties.getProperty("spring.flyway.baseline-version")).isEqualTo("1");
+    }
+
+    @Test
+    void testApplicationPropertiesUseValidatedH2Schema() throws IOException {
+        Properties testProperties = loadTestResourceProperties("application.properties");
+
+        assertThat(testProperties.getProperty("spring.datasource.url"))
+                .isEqualTo("jdbc:h2:mem:farmdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
+        assertThat(testProperties.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
+    }
+
     private Properties loadMainResourceProperties(String fileName) throws IOException {
-        Path propertiesPath = Path.of("src/main/resources", fileName);
+        return loadProperties(Path.of("src/main/resources", fileName));
+    }
+
+    private Properties loadTestResourceProperties(String fileName) throws IOException {
+        return loadProperties(Path.of("src/test/resources", fileName));
+    }
+
+    private Properties loadProperties(Path propertiesPath) throws IOException {
         Properties properties = new Properties();
 
         try (InputStream inputStream = Files.newInputStream(propertiesPath)) {
