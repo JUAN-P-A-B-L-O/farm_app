@@ -49,6 +49,18 @@ class PlanAccessPolicyTest {
     }
 
     @Test
+    void shouldResolveDefaultEntitlementWhenEntitlementIsMissing() {
+        PlanAccessDecision decision = planAccessPolicy.evaluate((PlanEntitlement) null, PlanFeature.CSV_EXPORT);
+
+        assertEquals(UserPlan.FREE, decision.currentPlan());
+        assertEquals(PlanActivationStatus.ACTIVE, decision.activationStatus());
+        assertEquals(PlanActivationSource.INTERNAL_DEFAULT, decision.activationSource());
+        assertEquals(PlanFeature.CSV_EXPORT, decision.feature());
+        assertEquals(UserPlan.PRO, decision.minimumPlan());
+        assertFalse(decision.allowed());
+    }
+
+    @Test
     void shouldAllowWhenFeatureIsMissing() {
         PlanAccessDecision decision = planAccessPolicy.evaluate((UserPlan) null, null);
 
