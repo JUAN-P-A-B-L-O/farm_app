@@ -47,6 +47,9 @@ class PlanFeatureAccessIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldBlockCsvExportForFreeUser() throws Exception {
         UserEntity freeWorker = createAuthenticatedUser("WORKER", UserPlan.FREE);
+        UserEntity owner = createAuthenticatedUser("MANAGER", UserPlan.FREE);
+        FarmEntity farm = createFarmOwnedBy(owner, "Fazenda Worker");
+        assignUserToFarm(freeWorker, farm);
 
         mockMvc.perform(get("/animals/export")
                         .header("Authorization", bearerToken(freeWorker)))
@@ -57,6 +60,9 @@ class PlanFeatureAccessIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldAllowCsvExportForProUser() throws Exception {
         UserEntity proWorker = createAuthenticatedUser("WORKER", UserPlan.PRO);
+        UserEntity owner = createAuthenticatedUser("MANAGER", UserPlan.FREE);
+        FarmEntity farm = createFarmOwnedBy(owner, "Fazenda Worker");
+        assignUserToFarm(proWorker, farm);
 
         mockMvc.perform(get("/animals/export")
                         .header("Authorization", bearerToken(proWorker)))
@@ -67,6 +73,7 @@ class PlanFeatureAccessIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldBlockAnalyticsForFreeManager() throws Exception {
         UserEntity freeManager = createAuthenticatedUser("MANAGER", UserPlan.FREE);
+        createFarmOwnedBy(freeManager, "Fazenda Analytics");
 
         mockMvc.perform(get("/analytics/production")
                         .header("Authorization", bearerToken(freeManager)))
@@ -77,6 +84,7 @@ class PlanFeatureAccessIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldAllowAnalyticsForProManager() throws Exception {
         UserEntity proManager = createAuthenticatedUser("MANAGER", UserPlan.PRO);
+        createFarmOwnedBy(proManager, "Fazenda Analytics");
 
         mockMvc.perform(get("/analytics/production")
                         .header("Authorization", bearerToken(proManager)))

@@ -1,23 +1,17 @@
 package com.jpsoftware.farmapp.user.entity;
 
 public enum UserPlan {
-    FREE(0, false),
-    PRO(1, true);
+    FREE(0),
+    PRO(1);
 
     private final int rank;
-    private final boolean paid;
 
-    UserPlan(int rank, boolean paid) {
+    UserPlan(int rank) {
         this.rank = rank;
-        this.paid = paid;
     }
 
     public int getRank() {
         return rank;
-    }
-
-    public boolean isPaid() {
-        return paid;
     }
 
     public boolean includes(UserPlan requiredPlan) {

@@ -21,4 +21,11 @@ public enum PlanFeature {
         UserPlan resolvedPlan = plan == null ? UserPlan.defaultPlan() : plan;
         return resolvedPlan.includes(minimumPlan);
     }
+
+    public boolean isAvailableFor(PlanEntitlement entitlement) {
+        PlanEntitlement resolvedEntitlement = entitlement == null
+                ? PlanEntitlement.defaultEntitlement()
+                : entitlement;
+        return resolvedEntitlement.allows(this);
+    }
 }

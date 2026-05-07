@@ -12,6 +12,7 @@ import com.jpsoftware.farmapp.farm.entity.FarmEntity;
 import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserFarmAssignmentEntity;
 import com.jpsoftware.farmapp.user.entity.UserPlan;
 import com.jpsoftware.farmapp.user.repository.UserFarmAssignmentRepository;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -111,5 +112,9 @@ public abstract class BaseIntegrationTest {
         farm.setName(name);
         farm.setOwnerId(owner.getId());
         return farmRepository.save(farm);
+    }
+
+    protected void assignUserToFarm(UserEntity user, FarmEntity farm) {
+        userFarmAssignmentRepository.save(new UserFarmAssignmentEntity(null, user.getId(), farm.getId()));
     }
 }
