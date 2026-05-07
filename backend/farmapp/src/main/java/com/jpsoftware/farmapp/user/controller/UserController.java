@@ -2,6 +2,8 @@ package com.jpsoftware.farmapp.user.controller;
 
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.plan.PlanFeature;
+import com.jpsoftware.farmapp.shared.plan.RequiresPlanFeature;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import com.jpsoftware.farmapp.user.dto.ActivateUserRequest;
 import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
@@ -74,6 +76,7 @@ public class UserController {
     }
 
     @GetMapping("/export")
+    @RequiresPlanFeature(PlanFeature.CSV_EXPORT)
     @Operation(summary = "Export users", description = "Exports users as CSV using the current search and filters.")
     public ResponseEntity<byte[]> export(
             @RequestParam(required = false) String search,

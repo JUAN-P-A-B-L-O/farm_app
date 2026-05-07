@@ -14,9 +14,11 @@ import AppLayout from './layout/AppLayout'
 import LoginPage from './pages/login/LoginPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import ManagerRoute from './components/auth/ManagerRoute'
+import PlanRoute from './components/auth/PlanRoute'
 import FarmCreatePage from './pages/farm/FarmCreatePage'
 import SettingsPage from './pages/settings/SettingsPage'
 import { useAuth } from './hooks/useAuth'
+import { hasFeatureAccess } from './utils/planAccess'
 import { isManager } from './utils/authorization'
 
 function AnimalsRoute() {
@@ -35,7 +37,7 @@ function AnimalDetailsRoute() {
 function DefaultRoute() {
   const { user } = useAuth()
 
-  return <Navigate to={isManager(user) ? '/dashboard' : '/animals'} replace />
+  return <Navigate to={isManager(user) && hasFeatureAccess(user, 'DASHBOARD') ? '/dashboard' : '/animals'} replace />
 }
 
 function App() {
@@ -49,7 +51,9 @@ function App() {
             path="/dashboard"
             element={(
               <ManagerRoute>
-                <DashboardPage />
+                <PlanRoute feature="DASHBOARD">
+                  <DashboardPage />
+                </PlanRoute>
               </ManagerRoute>
             )}
           />
@@ -73,7 +77,9 @@ function App() {
             path="/analytics"
             element={(
               <ManagerRoute>
-                <AnalyticsPage />
+                <PlanRoute feature="ANALYTICS">
+                  <AnalyticsPage />
+                </PlanRoute>
               </ManagerRoute>
             )}
           />

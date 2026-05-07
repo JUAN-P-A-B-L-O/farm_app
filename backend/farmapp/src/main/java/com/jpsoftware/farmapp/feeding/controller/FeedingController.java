@@ -7,6 +7,8 @@ import com.jpsoftware.farmapp.feeding.dto.UpdateFeedingRequest;
 import com.jpsoftware.farmapp.feeding.service.FeedingService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.plan.PlanFeature;
+import com.jpsoftware.farmapp.shared.plan.RequiresPlanFeature;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -97,6 +99,7 @@ public class FeedingController {
     }
 
     @GetMapping("/export")
+    @RequiresPlanFeature(PlanFeature.CSV_EXPORT)
     @Operation(summary = "Export feedings", description = "Exports feeding records as CSV using the current filters.")
     public ResponseEntity<byte[]> export(
             @RequestParam(required = false) String search,

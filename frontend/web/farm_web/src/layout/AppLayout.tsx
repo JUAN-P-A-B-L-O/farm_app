@@ -6,10 +6,18 @@ import { useFarm } from '../hooks/useFarm'
 import { useMeasurementUnits } from '../hooks/useMeasurementUnits'
 import { useLanguage, type Language } from '../context/LanguageContext'
 import { useTranslation } from '../hooks/useTranslation'
+import { getFeatureMetadata, hasFeatureAccess, type AppFeature } from '../utils/planAccess'
 import { isManager } from '../utils/authorization'
 
-const navigationItems = [
-  { to: '/dashboard', labelKey: 'layout.navigation.dashboard', managerOnly: true },
+interface NavigationItem {
+  to: string
+  labelKey: string
+  managerOnly?: boolean
+  feature?: AppFeature
+}
+
+const navigationItems: NavigationItem[] = [
+  { to: '/dashboard', labelKey: 'layout.navigation.dashboard', managerOnly: true, feature: 'DASHBOARD' },
   { to: '/animals', labelKey: 'layout.navigation.animals' },
   { to: '/batches', labelKey: 'layout.navigation.batches' },
   { to: '/production', labelKey: 'layout.navigation.production' },
@@ -17,7 +25,7 @@ const navigationItems = [
   { to: '/feeding', labelKey: 'layout.navigation.feeding' },
   { to: '/feed-types', labelKey: 'layout.navigation.feedTypes' },
   { to: '/users', labelKey: 'layout.navigation.users', managerOnly: true },
-  { to: '/analytics', labelKey: 'layout.navigation.analytics', managerOnly: true },
+  { to: '/analytics', labelKey: 'layout.navigation.analytics', managerOnly: true, feature: 'ANALYTICS' },
   { to: '/settings', labelKey: 'layout.navigation.settings' },
 ]
 
@@ -92,18 +100,36 @@ function AppLayout() {
 
         <div className="app-layout__sidebar-scroll">
           <nav className="app-layout__nav">
-            {navigationItems.filter((item) => !item.managerOnly || canManageRestrictedFeatures).map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={() => setIsMobileNavigationOpen(false)}
-                className={({ isActive }) =>
-                  `app-layout__nav-link${isActive ? ' app-layout__nav-link--active' : ''}`
-                }
-              >
-                {t(item.labelKey)}
-              </NavLink>
-            ))}
+            {navigationItems.filter((item) => !item.managerOnly || canManageRestrictedFeatures).map((item) => {
+              const restrictedFeature = item.feature
+              const isPlanRestricted = restrictedFeature !== undefined && !hasFeatureAccess(user, restrictedFeature)
+
+              if (isPlanRestricted) {
+                return (
+                  <span
+                    key={item.to}
+                    className="app-layout__nav-link app-layout__nav-link--disabled"
+                    title={restrictedFeature ? t(getFeatureMetadata(restrictedFeature).descriptionKey) : undefined}
+                  >
+                    <span>{t(item.labelKey)}</span>
+                    <span className="app-layout__nav-badge">{t('plan.badge')}</span>
+                  </span>
+                )
+              }
+
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setIsMobileNavigationOpen(false)}
+                  className={({ isActive }) =>
+                    `app-layout__nav-link${isActive ? ' app-layout__nav-link--active' : ''}`
+                  }
+                >
+                  {t(item.labelKey)}
+                </NavLink>
+              )
+            })}
           </nav>
 
           <div className="app-layout__farm-selector">

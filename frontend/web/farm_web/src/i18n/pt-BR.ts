@@ -77,6 +77,27 @@ const ptBR = {
       summary: 'Exibindo {from}-{to} de {total}',
     },
   },
+  plan: {
+    eyebrow: 'Plano',
+    title: 'Recurso Premium',
+    description: 'O plano gratuito mantém o uso operacional básico, enquanto os recursos avançados ficam reservados ao plano Premium.',
+    badge: 'Premium',
+    upgradeHint: 'Atualize o plano da conta para liberar este recurso sem alterar o restante do seu fluxo.',
+    features: {
+      dashboard: {
+        title: 'Painel gerencial',
+        description: 'O painel consolidado com indicadores financeiros e operacionais faz parte do plano Premium.',
+      },
+      analytics: {
+        title: 'Análises avançadas',
+        description: 'As séries analíticas e comparativos visuais exigem o plano Premium.',
+      },
+      csvExport: {
+        title: 'Exportação em CSV',
+        description: 'A exportação de dados e relatórios em CSV está disponível apenas no plano Premium.',
+      },
+    },
+  },
   auth: {
     eyebrow: 'Autenticação',
     title: 'Entrar',

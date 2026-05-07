@@ -5,6 +5,8 @@ import com.jpsoftware.farmapp.milkprice.dto.MilkPriceResponse;
 import com.jpsoftware.farmapp.milkprice.service.MilkPriceService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.plan.PlanFeature;
+import com.jpsoftware.farmapp.shared.plan.RequiresPlanFeature;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -85,6 +87,7 @@ public class MilkPriceController {
     }
 
     @GetMapping("/export")
+    @RequiresPlanFeature(PlanFeature.CSV_EXPORT)
     @Operation(summary = "Export milk price history", description = "Exports milk price history as CSV for the selected farm.")
     public ResponseEntity<byte[]> export(
             @RequestParam String farmId,

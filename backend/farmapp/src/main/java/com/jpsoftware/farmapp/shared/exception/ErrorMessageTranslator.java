@@ -28,6 +28,7 @@ public final class ErrorMessageTranslator {
             Map.entry("Access is denied", "Acesso negado."),
             Map.entry("Access Denied", "Acesso negado."),
             Map.entry("Full authentication is required to access this resource", "É necessário estar autenticado para acessar este recurso."),
+            Map.entry("This feature requires the PRO plan", "Este recurso está disponível apenas no plano Premium."),
             Map.entry("Invalid or expired token", "Token inválido ou expirado."),
             Map.entry("Invalid or expired email confirmation token", "O token de confirmação é inválido ou expirou."),
             Map.entry("request must not be null", "Requisição obrigatória."),

@@ -5,6 +5,8 @@ import com.jpsoftware.farmapp.feed.dto.FeedTypeResponse;
 import com.jpsoftware.farmapp.feed.service.FeedTypeService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.plan.PlanFeature;
+import com.jpsoftware.farmapp.shared.plan.RequiresPlanFeature;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -72,6 +74,7 @@ public class FeedTypeController {
     }
 
     @GetMapping("/export")
+    @RequiresPlanFeature(PlanFeature.CSV_EXPORT)
     @Operation(summary = "Export feed types", description = "Exports feed types as CSV using the current farm filter.")
     public ResponseEntity<byte[]> export(
             @RequestParam(required = false) String farmId,

@@ -4,6 +4,8 @@ import com.jpsoftware.farmapp.analytics.dto.AnalyticsAnimalProductionPointRespon
 import com.jpsoftware.farmapp.analytics.dto.AnalyticsProfitPointResponse;
 import com.jpsoftware.farmapp.analytics.dto.AnalyticsTimeSeriesPointResponse;
 import com.jpsoftware.farmapp.analytics.service.AnalyticsService;
+import com.jpsoftware.farmapp.shared.plan.PlanFeature;
+import com.jpsoftware.farmapp.shared.plan.RequiresPlanFeature;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/analytics")
+@RequiresPlanFeature(PlanFeature.ANALYTICS)
 @Tag(name = "Analytics", description = "Aggregated analytics for charts and dashboards.")
 public class AnalyticsController {
 

@@ -12,6 +12,7 @@ import com.jpsoftware.farmapp.farm.entity.FarmEntity;
 import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import com.jpsoftware.farmapp.user.repository.UserFarmAssignmentRepository;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.util.UUID;
@@ -86,6 +87,10 @@ public abstract class BaseIntegrationTest {
     }
 
     protected UserEntity createAuthenticatedUser(String role) {
+        return createAuthenticatedUser(role, UserPlan.defaultPlan());
+    }
+
+    protected UserEntity createAuthenticatedUser(String role, UserPlan plan) {
         UserEntity user = new UserEntity();
         user.setName("Jane Doe");
         user.setEmail(role.toLowerCase() + "-" + UUID.randomUUID() + "@farm.com");
@@ -93,6 +98,7 @@ public abstract class BaseIntegrationTest {
         user.setPassword(passwordEncoder.encode("farmapp@123"));
         user.setActive(true);
         user.setEmailConfirmed(true);
+        user.setPlan(plan);
         return userRepository.save(user);
     }
 

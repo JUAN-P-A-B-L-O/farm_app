@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import com.jpsoftware.farmapp.shared.plan.PlanAccessDeniedException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -113,6 +114,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EmailConfirmationRequiredException.class)
     public ResponseEntity<ErrorResponse> handleEmailConfirmationRequiredException(
             EmailConfirmationRequiredException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(PlanAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handlePlanAccessDeniedException(
+            PlanAccessDeniedException exception,
             HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request.getRequestURI());
     }

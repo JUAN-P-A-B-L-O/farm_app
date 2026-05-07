@@ -21,6 +21,7 @@ import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ConflictException;
 import com.jpsoftware.farmapp.shared.exception.ResourceNotFoundException;
 import com.jpsoftware.farmapp.shared.exception.ValidationException;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.lang.reflect.Proxy;
 import java.time.LocalDate;
@@ -125,7 +126,7 @@ class ProductionServiceTest {
     private void authenticate(UUID userId, String role) {
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(
-                        new AuthenticatedUser(userId, List.of(role)),
+                        new AuthenticatedUser(userId, List.of(role), UserPlan.defaultPlan()),
                         null,
                         role));
     }

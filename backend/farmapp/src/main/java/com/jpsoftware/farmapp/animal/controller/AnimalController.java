@@ -7,6 +7,8 @@ import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
 import com.jpsoftware.farmapp.animal.service.AnimalService;
 import com.jpsoftware.farmapp.shared.dto.PaginatedResponse;
 import com.jpsoftware.farmapp.shared.exception.ErrorResponse;
+import com.jpsoftware.farmapp.shared.plan.PlanFeature;
+import com.jpsoftware.farmapp.shared.plan.RequiresPlanFeature;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -74,6 +76,7 @@ public class AnimalController {
     }
 
     @GetMapping("/export")
+    @RequiresPlanFeature(PlanFeature.CSV_EXPORT)
     @Operation(summary = "Export animals", description = "Exports animals as CSV using the current farm filter.")
     public ResponseEntity<byte[]> export(
             @RequestParam(required = false) String farmId,

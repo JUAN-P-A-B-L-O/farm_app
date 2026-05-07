@@ -77,6 +77,27 @@ const en = {
       summary: 'Showing {from}-{to} of {total}',
     },
   },
+  plan: {
+    eyebrow: 'Plan',
+    title: 'Premium Feature',
+    description: 'The free plan keeps the basic operational workflows available, while advanced capabilities stay on the Premium plan.',
+    badge: 'Premium',
+    upgradeHint: 'Upgrade the account plan to unlock this feature without changing the rest of the workflow.',
+    features: {
+      dashboard: {
+        title: 'Management dashboard',
+        description: 'The consolidated financial and operational dashboard is part of the Premium plan.',
+      },
+      analytics: {
+        title: 'Advanced analytics',
+        description: 'The analytical time series and visual comparisons require the Premium plan.',
+      },
+      csvExport: {
+        title: 'CSV export',
+        description: 'Data and report exports in CSV are available only on the Premium plan.',
+      },
+    },
+  },
   auth: {
     eyebrow: 'Authentication',
     title: 'Login',
