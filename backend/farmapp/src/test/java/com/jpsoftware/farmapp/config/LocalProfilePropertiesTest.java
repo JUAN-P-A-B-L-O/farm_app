@@ -20,7 +20,7 @@ class LocalProfilePropertiesTest {
         assertThat(localProperties.getProperty("spring.datasource.driver-class-name"))
                 .isEqualTo("org.h2.Driver");
         assertThat(localProperties.getProperty("spring.datasource.username")).isEqualTo("sa");
-        assertThat(localProperties.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("create");
+        assertThat(localProperties.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
     }
 
     @Test
