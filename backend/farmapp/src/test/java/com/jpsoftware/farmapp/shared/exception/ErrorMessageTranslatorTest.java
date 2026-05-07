@@ -54,6 +54,13 @@ class ErrorMessageTranslatorTest {
     }
 
     @Test
+    void shouldTranslateFarmOnboardingMessage() {
+        assertEquals(
+                "Crie uma fazenda antes de acessar este recurso.",
+                ErrorMessageTranslator.translate("Create a farm before accessing this feature"));
+    }
+
+    @Test
     void shouldTranslateAvatarValidationMessages() {
         assertEquals(
                 "Informe uma URL http(s) válida ou uma imagem inline suportada para o avatar.",

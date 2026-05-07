@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jpsoftware.farmapp.shared.onboarding.FarmOnboardingRequiredException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,6 +84,16 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.path").value("/test-exceptions/missing-static-resource"));
     }
 
+    @Test
+    void shouldReturn403WhenFarmOnboardingIsRequired() throws Exception {
+        mockMvc.perform(get("/test-exceptions/onboarding-required"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Crie uma fazenda antes de acessar este recurso."))
+                .andExpect(jsonPath("$.path").value("/test-exceptions/onboarding-required"));
+    }
+
     @RestController
     @RequestMapping("/test-exceptions")
     private static class TestExceptionController {
@@ -105,6 +116,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/missing-static-resource")
         ResponseEntity<Void> missingStaticResource() throws NoResourceFoundException {
             throw new NoResourceFoundException(null, "/test-exceptions/missing-static-resource");
+        }
+
+        @GetMapping("/onboarding-required")
+        ResponseEntity<Void> onboardingRequired() {
+            throw new FarmOnboardingRequiredException("Create a farm before accessing this feature");
         }
     }
 
