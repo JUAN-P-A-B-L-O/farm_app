@@ -85,6 +85,65 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldRejectDuplicateEmailDuringRegistrationIgnoringCaseAndWhitespace() throws Exception {
+        userRepository.save(new UserEntity(
+                null,
+                "Existing User",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Maria Silva",
+                                  "email": "  MARIA@FARM.COM  ",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Já existe um usuário com este e-mail."));
+    }
+
+    @Test
+    void shouldNormalizeRegistrationFieldsBeforePersistingUser() throws Exception {
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "  Maria Silva  ",
+                                  "email": "  MARIA@FARM.COM  ",
+                                  "password": "  farmapp@123  "
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Maria Silva"))
+                .andExpect(jsonPath("$.email").value("maria@farm.com"));
+
+        UserEntity registeredUser = userRepository.findByEmail("maria@farm.com").orElseThrow();
+        Assertions.assertEquals("Maria Silva", registeredUser.getName());
+        Assertions.assertTrue(passwordEncoder.matches("farmapp@123", registeredUser.getPassword()));
+    }
+
+    @Test
+    void shouldValidateRequiredFieldsDuringRegistration() throws Exception {
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Maria Silva",
+                                  "email": "maria@farm.com",
+                                  "password": "   "
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("A senha é obrigatória."))
+                .andExpect(jsonPath("$.path").value("/auth/register"));
+    }
+
+    @Test
     void shouldLoginAndReturnJwtToken() throws Exception {
         userRepository.save(new UserEntity(
                 null,

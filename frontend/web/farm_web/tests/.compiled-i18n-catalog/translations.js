@@ -83,9 +83,30 @@ const enTranslations = {
     description: 'Enter your account credentials to access the application.',
     submit: 'Login',
     submitting: 'Signing in...',
+    success: {
+      registration: 'Account created successfully. Sign in with your new email and password to continue.',
+    },
     form: {
       email: 'Email',
       password: 'Password',
+    },
+    signup: {
+      title: 'Create account',
+      description: 'Register only the essential details to start accessing the system.',
+      submit: 'Create account',
+      submitting: 'Creating account...',
+      entryLabel: "Don't have an account?",
+      entryAction: 'Create account',
+      loginPrompt: 'Already have an account?',
+      loginAction: 'Sign in',
+      form: {
+        name: 'Name',
+        email: 'Email',
+        password: 'Password',
+      },
+      errors: {
+        generic: 'Unable to create the account. Please try again.',
+      },
     },
     errors: {
       invalidCredentials: 'Invalid credentials',
@@ -824,9 +845,30 @@ const ptBRTranslations = {
     description: 'Informe suas credenciais para acessar a aplicação.',
     submit: 'Entrar',
     submitting: 'Entrando...',
+    success: {
+      registration: 'Conta criada com sucesso. Entre com seu novo e-mail e senha para continuar.',
+    },
     form: {
       email: 'E-mail',
       password: 'Senha',
+    },
+    signup: {
+      title: 'Criar conta',
+      description: 'Cadastre apenas os dados essenciais para começar a acessar o sistema.',
+      submit: 'Criar conta',
+      submitting: 'Criando conta...',
+      entryLabel: 'Ainda não tem uma conta?',
+      entryAction: 'Criar conta',
+      loginPrompt: 'Já tem uma conta?',
+      loginAction: 'Entrar',
+      form: {
+        name: 'Nome',
+        email: 'E-mail',
+        password: 'Senha',
+      },
+      errors: {
+        generic: 'Não foi possível criar a conta. Tente novamente.',
+      },
     },
     errors: {
       invalidCredentials: 'E-mail ou senha inválidos.',
