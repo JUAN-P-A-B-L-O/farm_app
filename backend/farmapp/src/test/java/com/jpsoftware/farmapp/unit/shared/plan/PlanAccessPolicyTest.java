@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.unit.shared.plan;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,7 +37,18 @@ class PlanAccessPolicyTest {
         PlanAccessDecision decision = planAccessPolicy.evaluate(null, PlanFeature.CSV_EXPORT);
 
         assertEquals(UserPlan.FREE, decision.currentPlan());
+        assertEquals(PlanFeature.CSV_EXPORT, decision.feature());
         assertEquals(UserPlan.PRO, decision.minimumPlan());
         assertFalse(decision.allowed());
+    }
+
+    @Test
+    void shouldAllowWhenFeatureIsMissing() {
+        PlanAccessDecision decision = planAccessPolicy.evaluate(null, null);
+
+        assertEquals(UserPlan.FREE, decision.currentPlan());
+        assertNull(decision.feature());
+        assertEquals(UserPlan.FREE, decision.minimumPlan());
+        assertTrue(decision.allowed());
     }
 }

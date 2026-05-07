@@ -28,6 +28,22 @@ test('shared export button source centralizes csv plan checks', () => {
   assert.match(source, /title=\{isPlanRestricted \? t\(accessState\.metadata\.descriptionKey\) : undefined\}/)
 })
 
+test('shared access utility source resolves free-plan defaults and compares plan rank centrally', () => {
+  const source = readSource('src/utils/planAccess.ts')
+
+  assert.match(source, /export function resolvePlan\(user: Pick<User, 'plan'> \| null \| undefined\): UserPlan \{\s*return user\?\.plan \?\? 'FREE'/)
+  assert.match(source, /allowed: planMetadata\[currentPlan\]\.rank >= planMetadata\[metadata\.minimumPlan\]\.rank/)
+  assert.match(source, /minimumPlan: metadata\.minimumPlan/)
+})
+
+test('plan route source uses the shared access state decision', () => {
+  const source = readSource('src/components/auth/PlanRoute.tsx')
+
+  assert.match(source, /getFeatureAccessState, type AppFeature/)
+  assert.match(source, /const accessState = getFeatureAccessState\(user, feature\)/)
+  assert.match(source, /if \(!accessState\.allowed\) \{/)
+})
+
 test('app layout source exposes premium navigation items without duplicating rules', () => {
   const source = readSource('src/layout/AppLayout.tsx')
 
