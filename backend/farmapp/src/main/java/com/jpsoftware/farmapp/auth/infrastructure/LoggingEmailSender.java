@@ -16,9 +16,8 @@ public class LoggingEmailSender implements EmailSender {
     @Override
     public void send(EmailMessage emailMessage) {
         logger.warn(
-                "SMTP email delivery is disabled. Transactional email to {} with subject '{}': {}",
+                "SMTP email delivery is disabled. Transactional email to {} with subject '{}' was not sent.",
                 emailMessage.recipientEmail(),
-                emailMessage.subject(),
-                emailMessage.body());
+                emailMessage.subject());
     }
 }

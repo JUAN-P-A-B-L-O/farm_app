@@ -6,11 +6,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 import com.jpsoftware.farmapp.base.BaseIntegrationTest;
 import com.jpsoftware.farmapp.shared.email.model.EmailMessage;
 import com.jpsoftware.farmapp.shared.email.service.EmailSender;
+import com.jpsoftware.farmapp.shared.exception.EmailDispatchException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
@@ -64,13 +67,37 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         Assertions.assertEquals("maria@farm.com", sentEmail.recipientEmail());
         Assertions.assertEquals("Confirme sua conta no Farm App", sentEmail.subject());
         Assertions.assertTrue(sentEmail.body().contains("Olá Maria Silva,"));
-        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/login?mode=confirm&token="));
+        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/confirm-email?token="));
         String rawToken = sentEmail.body()
                 .substring(sentEmail.body().indexOf("token=") + "token=".length())
                 .split("\\s", 2)[0];
         Assertions.assertEquals(
                 emailConfirmationTokenService.hashToken(rawToken),
                 registeredUser.getEmailConfirmationTokenHash());
+    }
+
+    @Test
+    void shouldRegisterAccountEvenWhenConfirmationEmailDispatchFails() throws Exception {
+        doThrow(new EmailDispatchException("Unable to send email", new RuntimeException("smtp error")))
+                .when(emailSender)
+                .send(any(EmailMessage.class));
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Maria Silva",
+                                  "email": "maria-failure@farm.com",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value("maria-failure@farm.com"));
+
+        UserEntity registeredUser = userRepository.findByEmail("maria-failure@farm.com").orElseThrow();
+        Assertions.assertFalse(registeredUser.isEmailConfirmed());
+        Assertions.assertNotNull(registeredUser.getEmailConfirmationTokenHash());
+        Assertions.assertNotNull(registeredUser.getEmailConfirmationTokenExpiresAt());
     }
 
     @Test
@@ -356,7 +383,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         verify(emailSender).send(emailCaptor.capture());
         EmailMessage sentEmail = emailCaptor.getValue();
         Assertions.assertEquals("maria@farm.com", sentEmail.recipientEmail());
-        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/login?mode=confirm&token="));
+        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/confirm-email?token="));
         String rawToken = sentEmail.body()
                 .substring(sentEmail.body().indexOf("token=") + "token=".length())
                 .split("\\s", 2)[0];

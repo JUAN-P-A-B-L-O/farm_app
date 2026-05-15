@@ -11,7 +11,9 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.mail.javamail.JavaMailSender;
 
 class EmailSenderConfigurationTest {
 
@@ -51,5 +53,10 @@ class EmailSenderConfigurationTest {
     @SpringBootConfiguration
     @Import({EmailConfiguration.class, LoggingEmailSender.class, SmtpEmailSender.class})
     static class EmailSenderTestApplication {
+
+        @Bean
+        JavaMailSender javaMailSender() {
+            return org.mockito.Mockito.mock(JavaMailSender.class);
+        }
     }
 }
