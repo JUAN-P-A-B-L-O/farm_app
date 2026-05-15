@@ -132,6 +132,36 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldAllowSameTagAcrossDifferentFarmsAtDatabaseLevel() {
+        UserEntity user = createAuthenticatedUser();
+        FarmEntity firstFarm = createFarmOwnedBy(user, "North Dairy");
+        FarmEntity secondFarm = createFarmOwnedBy(user, "South Dairy");
+
+        animalRepository.saveAndFlush(AnimalEntity.builder()
+                .id("animal-first")
+                .tag("TAG-001")
+                .breed("Holstein")
+                .birthDate(java.time.LocalDate.of(2023, 1, 10))
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(AnimalEntity.ORIGIN_BORN)
+                .farmId(firstFarm.getId())
+                .build());
+
+        AnimalEntity savedAnimal = animalRepository.saveAndFlush(AnimalEntity.builder()
+                .id("animal-second")
+                .tag("TAG-001")
+                .breed("Jersey")
+                .birthDate(java.time.LocalDate.of(2023, 2, 12))
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(AnimalEntity.ORIGIN_BORN)
+                .farmId(secondFarm.getId())
+                .build());
+
+        assertEquals("TAG-001", savedAnimal.getTag());
+        assertEquals(secondFarm.getId(), savedAnimal.getFarmId());
+    }
+
+    @Test
     void shouldFailWhenMovingAnimalToFarmWithDuplicateTag() throws Exception {
         UserEntity user = createAuthenticatedUser();
         FarmEntity sourceFarm = createFarmOwnedBy(user, "North Dairy");
