@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.integration.animal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -14,6 +15,7 @@ import com.jpsoftware.farmapp.farm.entity.FarmEntity;
 import com.jpsoftware.farmapp.fixture.AnimalFixture;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -99,6 +101,34 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.tag").value("TAG-001"))
                 .andExpect(jsonPath("$.farmId").value(secondFarm.getId()));
+    }
+
+    @Test
+    void shouldEnforceCompositeTagUniquenessAtDatabaseLevel() {
+        UserEntity user = createAuthenticatedUser();
+        FarmEntity farm = createFarmOwnedBy(user, "North Dairy");
+
+        animalRepository.saveAndFlush(AnimalEntity.builder()
+                .id("animal-first")
+                .tag("TAG-001")
+                .breed("Holstein")
+                .birthDate(java.time.LocalDate.of(2023, 1, 10))
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(AnimalEntity.ORIGIN_BORN)
+                .farmId(farm.getId())
+                .build());
+
+        assertThrows(
+                DataIntegrityViolationException.class,
+                () -> animalRepository.saveAndFlush(AnimalEntity.builder()
+                        .id("animal-second")
+                        .tag("TAG-001")
+                        .breed("Jersey")
+                        .birthDate(java.time.LocalDate.of(2023, 2, 12))
+                        .status(AnimalEntity.STATUS_ACTIVE)
+                        .origin(AnimalEntity.ORIGIN_BORN)
+                        .farmId(farm.getId())
+                        .build()));
     }
 
     @Test

@@ -48,7 +48,7 @@ Basic input shape is validated at the API edge. Cross-entity, access, lifecycle,
 - `birthDate` must be present
 - `origin` must be `BORN` or `PURCHASED`
 - `farmId` must not be blank and must reference an accessible farm
-- `tag` must be unique
+- `tag` must be unique within the target farm
 - status is set automatically to `ACTIVE`
 - `acquisitionCost` is required, positive, and limited to two decimals when `origin = PURCHASED`
 - `acquisitionCost` is cleared when `origin = BORN`
@@ -62,7 +62,7 @@ Basic input shape is validated at the API edge. Cross-entity, access, lifecycle,
 - changing status to `SOLD` must use the dedicated sell action
 - sold animals cannot transition back to another status through generic update
 - supplied `farmId` must reference an accessible farm
-- supplied `tag` must remain unique
+- supplied `tag` must remain unique within the target farm
 - acquisition cost is normalized according to the updated or existing origin
 
 ### Sale
