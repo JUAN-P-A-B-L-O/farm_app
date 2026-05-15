@@ -140,6 +140,43 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldFailWhenUpdatingTagToExistingTagInSameFarm() throws Exception {
+        UserEntity user = createAuthenticatedUser();
+        FarmEntity farm = createFarmOwnedBy(user, "North Dairy");
+        String authorization = bearerToken(user);
+
+        AnimalEntity firstAnimal = animalRepository.save(AnimalEntity.builder()
+                .id("animal-first")
+                .tag("TAG-001")
+                .breed("Holstein")
+                .birthDate(java.time.LocalDate.of(2023, 1, 10))
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(AnimalEntity.ORIGIN_BORN)
+                .farmId(farm.getId())
+                .build());
+        animalRepository.save(AnimalEntity.builder()
+                .id("animal-second")
+                .tag("TAG-002")
+                .breed("Jersey")
+                .birthDate(java.time.LocalDate.of(2023, 2, 12))
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(AnimalEntity.ORIGIN_BORN)
+                .farmId(farm.getId())
+                .build());
+
+        mockMvc.perform(put("/animals/{id}", firstAnimal.getId())
+                        .header("Authorization", authorization)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tag": "TAG-002"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag nesta fazenda."));
+    }
+
+    @Test
     void shouldRestrictAnimalReadsToAccessibleFarmsWhenFarmIdIsOmitted() throws Exception {
         UserEntity authorizedUser = createAuthenticatedUser();
         UserEntity otherUser = createAuthenticatedUser();
