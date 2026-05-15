@@ -443,8 +443,9 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         user.setEmailConfirmationTokenHash(emailConfirmationTokenService.hashToken("old-token"));
         user.setEmailConfirmationTokenExpiresAt(Instant.now().plusSeconds(300));
         userRepository.save(user);
-        String previousTokenHash = user.getEmailConfirmationTokenHash();
-        Instant previousExpiration = user.getEmailConfirmationTokenExpiresAt();
+        UserEntity persistedUser = userRepository.findByEmail("maria@farm.com").orElseThrow();
+        String previousTokenHash = persistedUser.getEmailConfirmationTokenHash();
+        Instant previousExpiration = persistedUser.getEmailConfirmationTokenExpiresAt();
 
         doThrow(new EmailDispatchException("Unable to send email", new RuntimeException("smtp error")))
                 .when(emailSender)
