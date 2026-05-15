@@ -100,11 +100,6 @@ class SmtpEmailSenderTest {
         assertEquals("app.email.from must be configured when app.email.enabled is true", exception.getMessage());
     }
 
-    private String decodeBody(String rawMessage) {
-        String[] parts = rawMessage.split("\r\n\r\n", 2);
-        return new String(Base64.getMimeDecoder().decode(parts[1]), StandardCharsets.UTF_8);
-    }
-
     private EmailProperties buildEmailProperties() {
         EmailProperties emailProperties = new EmailProperties();
         emailProperties.setFrom("no-reply@farmapp.local");

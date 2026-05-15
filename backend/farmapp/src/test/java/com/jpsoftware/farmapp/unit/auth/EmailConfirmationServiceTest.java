@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -83,5 +84,34 @@ class EmailConfirmationServiceTest {
         assertDoesNotThrow(() -> service.initializePendingConfirmation(user));
         assertFalse(user.isEmailConfirmed());
         assertEquals("hashed-token", user.getEmailConfirmationTokenHash());
+    }
+
+    @Test
+    void shouldPropagateEmailDeliveryFailureWhenResendingConfirmation() {
+        EmailConfirmationService service = new EmailConfirmationService(
+                userRepository,
+                tokenService,
+                emailSender,
+                "http://localhost:5173",
+                "Confirme sua conta no Farm App",
+                24);
+        UserEntity user = new UserEntity();
+        user.setEmail("maria@farm.com");
+        user.setEmailConfirmed(false);
+
+        when(userRepository.findByEmail("maria@farm.com")).thenReturn(java.util.Optional.of(user));
+        when(tokenService.generateToken()).thenReturn("raw-token");
+        when(tokenService.hashToken("raw-token")).thenReturn("hashed-token");
+        when(userRepository.save(user)).thenReturn(user);
+        org.mockito.Mockito.doThrow(new EmailDispatchException("Unable to send email", new RuntimeException("smtp error")))
+                .when(emailSender)
+                .send(any(EmailMessage.class));
+
+        EmailDispatchException exception = assertThrows(
+                EmailDispatchException.class,
+                () -> service.resendConfirmation("  MARIA@FARM.COM  "));
+
+        assertEquals("Unable to send email", exception.getMessage());
+        verify(emailSender).send(any(EmailMessage.class));
     }
 }

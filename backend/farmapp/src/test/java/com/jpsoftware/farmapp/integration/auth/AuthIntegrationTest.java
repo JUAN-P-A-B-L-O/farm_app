@@ -431,6 +431,43 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldReturn500AndKeepPreviousConfirmationTokenWhenResendEmailFails() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
+                null,
+                "Maria Silva",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+        user.setEmailConfirmed(false);
+        user.setEmailConfirmationTokenHash(emailConfirmationTokenService.hashToken("old-token"));
+        user.setEmailConfirmationTokenExpiresAt(Instant.now().plusSeconds(300));
+        userRepository.save(user);
+        String previousTokenHash = user.getEmailConfirmationTokenHash();
+        Instant previousExpiration = user.getEmailConfirmationTokenExpiresAt();
+
+        doThrow(new EmailDispatchException("Unable to send email", new RuntimeException("smtp error")))
+                .when(emailSender)
+                .send(any(EmailMessage.class));
+
+        mockMvc.perform(post("/auth/confirm-email/resend")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "maria@farm.com"
+                                }
+                                """))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("Não foi possível enviar o e-mail."))
+                .andExpect(jsonPath("$.path").value("/auth/confirm-email/resend"));
+
+        UserEntity unchangedUser = userRepository.findByEmail("maria@farm.com").orElseThrow();
+        Assertions.assertFalse(unchangedUser.isEmailConfirmed());
+        Assertions.assertEquals(previousTokenHash, unchangedUser.getEmailConfirmationTokenHash());
+        Assertions.assertEquals(previousExpiration, unchangedUser.getEmailConfirmationTokenExpiresAt());
+    }
+
+    @Test
     void shouldRequireTokenForProtectedEndpoints() throws Exception {
         UserEntity user = createAuthenticatedUser("MANAGER", UserPlan.PRO);
         createFarmOwnedBy(user, "North Dairy");

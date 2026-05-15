@@ -7,15 +7,22 @@ import com.jpsoftware.farmapp.auth.infrastructure.LoggingEmailSender;
 import com.jpsoftware.farmapp.auth.infrastructure.SmtpEmailSender;
 import com.jpsoftware.farmapp.shared.email.service.EmailSender;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.mail.javamail.JavaMailSender;
 
 class EmailSenderConfigurationTest {
+
+    private final ApplicationContextRunner autoConfiguredContextRunner = new ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(MailSenderAutoConfiguration.class))
+            .withUserConfiguration(EmailConfiguration.class, LoggingEmailSender.class, SmtpEmailSender.class);
 
     @Test
     void shouldUseLoggingEmailSenderWhenEmailIsDisabled() {
@@ -42,6 +49,20 @@ class EmailSenderConfigurationTest {
             assertThat(context.getBean(EmailSender.class)).isInstanceOf(SmtpEmailSender.class);
             assertThat(context.getBeansOfType(LoggingEmailSender.class)).isEmpty();
         }
+    }
+
+    @Test
+    void shouldAutoConfigureJavaMailSenderWhenEmailIsEnabled() {
+        autoConfiguredContextRunner
+                .withPropertyValues(
+                        "app.email.enabled=true",
+                        "app.email.from=no-reply@farmapp.local",
+                        "spring.mail.host=localhost")
+                .run(context -> {
+                    assertThat(context).hasSingleBean(JavaMailSender.class);
+                    assertThat(context).hasSingleBean(EmailSender.class);
+                    assertThat(context.getBean(EmailSender.class)).isInstanceOf(SmtpEmailSender.class);
+                });
     }
 
     private ConfigurableApplicationContext runContext(String... args) {
