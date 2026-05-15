@@ -18,13 +18,15 @@ test('app routes source gates dashboard and analytics behind the shared plan rou
   assert.match(source, /hasFeatureAccess\(user, 'DASHBOARD'\)/)
   assert.match(source, /<PlanRoute feature="DASHBOARD">[\s\S]*<DashboardPage \/>[\s\S]*<\/PlanRoute>/)
   assert.match(source, /<PlanRoute feature="ANALYTICS">[\s\S]*<AnalyticsPage \/>[\s\S]*<\/PlanRoute>/)
+  assert.match(source, /path="\/plans" element=\{<PlansPage \/>\}/)
 })
 
 test('shared export button source centralizes csv plan checks', () => {
   const source = readSource('src/components/common/ExportCsvButton.tsx')
 
   assert.match(source, /getFeatureAccessState\(user, 'CSV_EXPORT'\)/)
-  assert.match(source, /disabled=\{disabled \|\| isLoading \|\| isPlanRestricted\}/)
+  assert.match(source, /openUpgradePrompt\('CSV_EXPORT'\)/)
+  assert.match(source, /disabled=\{disabled \|\| isLoading\}/)
   assert.match(source, /title=\{isPlanRestricted \? t\(accessState\.metadata\.descriptionKey\) : undefined\}/)
 })
 
@@ -40,7 +42,9 @@ test('plan route source uses the shared access state decision', () => {
   const source = readSource('src/components/auth/PlanRoute.tsx')
 
   assert.match(source, /getFeatureAccessState, type AppFeature/)
+  assert.match(source, /const \{ openUpgradePrompt \} = usePlanUpgrade\(\)/)
   assert.match(source, /const accessState = getFeatureAccessState\(user, feature\)/)
+  assert.match(source, /openUpgradePrompt\(feature\)/)
   assert.match(source, /if \(!accessState\.allowed\) \{/)
 })
 
@@ -49,9 +53,24 @@ test('app layout source exposes premium navigation items without duplicating rul
 
   assert.match(source, /feature: 'DASHBOARD'/)
   assert.match(source, /feature: 'ANALYTICS'/)
+  assert.match(source, /labelKey: 'layout\.navigation\.plans'/)
   assert.match(source, /getFeatureAccessState\(user, restrictedFeature\)/)
   assert.match(source, /featureAccessState !== null && !featureAccessState\.allowed/)
   assert.match(source, /className="app-layout__nav-link app-layout__nav-link--disabled"/)
+  assert.match(source, /openUpgradePrompt\(restrictedFeature\)/)
   assert.match(source, /t\('plan\.badge'\)/)
   assert.match(source, /t\('plan\.currentLabel'\)/)
+})
+
+test('shared upgrade prompt source includes a modal provider and dedicated plans page', () => {
+  const providerSource = readSource('src/context/PlanUpgradeContext.tsx')
+  const modalSource = readSource('src/components/common/PlanUpgradeModal.tsx')
+  const pageSource = readSource('src/pages/plans/PlansPage.tsx')
+
+  assert.match(providerSource, /<PlanUpgradeModal/)
+  assert.match(providerSource, /navigate\('\/plans'/)
+  assert.match(modalSource, /role="dialog"/)
+  assert.match(modalSource, /t\('plan\.modal\.cta'\)/)
+  assert.match(pageSource, /availablePlans\.map\(\(plan\) =>/)
+  assert.match(pageSource, /getPlanFeatureSummaries\(plan\)/)
 })

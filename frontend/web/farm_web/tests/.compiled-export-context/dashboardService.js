@@ -45,6 +45,10 @@ export async function exportDashboardCsv(farmId, includeAcquisitionCost = true, 
       ...buildDashboardParams(farmId, includeAcquisitionCost, currency, filters),
       ...(productionUnit ? { productionUnit } : {}),
     },
-    'dashboard-summary.csv',
+    {
+      fallbackFileName: 'dashboard-summary.csv',
+      successDedupeKey: 'dashboard:export',
+      successMessageKey: 'dashboard.success.export',
+    },
   )
 }

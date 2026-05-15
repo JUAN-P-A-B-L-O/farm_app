@@ -394,7 +394,7 @@ fi
 # =====================
 # CONFIG
 # =====================
-ENABLE_PLANNER=true
+ENABLE_PLANNER=false
 PLANNER_MIN_LINES=35
 
 PLANNER_EFFORT="medium"

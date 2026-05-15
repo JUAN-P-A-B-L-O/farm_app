@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { usePlanUpgrade } from '../hooks/usePlanUpgrade'
 import { useAuth } from '../hooks/useAuth'
 import { useCurrency } from '../hooks/useCurrency'
 import { useFarm } from '../hooks/useFarm'
@@ -26,12 +27,14 @@ const navigationItems: NavigationItem[] = [
   { to: '/feed-types', labelKey: 'layout.navigation.feedTypes' },
   { to: '/users', labelKey: 'layout.navigation.users', managerOnly: true },
   { to: '/analytics', labelKey: 'layout.navigation.analytics', managerOnly: true, feature: 'ANALYTICS' },
+  { to: '/plans', labelKey: 'layout.navigation.plans' },
   { to: '/settings', labelKey: 'layout.navigation.settings' },
 ]
 
 function AppLayout() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { openUpgradePrompt } = usePlanUpgrade()
   const { user, logout } = useAuth()
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false)
   const {
@@ -108,16 +111,21 @@ function AppLayout() {
                 : null
               const isPlanRestricted = featureAccessState !== null && !featureAccessState.allowed
 
-              if (isPlanRestricted) {
+              if (isPlanRestricted && restrictedFeature) {
                 return (
-                  <span
+                  <button
+                    type="button"
                     key={item.to}
                     className="app-layout__nav-link app-layout__nav-link--disabled"
                     title={featureAccessState ? t(featureAccessState.metadata.descriptionKey) : undefined}
+                    onClick={() => {
+                      setIsMobileNavigationOpen(false)
+                      openUpgradePrompt(restrictedFeature)
+                    }}
                   >
                     <span>{t(item.labelKey)}</span>
                     <span className="app-layout__nav-badge">{t('plan.badge')}</span>
-                  </span>
+                  </button>
                 )
               }
 
@@ -248,6 +256,16 @@ function AppLayout() {
                 {t(currentPlanMetadata.labelKey)}
               </span>
             </div>
+            <button
+              type="button"
+              className="animals-table__action-button animals-table__action-button--secondary"
+              onClick={() => {
+                setIsMobileNavigationOpen(false)
+                navigate('/plans')
+              }}
+            >
+              {t('plan.page.navigationCta')}
+            </button>
             <button type="button" className="app-layout__logout-button" onClick={handleLogout}>
               {t('layout.logout')}
             </button>

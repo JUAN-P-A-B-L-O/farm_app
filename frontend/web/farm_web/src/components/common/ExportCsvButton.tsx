@@ -1,4 +1,5 @@
 import { useAuth } from '../../hooks/useAuth'
+import { usePlanUpgrade } from '../../hooks/usePlanUpgrade'
 import { useTranslation } from '../../hooks/useTranslation'
 import { getFeatureAccessState } from '../../utils/planAccess'
 
@@ -20,6 +21,7 @@ function ExportCsvButton({
   className = 'animals-table__action-button animals-table__action-button--secondary',
 }: ExportCsvButtonProps) {
   const { user } = useAuth()
+  const { openUpgradePrompt } = usePlanUpgrade()
   const { t } = useTranslation()
   const accessState = getFeatureAccessState(user, 'CSV_EXPORT')
   const isPlanRestricted = !accessState.allowed
@@ -33,8 +35,15 @@ function ExportCsvButton({
     <button
       type="button"
       className={className}
-      onClick={onClick}
-      disabled={disabled || isLoading || isPlanRestricted}
+      onClick={() => {
+        if (isPlanRestricted) {
+          openUpgradePrompt('CSV_EXPORT')
+          return
+        }
+
+        onClick()
+      }}
+      disabled={disabled || isLoading}
       title={isPlanRestricted ? t(accessState.metadata.descriptionKey) : undefined}
     >
       {visibleLabel}

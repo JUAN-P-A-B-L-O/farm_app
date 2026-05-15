@@ -29,6 +29,7 @@ const ptBR = {
       feedTypes: 'Tipos de ração',
       users: 'Usuários',
       analytics: 'Análises',
+      plans: 'Planos',
       settings: 'Configurações',
     },
   },
@@ -83,11 +84,42 @@ const ptBR = {
     description: 'O plano gratuito mantém o uso operacional básico, enquanto os recursos avançados ficam reservados ao plano Premium.',
     badge: 'Premium',
     currentLabel: 'Plano atual',
+    notice: {
+      currentPlan: 'Seu plano atual é {plan}.',
+    },
     labels: {
       FREE: 'Gratuito',
       PRO: 'Premium',
     },
     upgradeHint: 'Atualize o plano da conta para liberar este recurso sem alterar o restante do seu fluxo.',
+    modal: {
+      eyebrow: 'Limite do plano',
+      title: 'Atualize para continuar',
+      description: 'Este ponto do sistema está protegido pelo plano Premium. Você pode revisar os planos antes de solicitar a ativação.',
+      currentPlanLabel: 'Plano da conta',
+      requiredPlanLabel: 'Plano necessário',
+      cta: 'Atualizar plano',
+      dismiss: 'Continuar no plano atual',
+      close: 'Fechar aviso de atualização',
+    },
+    page: {
+      eyebrow: 'Planos e acesso',
+      title: 'Escolha o plano certo para a sua operação',
+      description: 'Compare o plano atual com o plano Premium e veja quais recursos avançados ficam disponíveis para a fazenda.',
+      currentBadge: 'Plano atual',
+      highlightHint: 'Este foi o recurso que disparou a solicitação de upgrade.',
+      navigationCta: 'Ver planos',
+      featureIncluded: 'Incluído',
+      featureUpgradeRequired: 'Upgrade necessário',
+      pricing: {
+        FREE: 'R$ 0',
+        PRO: 'Sob consulta',
+      },
+      summaries: {
+        FREE: 'Mantém o uso operacional básico do sistema para gestão diária da fazenda.',
+        PRO: 'Libera painéis, análises e exportações para acompanhamento gerencial mais completo.',
+      },
+    },
     features: {
       dashboard: {
         title: 'Painel gerencial',

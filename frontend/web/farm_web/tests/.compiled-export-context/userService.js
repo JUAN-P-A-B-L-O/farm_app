@@ -1,5 +1,6 @@
 import api from './api.js'
 import { downloadCsv } from './csvExportService.js'
+import { publishSuccess } from './feedbackService'
 
 function buildUserListParams(filters) {
   return {
@@ -41,6 +42,7 @@ export async function createUser(data) {
   }
 
   const response = await api.post('/users', payload)
+  publishSuccess('accessControl.success.create', { dedupeKey: 'users:create' })
 
   return response.data
 }
@@ -55,12 +57,14 @@ export async function updateUser(id, data) {
   }
 
   const response = await api.put(`/users/${id}`, payload)
+  publishSuccess('accessControl.success.update', { dedupeKey: 'users:update' })
 
   return response.data
 }
 
 export async function inactivateUser(id) {
   const response = await api.patch(`/users/${id}/inactivate`)
+  publishSuccess('accessControl.success.inactivate', { dedupeKey: 'users:inactivate' })
 
   return response.data
 }
@@ -69,12 +73,14 @@ export async function activateUser(id, password) {
   const response = await api.patch(`/users/${id}/activate`, {
     password: password || undefined,
   })
+  publishSuccess('accessControl.success.activate', { dedupeKey: 'users:activate' })
 
   return response.data
 }
 
 export async function deleteUser(id) {
   await api.delete(`/users/${id}`)
+  publishSuccess('accessControl.success.delete', { dedupeKey: 'users:delete' })
 }
 
 export async function updateOwnPassword(currentPassword, newPassword) {
@@ -82,8 +88,13 @@ export async function updateOwnPassword(currentPassword, newPassword) {
     currentPassword,
     newPassword,
   })
+  publishSuccess('settings.success.passwordUpdated', { dedupeKey: 'settings:update-password' })
 }
 
 export async function exportUsersCsv(filters) {
-  await downloadCsv('/users/export', buildUserListParams(filters), 'users.csv')
+  await downloadCsv('/users/export', buildUserListParams(filters), {
+    fallbackFileName: 'users.csv',
+    successDedupeKey: 'users:export',
+    successMessageKey: 'accessControl.success.export',
+  })
 }

@@ -29,6 +29,7 @@ const en = {
       feedTypes: 'Feed Types',
       users: 'Users',
       analytics: 'Analytics',
+      plans: 'Plans',
       settings: 'Settings',
     },
   },
@@ -83,11 +84,42 @@ const en = {
     description: 'The free plan keeps the basic operational workflows available, while advanced capabilities stay on the Premium plan.',
     badge: 'Premium',
     currentLabel: 'Current plan',
+    notice: {
+      currentPlan: 'Your current plan is {plan}.',
+    },
     labels: {
       FREE: 'Free',
       PRO: 'Premium',
     },
     upgradeHint: 'Upgrade the account plan to unlock this feature without changing the rest of the workflow.',
+    modal: {
+      eyebrow: 'Plan limit',
+      title: 'Upgrade to continue',
+      description: 'This area is protected by the Premium plan. Review the available plans before requesting activation.',
+      currentPlanLabel: 'Account plan',
+      requiredPlanLabel: 'Required plan',
+      cta: 'Upgrade plan',
+      dismiss: 'Stay on current plan',
+      close: 'Close upgrade notice',
+    },
+    page: {
+      eyebrow: 'Plans and access',
+      title: 'Choose the right plan for your operation',
+      description: 'Compare the current plan with Premium and see which advanced capabilities become available for the farm.',
+      currentBadge: 'Current plan',
+      highlightHint: 'This is the feature that triggered the upgrade request.',
+      navigationCta: 'View plans',
+      featureIncluded: 'Included',
+      featureUpgradeRequired: 'Upgrade required',
+      pricing: {
+        FREE: '$0',
+        PRO: 'Contact sales',
+      },
+      summaries: {
+        FREE: 'Keeps the essential operational workflows available for day-to-day farm management.',
+        PRO: 'Unlocks dashboards, analytics, and exports for broader management visibility.',
+      },
+    },
     features: {
       dashboard: {
         title: 'Management dashboard',
