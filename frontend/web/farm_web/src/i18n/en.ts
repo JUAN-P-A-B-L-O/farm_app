@@ -346,7 +346,7 @@ const en = {
     },
     errors: {
       notFound: 'Animal not found.',
-      duplicateTag: 'Animal with this tag already exists.',
+      duplicateTag: 'Animal with this tag already exists in this farm.',
       invalidSalePrice: 'Enter a sale price greater than zero.',
       loadList: 'Unable to load animals.',
       update: 'Unable to update animal.',

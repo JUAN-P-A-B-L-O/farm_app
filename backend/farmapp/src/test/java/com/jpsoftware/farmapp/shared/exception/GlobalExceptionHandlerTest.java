@@ -44,7 +44,7 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag."))
+                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag nesta fazenda."))
                 .andExpect(jsonPath("$.path").value("/test-exceptions/conflict"));
     }
 

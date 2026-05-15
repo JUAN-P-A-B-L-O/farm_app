@@ -346,7 +346,7 @@ const ptBR = {
     },
     errors: {
       notFound: 'Animal não encontrado.',
-      duplicateTag: 'Já existe um animal com esta tag.',
+      duplicateTag: 'Já existe um animal com esta tag nesta fazenda.',
       invalidSalePrice: 'Informe um valor de venda maior que zero.',
       loadList: 'Não foi possível carregar os animais.',
       update: 'Não foi possível atualizar o animal.',

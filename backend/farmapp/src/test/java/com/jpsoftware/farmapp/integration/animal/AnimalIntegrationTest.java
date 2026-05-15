@@ -76,7 +76,67 @@ class AnimalIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(AnimalFixture.createRequestJson(farm.getId())))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag."));
+                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag nesta fazenda."));
+    }
+
+    @Test
+    void shouldAllowSameTagInDifferentFarms() throws Exception {
+        UserEntity user = createAuthenticatedUser();
+        FarmEntity firstFarm = createFarmOwnedBy(user, "North Dairy");
+        FarmEntity secondFarm = createFarmOwnedBy(user, "South Dairy");
+        String authorization = bearerToken(user);
+
+        mockMvc.perform(post("/animals")
+                        .header("Authorization", authorization)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(AnimalFixture.createRequestJson(firstFarm.getId())))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/animals")
+                        .header("Authorization", authorization)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(AnimalFixture.createRequestJson(secondFarm.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tag").value("TAG-001"))
+                .andExpect(jsonPath("$.farmId").value(secondFarm.getId()));
+    }
+
+    @Test
+    void shouldFailWhenMovingAnimalToFarmWithDuplicateTag() throws Exception {
+        UserEntity user = createAuthenticatedUser();
+        FarmEntity sourceFarm = createFarmOwnedBy(user, "North Dairy");
+        FarmEntity destinationFarm = createFarmOwnedBy(user, "South Dairy");
+        String authorization = bearerToken(user);
+
+        AnimalEntity movedAnimal = animalRepository.save(AnimalEntity.builder()
+                .id("animal-to-move")
+                .tag("TAG-001")
+                .breed("Holstein")
+                .birthDate(java.time.LocalDate.of(2023, 1, 10))
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(AnimalEntity.ORIGIN_BORN)
+                .farmId(sourceFarm.getId())
+                .build());
+        animalRepository.save(AnimalEntity.builder()
+                .id("animal-in-destination")
+                .tag("TAG-001")
+                .breed("Jersey")
+                .birthDate(java.time.LocalDate.of(2023, 2, 12))
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(AnimalEntity.ORIGIN_BORN)
+                .farmId(destinationFarm.getId())
+                .build());
+
+        mockMvc.perform(put("/animals/{id}", movedAnimal.getId())
+                        .header("Authorization", authorization)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "farmId": "%s"
+                                }
+                                """.formatted(destinationFarm.getId())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Já existe um animal com esta tag nesta fazenda."));
     }
 
     @Test

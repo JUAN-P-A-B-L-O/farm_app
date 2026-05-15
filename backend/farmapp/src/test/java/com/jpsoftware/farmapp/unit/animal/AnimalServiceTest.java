@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.jpsoftware.farmapp.animal.dto.CreateAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.AnimalResponse;
 import com.jpsoftware.farmapp.animal.dto.SellAnimalRequest;
 import com.jpsoftware.farmapp.animal.dto.UpdateAnimalRequest;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -112,6 +114,51 @@ class AnimalServiceTest {
         assertEquals("Use the sell action to mark an animal as SOLD", exception.getMessage());
         verify(animalRepository, never()).save(any(AnimalEntity.class));
         verify(farmAccessService).validateAccessibleFarmIfPresent(eq("farm-1"));
+    }
+
+    @Test
+    void shouldAllowCreatingSameTagInDifferentFarm() {
+        CreateAnimalRequest request = new CreateAnimalRequest();
+        request.setTag("TAG-001");
+        request.setBreed("Angus");
+        request.setBirthDate(LocalDate.of(2022, 1, 10));
+        request.setOrigin(AnimalEntity.ORIGIN_BORN);
+        request.setFarmId("farm-2");
+
+        when(animalRepository.save(any(AnimalEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        animalService.create(request);
+
+        verify(farmAccessService).validateAccessibleFarm("farm-2");
+        verify(animalRepository).existsByTagAndFarmId("TAG-001", "farm-2");
+        verify(animalRepository).save(any(AnimalEntity.class));
+    }
+
+    @Test
+    void shouldRejectUpdatingAnimalWhenDestinationFarmAlreadyHasSameTag() {
+        AnimalEntity animalEntity = AnimalEntity.builder()
+                .id("animal-1")
+                .tag("TAG-001")
+                .breed("Angus")
+                .birthDate(LocalDate.of(2022, 1, 10))
+                .status(AnimalEntity.STATUS_ACTIVE)
+                .origin(AnimalEntity.ORIGIN_BORN)
+                .farmId("farm-1")
+                .build();
+        UpdateAnimalRequest request = new UpdateAnimalRequest();
+        request.setFarmId("farm-2");
+
+        when(animalRepository.findByIdAndFarmId("animal-1", "farm-1")).thenReturn(Optional.of(animalEntity));
+        when(animalRepository.existsByTagAndFarmIdAndIdNot("TAG-001", "farm-2", "animal-1")).thenReturn(true);
+
+        DataIntegrityViolationException exception = assertThrows(
+                DataIntegrityViolationException.class,
+                () -> animalService.update("animal-1", request, "farm-1"));
+
+        assertEquals("Animal with this tag already exists in this farm", exception.getMessage());
+        verify(farmAccessService).validateAccessibleFarmIfPresent("farm-1");
+        verify(farmAccessService).validateAccessibleFarm("farm-2");
+        verify(animalRepository, never()).save(any(AnimalEntity.class));
     }
 
     @Test

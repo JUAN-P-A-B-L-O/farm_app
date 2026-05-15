@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +13,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "animals")
+@Table(
+        name = "animals",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"farm_id", "tag"}))
 @Getter
 @Setter
 @Builder
@@ -30,7 +33,7 @@ public class AnimalEntity {
     @Id
     private String id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String tag;
 
     @Column(nullable = false)

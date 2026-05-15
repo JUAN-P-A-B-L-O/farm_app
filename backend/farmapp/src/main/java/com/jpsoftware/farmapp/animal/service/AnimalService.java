@@ -54,7 +54,7 @@ public class AnimalService {
     public AnimalResponse create(CreateAnimalRequest request) {
         validateInput(request);
         farmAccessService.validateAccessibleFarm(request.getFarmId());
-        ensureTagIsUnique(request.getTag());
+        ensureTagIsUnique(request.getTag(), request.getFarmId());
         String normalizedOrigin = normalizeOrigin(request.getOrigin());
         Double normalizedAcquisitionCost = normalizeAcquisitionCost(normalizedOrigin, request.getAcquisitionCost());
 
@@ -162,10 +162,10 @@ public class AnimalService {
 
         AnimalEntity animalEntity = findAnimal(id, farmId);
 
-        validateTagUpdate(animalEntity, request);
         if (request.getFarmId() != null) {
             farmAccessService.validateAccessibleFarm(request.getFarmId());
         }
+        validateTagUpdate(animalEntity, request);
         applyUpdates(animalEntity, request);
 
         AnimalEntity updatedAnimal = animalRepository.save(animalEntity);
@@ -251,19 +251,20 @@ public class AnimalService {
         }
     }
 
-    private void ensureTagIsUnique(String tag) {
-        if (animalRepository.existsByTag(tag)) {
-            throw new DataIntegrityViolationException("Animal with this tag already exists");
+    private void ensureTagIsUnique(String tag, String farmId) {
+        if (animalRepository.existsByTagAndFarmId(tag, farmId)) {
+            throw new DataIntegrityViolationException("Animal with this tag already exists in this farm");
         }
     }
 
     private void validateTagUpdate(AnimalEntity animalEntity, UpdateAnimalRequest request) {
-        if (request.getTag() == null) {
-            return;
-        }
+        String targetTag = request.getTag() != null ? request.getTag() : animalEntity.getTag();
+        String targetFarmId = request.getFarmId() != null ? request.getFarmId() : animalEntity.getFarmId();
 
-        if (!request.getTag().equals(animalEntity.getTag())) {
-            ensureTagIsUnique(request.getTag());
+        if (!targetTag.equals(animalEntity.getTag()) || !targetFarmId.equals(animalEntity.getFarmId())) {
+            if (animalRepository.existsByTagAndFarmIdAndIdNot(targetTag, targetFarmId, animalEntity.getId())) {
+                throw new DataIntegrityViolationException("Animal with this tag already exists in this farm");
+            }
         }
     }
 

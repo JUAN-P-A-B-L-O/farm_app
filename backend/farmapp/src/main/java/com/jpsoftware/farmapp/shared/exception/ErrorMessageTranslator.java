@@ -68,7 +68,7 @@ public final class ErrorMessageTranslator {
             Map.entry("Animal must be ACTIVE for batch operations", "Todos os animais do lote devem estar ativos para esta operação."),
             Map.entry("All animals in the batch must belong to the same farm", "Todos os animais do lote devem pertencer à mesma fazenda."),
             Map.entry("Batch must contain at least one animal", "O lote deve conter ao menos um animal."),
-            Map.entry("Animal with this tag already exists", "Já existe um animal com esta tag."),
+            Map.entry("Animal with this tag already exists in this farm", "Já existe um animal com esta tag nesta fazenda."),
             Map.entry("Animal entity must not be null", "Animal obrigatório."),
             Map.entry("Animal status must be ACTIVE, SOLD, DEAD, or INACTIVE", "O status do animal deve ser Ativo, Vendido, Morto ou Inativo."),
             Map.entry("Use the sell action to mark an animal as SOLD", "Use a ação de venda para marcar o animal como vendido."),
