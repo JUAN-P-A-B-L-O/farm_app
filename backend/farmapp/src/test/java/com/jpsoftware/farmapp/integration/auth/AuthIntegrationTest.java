@@ -330,6 +330,15 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldKeepConfirmationEndpointPublicWhenRequestHasNoAuthentication() throws Exception {
+        mockMvc.perform(get("/auth/confirm-email")
+                        .param("token", "missing-token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("O token de confirmação é inválido ou expirou."))
+                .andExpect(jsonPath("$.path").value("/auth/confirm-email"));
+    }
+
+    @Test
     void shouldRejectExpiredConfirmationToken() throws Exception {
         UserEntity user = userRepository.save(new UserEntity(
                 null,
@@ -347,6 +356,32 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                         .param("token", "expired-token"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("O token de confirmação é inválido ou expirou."));
+    }
+
+    @Test
+    void shouldRejectReusedConfirmationTokenAfterSuccessfulConfirmation() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
+                null,
+                "Maria Silva",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+        user.setEmailConfirmed(false);
+        user.setEmailConfirmationTokenHash(emailConfirmationTokenService.hashToken("single-use-token"));
+        user.setEmailConfirmationTokenExpiresAt(Instant.now().plusSeconds(3600));
+        userRepository.save(user);
+
+        mockMvc.perform(get("/auth/confirm-email")
+                        .param("token", "single-use-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("E-mail confirmado com sucesso."));
+
+        mockMvc.perform(get("/auth/confirm-email")
+                        .param("token", "single-use-token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("O token de confirmação é inválido ou expirou."))
+                .andExpect(jsonPath("$.path").value("/auth/confirm-email"));
     }
 
     @Test
