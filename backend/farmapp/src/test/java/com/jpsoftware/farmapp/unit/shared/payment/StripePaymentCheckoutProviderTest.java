@@ -34,4 +34,19 @@ class StripePaymentCheckoutProviderTest {
         assertTrue(provider.isConfigured());
         assertFalse(provider.isCheckoutImplemented());
     }
+
+    @Test
+    void staysUnconfiguredWhenAnyRequiredStripeValueIsBlank() {
+        StripeProperties properties = new StripeProperties();
+        properties.setPublicKey("pk_test_123");
+        properties.setSecretKey("   ");
+        properties.setWebhookSecret("whsec_123");
+        properties.setSuccessUrl("http://localhost:5173/plans?checkout=success");
+        properties.setCancelUrl("http://localhost:5173/plans?checkout=cancel");
+
+        StripePaymentCheckoutProvider provider = new StripePaymentCheckoutProvider(properties);
+
+        assertFalse(provider.isConfigured());
+        assertFalse(provider.isCheckoutImplemented());
+    }
 }
