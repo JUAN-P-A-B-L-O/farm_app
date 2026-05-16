@@ -688,6 +688,11 @@
   gap: 16px;
 }
 
+.plan-page__card-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
 .plan-page__card--premium {
   border-color: #d9c68f;
   background:
@@ -755,6 +760,12 @@
 .plan-page__feature-status--included {
   color: #2e6a46;
   background: #e6f5e8;
+}
+
+.plan-page__checkout-placeholder {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .animal-form__feedback--success {

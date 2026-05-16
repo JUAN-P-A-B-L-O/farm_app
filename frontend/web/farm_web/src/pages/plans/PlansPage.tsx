@@ -16,6 +16,8 @@ interface PlansPageLocationState {
   from?: string
 }
 
+const upgradeEntrySectionId = 'plan-upgrade-entry'
+
 function PlansPage() {
   const location = useLocation()
   const { user } = useAuth()
@@ -23,6 +25,10 @@ function PlansPage() {
   const currentPlanMetadata = getCurrentPlanMetadata(user)
   const state = (location.state ?? null) as PlansPageLocationState | null
   const highlightedFeatureMetadata = state?.feature ? getFeatureMetadata(state.feature) : null
+
+  function scrollToUpgradeEntry() {
+    document.getElementById(upgradeEntrySectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
     <main className="animals-page">
@@ -38,6 +44,11 @@ function PlansPage() {
           <h2>{t(highlightedFeatureMetadata.titleKey)}</h2>
           <p>{t(highlightedFeatureMetadata.descriptionKey)}</p>
           <p>{t('plan.page.highlightHint')}</p>
+          <div className="plan-upgrade-notice__actions">
+            <button type="button" className="animals-table__action-button" onClick={scrollToUpgradeEntry}>
+              {t('plan.page.upgradeCta')}
+            </button>
+          </div>
         </section>
       )}
 
@@ -63,6 +74,14 @@ function PlansPage() {
 
               <p>{t(`plan.page.summaries.${plan}`)}</p>
 
+              {planMetadata.paid && !isCurrentPlan && (
+                <div className="plan-page__card-actions">
+                  <button type="button" className="animals-table__action-button" onClick={scrollToUpgradeEntry}>
+                    {t('plan.page.upgradeCta')}
+                  </button>
+                </div>
+              )}
+
               <ul className="plan-page__feature-list">
                 {getPlanFeatureSummaries(plan).map((featureSummary) => (
                   <li key={featureSummary.feature} className="plan-page__feature-item">
@@ -83,6 +102,14 @@ function PlansPage() {
             </article>
           )
         })}
+      </section>
+
+      <section id={upgradeEntrySectionId} className="animals-panel plan-page__checkout-placeholder">
+        <span className="plan-upgrade-notice__badge">{t('plan.page.checkoutBadge')}</span>
+        <p className="plan-upgrade-modal__eyebrow">{t('plan.page.checkoutEyebrow')}</p>
+        <h2>{t('plan.page.checkoutTitle')}</h2>
+        <p>{t('plan.page.checkoutDescription')}</p>
+        <p>{t('plan.page.checkoutHint')}</p>
       </section>
     </main>
   )
