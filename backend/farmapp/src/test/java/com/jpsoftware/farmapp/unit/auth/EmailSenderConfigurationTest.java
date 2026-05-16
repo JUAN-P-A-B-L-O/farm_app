@@ -9,9 +9,11 @@ import com.jpsoftware.farmapp.shared.email.service.EmailSender;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
+import org.springframework.boot.autoconfigure.mail.MailProperties;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +24,7 @@ class EmailSenderConfigurationTest {
 
     private final ApplicationContextRunner autoConfiguredContextRunner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(MailSenderAutoConfiguration.class))
-            .withUserConfiguration(EmailConfiguration.class, LoggingEmailSender.class, SmtpEmailSender.class);
+            .withUserConfiguration(EmailConfiguration.class);
 
     @Test
     void shouldUseLoggingEmailSenderWhenEmailIsDisabled() {
@@ -52,16 +54,45 @@ class EmailSenderConfigurationTest {
     }
 
     @Test
-    void shouldAutoConfigureJavaMailSenderWhenEmailIsEnabled() {
+    void shouldUseSmtpEmailSenderWhenBrevoCredentialsAreConfigured() {
         autoConfiguredContextRunner
                 .withPropertyValues(
-                        "app.email.enabled=true",
                         "app.email.from=no-reply@farmapp.local",
-                        "spring.mail.host=localhost")
+                        "spring.mail.host=smtp-relay.brevo.com",
+                        "spring.mail.username=brevo-user",
+                        "spring.mail.password=brevo-pass",
+                        "spring.mail.properties.mail.smtp.auth=true")
                 .run(context -> {
                     assertThat(context).hasSingleBean(JavaMailSender.class);
                     assertThat(context).hasSingleBean(EmailSender.class);
                     assertThat(context.getBean(EmailSender.class)).isInstanceOf(SmtpEmailSender.class);
+                });
+    }
+
+    @Test
+    void shouldUseSmtpEmailSenderWhenSmtpAuthIsDisabled() {
+        autoConfiguredContextRunner
+                .withPropertyValues(
+                        "app.email.from=no-reply@farmapp.local",
+                        "spring.mail.host=localhost",
+                        "spring.mail.properties.mail.smtp.auth=false")
+                .run(context -> {
+                    assertThat(context).hasSingleBean(JavaMailSender.class);
+                    assertThat(context).hasSingleBean(EmailSender.class);
+                    assertThat(context.getBean(EmailSender.class)).isInstanceOf(SmtpEmailSender.class);
+                });
+    }
+
+    @Test
+    void shouldKeepLoggingFallbackWhenSmtpAuthIsEnabledButCredentialsAreMissing() {
+        autoConfiguredContextRunner
+                .withPropertyValues(
+                        "app.email.from=no-reply@farmapp.local",
+                        "spring.mail.host=smtp-relay.brevo.com",
+                        "spring.mail.properties.mail.smtp.auth=true")
+                .run(context -> {
+                    assertThat(context).hasSingleBean(EmailSender.class);
+                    assertThat(context.getBean(EmailSender.class)).isInstanceOf(LoggingEmailSender.class);
                 });
     }
 
@@ -72,7 +103,8 @@ class EmailSenderConfigurationTest {
     }
 
     @SpringBootConfiguration
-    @Import({EmailConfiguration.class, LoggingEmailSender.class, SmtpEmailSender.class})
+    @Import(EmailConfiguration.class)
+    @EnableConfigurationProperties(MailProperties.class)
     static class EmailSenderTestApplication {
 
         @Bean

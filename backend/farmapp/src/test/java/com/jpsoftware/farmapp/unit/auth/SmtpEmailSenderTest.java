@@ -97,14 +97,14 @@ class SmtpEmailSenderTest {
                 IllegalStateException.class,
                 () -> sender.send(new EmailMessage("maria@farm.com", "Confirme sua conta", "Olá Maria")));
 
-        assertEquals("app.email.from must be configured when app.email.enabled is true", exception.getMessage());
+        assertEquals("app.email.from must be configured when SMTP email delivery is enabled", exception.getMessage());
     }
 
     private EmailProperties buildEmailProperties() {
         EmailProperties emailProperties = new EmailProperties();
         emailProperties.setFrom("no-reply@farmapp.local");
         emailProperties.getConfirmation().setSubject("Confirme sua conta no Farm App");
-        emailProperties.setEnabled(true);
+        emailProperties.setEnabled(Boolean.TRUE);
         return emailProperties;
     }
 }

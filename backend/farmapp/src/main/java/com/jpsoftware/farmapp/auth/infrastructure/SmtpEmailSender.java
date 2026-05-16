@@ -6,15 +6,11 @@ import com.jpsoftware.farmapp.shared.exception.EmailDispatchException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.nio.charset.StandardCharsets;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-@Component
-@ConditionalOnProperty(prefix = "app.email", name = "enabled", havingValue = "true")
 public class SmtpEmailSender implements EmailSender {
 
     private final EmailProperties emailProperties;
@@ -59,7 +55,7 @@ public class SmtpEmailSender implements EmailSender {
 
     private String resolveFromAddress() {
         if (!StringUtils.hasText(emailProperties.getFrom())) {
-            throw new IllegalStateException("app.email.from must be configured when app.email.enabled is true");
+            throw new IllegalStateException("app.email.from must be configured when SMTP email delivery is enabled");
         }
         return emailProperties.getFrom().trim();
     }
