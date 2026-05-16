@@ -1,8 +1,20 @@
+# Local prompts / scratch files
 prompt.txt
+
+# AI pipeline runtime artifacts
 workspace/logs/
 workspace/failures/
+workspace/failed_features/
 workspace/pipeline_summary.md
+
+# Generated AI planner artifacts
+workspace/plans/
+
+# Temporary pipeline files
 workspace/diff*.txt
 workspace/files.txt
 workspace/mvn.log
 workspace/error_focus.txt
+
+# Optional: if you do not want completed feature prompts versioned
+# workspace/done/
