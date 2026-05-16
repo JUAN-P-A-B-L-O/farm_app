@@ -22,6 +22,10 @@ public record PlanEntitlement(
         return new PlanEntitlement(plan, PlanActivationStatus.ACTIVE, PlanActivationSource.INTERNAL_DEFAULT, null);
     }
 
+    public static PlanEntitlement externallyActivated(UserPlan plan, String externalReference) {
+        return new PlanEntitlement(plan, PlanActivationStatus.ACTIVE, PlanActivationSource.EXTERNAL_PROVIDER, externalReference);
+    }
+
     public static PlanEntitlement pendingExternalConfirmation(UserPlan plan, String externalReference) {
         return new PlanEntitlement(
                 plan,
@@ -32,6 +36,10 @@ public record PlanEntitlement(
 
     public static PlanEntitlement canceled(UserPlan plan, String externalReference) {
         return new PlanEntitlement(plan, PlanActivationStatus.CANCELED, PlanActivationSource.EXTERNAL_PROVIDER, externalReference);
+    }
+
+    public static PlanEntitlement externallyInactive(UserPlan plan, String externalReference) {
+        return new PlanEntitlement(plan, PlanActivationStatus.INACTIVE, PlanActivationSource.EXTERNAL_PROVIDER, externalReference);
     }
 
     public boolean isActive() {

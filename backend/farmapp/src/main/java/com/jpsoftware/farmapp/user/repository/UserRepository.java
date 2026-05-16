@@ -11,4 +11,8 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID>, JpaSpec
     Optional<UserEntity> findByEmail(String email);
 
     Optional<UserEntity> findByEmailConfirmationTokenHash(String emailConfirmationTokenHash);
+
+    Optional<UserEntity> findByStripeCustomerId(String stripeCustomerId);
+
+    Optional<UserEntity> findByStripeSubscriptionId(String stripeSubscriptionId);
 }

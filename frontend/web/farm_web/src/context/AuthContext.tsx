@@ -10,6 +10,7 @@ import {
 } from '../services/authService'
 import { registerUnauthorizedHandler, resetUnauthorizedHandling } from '../services/api'
 import { clearAuthSession, getStoredToken, getStoredUser, persistAuthSession } from '../services/authStorage'
+import { getUserById } from '../services/userService'
 import { AuthContext } from './authContext'
 
 function getInitialAuthState() {
@@ -54,6 +55,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    if (!authState.token || !authState.user) {
+      return
+    }
+
+    const refreshedUser = await getUserById(authState.user.id)
+    persistAuthSession(authState.token, refreshedUser)
+    setAuthState({
+      token: authState.token,
+      user: refreshedUser,
+    })
+  }, [authState.token, authState.user])
+
   useEffect(() => {
     registerUnauthorizedHandler(logout)
 
@@ -69,8 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: authState.user,
       login,
       logout,
+      refreshUser,
     }),
-    [authState, login, logout],
+    [authState, login, logout, refreshUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

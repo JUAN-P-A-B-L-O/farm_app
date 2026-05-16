@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useTranslation } from '../../hooks/useTranslation'
+import { createCheckoutSession, createPortalSession } from '../../services/billingService'
 import {
   availablePlans,
   getCurrentPlanMetadata,
@@ -20,14 +22,62 @@ const upgradeEntrySectionId = 'plan-upgrade-entry'
 
 function PlansPage() {
   const location = useLocation()
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const { t } = useTranslation()
   const currentPlanMetadata = getCurrentPlanMetadata(user)
   const state = (location.state ?? null) as PlansPageLocationState | null
   const highlightedFeatureMetadata = state?.feature ? getFeatureMetadata(state.feature) : null
+  const searchParams = new URLSearchParams(location.search)
+  const billingStatus = searchParams.get('billing')
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false)
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false)
+  const [isRefreshingPlan, setIsRefreshingPlan] = useState(false)
+
+  useEffect(() => {
+    if (billingStatus !== 'success') {
+      return
+    }
+
+    let isMounted = true
+    setIsRefreshingPlan(true)
+
+    refreshUser()
+      .catch(() => undefined)
+      .finally(() => {
+        if (isMounted) {
+          setIsRefreshingPlan(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [billingStatus, refreshUser])
 
   function scrollToUpgradeEntry() {
     document.getElementById(upgradeEntrySectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  async function handleUpgradeClick() {
+    setIsStartingCheckout(true)
+
+    try {
+      const response = await createCheckoutSession()
+      window.location.assign(response.url)
+    } finally {
+      setIsStartingCheckout(false)
+    }
+  }
+
+  async function handlePortalClick() {
+    setIsOpeningPortal(true)
+
+    try {
+      const response = await createPortalSession()
+      window.location.assign(response.url)
+    } finally {
+      setIsOpeningPortal(false)
+    }
   }
 
   return (
@@ -105,11 +155,39 @@ function PlansPage() {
       </section>
 
       <section id={upgradeEntrySectionId} className="animals-panel plan-page__checkout-placeholder">
-        <span className="plan-upgrade-notice__badge">{t('plan.page.checkoutBadge')}</span>
+        <span className="plan-upgrade-notice__badge">
+          {user?.plan === 'PRO' ? t('plan.page.portalBadge') : t('plan.page.checkoutBadge')}
+        </span>
         <p className="plan-upgrade-modal__eyebrow">{t('plan.page.checkoutEyebrow')}</p>
-        <h2>{t('plan.page.checkoutTitle')}</h2>
-        <p>{t('plan.page.checkoutDescription')}</p>
-        <p>{t('plan.page.checkoutHint')}</p>
+        <h2>{user?.plan === 'PRO' ? t('plan.page.portalTitle') : t('plan.page.checkoutTitle')}</h2>
+        <p>{user?.plan === 'PRO' ? t('plan.page.portalDescription') : t('plan.page.checkoutDescription')}</p>
+        <p>{user?.plan === 'PRO' ? t('plan.page.portalHint') : t('plan.page.checkoutHint')}</p>
+        {billingStatus === 'success' && (
+          <p>{isRefreshingPlan ? t('plan.page.refreshingStatus') : t('plan.page.successStatus')}</p>
+        )}
+        {billingStatus === 'cancelled' && <p>{t('plan.page.cancelledStatus')}</p>}
+        {billingStatus === 'portal' && <p>{t('plan.page.portalReturnStatus')}</p>}
+        <div className="plan-page__card-actions">
+          {user?.plan === 'PRO' ? (
+            <button
+              type="button"
+              className="animals-table__action-button"
+              onClick={handlePortalClick}
+              disabled={isOpeningPortal}
+            >
+              {isOpeningPortal ? t('plan.page.portalLoadingCta') : t('plan.page.portalCta')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="animals-table__action-button"
+              onClick={handleUpgradeClick}
+              disabled={isStartingCheckout}
+            >
+              {isStartingCheckout ? t('plan.page.checkoutLoadingCta') : t('plan.page.checkoutCta')}
+            </button>
+          )}
+        </div>
       </section>
     </main>
   )

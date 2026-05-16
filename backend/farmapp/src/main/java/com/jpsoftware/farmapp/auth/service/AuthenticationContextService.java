@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.auth.service;
 
 import com.jpsoftware.farmapp.auth.model.AuthenticatedUser;
+import com.jpsoftware.farmapp.shared.plan.PlanEntitlement;
 import com.jpsoftware.farmapp.user.entity.UserPlan;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,6 +31,10 @@ public class AuthenticationContextService {
 
     public Optional<UserPlan> getAuthenticatedUserPlan() {
         return getAuthenticatedUser().map(AuthenticatedUser::plan);
+    }
+
+    public Optional<PlanEntitlement> getAuthenticatedUserPlanEntitlement() {
+        return getAuthenticatedUser().map(AuthenticatedUser::planEntitlement);
     }
 
     public String resolveUserId(String fallbackUserId) {

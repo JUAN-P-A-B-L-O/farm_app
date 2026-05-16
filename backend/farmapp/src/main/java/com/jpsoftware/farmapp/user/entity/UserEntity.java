@@ -1,5 +1,6 @@
 package com.jpsoftware.farmapp.user.entity;
 
+import com.jpsoftware.farmapp.billing.model.BillingSubscriptionStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -50,6 +51,22 @@ public class UserEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserPlan plan = UserPlan.defaultPlan();
+
+    @Column
+    private String stripeCustomerId;
+
+    @Column
+    private String stripeSubscriptionId;
+
+    @Enumerated(EnumType.STRING)
+    @Column
+    private BillingSubscriptionStatus billingSubscriptionStatus;
+
+    @Column(nullable = false)
+    private boolean stripeCancelAtPeriodEnd = false;
+
+    @Column
+    private Instant stripeCurrentPeriodEnd;
 
     public UserEntity() {
     }
@@ -158,5 +175,45 @@ public class UserEntity {
 
     public void setPlan(UserPlan plan) {
         this.plan = plan == null ? UserPlan.defaultPlan() : plan;
+    }
+
+    public String getStripeCustomerId() {
+        return stripeCustomerId;
+    }
+
+    public void setStripeCustomerId(String stripeCustomerId) {
+        this.stripeCustomerId = stripeCustomerId;
+    }
+
+    public String getStripeSubscriptionId() {
+        return stripeSubscriptionId;
+    }
+
+    public void setStripeSubscriptionId(String stripeSubscriptionId) {
+        this.stripeSubscriptionId = stripeSubscriptionId;
+    }
+
+    public BillingSubscriptionStatus getBillingSubscriptionStatus() {
+        return billingSubscriptionStatus;
+    }
+
+    public void setBillingSubscriptionStatus(BillingSubscriptionStatus billingSubscriptionStatus) {
+        this.billingSubscriptionStatus = billingSubscriptionStatus;
+    }
+
+    public boolean isStripeCancelAtPeriodEnd() {
+        return stripeCancelAtPeriodEnd;
+    }
+
+    public void setStripeCancelAtPeriodEnd(boolean stripeCancelAtPeriodEnd) {
+        this.stripeCancelAtPeriodEnd = stripeCancelAtPeriodEnd;
+    }
+
+    public Instant getStripeCurrentPeriodEnd() {
+        return stripeCurrentPeriodEnd;
+    }
+
+    public void setStripeCurrentPeriodEnd(Instant stripeCurrentPeriodEnd) {
+        this.stripeCurrentPeriodEnd = stripeCurrentPeriodEnd;
     }
 }

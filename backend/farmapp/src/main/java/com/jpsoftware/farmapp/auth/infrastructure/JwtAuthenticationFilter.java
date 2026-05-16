@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.auth.infrastructure;
 
 import com.jpsoftware.farmapp.auth.model.AuthenticatedUser;
+import com.jpsoftware.farmapp.shared.plan.PlanEntitlementResolver;
 import com.jpsoftware.farmapp.auth.service.TokenService;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -28,14 +29,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final TokenService tokenService;
     private final UserRepository userRepository;
     private final AuthenticationEntryPoint authenticationEntryPoint;
+    private final PlanEntitlementResolver planEntitlementResolver;
 
     public JwtAuthenticationFilter(
             TokenService tokenService,
             UserRepository userRepository,
-            AuthenticationEntryPoint authenticationEntryPoint) {
+            AuthenticationEntryPoint authenticationEntryPoint,
+            PlanEntitlementResolver planEntitlementResolver) {
         this.tokenService = tokenService;
         this.userRepository = userRepository;
         this.authenticationEntryPoint = authenticationEntryPoint;
+        this.planEntitlementResolver = planEntitlementResolver;
     }
 
     @Override
@@ -79,7 +83,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        AuthenticatedUser authenticatedUser = new AuthenticatedUser(user.getId(), List.of(user.getRole()), user.getPlan());
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(
+                user.getId(),
+                List.of(user.getRole()),
+                user.getPlan(),
+                planEntitlementResolver.resolve(user));
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 authenticatedUser,
                 null,
