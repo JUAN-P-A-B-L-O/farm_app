@@ -19,6 +19,7 @@ import com.jpsoftware.farmapp.shared.exception.ValidationException;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
 import com.jpsoftware.farmapp.user.entity.UserPlan;
 import java.time.Instant;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -47,6 +48,21 @@ class BillingControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldAllowWebhookWithoutAuthentication() throws Exception {
+        when(stripeService.verifyAndParseWebhook(anyString(), anyString()))
+                .thenReturn(new StripeWebhookEvent("evt_public", "customer.created", null, null, null, null));
+
+        mockMvc.perform(post("/billing/webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Stripe-Signature", "valid")
+                        .content("{\"id\":\"evt_public\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Webhook processed successfully."));
+
+        Assertions.assertTrue(processedStripeEventRepository.existsById("evt_public"));
+    }
+
+    @Test
     void shouldRejectWebhookWithInvalidSignature() throws Exception {
         when(stripeService.verifyAndParseWebhook(anyString(), any()))
                 .thenThrow(new ValidationException("Invalid Stripe signature"));
@@ -57,6 +73,42 @@ class BillingControllerIntegrationTest extends BaseIntegrationTest {
                         .content("{\"id\":\"evt_invalid\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Assinatura Stripe inválida."));
+    }
+
+    @Test
+    void shouldIgnoreDuplicateWebhookEvents() throws Exception {
+        UserEntity user = createAuthenticatedUser("MANAGER", UserPlan.FREE);
+        user.setStripeCustomerId("cus_123");
+        userRepository.save(user);
+
+        when(stripeService.verifyAndParseWebhook(anyString(), anyString()))
+                .thenReturn(new StripeWebhookEvent(
+                        "evt_duplicate",
+                        "customer.subscription.updated",
+                        "cus_123",
+                        "sub_123",
+                        user.getId().toString(),
+                        new StripeSubscriptionSnapshot(
+                                "sub_123",
+                                "cus_123",
+                                BillingSubscriptionStatus.ACTIVE,
+                                false,
+                                Instant.now().plusSeconds(86_400))));
+
+        mockMvc.perform(post("/billing/webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Stripe-Signature", "valid")
+                        .content("{\"id\":\"evt_duplicate\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/billing/webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Stripe-Signature", "valid")
+                        .content("{\"id\":\"evt_duplicate\"}"))
+                .andExpect(status().isOk());
+
+        Assertions.assertEquals(1, processedStripeEventRepository.count());
+        Assertions.assertEquals(UserPlan.PRO, userRepository.findById(user.getId()).orElseThrow().getPlan());
     }
 
     @Test
@@ -87,8 +139,8 @@ class BillingControllerIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.message").value("Webhook processed successfully."));
 
         UserEntity updatedUser = userRepository.findById(user.getId()).orElseThrow();
-        org.junit.jupiter.api.Assertions.assertEquals(UserPlan.PRO, updatedUser.getPlan());
-        org.junit.jupiter.api.Assertions.assertEquals(BillingSubscriptionStatus.ACTIVE, updatedUser.getBillingSubscriptionStatus());
-        org.junit.jupiter.api.Assertions.assertEquals("sub_123", updatedUser.getStripeSubscriptionId());
+        Assertions.assertEquals(UserPlan.PRO, updatedUser.getPlan());
+        Assertions.assertEquals(BillingSubscriptionStatus.ACTIVE, updatedUser.getBillingSubscriptionStatus());
+        Assertions.assertEquals("sub_123", updatedUser.getStripeSubscriptionId());
     }
 }
