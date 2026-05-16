@@ -25,6 +25,8 @@ class EmailSenderConfigurationTest {
     private final ApplicationContextRunner autoConfiguredContextRunner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(MailSenderAutoConfiguration.class))
             .withUserConfiguration(EmailConfiguration.class);
+    private final ApplicationContextRunner missingMailSenderContextRunner = new ApplicationContextRunner()
+            .withUserConfiguration(EmailConfiguration.class, MailPropertiesOnlyTestConfiguration.class);
 
     @Test
     void shouldUseLoggingEmailSenderWhenEmailIsDisabled() {
@@ -37,7 +39,7 @@ class EmailSenderConfigurationTest {
 
     @Test
     void shouldUseLoggingEmailSenderWhenEmailPropertyIsMissing() {
-        try (ConfigurableApplicationContext context = runContext()) {
+        try (ConfigurableApplicationContext context = runContext("--spring.mail.host=")) {
             assertThat(context.getBeansOfType(EmailSender.class)).hasSize(1);
             assertThat(context.getBean(EmailSender.class)).isInstanceOf(LoggingEmailSender.class);
             assertThat(context.getBeansOfType(SmtpEmailSender.class)).isEmpty();
@@ -96,6 +98,17 @@ class EmailSenderConfigurationTest {
                 });
     }
 
+    @Test
+    void shouldKeepLoggingFallbackWhenSmtpIsEnabledButJavaMailSenderIsUnavailable() {
+        missingMailSenderContextRunner
+                .withPropertyValues("app.email.enabled=true")
+                .run(context -> {
+                    assertThat(context).doesNotHaveBean(JavaMailSender.class);
+                    assertThat(context).hasSingleBean(EmailSender.class);
+                    assertThat(context.getBean(EmailSender.class)).isInstanceOf(LoggingEmailSender.class);
+                });
+    }
+
     private ConfigurableApplicationContext runContext(String... args) {
         return new SpringApplicationBuilder(EmailSenderTestApplication.class)
                 .web(WebApplicationType.NONE)
@@ -111,5 +124,10 @@ class EmailSenderConfigurationTest {
         JavaMailSender javaMailSender() {
             return org.mockito.Mockito.mock(JavaMailSender.class);
         }
+    }
+
+    @SpringBootConfiguration
+    @EnableConfigurationProperties(MailProperties.class)
+    static class MailPropertiesOnlyTestConfiguration {
     }
 }
