@@ -71,7 +71,14 @@ public class StripeHttpService implements StripeService {
         form.add("metadata[userId]", userId.toString());
         form.add("subscription_data[metadata][userId]", userId.toString());
 
+        System.out.println("cheguei 2");
+        System.out.println(form.toString());
+
+
         JsonNode response = postForm("/v1/checkout/sessions", form);
+        System.out.println("cheguei 3");
+        System.out.println(response.toString());
+
         return new StripeCheckoutSession(
                 requireText(response, "id"),
                 requireText(response, "url"),
@@ -143,6 +150,8 @@ public class StripeHttpService implements StripeService {
     }
 
     private JsonNode postForm(String path, MultiValueMap<String, String> form) {
+
+        System.out.println("form : " + form.toString());
         RestClient restClient = RestClient.builder()
                 .baseUrl(STRIPE_API_BASE_URL)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + stripeBillingProperties.getSecretKey().trim())

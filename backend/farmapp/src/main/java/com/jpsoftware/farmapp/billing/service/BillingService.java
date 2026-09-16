@@ -43,6 +43,7 @@ public class BillingService {
     public String createCheckoutSession(UUID userId) {
         UserEntity user = findUser(userId);
         String customerId = ensureStripeCustomer(user);
+        System.out.println(user.getEmail());
 
         StripeCheckoutSession session = stripeService.createCheckoutSession(
                 customerId,
@@ -51,10 +52,11 @@ public class BillingService {
                 buildFrontendUrl("?billing=success"),
                 buildFrontendUrl("?billing=cancelled"));
 
+        System.out.println(user.toString());
         user.setStripeCustomerId(session.customerId());
         user.setBillingSubscriptionStatus(BillingSubscriptionStatus.CHECKOUT_PENDING);
-        userRepository.save(user);
 
+        userRepository.save(user);
         return session.url();
     }
 
