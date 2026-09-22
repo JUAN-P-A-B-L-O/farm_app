@@ -17,7 +17,7 @@ services:
     restart: unless-stopped
 
   backend:
-    build: ./backend/farmapp
+    image: juanpabloid/farmapp:backend-latest
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/farmdb
       SPRING_DATASOURCE_USERNAME: farmapp
