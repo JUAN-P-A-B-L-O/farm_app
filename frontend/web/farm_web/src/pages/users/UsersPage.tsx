@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ResourceFormModal from '../../components/common/ResourceFormModal'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
@@ -89,6 +90,7 @@ function UsersPage() {
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [formInitialValues, setFormInitialValues] = useState<UserFormData>(emptyUserForm)
   const [activationUserId, setActivationUserId] = useState<string | null>(null)
   const [activationPassword, setActivationPassword] = useState('')
@@ -171,6 +173,7 @@ function UsersPage() {
       }
       setEditingUserId(null)
       setFormInitialValues(emptyUserForm)
+      setIsFormOpen(false)
       await loadUsers()
     } catch (error) {
       setFormErrorMessage(
@@ -186,6 +189,7 @@ function UsersPage() {
   }
 
   function handleEdit(user: User) {
+    setIsFormOpen(true)
     setFormErrorMessage('')
     setEditingUserId(user.id)
     setFormInitialValues({
@@ -200,6 +204,7 @@ function UsersPage() {
   }
 
   function handleCancelEdit() {
+    setIsFormOpen(false)
     setEditingUserId(null)
     setFormErrorMessage('')
     setFormInitialValues(emptyUserForm)
@@ -327,36 +332,41 @@ function UsersPage() {
     <main className="animals-page">
       <section className="animals-page__header">
         <p className="animals-page__eyebrow">{t('accessControl.eyebrow')}</p>
-        <h1>{t('accessControl.title')}</h1>
+        <div className="animals-page__heading-row">
+          <h1>{t('accessControl.title')}</h1>
+          <button type="button" className="animals-table__action-button animals-page__create-button" onClick={() => {
+            setEditingUserId(null)
+            setFormInitialValues(emptyUserForm)
+            setFormErrorMessage('')
+            setIsFormOpen(true)
+          }}>
+            {t('common.createNew')}
+          </button>
+        </div>
         <p className="animals-page__description">{t('accessControl.description')}</p>
       </section>
 
-      <section className="animals-layout">
-        <article className="animals-panel">
-          <div className="animals-panel__header">
-            <div>
-              <h2>{editingUserId ? t('accessControl.updateTitle') : t('accessControl.createTitle')}</h2>
-              <p>
-                {editingUserId
-                  ? t('accessControl.updateDescription')
-                  : t('accessControl.createDescription')}
-              </p>
-            </div>
-          </div>
-
+      {isFormOpen && (
+        <ResourceFormModal
+          title={editingUserId ? t('accessControl.updateTitle') : t('accessControl.createTitle')}
+          description={editingUserId ? t('accessControl.updateDescription') : t('accessControl.createDescription')}
+          onClose={() => { if (!isSubmitting) handleCancelEdit() }}
+        >
           <UserForm
             initialValues={formInitialValues}
             farms={farms}
             isLoadingFarms={isLoadingFarms}
             mode={editingUserId ? 'edit' : 'create'}
             onSubmit={handleCreateOrUpdate}
-            onCancel={editingUserId ? handleCancelEdit : undefined}
+            onCancel={handleCancelEdit}
             isSubmitting={isSubmitting}
             submitLabel={editingUserId ? t('accessControl.submitUpdate') : t('accessControl.submitCreate')}
             errorMessage={formErrorMessage}
           />
-        </article>
+        </ResourceFormModal>
+      )}
 
+      <section className="animals-layout">
         <article className="animals-panel animals-panel--table">
           <div className="animals-panel__header animals-panel__header--actions">
             <div>

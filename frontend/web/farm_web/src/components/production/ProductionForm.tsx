@@ -157,7 +157,7 @@ function ProductionForm({
   return (
     <form className="animal-form" onSubmit={handleSubmit}>
       <div className="animal-form__grid">
-        {!onCancel && (
+        {requireUserSelection && (
           <label className="animal-form__field">
             <span>{t('production.form.operationMode')}</span>
             <select

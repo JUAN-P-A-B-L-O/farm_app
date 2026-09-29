@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ResourceFormModal from '../../components/common/ResourceFormModal'
 import FeedTypeForm from '../../components/feed-type/FeedTypeForm'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
@@ -80,6 +81,7 @@ function FeedTypePage() {
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingFeedTypeId, setEditingFeedTypeId] = useState<string | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [formInitialValues, setFormInitialValues] = useState<FeedTypeFormData>(emptyFeedTypeForm)
   const [isExporting, setIsExporting] = useState(false)
   const previousSelectedFarmIdRef = useRef(selectedFarmId)
@@ -164,6 +166,7 @@ function FeedTypePage() {
 
       setEditingFeedTypeId(null)
       setFormInitialValues(emptyFeedTypeForm)
+      setIsFormOpen(false)
       await loadFeedTypes()
     } catch (error) {
       setFormErrorMessage(
@@ -179,6 +182,7 @@ function FeedTypePage() {
   }
 
   function handleEdit(feedType: FeedType) {
+    setIsFormOpen(true)
     setFormErrorMessage('')
     setEditingFeedTypeId(feedType.id)
     setFormInitialValues({
@@ -188,6 +192,7 @@ function FeedTypePage() {
   }
 
   function handleCancelEdit() {
+    setIsFormOpen(false)
     setEditingFeedTypeId(null)
     setFormErrorMessage('')
     setFormInitialValues(emptyFeedTypeForm)
@@ -250,36 +255,41 @@ function FeedTypePage() {
     <main className="animals-page">
       <section className="animals-page__header">
         <p className="animals-page__eyebrow">{t('feedType.eyebrow')}</p>
-        <h1>{t('feedType.title')}</h1>
+        <div className="animals-page__heading-row">
+          <h1>{t('feedType.title')}</h1>
+          <button type="button" className="animals-table__action-button animals-page__create-button" onClick={() => {
+            setEditingFeedTypeId(null)
+            setFormInitialValues(emptyFeedTypeForm)
+            setFormErrorMessage('')
+            setIsFormOpen(true)
+          }}>
+            {t('common.createNew')}
+          </button>
+        </div>
         <p className="animals-page__description">
           {t('feedType.description')}
         </p>
       </section>
 
-      <section className="animals-layout">
-        <article className="animals-panel">
-          <div className="animals-panel__header">
-            <div>
-              <h2>{editingFeedTypeId ? t('feedType.updateTitle') : t('feedType.createTitle')}</h2>
-              <p>
-                {editingFeedTypeId
-                  ? t('feedType.updateDescription')
-                  : t('feedType.createDescription')}
-              </p>
-            </div>
-          </div>
-
+      {isFormOpen && (
+        <ResourceFormModal
+          title={editingFeedTypeId ? t('feedType.updateTitle') : t('feedType.createTitle')}
+          description={editingFeedTypeId ? t('feedType.updateDescription') : t('feedType.createDescription')}
+          onClose={() => { if (!isSubmitting) handleCancelEdit() }}
+        >
           <FeedTypeForm
             key={editingFeedTypeId ?? 'new'}
             initialValues={formInitialValues}
             onSubmit={handleCreateOrUpdate}
-            onCancel={editingFeedTypeId ? handleCancelEdit : undefined}
+            onCancel={handleCancelEdit}
             isSubmitting={isSubmitting}
             submitLabel={editingFeedTypeId ? t('feedType.submitUpdate') : t('feedType.submitCreate')}
             errorMessage={formErrorMessage}
           />
-        </article>
+        </ResourceFormModal>
+      )}
 
+      <section className="animals-layout">
         <article className="animals-panel animals-panel--table">
           <div className="animals-panel__header animals-panel__header--actions">
             <div>
