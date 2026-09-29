@@ -22,4 +22,4 @@ workspace/error_focus.txt
 
 .env
 .env.local
-.env.*.local
+.env.*.localbackend/farmapp/.env
