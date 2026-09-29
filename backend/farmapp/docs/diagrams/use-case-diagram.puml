@@ -66,27 +66,27 @@ rectangle "Farm Management System" {
 }
 
 Public --> UC_Login
-Public --> UC_CreateUser
-
-User --> UC_CreateFarm
-User --> UC_ViewFarms
-User --> UC_CreateAnimal
-User --> UC_ViewAnimals
-User --> UC_UpdateAnimal
-User --> UC_SellAnimal
-User --> UC_CreateFeedType
-User --> UC_ViewFeedTypes
-User --> UC_UpdateFeedType
-User --> UC_RecordFeeding
-User --> UC_ViewFeedingHistory
-User --> UC_UpdateFeeding
-User --> UC_RecordProduction
-User --> UC_ViewProductionHistory
-User --> UC_UpdateProduction
-User --> UC_ViewProductionSummary
-User --> UC_RegisterMilkPrice
-User --> UC_ViewCurrentMilkPrice
-User --> UC_ViewMilkPriceHistory
+'Public --> UC_CreateUser
+'
+'User --> UC_CreateFarm
+'User --> UC_ViewFarms
+'User --> UC_CreateAnimal
+'User --> UC_ViewAnimals
+'User --> UC_UpdateAnimal
+'User --> UC_SellAnimal
+'User --> UC_CreateFeedType
+'User --> UC_ViewFeedTypes
+'User --> UC_UpdateFeedType
+'User --> UC_RecordFeeding
+'User --> UC_ViewFeedingHistory
+'User --> UC_UpdateFeeding
+'User --> UC_RecordProduction
+'User --> UC_ViewProductionHistory
+'User --> UC_UpdateProduction
+'User --> UC_ViewProductionSummary
+'User --> UC_RegisterMilkPrice
+'User --> UC_ViewCurrentMilkPrice
+'User --> UC_ViewMilkPriceHistory
 
 Manager --> UC_DeleteAnimal
 Manager --> UC_DeleteFeedType

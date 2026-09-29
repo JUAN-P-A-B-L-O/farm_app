@@ -9,6 +9,7 @@ import { FeedbackProvider } from './context/FeedbackContext.tsx'
 import { FarmProvider } from './context/FarmContext.tsx'
 import { LanguageProvider } from './context/LanguageContext.tsx'
 import { MeasurementUnitProvider } from './context/MeasurementUnitContext.tsx'
+import { PlanUpgradeProvider } from './context/PlanUpgradeContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -19,7 +20,9 @@ createRoot(document.getElementById('root')!).render(
             <CurrencyProvider>
               <MeasurementUnitProvider>
                 <BrowserRouter>
-                  <App />
+                  <PlanUpgradeProvider>
+                    <App />
+                  </PlanUpgradeProvider>
                 </BrowserRouter>
               </MeasurementUnitProvider>
             </CurrencyProvider>

@@ -36,7 +36,7 @@ CREATE TABLE animals (
     CONSTRAINT pk_animals PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX uk_animals_tag ON animals (tag);
+CREATE UNIQUE INDEX uk_animals_farm_tag ON animals (farm_id, tag);
 
 CREATE TABLE productions (
     id VARCHAR(255) NOT NULL,

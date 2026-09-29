@@ -9,7 +9,9 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface AnimalRepository extends JpaRepository<AnimalEntity, String>, JpaSpecificationExecutor<AnimalEntity> {
 
-    boolean existsByTag(String tag);
+    boolean existsByTagAndFarmId(String tag, String farmId);
+
+    boolean existsByTagAndFarmIdAndIdNot(String tag, String farmId, String id);
 
     List<AnimalEntity> findByFarmId(String farmId);
 

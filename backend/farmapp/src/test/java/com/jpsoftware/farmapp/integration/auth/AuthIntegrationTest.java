@@ -6,11 +6,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 import com.jpsoftware.farmapp.base.BaseIntegrationTest;
 import com.jpsoftware.farmapp.shared.email.model.EmailMessage;
 import com.jpsoftware.farmapp.shared.email.service.EmailSender;
+import com.jpsoftware.farmapp.shared.exception.EmailDispatchException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
@@ -64,13 +67,37 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         Assertions.assertEquals("maria@farm.com", sentEmail.recipientEmail());
         Assertions.assertEquals("Confirme sua conta no Farm App", sentEmail.subject());
         Assertions.assertTrue(sentEmail.body().contains("Olá Maria Silva,"));
-        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/login?mode=confirm&token="));
+        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/confirm-email?token="));
         String rawToken = sentEmail.body()
                 .substring(sentEmail.body().indexOf("token=") + "token=".length())
                 .split("\\s", 2)[0];
         Assertions.assertEquals(
                 emailConfirmationTokenService.hashToken(rawToken),
                 registeredUser.getEmailConfirmationTokenHash());
+    }
+
+    @Test
+    void shouldRegisterAccountEvenWhenConfirmationEmailDispatchFails() throws Exception {
+        doThrow(new EmailDispatchException("Unable to send email", new RuntimeException("smtp error")))
+                .when(emailSender)
+                .send(any(EmailMessage.class));
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Maria Silva",
+                                  "email": "maria-failure@farm.com",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value("maria-failure@farm.com"));
+
+        UserEntity registeredUser = userRepository.findByEmail("maria-failure@farm.com").orElseThrow();
+        Assertions.assertFalse(registeredUser.isEmailConfirmed());
+        Assertions.assertNotNull(registeredUser.getEmailConfirmationTokenHash());
+        Assertions.assertNotNull(registeredUser.getEmailConfirmationTokenExpiresAt());
     }
 
     @Test
@@ -303,6 +330,15 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldKeepConfirmationEndpointPublicWhenRequestHasNoAuthentication() throws Exception {
+        mockMvc.perform(get("/auth/confirm-email")
+                        .param("token", "missing-token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("O token de confirmação é inválido ou expirou."))
+                .andExpect(jsonPath("$.path").value("/auth/confirm-email"));
+    }
+
+    @Test
     void shouldRejectExpiredConfirmationToken() throws Exception {
         UserEntity user = userRepository.save(new UserEntity(
                 null,
@@ -320,6 +356,32 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                         .param("token", "expired-token"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("O token de confirmação é inválido ou expirou."));
+    }
+
+    @Test
+    void shouldRejectReusedConfirmationTokenAfterSuccessfulConfirmation() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
+                null,
+                "Maria Silva",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+        user.setEmailConfirmed(false);
+        user.setEmailConfirmationTokenHash(emailConfirmationTokenService.hashToken("single-use-token"));
+        user.setEmailConfirmationTokenExpiresAt(Instant.now().plusSeconds(3600));
+        userRepository.save(user);
+
+        mockMvc.perform(get("/auth/confirm-email")
+                        .param("token", "single-use-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("E-mail confirmado com sucesso."));
+
+        mockMvc.perform(get("/auth/confirm-email")
+                        .param("token", "single-use-token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("O token de confirmação é inválido ou expirou."))
+                .andExpect(jsonPath("$.path").value("/auth/confirm-email"));
     }
 
     @Test
@@ -356,7 +418,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         verify(emailSender).send(emailCaptor.capture());
         EmailMessage sentEmail = emailCaptor.getValue();
         Assertions.assertEquals("maria@farm.com", sentEmail.recipientEmail());
-        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/login?mode=confirm&token="));
+        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/confirm-email?token="));
         String rawToken = sentEmail.body()
                 .substring(sentEmail.body().indexOf("token=") + "token=".length())
                 .split("\\s", 2)[0];
@@ -401,6 +463,44 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("O e-mail já foi confirmado."))
                 .andExpect(jsonPath("$.path").value("/auth/confirm-email/resend"));
+    }
+
+    @Test
+    void shouldReturn500AndKeepPreviousConfirmationTokenWhenResendEmailFails() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
+                null,
+                "Maria Silva",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+        user.setEmailConfirmed(false);
+        user.setEmailConfirmationTokenHash(emailConfirmationTokenService.hashToken("old-token"));
+        user.setEmailConfirmationTokenExpiresAt(Instant.now().plusSeconds(300));
+        userRepository.save(user);
+        UserEntity persistedUser = userRepository.findByEmail("maria@farm.com").orElseThrow();
+        String previousTokenHash = persistedUser.getEmailConfirmationTokenHash();
+        Instant previousExpiration = persistedUser.getEmailConfirmationTokenExpiresAt();
+
+        doThrow(new EmailDispatchException("Unable to send email", new RuntimeException("smtp error")))
+                .when(emailSender)
+                .send(any(EmailMessage.class));
+
+        mockMvc.perform(post("/auth/confirm-email/resend")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "maria@farm.com"
+                                }
+                                """))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("Não foi possível enviar o e-mail."))
+                .andExpect(jsonPath("$.path").value("/auth/confirm-email/resend"));
+
+        UserEntity unchangedUser = userRepository.findByEmail("maria@farm.com").orElseThrow();
+        Assertions.assertFalse(unchangedUser.isEmailConfirmed());
+        Assertions.assertEquals(previousTokenHash, unchangedUser.getEmailConfirmationTokenHash());
+        Assertions.assertEquals(previousExpiration, unchangedUser.getEmailConfirmationTokenExpiresAt());
     }
 
     @Test

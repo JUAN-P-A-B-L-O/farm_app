@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.animalbatch.repository.AnimalBatchMemberRepository;
 import com.jpsoftware.farmapp.animalbatch.repository.AnimalBatchRepository;
+import com.jpsoftware.farmapp.billing.repository.ProcessedStripeEventRepository;
 import com.jpsoftware.farmapp.feed.repository.FeedTypeRepository;
 import com.jpsoftware.farmapp.feeding.repository.FeedingRepository;
 import com.jpsoftware.farmapp.farm.entity.FarmEntity;
@@ -62,6 +63,9 @@ public abstract class BaseIntegrationTest {
     protected UserFarmAssignmentRepository userFarmAssignmentRepository;
 
     @Autowired
+    protected ProcessedStripeEventRepository processedStripeEventRepository;
+
+    @Autowired
     protected TokenService tokenService;
 
     @Autowired
@@ -78,6 +82,7 @@ public abstract class BaseIntegrationTest {
         animalBatchRepository.deleteAll();
         animalRepository.deleteAll();
         feedTypeRepository.deleteAll();
+        processedStripeEventRepository.deleteAll();
         userFarmAssignmentRepository.deleteAll();
         farmRepository.deleteAll();
         userRepository.deleteAll();

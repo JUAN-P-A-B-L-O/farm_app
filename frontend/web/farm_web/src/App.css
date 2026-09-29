@@ -117,10 +117,13 @@
   border-radius: 14px;
   padding: 12px 14px;
   min-height: 48px;
+  width: 100%;
+  font: inherit;
   font-weight: 700;
   color: #1f3447;
   text-decoration: none;
   background: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
 }
 
 .app-layout__nav-link--disabled {
@@ -579,6 +582,11 @@
   gap: 12px;
 }
 
+.plan-upgrade-notice__actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
 .plan-upgrade-notice__badge {
   width: fit-content;
   border-radius: 999px;
@@ -589,6 +597,175 @@
   text-transform: uppercase;
   color: #7a4a08;
   background: #f6e4bf;
+}
+
+.plan-upgrade-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px 16px;
+}
+
+.plan-upgrade-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(19, 34, 56, 0.52);
+  cursor: pointer;
+}
+
+.plan-upgrade-modal__panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+  width: min(100%, 520px);
+  padding: 24px 20px;
+  border: 1px solid #d7e1d8;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 24px 60px rgba(19, 34, 56, 0.18);
+}
+
+.plan-upgrade-modal__eyebrow {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5c6d60;
+}
+
+.plan-upgrade-modal__details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.plan-upgrade-modal__details div {
+  padding: 14px;
+  border: 1px solid #d6e0ea;
+  border-radius: 16px;
+  background: #f8fbfd;
+}
+
+.plan-upgrade-modal__details dt {
+  margin-bottom: 4px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #617080;
+}
+
+.plan-upgrade-modal__details dd {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #132238;
+}
+
+.plan-upgrade-modal__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.plan-page__highlight {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.plan-page__grid {
+  display: grid;
+  gap: 20px;
+}
+
+.plan-page__card {
+  display: grid;
+  gap: 16px;
+}
+
+.plan-page__card-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.plan-page__card--premium {
+  border-color: #d9c68f;
+  background:
+    linear-gradient(180deg, rgba(246, 228, 191, 0.28) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.plan-page__card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.plan-page__price {
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7a4a08;
+}
+
+.plan-page__current-badge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2e6a46;
+  background: #e6f5e8;
+}
+
+.plan-page__feature-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-page__feature-item {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #d6e0ea;
+  border-radius: 16px;
+  background: #f8fbfd;
+}
+
+.plan-page__feature-item p {
+  margin: 6px 0 0;
+  color: #556476;
+}
+
+.plan-page__feature-status {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #7a4a08;
+  background: #f6e4bf;
+}
+
+.plan-page__feature-status--included {
+  color: #2e6a46;
+  background: #e6f5e8;
+}
+
+.plan-page__checkout-placeholder {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .animal-form__feedback--success {
@@ -1196,6 +1373,23 @@
   .analytics-chart__header {
     flex-direction: row;
     align-items: flex-start;
+  }
+}
+
+@media (min-width: 721px) {
+  .plan-page__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .plan-upgrade-modal__details,
+  .plan-upgrade-modal__actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .plan-page__card-header {
+    flex-direction: column;
   }
 }
 

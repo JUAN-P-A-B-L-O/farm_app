@@ -51,7 +51,7 @@ You MUST follow the project context strictly as defined in AI_CONTEXT.md.
 
 - Assume JWT is required for protected endpoints.
 - Do NOT remove or weaken authentication.
-- Respect role-based restrictions (`MANAGER`, `WORKER`).
+- Respect role-based restrictions 
 
 ---
 
@@ -64,26 +64,6 @@ When implementing a feature:
 3. Reuse existing services whenever possible
 4. Keep changes minimal and consistent
 
----
-
-## OUTPUT FORMAT (STRICT)
-
-You MUST return your response in JSON format:
-
-{
-  "summary": "Short description of what was implemented",
-  "changed_files": [
-    "relative/path/to/file1",
-    "relative/path/to/file2"
-  ],
-  "changes": [
-    {
-      "file": "relative/path/to/file",
-      "description": "What was changed",
-      "code": "ONLY the relevant code snippet or full file if necessary"
-    }
-  ]
-}
 
 ---
 
@@ -100,23 +80,9 @@ You MUST return your response in JSON format:
 
 ## WHAT NOT TO DO
 
-- Do NOT invent endpoints that do not exist
 - Do NOT assume missing infrastructure exists
 - Do NOT perform large refactors
 - Do NOT change database structure unless explicitly required
 - Do NOT introduce unnecessary abstractions
 
 ---
-
-## EXECUTION MODE
-
-- Do NOT ask questions
-- Do NOT wait for user input
-- Make reasonable assumptions
-- Always produce a complete output
-
----
-
-## GOAL
-
-Produce clean, minimal, production-ready changes that integrate perfectly with the existing codebase and respect all constraints defined in AI_CONTEXT.md.

@@ -22,7 +22,7 @@ class FlywaySchemaValidationIntegrationTest {
     void flywayBuildsSchemaThatSupportsJpaValidationOnH2() {
         assertThat(Arrays.stream(flyway.info().applied())
                 .map(info -> info.getVersion().getVersion()))
-                .contains("1", "2");
+                .contains("1", "2", "3");
 
         assertTableExists("USERS");
         assertTableExists("MILK_PRICES");
@@ -32,6 +32,7 @@ class FlywaySchemaValidationIntegrationTest {
         assertColumnExists("USERS", "EMAIL_CONFIRMATION_TOKEN_EXPIRES_AT");
         assertColumnExists("USERS", "AVATAR_URL");
         assertColumnExists("USERS", "PLAN");
+        assertIndexExists("UK_ANIMALS_FARM_TAG");
     }
 
     private void assertTableExists(String tableName) {
@@ -60,6 +61,20 @@ class FlywaySchemaValidationIntegrationTest {
                 Integer.class,
                 tableName,
                 columnName);
+
+        assertThat(matches).isEqualTo(1);
+    }
+
+    private void assertIndexExists(String indexName) {
+        Integer matches = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM INFORMATION_SCHEMA.INDEXES
+                WHERE INDEX_SCHEMA = 'PUBLIC'
+                  AND INDEX_NAME = ?
+                """,
+                Integer.class,
+                indexName);
 
         assertThat(matches).isEqualTo(1);
     }

@@ -67,7 +67,7 @@ Purpose:
 Fields:
 
 - `id` `string` primary key
-- `tag` `string` unique, not null
+- `tag` `string` not null
 - `breed` `string` not null
 - `birth_date` `date` not null
 - `status` `string` not null
@@ -79,7 +79,7 @@ Fields:
 
 Notes:
 
-- `tag` is the strongest operational identifier because it is unique at database level
+- `tag` is the strongest operational identifier within a farm
 - lifecycle deletion is represented by status `INACTIVE`
 - sold animals keep `salePrice` and `saleDate`
 
@@ -171,7 +171,7 @@ Notes:
 
 Implemented constraints in the mapped model:
 
-- `animals.tag` is unique
+- `animals (farm_id, tag)` is unique
 - fields marked `nullable = false` are required at persistence level
 - UUID/string primary keys are generated or assigned before insert depending on entity
 

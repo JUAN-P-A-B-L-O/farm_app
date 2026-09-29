@@ -1,0 +1,20 @@
+name: farm-app-frontend
+
+services:
+  frontend:
+    build: ./frontend/web/farm_web
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:80"
+    networks:
+      - web
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+networks:
+  web:
+    name: farm-app-web
+    external: true

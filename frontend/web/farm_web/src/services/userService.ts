@@ -20,6 +20,11 @@ export async function getAllUsers(filters?: UserListFilters): Promise<User[]> {
   return response.data
 }
 
+export async function getUserById(id: string): Promise<User> {
+  const response = await api.get<User>(`/users/${id}`)
+  return response.data
+}
+
 export async function getUsersPage(
   filters: UserListFilters | undefined,
   pagination: PaginationParams,

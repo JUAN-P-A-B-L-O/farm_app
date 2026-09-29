@@ -22,6 +22,12 @@ export interface FeatureAccessState {
   minimumPlan: UserPlan
 }
 
+export interface PlanFeatureSummary {
+  feature: AppFeature
+  included: boolean
+  metadata: FeatureMetadata
+}
+
 const planMetadata: Record<UserPlan, PlanMetadata> = {
   FREE: {
     labelKey: 'plan.labels.FREE',
@@ -52,6 +58,9 @@ const featureMetadata: Record<AppFeature, FeatureMetadata> = {
     descriptionKey: 'plan.features.csvExport.description',
   },
 }
+
+export const availablePlans: UserPlan[] = ['FREE', 'PRO']
+export const appFeatures: AppFeature[] = ['DASHBOARD', 'ANALYTICS', 'CSV_EXPORT']
 
 export function resolvePlan(user: Pick<User, 'plan'> | null | undefined): UserPlan {
   return user?.plan ?? 'FREE'
@@ -87,4 +96,18 @@ export function hasFeatureAccess(user: Pick<User, 'plan'> | null | undefined, fe
 
 export function getFeatureMetadata(feature: AppFeature) {
   return featureMetadata[feature]
+}
+
+export function getPlanFeatureSummaries(plan: UserPlan): PlanFeatureSummary[] {
+  const currentPlan = planMetadata[plan] ? plan : resolvePlan(null)
+
+  return appFeatures.map((feature) => {
+    const metadata = getFeatureMetadata(feature)
+
+    return {
+      feature,
+      included: planMetadata[currentPlan].rank >= planMetadata[metadata.minimumPlan].rank,
+      metadata,
+    }
+  })
 }

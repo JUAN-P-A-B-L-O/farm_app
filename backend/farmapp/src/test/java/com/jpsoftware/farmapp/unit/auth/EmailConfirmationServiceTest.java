@@ -1,9 +1,12 @@
 package com.jpsoftware.farmapp.unit.auth;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,6 +14,7 @@ import com.jpsoftware.farmapp.auth.service.EmailConfirmationService;
 import com.jpsoftware.farmapp.auth.service.EmailConfirmationTokenService;
 import com.jpsoftware.farmapp.shared.email.model.EmailMessage;
 import com.jpsoftware.farmapp.shared.email.service.EmailSender;
+import com.jpsoftware.farmapp.shared.exception.EmailDispatchException;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.time.Instant;
@@ -55,6 +59,59 @@ class EmailConfirmationServiceTest {
         assertEquals("maria@farm.com", sentEmail.recipientEmail());
         assertEquals("Confirme sua conta no Farm App", sentEmail.subject());
         assertTrue(sentEmail.body().contains("Olá usuário,"));
-        assertTrue(sentEmail.body().contains("http://localhost:5173/login?mode=confirm&token=raw-token"));
+        assertTrue(sentEmail.body().contains("http://localhost:5173/confirm-email?token=raw-token"));
+    }
+
+    @Test
+    void shouldNotBreakRegistrationFlowWhenInitialEmailDeliveryFails() {
+        EmailConfirmationService service = new EmailConfirmationService(
+                userRepository,
+                tokenService,
+                emailSender,
+                "http://localhost:5173",
+                "Confirme sua conta no Farm App",
+                24);
+        UserEntity user = new UserEntity();
+        user.setEmail("maria@farm.com");
+
+        when(tokenService.generateToken()).thenReturn("raw-token");
+        when(tokenService.hashToken("raw-token")).thenReturn("hashed-token");
+        when(userRepository.save(user)).thenReturn(user);
+        org.mockito.Mockito.doThrow(new EmailDispatchException("Unable to send email", new RuntimeException("smtp error")))
+                .when(emailSender)
+                .send(any(EmailMessage.class));
+
+        assertDoesNotThrow(() -> service.initializePendingConfirmation(user));
+        assertFalse(user.isEmailConfirmed());
+        assertEquals("hashed-token", user.getEmailConfirmationTokenHash());
+    }
+
+    @Test
+    void shouldPropagateEmailDeliveryFailureWhenResendingConfirmation() {
+        EmailConfirmationService service = new EmailConfirmationService(
+                userRepository,
+                tokenService,
+                emailSender,
+                "http://localhost:5173",
+                "Confirme sua conta no Farm App",
+                24);
+        UserEntity user = new UserEntity();
+        user.setEmail("maria@farm.com");
+        user.setEmailConfirmed(false);
+
+        when(userRepository.findByEmail("maria@farm.com")).thenReturn(java.util.Optional.of(user));
+        when(tokenService.generateToken()).thenReturn("raw-token");
+        when(tokenService.hashToken("raw-token")).thenReturn("hashed-token");
+        when(userRepository.save(user)).thenReturn(user);
+        org.mockito.Mockito.doThrow(new EmailDispatchException("Unable to send email", new RuntimeException("smtp error")))
+                .when(emailSender)
+                .send(any(EmailMessage.class));
+
+        EmailDispatchException exception = assertThrows(
+                EmailDispatchException.class,
+                () -> service.resendConfirmation("  MARIA@FARM.COM  "));
+
+        assertEquals("Unable to send email", exception.getMessage());
+        verify(emailSender).send(any(EmailMessage.class));
     }
 }

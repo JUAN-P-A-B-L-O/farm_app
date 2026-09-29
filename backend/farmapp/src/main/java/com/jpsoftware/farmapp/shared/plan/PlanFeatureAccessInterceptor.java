@@ -1,7 +1,6 @@
 package com.jpsoftware.farmapp.shared.plan;
 
 import com.jpsoftware.farmapp.auth.service.AuthenticationContextService;
-import com.jpsoftware.farmapp.user.entity.UserPlan;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.annotation.AnnotatedElementUtils;
@@ -41,13 +40,10 @@ public class PlanFeatureAccessInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        UserPlan userPlan = authenticationContextService.getAuthenticatedUser()
-                .map(authenticatedUser -> authenticatedUser.plan() == null
-                        ? UserPlan.defaultPlan()
-                        : authenticatedUser.plan())
-                .orElse(UserPlan.defaultPlan());
+        PlanEntitlement entitlement = authenticationContextService.getAuthenticatedUserPlanEntitlement()
+                .orElse(PlanEntitlement.defaultEntitlement());
 
-        planAccessPolicy.assertHasAccess(userPlan, requiresPlanFeature.value());
+        planAccessPolicy.assertHasAccess(entitlement, requiresPlanFeature.value());
         return true;
     }
 }

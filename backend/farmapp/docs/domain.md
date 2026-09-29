@@ -25,7 +25,7 @@ Responsibilities:
 
 Responsibilities:
 
-- identify an animal through a unique `tag`
+- identify an animal through a `tag` that is unique within its farm
 - store descriptive herd data such as `breed` and `birthDate`
 - store `origin` as `BORN` or `PURCHASED`
 - store optional `acquisitionCost` for purchased animals

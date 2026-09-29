@@ -191,7 +191,7 @@ public class GlobalExceptionHandler {
                 : exception.getMessage();
 
         if (message != null && message.toLowerCase().contains("tag")) {
-            return "Animal with this tag already exists";
+            return "Animal with this tag already exists in this farm";
         }
         if (message != null && message.toLowerCase().contains("email")) {
             return "User with this email already exists";

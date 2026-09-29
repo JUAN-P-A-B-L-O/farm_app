@@ -17,6 +17,7 @@ import ManagerRoute from './components/auth/ManagerRoute'
 import PlanRoute from './components/auth/PlanRoute'
 import FarmCreatePage from './pages/farm/FarmCreatePage'
 import FarmOnboardingPage from './pages/farm/FarmOnboardingPage'
+import PlansPage from './pages/plans/PlansPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import { useAuth } from './hooks/useAuth'
 import { hasFeatureAccess } from './utils/planAccess'
@@ -66,6 +67,7 @@ function App() {
           <Route path="/milk-prices" element={<MilkPricePage />} />
           <Route path="/feeding" element={<FeedingPage />} />
           <Route path="/feed-types" element={<FeedTypePage />} />
+          <Route path="/plans" element={<PlansPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route
             path="/users"

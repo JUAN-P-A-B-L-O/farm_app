@@ -5,16 +5,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "app.email")
 public class EmailProperties {
 
-    private boolean enabled;
+    private Boolean enabled;
     private String from = "no-reply@farmapp.local";
     private final Confirmation confirmation = new Confirmation();
     private final Smtp smtp = new Smtp();
 
-    public boolean isEnabled() {
+    public Boolean getEnabled() {
         return enabled;
     }
 
-    public void setEnabled(boolean enabled) {
+    public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
     }
 

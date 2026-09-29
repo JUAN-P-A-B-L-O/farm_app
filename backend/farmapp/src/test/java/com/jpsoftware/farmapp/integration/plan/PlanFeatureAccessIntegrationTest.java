@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jpsoftware.farmapp.base.BaseIntegrationTest;
+import com.jpsoftware.farmapp.billing.model.BillingSubscriptionStatus;
 import com.jpsoftware.farmapp.farm.entity.FarmEntity;
 import com.jpsoftware.farmapp.shared.email.service.EmailSender;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
@@ -42,6 +43,21 @@ class PlanFeatureAccessIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalProduction").exists())
                 .andExpect(jsonPath("$.animalCount").exists());
+    }
+
+    @Test
+    void shouldBlockDashboardForCanceledStripeSubscriptionEvenWhenPlanFieldIsPro() throws Exception {
+        UserEntity proManager = createAuthenticatedUser("MANAGER", UserPlan.PRO);
+        proManager.setStripeSubscriptionId("sub_123");
+        proManager.setBillingSubscriptionStatus(BillingSubscriptionStatus.CANCELED);
+        userRepository.save(proManager);
+        FarmEntity farm = createFarmOwnedBy(proManager, "Fazenda Premium");
+
+        mockMvc.perform(get("/dashboard")
+                        .param("farmId", farm.getId().toString())
+                        .header("Authorization", bearerToken(proManager)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Este recurso está disponível apenas no plano Premium."));
     }
 
     @Test

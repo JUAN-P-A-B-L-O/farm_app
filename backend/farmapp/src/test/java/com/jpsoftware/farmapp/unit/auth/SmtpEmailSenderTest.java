@@ -3,49 +3,52 @@ package com.jpsoftware.farmapp.unit.auth;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.jpsoftware.farmapp.auth.infrastructure.EmailProperties;
 import com.jpsoftware.farmapp.auth.infrastructure.SmtpEmailSender;
 import com.jpsoftware.farmapp.shared.email.model.EmailMessage;
 import com.jpsoftware.farmapp.shared.exception.EmailDispatchException;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import jakarta.mail.Session;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import java.util.Properties;
 import org.junit.jupiter.api.Test;
+import org.springframework.mail.MailSendException;
+import org.springframework.mail.javamail.JavaMailSender;
 
 class SmtpEmailSenderTest {
 
     @Test
-    void shouldSendTransactionalEmailWithConfiguredMetadata() {
+    void shouldSendTransactionalEmailWithConfiguredMetadata() throws Exception {
         EmailProperties emailProperties = buildEmailProperties();
-        SentMessage sentMessage = new SentMessage();
-        SmtpEmailSender sender = new SmtpEmailSender(emailProperties, (properties, fromAddress, recipientEmail, message) -> {
-            sentMessage.fromAddress = fromAddress;
-            sentMessage.recipientEmail = recipientEmail;
-            sentMessage.message = message;
-        });
+        JavaMailSender mailSender = org.mockito.Mockito.mock(JavaMailSender.class);
+        MimeMessage mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        SmtpEmailSender sender = new SmtpEmailSender(emailProperties, mailSender);
 
         sender.send(new EmailMessage(
                 "  maria@farm.com  ",
                 "Confirme sua conta no Farm App",
                 "Olá Maria Silva,\n\nUse o link para confirmar."));
 
-        assertEquals("no-reply@farmapp.local", sentMessage.fromAddress);
-        assertEquals("maria@farm.com", sentMessage.recipientEmail);
-        assertTrue(sentMessage.message.contains("Content-Type: text/plain; charset=UTF-8"));
-        assertTrue(sentMessage.message.contains("Content-Transfer-Encoding: base64"));
-        assertTrue(sentMessage.message.contains("=?UTF-8?B?"));
-        assertTrue(decodeBody(sentMessage.message).contains("Olá Maria Silva,"));
+        verify(mailSender).send(mimeMessage);
+        assertEquals("no-reply@farmapp.local", ((InternetAddress) mimeMessage.getFrom()[0]).getAddress());
+        assertEquals("maria@farm.com", ((InternetAddress) mimeMessage.getAllRecipients()[0]).getAddress());
+        assertEquals("Confirme sua conta no Farm App", mimeMessage.getSubject());
+        assertTrue(mimeMessage.getContent().toString().contains("Olá Maria Silva,"));
     }
 
     @Test
     void shouldWrapMailFailuresAsEmailDispatchException() {
         EmailProperties emailProperties = buildEmailProperties();
-        SmtpEmailSender sender = new SmtpEmailSender(
-                emailProperties,
-                (properties, fromAddress, recipientEmail, message) -> {
-                    throw new IOException("smtp error");
-                });
+        JavaMailSender mailSender = org.mockito.Mockito.mock(JavaMailSender.class);
+        MimeMessage mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        doThrow(new MailSendException("smtp error")).when(mailSender).send(mimeMessage);
+        SmtpEmailSender sender = new SmtpEmailSender(emailProperties, mailSender);
 
         EmailDispatchException exception = assertThrows(
                 EmailDispatchException.class,
@@ -60,11 +63,8 @@ class SmtpEmailSenderTest {
     @Test
     void shouldRejectInvalidEmailMessageBeforeSending() {
         EmailProperties emailProperties = buildEmailProperties();
-        SmtpEmailSender sender = new SmtpEmailSender(
-                emailProperties,
-                (properties, fromAddress, recipientEmail, message) -> {
-                    throw new AssertionError("transport should not be called");
-                });
+        JavaMailSender mailSender = org.mockito.Mockito.mock(JavaMailSender.class);
+        SmtpEmailSender sender = new SmtpEmailSender(emailProperties, mailSender);
 
         IllegalArgumentException nullMessageException = assertThrows(IllegalArgumentException.class, () -> sender.send(null));
         assertEquals("emailMessage must not be null", nullMessageException.getMessage());
@@ -89,39 +89,22 @@ class SmtpEmailSenderTest {
     void shouldRequireConfiguredFromAddressWhenSending() {
         EmailProperties emailProperties = buildEmailProperties();
         emailProperties.setFrom("   ");
-        SmtpEmailSender sender = new SmtpEmailSender(
-                emailProperties,
-                (properties, fromAddress, recipientEmail, message) -> {
-                    throw new AssertionError("transport should not be called");
-                });
+        JavaMailSender mailSender = org.mockito.Mockito.mock(JavaMailSender.class);
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage(Session.getInstance(new Properties())));
+        SmtpEmailSender sender = new SmtpEmailSender(emailProperties, mailSender);
 
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
                 () -> sender.send(new EmailMessage("maria@farm.com", "Confirme sua conta", "Olá Maria")));
 
-        assertEquals("app.email.from must be configured when app.email.enabled is true", exception.getMessage());
-    }
-
-    private String decodeBody(String rawMessage) {
-        String[] parts = rawMessage.split("\r\n\r\n", 2);
-        return new String(Base64.getMimeDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+        assertEquals("app.email.from must be configured when SMTP email delivery is enabled", exception.getMessage());
     }
 
     private EmailProperties buildEmailProperties() {
         EmailProperties emailProperties = new EmailProperties();
         emailProperties.setFrom("no-reply@farmapp.local");
         emailProperties.getConfirmation().setSubject("Confirme sua conta no Farm App");
-        emailProperties.setEnabled(true);
-        emailProperties.getSmtp().setHost("smtp.example.com");
-        emailProperties.getSmtp().setPort(587);
-        emailProperties.getSmtp().setAuth(false);
-        emailProperties.getSmtp().setStarttlsEnabled(false);
+        emailProperties.setEnabled(Boolean.TRUE);
         return emailProperties;
-    }
-
-    private static final class SentMessage {
-        private String fromAddress;
-        private String recipientEmail;
-        private String message;
     }
 }

@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/billing/webhook").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/users/me/password").authenticated()
                         .requestMatchers(HttpMethod.POST, "/users").hasAuthority(MANAGER_AUTHORITY)
                         .requestMatchers(HttpMethod.PUT, "/users/*").hasAuthority(MANAGER_AUTHORITY)

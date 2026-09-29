@@ -24,7 +24,7 @@ Feeding, production, milk prices, animal acquisition cost, and animal sale data 
 
 1. A user creates or selects a farm.
 2. The client submits `POST /animals` with `tag`, `breed`, `birthDate`, `origin`, optional `acquisitionCost`, and `farmId`.
-3. `AnimalService` validates the accessible farm, tag uniqueness, origin, and acquisition cost rules.
+3. `AnimalService` validates the accessible farm, farm-scoped tag uniqueness, origin, and acquisition cost rules.
 4. The animal is persisted with status `ACTIVE`.
 5. Later lifecycle actions update the same animal:
    - generic update can change mutable fields and allowed statuses except new sale transitions

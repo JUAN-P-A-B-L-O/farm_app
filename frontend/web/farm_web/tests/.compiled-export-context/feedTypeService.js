@@ -1,5 +1,6 @@
 import api from './api.js'
 import { downloadCsv } from './csvExportService.js'
+import { publishSuccess } from './feedbackService'
 const normalizeToTwoDecimals = (value) => Number(value.toFixed(2))
 
 function buildFeedTypeListParams(farmId, filters, currency) {
@@ -37,6 +38,7 @@ export async function createFeedType(data, farmId) {
   }, {
     params: buildFeedTypeListParams(farmId),
   })
+  publishSuccess('feedType.success.create', { dedupeKey: 'feed-type:create' })
 
   return response.data
 }
@@ -48,6 +50,7 @@ export async function updateFeedType(id, data, farmId) {
   }, {
     params: buildFeedTypeListParams(farmId),
   })
+  publishSuccess('feedType.success.update', { dedupeKey: 'feed-type:update' })
 
   return response.data
 }
@@ -56,6 +59,7 @@ export async function deleteFeedType(id, farmId) {
   await api.delete(`/feed-types/${id}`, {
     params: buildFeedTypeListParams(farmId),
   })
+  publishSuccess('feedType.success.delete', { dedupeKey: 'feed-type:delete' })
 }
 
 export async function exportFeedTypesCsv(farmId, currency, filters, measurementUnit) {
@@ -65,6 +69,10 @@ export async function exportFeedTypesCsv(farmId, currency, filters, measurementU
       ...buildFeedTypeListParams(farmId, filters, currency),
       ...(measurementUnit ? { measurementUnit } : {}),
     },
-    'feed-types.csv',
+    {
+      fallbackFileName: 'feed-types.csv',
+      successDedupeKey: 'feed-type:export',
+      successMessageKey: 'feedType.success.export',
+    },
   )
 }
