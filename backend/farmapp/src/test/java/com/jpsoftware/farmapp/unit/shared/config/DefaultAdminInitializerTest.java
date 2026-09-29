@@ -12,6 +12,7 @@ import com.jpsoftware.farmapp.shared.config.DefaultAdminInitializer;
 import com.jpsoftware.farmapp.farm.entity.FarmEntity;
 import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ class DefaultAdminInitializerTest {
         assertEquals("MANAGER", savedUser.getRole());
         assertNotEquals("admin123", savedUser.getPassword());
         assertTrue(savedUser.isActive());
+        assertEquals(UserPlan.FREE, savedUser.getPlan());
         assertTrue(passwordEncoder.matches("admin123", savedUser.getPassword()));
 
         ArgumentCaptor<FarmEntity> farmCaptor = ArgumentCaptor.forClass(FarmEntity.class);

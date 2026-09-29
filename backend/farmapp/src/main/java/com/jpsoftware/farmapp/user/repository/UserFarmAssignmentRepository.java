@@ -9,6 +9,8 @@ public interface UserFarmAssignmentRepository extends JpaRepository<UserFarmAssi
 
     boolean existsByUserIdAndFarmId(UUID userId, String farmId);
 
+    boolean existsByUserId(UUID userId);
+
     List<UserFarmAssignmentEntity> findByUserId(UUID userId);
 
     void deleteByUserId(UUID userId);

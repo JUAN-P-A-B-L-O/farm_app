@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.base;
 
 import com.jpsoftware.farmapp.auth.service.TokenService;
+import com.jpsoftware.farmapp.auth.service.EmailConfirmationTokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpsoftware.farmapp.animal.repository.AnimalRepository;
 import com.jpsoftware.farmapp.animalbatch.repository.AnimalBatchMemberRepository;
@@ -11,6 +12,8 @@ import com.jpsoftware.farmapp.farm.entity.FarmEntity;
 import com.jpsoftware.farmapp.farm.repository.FarmRepository;
 import com.jpsoftware.farmapp.production.repository.ProductionRepository;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserFarmAssignmentEntity;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import com.jpsoftware.farmapp.user.repository.UserFarmAssignmentRepository;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
 import java.util.UUID;
@@ -62,6 +65,9 @@ public abstract class BaseIntegrationTest {
     protected TokenService tokenService;
 
     @Autowired
+    protected EmailConfirmationTokenService emailConfirmationTokenService;
+
+    @Autowired
     protected PasswordEncoder passwordEncoder;
 
     @BeforeEach
@@ -82,12 +88,18 @@ public abstract class BaseIntegrationTest {
     }
 
     protected UserEntity createAuthenticatedUser(String role) {
+        return createAuthenticatedUser(role, UserPlan.defaultPlan());
+    }
+
+    protected UserEntity createAuthenticatedUser(String role, UserPlan plan) {
         UserEntity user = new UserEntity();
         user.setName("Jane Doe");
         user.setEmail(role.toLowerCase() + "-" + UUID.randomUUID() + "@farm.com");
         user.setRole(role);
         user.setPassword(passwordEncoder.encode("farmapp@123"));
         user.setActive(true);
+        user.setEmailConfirmed(true);
+        user.setPlan(plan);
         return userRepository.save(user);
     }
 
@@ -100,5 +112,9 @@ public abstract class BaseIntegrationTest {
         farm.setName(name);
         farm.setOwnerId(owner.getId());
         return farmRepository.save(farm);
+    }
+
+    protected void assignUserToFarm(UserEntity user, FarmEntity farm) {
+        userFarmAssignmentRepository.save(new UserFarmAssignmentEntity(null, user.getId(), farm.getId()));
     }
 }

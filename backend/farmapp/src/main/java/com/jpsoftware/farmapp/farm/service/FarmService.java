@@ -57,6 +57,11 @@ public class FarmService {
         return toResponse(farmRepository.save(farmEntity));
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasAccessibleFarm(UUID userId) {
+        return farmRepository.existsByOwnerId(userId) || userFarmAssignmentRepository.existsByUserId(userId);
+    }
+
     private FarmResponse toResponse(FarmEntity farmEntity) {
         return new FarmResponse(farmEntity.getId(), farmEntity.getName());
     }

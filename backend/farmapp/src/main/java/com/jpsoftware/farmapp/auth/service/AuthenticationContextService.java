@@ -1,6 +1,7 @@
 package com.jpsoftware.farmapp.auth.service;
 
 import com.jpsoftware.farmapp.auth.model.AuthenticatedUser;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.security.core.Authentication;
@@ -25,6 +26,10 @@ public class AuthenticationContextService {
 
     public Optional<UUID> getAuthenticatedUserId() {
         return getAuthenticatedUser().map(AuthenticatedUser::id);
+    }
+
+    public Optional<UserPlan> getAuthenticatedUserPlan() {
+        return getAuthenticatedUser().map(AuthenticatedUser::plan);
     }
 
     public String resolveUserId(String fallbackUserId) {

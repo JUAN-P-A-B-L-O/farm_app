@@ -2,10 +2,13 @@ package com.jpsoftware.farmapp.user.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -32,8 +35,21 @@ public class UserEntity {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(nullable = false)
+    private boolean emailConfirmed = true;
+
+    @Column
+    private String emailConfirmationTokenHash;
+
+    @Column
+    private Instant emailConfirmationTokenExpiresAt;
+
     @Column(columnDefinition = "TEXT")
     private String avatarUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserPlan plan = UserPlan.defaultPlan();
 
     public UserEntity() {
     }
@@ -53,6 +69,7 @@ public class UserEntity {
         this.role = role;
         this.password = password;
         this.active = active;
+        this.plan = UserPlan.defaultPlan();
     }
 
     public UUID getId() {
@@ -103,11 +120,43 @@ public class UserEntity {
         this.active = active;
     }
 
+    public boolean isEmailConfirmed() {
+        return emailConfirmed;
+    }
+
+    public void setEmailConfirmed(boolean emailConfirmed) {
+        this.emailConfirmed = emailConfirmed;
+    }
+
+    public String getEmailConfirmationTokenHash() {
+        return emailConfirmationTokenHash;
+    }
+
+    public void setEmailConfirmationTokenHash(String emailConfirmationTokenHash) {
+        this.emailConfirmationTokenHash = emailConfirmationTokenHash;
+    }
+
+    public Instant getEmailConfirmationTokenExpiresAt() {
+        return emailConfirmationTokenExpiresAt;
+    }
+
+    public void setEmailConfirmationTokenExpiresAt(Instant emailConfirmationTokenExpiresAt) {
+        this.emailConfirmationTokenExpiresAt = emailConfirmationTokenExpiresAt;
+    }
+
     public String getAvatarUrl() {
         return avatarUrl;
     }
 
     public void setAvatarUrl(String avatarUrl) {
         this.avatarUrl = avatarUrl;
+    }
+
+    public UserPlan getPlan() {
+        return plan;
+    }
+
+    public void setPlan(UserPlan plan) {
+        this.plan = plan == null ? UserPlan.defaultPlan() : plan;
     }
 }

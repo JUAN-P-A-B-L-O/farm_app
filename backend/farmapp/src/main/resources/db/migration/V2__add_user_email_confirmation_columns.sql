@@ -1,0 +1,34 @@
+ALTER TABLE IF EXISTS users
+    ADD COLUMN IF NOT EXISTS email_confirmed BOOLEAN;
+
+UPDATE users
+SET email_confirmed = TRUE
+WHERE email_confirmed IS NULL;
+
+ALTER TABLE IF EXISTS users
+    ALTER COLUMN email_confirmed SET DEFAULT TRUE;
+
+ALTER TABLE IF EXISTS users
+    ALTER COLUMN email_confirmed SET NOT NULL;
+
+ALTER TABLE IF EXISTS users
+    ADD COLUMN IF NOT EXISTS email_confirmation_token_hash VARCHAR(255);
+
+ALTER TABLE IF EXISTS users
+    ADD COLUMN IF NOT EXISTS email_confirmation_token_expires_at TIMESTAMP(6) WITH TIME ZONE;
+
+ALTER TABLE IF EXISTS users
+    ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+
+ALTER TABLE IF EXISTS users
+    ADD COLUMN IF NOT EXISTS plan VARCHAR(255);
+
+UPDATE users
+SET plan = 'FREE'
+WHERE plan IS NULL;
+
+ALTER TABLE IF EXISTS users
+    ALTER COLUMN plan SET DEFAULT 'FREE';
+
+ALTER TABLE IF EXISTS users
+    ALTER COLUMN plan SET NOT NULL;

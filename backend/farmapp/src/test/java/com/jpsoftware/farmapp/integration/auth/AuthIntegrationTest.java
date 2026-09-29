@@ -6,28 +6,167 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.verify;
 
 import com.jpsoftware.farmapp.base.BaseIntegrationTest;
+import com.jpsoftware.farmapp.shared.email.model.EmailMessage;
+import com.jpsoftware.farmapp.shared.email.service.EmailSender;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.ArgumentCaptor;
 
 class AuthIntegrationTest extends BaseIntegrationTest {
 
+    @MockBean
+    private EmailSender emailSender;
+
+    @Test
+    void shouldRegisterAccountAsPendingConfirmation() throws Exception {
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Maria Silva",
+                                  "email": "maria@farm.com",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Maria Silva"))
+                .andExpect(jsonPath("$.email").value("maria@farm.com"))
+                .andExpect(jsonPath("$.role").value("MANAGER"))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.plan").value("FREE"))
+                .andExpect(jsonPath("$.farmIds").isArray())
+                .andExpect(jsonPath("$.farmIds").isEmpty());
+
+        UserEntity registeredUser = userRepository.findByEmail("maria@farm.com").orElseThrow();
+        Assertions.assertTrue(registeredUser.isActive());
+        Assertions.assertFalse(registeredUser.isEmailConfirmed());
+        Assertions.assertEquals("MANAGER", registeredUser.getRole());
+        Assertions.assertEquals(UserPlan.FREE, registeredUser.getPlan());
+        Assertions.assertTrue(passwordEncoder.matches("farmapp@123", registeredUser.getPassword()));
+        Assertions.assertNotNull(registeredUser.getEmailConfirmationTokenHash());
+        Assertions.assertNotNull(registeredUser.getEmailConfirmationTokenExpiresAt());
+
+        ArgumentCaptor<EmailMessage> emailCaptor = ArgumentCaptor.forClass(EmailMessage.class);
+        verify(emailSender).send(emailCaptor.capture());
+        EmailMessage sentEmail = emailCaptor.getValue();
+        Assertions.assertEquals("maria@farm.com", sentEmail.recipientEmail());
+        Assertions.assertEquals("Confirme sua conta no Farm App", sentEmail.subject());
+        Assertions.assertTrue(sentEmail.body().contains("Olá Maria Silva,"));
+        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/login?mode=confirm&token="));
+        String rawToken = sentEmail.body()
+                .substring(sentEmail.body().indexOf("token=") + "token=".length())
+                .split("\\s", 2)[0];
+        Assertions.assertEquals(
+                emailConfirmationTokenService.hashToken(rawToken),
+                registeredUser.getEmailConfirmationTokenHash());
+    }
+
+    @Test
+    void shouldRejectDuplicateEmailDuringRegistration() throws Exception {
+        userRepository.save(new UserEntity(
+                null,
+                "Existing User",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Maria Silva",
+                                  "email": "maria@farm.com",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Já existe um usuário com este e-mail."));
+    }
+
+    @Test
+    void shouldRejectDuplicateEmailDuringRegistrationIgnoringCaseAndWhitespace() throws Exception {
+        userRepository.save(new UserEntity(
+                null,
+                "Existing User",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Maria Silva",
+                                  "email": "  MARIA@FARM.COM  ",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Já existe um usuário com este e-mail."));
+    }
+
+    @Test
+    void shouldNormalizeRegistrationFieldsBeforePersistingUser() throws Exception {
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "  Maria Silva  ",
+                                  "email": "  MARIA@FARM.COM  ",
+                                  "password": "  farmapp@123  "
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Maria Silva"))
+                .andExpect(jsonPath("$.email").value("maria@farm.com"));
+
+        UserEntity registeredUser = userRepository.findByEmail("maria@farm.com").orElseThrow();
+        Assertions.assertEquals("Maria Silva", registeredUser.getName());
+        Assertions.assertTrue(passwordEncoder.matches("farmapp@123", registeredUser.getPassword()));
+        Assertions.assertFalse(registeredUser.isEmailConfirmed());
+    }
+
+    @Test
+    void shouldValidateRequiredFieldsDuringRegistration() throws Exception {
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Maria Silva",
+                                  "email": "maria@farm.com",
+                                  "password": "   "
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("A senha é obrigatória."))
+                .andExpect(jsonPath("$.path").value("/auth/register"));
+    }
+
     @Test
     void shouldLoginAndReturnJwtToken() throws Exception {
-        userRepository.save(new UserEntity(
+        UserEntity user = userRepository.save(new UserEntity(
                 null,
                 "Jane Doe",
                 "jane@farm.com",
                 "MANAGER",
                 passwordEncoder.encode("farmapp@123"),
                 true));
+        user.setEmailConfirmed(true);
+        userRepository.save(user);
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -40,18 +179,47 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isString())
                 .andExpect(jsonPath("$.user.email").value("jane@farm.com"))
-                .andExpect(jsonPath("$.user.role").value("MANAGER"));
+                .andExpect(jsonPath("$.user.role").value("MANAGER"))
+                .andExpect(jsonPath("$.user.plan").value("FREE"));
     }
 
     @Test
-    void shouldReturn401ForInvalidCredentials() throws Exception {
-        userRepository.save(new UserEntity(
+    void shouldReturn403ForUnconfirmedUser() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
                 null,
                 "Jane Doe",
                 "jane@farm.com",
                 "MANAGER",
                 passwordEncoder.encode("farmapp@123"),
                 true));
+        user.setEmailConfirmed(false);
+        user.setEmailConfirmationTokenHash(emailConfirmationTokenService.hashToken("pending-token"));
+        user.setEmailConfirmationTokenExpiresAt(Instant.now().plusSeconds(3600));
+        userRepository.save(user);
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "jane@farm.com",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Confirme seu e-mail antes de entrar."));
+    }
+
+    @Test
+    void shouldReturn401ForInvalidCredentials() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
+                null,
+                "Jane Doe",
+                "jane@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+        user.setEmailConfirmed(true);
+        userRepository.save(user);
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -67,13 +235,15 @@ class AuthIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldReturn401ForInactiveUser() throws Exception {
-        userRepository.save(new UserEntity(
+        UserEntity user = userRepository.save(new UserEntity(
                 null,
                 "Jane Doe",
                 "jane@farm.com",
                 "WORKER",
                 passwordEncoder.encode("farmapp@123"),
                 false));
+        user.setEmailConfirmed(true);
+        userRepository.save(user);
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -88,8 +258,155 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldConfirmEmailAndAllowLogin() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
+                null,
+                "Maria Silva",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+        user.setEmailConfirmed(false);
+        user.setEmailConfirmationTokenHash(emailConfirmationTokenService.hashToken("confirm-token"));
+        user.setEmailConfirmationTokenExpiresAt(Instant.now().plusSeconds(3600));
+        userRepository.save(user);
+
+        mockMvc.perform(get("/auth/confirm-email")
+                        .param("token", "confirm-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("E-mail confirmado com sucesso."));
+
+        UserEntity confirmedUser = userRepository.findByEmail("maria@farm.com").orElseThrow();
+        Assertions.assertTrue(confirmedUser.isEmailConfirmed());
+        Assertions.assertNull(confirmedUser.getEmailConfirmationTokenHash());
+        Assertions.assertNull(confirmedUser.getEmailConfirmationTokenExpiresAt());
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "maria@farm.com",
+                                  "password": "farmapp@123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isString())
+                .andExpect(jsonPath("$.user.email").value("maria@farm.com"));
+    }
+
+    @Test
+    void shouldRejectInvalidConfirmationToken() throws Exception {
+        mockMvc.perform(get("/auth/confirm-email")
+                        .param("token", "missing-token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("O token de confirmação é inválido ou expirou."));
+    }
+
+    @Test
+    void shouldRejectExpiredConfirmationToken() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
+                null,
+                "Maria Silva",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+        user.setEmailConfirmed(false);
+        user.setEmailConfirmationTokenHash(emailConfirmationTokenService.hashToken("expired-token"));
+        user.setEmailConfirmationTokenExpiresAt(Instant.now().minusSeconds(60));
+        userRepository.save(user);
+
+        mockMvc.perform(get("/auth/confirm-email")
+                        .param("token", "expired-token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("O token de confirmação é inválido ou expirou."));
+    }
+
+    @Test
+    void shouldResendConfirmationEmail() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
+                null,
+                "Maria Silva",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+        user.setEmailConfirmed(false);
+        user.setEmailConfirmationTokenHash(emailConfirmationTokenService.hashToken("old-token"));
+        user.setEmailConfirmationTokenExpiresAt(Instant.now().plusSeconds(300));
+        userRepository.save(user);
+        String previousTokenHash = user.getEmailConfirmationTokenHash();
+
+        mockMvc.perform(post("/auth/confirm-email/resend")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "  MARIA@FARM.COM  "
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("E-mail de confirmação enviado com sucesso."));
+
+        UserEntity updatedUser = userRepository.findByEmail("maria@farm.com").orElseThrow();
+        Assertions.assertFalse(updatedUser.isEmailConfirmed());
+        Assertions.assertNotEquals(previousTokenHash, updatedUser.getEmailConfirmationTokenHash());
+        Assertions.assertTrue(updatedUser.getEmailConfirmationTokenExpiresAt().isAfter(Instant.now()));
+
+        ArgumentCaptor<EmailMessage> emailCaptor = ArgumentCaptor.forClass(EmailMessage.class);
+        verify(emailSender).send(emailCaptor.capture());
+        EmailMessage sentEmail = emailCaptor.getValue();
+        Assertions.assertEquals("maria@farm.com", sentEmail.recipientEmail());
+        Assertions.assertTrue(sentEmail.body().contains("http://localhost:5173/login?mode=confirm&token="));
+        String rawToken = sentEmail.body()
+                .substring(sentEmail.body().indexOf("token=") + "token=".length())
+                .split("\\s", 2)[0];
+        Assertions.assertEquals(
+                emailConfirmationTokenService.hashToken(rawToken),
+                updatedUser.getEmailConfirmationTokenHash());
+    }
+
+    @Test
+    void shouldRejectResendConfirmationForUnknownUser() throws Exception {
+        mockMvc.perform(post("/auth/confirm-email/resend")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "missing@farm.com"
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Usuário não encontrado."))
+                .andExpect(jsonPath("$.path").value("/auth/confirm-email/resend"));
+    }
+
+    @Test
+    void shouldRejectResendConfirmationForConfirmedUser() throws Exception {
+        UserEntity user = userRepository.save(new UserEntity(
+                null,
+                "Maria Silva",
+                "maria@farm.com",
+                "MANAGER",
+                passwordEncoder.encode("farmapp@123"),
+                true));
+        user.setEmailConfirmed(true);
+        userRepository.save(user);
+
+        mockMvc.perform(post("/auth/confirm-email/resend")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "maria@farm.com"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("O e-mail já foi confirmado."))
+                .andExpect(jsonPath("$.path").value("/auth/confirm-email/resend"));
+    }
+
+    @Test
     void shouldRequireTokenForProtectedEndpoints() throws Exception {
-        UserEntity user = createAuthenticatedUser();
+        UserEntity user = createAuthenticatedUser("MANAGER", UserPlan.PRO);
+        createFarmOwnedBy(user, "North Dairy");
 
         mockMvc.perform(get("/animals"))
                 .andExpect(status().isUnauthorized())
@@ -115,8 +432,9 @@ class AuthIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldAllowOnlyManagersToAccessDashboardAndAnalytics() throws Exception {
-        UserEntity manager = createAuthenticatedUser("MANAGER");
+        UserEntity manager = createAuthenticatedUser("MANAGER", UserPlan.PRO);
         UserEntity worker = createAuthenticatedUser("WORKER");
+        createFarmOwnedBy(manager, "North Dairy");
 
         mockMvc.perform(get("/dashboard")
                         .header("Authorization", bearerToken(worker)))
@@ -169,6 +487,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
     void shouldAllowOnlyManagersToReachDeleteEndpoints() throws Exception {
         UserEntity manager = createAuthenticatedUser("MANAGER");
         UserEntity worker = createAuthenticatedUser("WORKER");
+        createFarmOwnedBy(manager, "North Dairy");
 
         mockMvc.perform(delete("/animals/missing")
                         .header("Authorization", bearerToken(worker)))

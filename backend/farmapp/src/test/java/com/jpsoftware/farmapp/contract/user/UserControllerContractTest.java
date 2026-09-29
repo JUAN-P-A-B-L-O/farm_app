@@ -76,6 +76,7 @@ class UserControllerContractTest {
                 .andExpect(jsonPath("$.role").value("MANAGER"))
                 .andExpect(jsonPath("$.active").value(true))
                 .andExpect(jsonPath("$.avatarUrl").value("https://example.com/avatar.png"))
+                .andExpect(jsonPath("$.plan").value("FREE"))
                 .andExpect(jsonPath("$.farmIds[0]").value("farm-1"));
     }
 
@@ -91,6 +92,7 @@ class UserControllerContractTest {
                 .andExpect(jsonPath("$[0].role").value("MANAGER"))
                 .andExpect(jsonPath("$[0].active").value(true))
                 .andExpect(jsonPath("$[0].avatarUrl").value("https://example.com/avatar.png"))
+                .andExpect(jsonPath("$[0].plan").value("FREE"))
                 .andExpect(jsonPath("$[0].farmIds[0]").value("farm-1"));
     }
 
@@ -140,6 +142,7 @@ class UserControllerContractTest {
                 .andExpect(jsonPath("$.role").value("MANAGER"))
                 .andExpect(jsonPath("$.active").value(true))
                 .andExpect(jsonPath("$.avatarUrl").value("https://example.com/avatar.png"))
+                .andExpect(jsonPath("$.plan").value("FREE"))
                 .andExpect(jsonPath("$.farmIds[0]").value("farm-1"));
     }
 
@@ -162,6 +165,7 @@ class UserControllerContractTest {
                 "WORKER",
                 true,
                 "https://example.com/avatar-updated.png",
+                "FREE",
                 List.of("farm-1"));
 
         mockMvc.perform(put("/users/11111111-1111-1111-1111-111111111111")
@@ -183,6 +187,7 @@ class UserControllerContractTest {
                 "MANAGER",
                 false,
                 "https://example.com/avatar.png",
+                "FREE",
                 List.of("farm-1"));
 
         mockMvc.perform(patch("/users/11111111-1111-1111-1111-111111111111/inactivate"))
@@ -205,6 +210,7 @@ class UserControllerContractTest {
                 "MANAGER",
                 true,
                 "https://example.com/avatar.png",
+                "FREE",
                 List.of("farm-1"));
 
         mockMvc.perform(patch("/users/11111111-1111-1111-1111-111111111111/activate")
@@ -273,6 +279,7 @@ class UserControllerContractTest {
                 "MANAGER",
                 true,
                 "https://example.com/avatar.png",
+                "FREE",
                 List.of("farm-1"));
     }
 

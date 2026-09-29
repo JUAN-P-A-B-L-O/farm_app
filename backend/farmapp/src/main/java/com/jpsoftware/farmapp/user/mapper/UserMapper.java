@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.user.mapper;
 import com.jpsoftware.farmapp.user.dto.CreateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UserResponse;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,11 @@ public class UserMapper {
                 entity.getRole(),
                 entity.isActive(),
                 entity.getAvatarUrl(),
+                resolvePlan(entity).name(),
                 farmIds);
+    }
+
+    private UserPlan resolvePlan(UserEntity entity) {
+        return entity.getPlan() != null ? entity.getPlan() : UserPlan.defaultPlan();
     }
 }

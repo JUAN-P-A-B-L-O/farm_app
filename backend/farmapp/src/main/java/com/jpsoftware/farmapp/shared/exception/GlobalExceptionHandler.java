@@ -3,6 +3,7 @@ package com.jpsoftware.farmapp.shared.exception;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import com.jpsoftware.farmapp.shared.onboarding.FarmOnboardingRequiredException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import com.jpsoftware.farmapp.shared.plan.PlanAccessDeniedException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -110,6 +112,27 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(EmailConfirmationRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleEmailConfirmationRequiredException(
+            EmailConfirmationRequiredException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(PlanAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handlePlanAccessDeniedException(
+            PlanAccessDeniedException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(FarmOnboardingRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleFarmOnboardingRequiredException(
+            FarmOnboardingRequiredException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
             DataIntegrityViolationException exception,
@@ -132,6 +155,13 @@ public class GlobalExceptionHandler {
             IllegalArgumentException exception,
             HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(EmailDispatchException.class)
+    public ResponseEntity<ErrorResponse> handleEmailDispatchException(
+            EmailDispatchException exception,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)

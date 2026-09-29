@@ -50,6 +50,14 @@ class ErrorMessageTranslatorTest {
         assertEquals(
                 "É necessário estar autenticado.",
                 ErrorMessageTranslator.translate("Authenticated user is required"));
+        assertEquals("Não foi possível enviar o e-mail.", ErrorMessageTranslator.translate("Unable to send email"));
+    }
+
+    @Test
+    void shouldTranslateFarmOnboardingMessage() {
+        assertEquals(
+                "Crie uma fazenda antes de acessar este recurso.",
+                ErrorMessageTranslator.translate("Create a farm before accessing this feature"));
     }
 
     @Test

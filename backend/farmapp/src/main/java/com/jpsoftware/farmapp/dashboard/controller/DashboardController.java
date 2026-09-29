@@ -2,6 +2,8 @@ package com.jpsoftware.farmapp.dashboard.controller;
 
 import com.jpsoftware.farmapp.dashboard.dto.DashboardResponse;
 import com.jpsoftware.farmapp.dashboard.service.DashboardService;
+import com.jpsoftware.farmapp.shared.plan.PlanFeature;
+import com.jpsoftware.farmapp.shared.plan.RequiresPlanFeature;
 import com.jpsoftware.farmapp.shared.util.CsvResponseFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,6 +29,7 @@ public class DashboardController {
     }
 
     @GetMapping("/dashboard")
+    @RequiresPlanFeature(PlanFeature.DASHBOARD)
     @Operation(summary = "Get dashboard", description = "Returns aggregated production, feeding cost, revenue, profit, and animal count metrics.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Dashboard data retrieved successfully")
@@ -65,6 +68,7 @@ public class DashboardController {
     }
 
     @GetMapping("/dashboard/export")
+    @RequiresPlanFeature(PlanFeature.DASHBOARD)
     @Operation(summary = "Export dashboard", description = "Exports dashboard metrics as CSV using the current farm and acquisition-cost settings.")
     public ResponseEntity<byte[]> exportDashboard(
             @RequestParam(required = false) String farmId,

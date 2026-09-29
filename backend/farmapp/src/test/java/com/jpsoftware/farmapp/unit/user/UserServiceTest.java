@@ -25,6 +25,7 @@ import com.jpsoftware.farmapp.user.dto.UpdatePasswordRequest;
 import com.jpsoftware.farmapp.user.dto.UpdateUserRequest;
 import com.jpsoftware.farmapp.user.dto.UserResponse;
 import com.jpsoftware.farmapp.user.entity.UserEntity;
+import com.jpsoftware.farmapp.user.entity.UserPlan;
 import com.jpsoftware.farmapp.user.mapper.UserMapper;
 import com.jpsoftware.farmapp.user.repository.UserFarmAssignmentRepository;
 import com.jpsoftware.farmapp.user.repository.UserRepository;
@@ -106,8 +107,10 @@ class UserServiceTest {
         assertEquals("jane@farm.com", response.getEmail());
         assertEquals("MANAGER", response.getRole());
         assertEquals("https://example.com/avatar.png", response.getAvatarUrl());
+        assertEquals("FREE", response.getPlan());
         assertEquals(List.of("farm-1", "farm-2"), response.getFarmIds());
         assertTrue(Boolean.TRUE.equals(response.getActive()));
+        verify(userRepository).save(argThat(user -> user.getPlan() == UserPlan.FREE));
         verify(userFarmAssignmentRepository, times(2)).save(any());
     }
 
