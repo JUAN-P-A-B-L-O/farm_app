@@ -166,7 +166,7 @@ function FeedingForm({
   return (
     <form className="animal-form" onSubmit={handleSubmit}>
       <div className="animal-form__grid">
-        {!onCancel && (
+        {requireUserSelection && (
           <label className="animal-form__field">
             <span>{t('feeding.form.operationMode')}</span>
             <select

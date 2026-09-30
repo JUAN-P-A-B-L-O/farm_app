@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import AnimalForm from '../../components/animal/AnimalForm'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ResourceFormModal from '../../components/common/ResourceFormModal'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
@@ -82,6 +83,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [sellErrorMessage, setSellErrorMessage] = useState('')
   const [editingAnimalId, setEditingAnimalId] = useState<string | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [sellingAnimal, setSellingAnimal] = useState<Animal | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [formInitialValues, setFormInitialValues] = useState<AnimalFormData>(emptyAnimalForm)
@@ -174,6 +176,7 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
 
       setEditingAnimalId(null)
       setFormInitialValues(emptyAnimalForm)
+      setIsFormOpen(false)
       await loadAnimals()
     } catch (error) {
       setFormErrorMessage(
@@ -205,14 +208,16 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
         status: animal.status,
         farmId: animal.farmId,
       })
+      setIsFormOpen(true)
     } catch (error) {
-      setFormErrorMessage(getErrorMessage(error, t('animals.errors.loadDetails'), t))
+      setListErrorMessage(getErrorMessage(error, t('animals.errors.loadDetails'), t))
     } finally {
       setIsSubmitting(false)
     }
   }
 
   function handleCancelEdit() {
+    setIsFormOpen(false)
     setEditingAnimalId(null)
     setFormErrorMessage('')
     setFormInitialValues(emptyAnimalForm)
@@ -320,37 +325,42 @@ function AnimalsPage({ onOpenDetails }: AnimalsPageProps) {
     <main className="animals-page">
       <section className="animals-page__header">
         <p className="animals-page__eyebrow">{t('animals.eyebrow')}</p>
-        <h1>{t('animals.title')}</h1>
+        <div className="animals-page__heading-row">
+          <h1>{t('animals.title')}</h1>
+          <button type="button" className="animals-table__action-button animals-page__create-button" onClick={() => {
+            setEditingAnimalId(null)
+            setFormInitialValues(emptyAnimalForm)
+            setFormErrorMessage('')
+            setIsFormOpen(true)
+          }}>
+            {t('common.createNew')}
+          </button>
+        </div>
         <p className="animals-page__description">
           {t('animals.description')}
         </p>
       </section>
 
-      <section className="animals-layout">
-        <article className="animals-panel">
-          <div className="animals-panel__header">
-            <div>
-              <h2>{editingAnimalId ? t('animals.updateTitle') : t('animals.createTitle')}</h2>
-              <p>
-                {editingAnimalId
-                  ? t('animals.updateDescription')
-                  : t('animals.createDescription')}
-              </p>
-            </div>
-          </div>
-
+      {isFormOpen && (
+        <ResourceFormModal
+          title={editingAnimalId ? t('animals.updateTitle') : t('animals.createTitle')}
+          description={editingAnimalId ? t('animals.updateDescription') : t('animals.createDescription')}
+          onClose={() => { if (!isSubmitting) handleCancelEdit() }}
+        >
           <AnimalForm
             initialValues={formInitialValues}
             onSubmit={handleCreateOrUpdate}
-            onCancel={editingAnimalId ? handleCancelEdit : undefined}
+            onCancel={handleCancelEdit}
             isSubmitting={isSubmitting}
             submitLabel={editingAnimalId ? t('animals.submitUpdate') : t('animals.submitCreate')}
             errorMessage={formErrorMessage}
             selectedFarmName={selectedFarm?.name}
             showStatusField={editingAnimalId !== null}
           />
-        </article>
+        </ResourceFormModal>
+      )}
 
+      <section className="animals-layout">
         {sellingAnimal && (
           <article className="animals-panel">
             <div className="animals-panel__header">

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ResourceFormModal from '../../components/common/ResourceFormModal'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
@@ -116,6 +117,7 @@ function FeedingPage() {
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingFeedingId, setEditingFeedingId] = useState<string | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const previousSelectedFarmIdRef = useRef(selectedFarmId)
   const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
@@ -235,6 +237,7 @@ function FeedingPage() {
 
       setEditingFeedingId(null)
       setFormInitialValues({ ...emptyFeedingForm })
+      setIsFormOpen(false)
       await loadFeedings()
     } catch (error) {
       setFormErrorMessage(
@@ -266,14 +269,16 @@ function FeedingPage() {
         quantity: feeding.quantity,
         userId: '',
       })
+      setIsFormOpen(true)
     } catch (error) {
-      setFormErrorMessage(getErrorMessage(error, t('feeding.errors.loadDetails'), t))
+      setListErrorMessage(getErrorMessage(error, t('feeding.errors.loadDetails'), t))
     } finally {
       setIsSubmitting(false)
     }
   }
 
   function handleCancelEdit() {
+    setIsFormOpen(false)
     setEditingFeedingId(null)
     setFormErrorMessage('')
     setFormInitialValues({ ...emptyFeedingForm })
@@ -335,25 +340,28 @@ function FeedingPage() {
     <main className="animals-page">
       <section className="animals-page__header">
         <p className="animals-page__eyebrow">{t('feeding.eyebrow')}</p>
-        <h1>{t('feeding.title')}</h1>
+        <div className="animals-page__heading-row">
+          <h1>{t('feeding.title')}</h1>
+          <button type="button" className="animals-table__action-button animals-page__create-button" onClick={() => {
+            setEditingFeedingId(null)
+            setFormInitialValues(emptyFeedingForm)
+            setFormErrorMessage('')
+            setIsFormOpen(true)
+          }}>
+            {t('common.createNew')}
+          </button>
+        </div>
         <p className="animals-page__description">
           {t('feeding.description')}
         </p>
       </section>
 
-      <section className="animals-layout">
-        <article className="animals-panel">
-          <div className="animals-panel__header">
-            <div>
-              <h2>{editingFeedingId ? t('feeding.updateTitle') : t('feeding.createTitle')}</h2>
-              <p>
-                {editingFeedingId
-                  ? t('feeding.updateDescription')
-                  : t('feeding.createDescription')}
-              </p>
-            </div>
-          </div>
-
+      {isFormOpen && (
+        <ResourceFormModal
+          title={editingFeedingId ? t('feeding.updateTitle') : t('feeding.createTitle')}
+          description={editingFeedingId ? t('feeding.updateDescription') : t('feeding.createDescription')}
+          onClose={() => { if (!isSubmitting) handleCancelEdit() }}
+        >
           {isFormOptionsLoading && <p className="animals-page__status">{t('feeding.loadingOptions')}</p>}
 
           {!isFormOptionsLoading && animals.length === 0 && !formErrorMessage && (
@@ -371,7 +379,7 @@ function FeedingPage() {
               batches={batches}
               feedTypes={feedTypes}
               onSubmit={handleCreateOrUpdateFeeding}
-              onCancel={editingFeedingId ? handleCancelEdit : undefined}
+              onCancel={handleCancelEdit}
               isSubmitting={isSubmitting}
               submitLabel={editingFeedingId ? t('feeding.submitUpdate') : t('feeding.submitCreate')}
               errorMessage={formErrorMessage}
@@ -379,8 +387,10 @@ function FeedingPage() {
               allowDateSelection={editingFeedingId !== null || canSelectCreateDate}
             />
           )}
-        </article>
+        </ResourceFormModal>
+      )}
 
+      <section className="animals-layout">
         <article className="animals-panel animals-panel--table">
           <div className="animals-panel__header animals-panel__header--actions">
             <div>

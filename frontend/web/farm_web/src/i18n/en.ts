@@ -58,6 +58,8 @@ const en = {
     loading: 'Loading...',
     saving: 'Saving...',
     cancel: 'Cancel',
+    close: 'Close',
+    createNew: 'Create new',
     exportCsv: 'Export CSV',
     exportingCsv: 'Exporting...',
     exportError: 'Unable to export CSV.',

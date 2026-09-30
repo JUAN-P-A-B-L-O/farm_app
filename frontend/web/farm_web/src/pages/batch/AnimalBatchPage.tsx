@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
+import ResourceFormModal from '../../components/common/ResourceFormModal'
 import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
 import AnimalBatchForm from '../../components/batch/AnimalBatchForm'
@@ -74,6 +75,7 @@ function AnimalBatchPage() {
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingBatchId, setEditingBatchId] = useState<string | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [formInitialValues, setFormInitialValues] = useState<AnimalBatchFormData>(emptyBatchForm)
   const previousSelectedFarmIdRef = useRef(selectedFarmId)
   const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
@@ -182,6 +184,7 @@ function AnimalBatchPage() {
 
       setEditingBatchId(null)
       setFormInitialValues(emptyBatchForm)
+      setIsFormOpen(false)
       await loadBatches()
     } catch (error) {
       setFormErrorMessage(
@@ -197,6 +200,7 @@ function AnimalBatchPage() {
   }
 
   function handleEdit(batch: AnimalBatch) {
+    setIsFormOpen(true)
     setEditingBatchId(batch.id)
     setFormErrorMessage('')
     setFormInitialValues({
@@ -206,6 +210,7 @@ function AnimalBatchPage() {
   }
 
   function handleCancelEdit() {
+    setIsFormOpen(false)
     setEditingBatchId(null)
     setFormErrorMessage('')
     setFormInitialValues(emptyBatchForm)
@@ -244,19 +249,26 @@ function AnimalBatchPage() {
     <main className="animals-page">
       <section className="animals-page__header">
         <p className="animals-page__eyebrow">{t('batches.eyebrow')}</p>
-        <h1>{t('batches.title')}</h1>
+        <div className="animals-page__heading-row">
+          <h1>{t('batches.title')}</h1>
+          <button type="button" className="animals-table__action-button animals-page__create-button" onClick={() => {
+            setEditingBatchId(null)
+            setFormInitialValues(emptyBatchForm)
+            setFormErrorMessage('')
+            setIsFormOpen(true)
+          }}>
+            {t('common.createNew')}
+          </button>
+        </div>
         <p className="animals-page__description">{t('batches.description')}</p>
       </section>
 
-      <section className="animals-layout">
-        <article className="animals-panel">
-          <div className="animals-panel__header">
-            <div>
-              <h2>{editingBatchId ? t('batches.updateTitle') : t('batches.createTitle')}</h2>
-              <p>{editingBatchId ? t('batches.updateDescription') : t('batches.createDescription')}</p>
-            </div>
-          </div>
-
+      {isFormOpen && (
+        <ResourceFormModal
+          title={editingBatchId ? t('batches.updateTitle') : t('batches.createTitle')}
+          description={editingBatchId ? t('batches.updateDescription') : t('batches.createDescription')}
+          onClose={() => { if (!isSubmitting) handleCancelEdit() }}
+        >
           {isAnimalsLoading && <p className="animals-page__status">{t('batches.loadingAnimals')}</p>}
 
           {!isAnimalsLoading && animals.length === 0 && !formErrorMessage && (
@@ -268,14 +280,16 @@ function AnimalBatchPage() {
               initialValues={formInitialValues}
               animals={animals}
               onSubmit={handleCreateOrUpdate}
-              onCancel={editingBatchId ? handleCancelEdit : undefined}
+              onCancel={handleCancelEdit}
               isSubmitting={isSubmitting}
               submitLabel={editingBatchId ? t('batches.submitUpdate') : t('batches.submitCreate')}
               errorMessage={formErrorMessage}
             />
           )}
-        </article>
+        </ResourceFormModal>
+      )}
 
+      <section className="animals-layout">
         <article className="animals-panel animals-panel--table">
           <div className="animals-panel__header">
             <div>

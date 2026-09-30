@@ -58,6 +58,8 @@ const ptBR = {
     loading: 'Carregando...',
     saving: 'Salvando...',
     cancel: 'Cancelar',
+    close: 'Fechar',
+    createNew: 'Criar novo',
     exportCsv: 'Exportar CSV',
     exportingCsv: 'Exportando...',
     exportError: 'Não foi possível exportar o CSV.',

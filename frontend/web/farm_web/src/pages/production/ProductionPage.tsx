@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ResourceFormModal from '../../components/common/ResourceFormModal'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
@@ -111,6 +112,7 @@ function ProductionPage() {
   const [listErrorMessage, setListErrorMessage] = useState('')
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [editingProductionId, setEditingProductionId] = useState<string | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const previousSelectedFarmIdRef = useRef(selectedFarmId)
   const { filters, appliedFilters, setFilters, resetFilters } = useAutoAppliedFilters(defaultFilters, {
@@ -248,6 +250,7 @@ function ProductionPage() {
 
       setEditingProductionId(null)
       setFormInitialValues({ ...emptyProductionForm })
+      setIsFormOpen(false)
       await loadProductions()
     } catch (error) {
       setFormErrorMessage(
@@ -278,14 +281,16 @@ function ProductionPage() {
         quantity: production.quantity,
         userId: '',
       })
+      setIsFormOpen(true)
     } catch (error) {
-      setFormErrorMessage(getErrorMessage(error, t('production.errors.loadDetails'), t))
+      setListErrorMessage(getErrorMessage(error, t('production.errors.loadDetails'), t))
     } finally {
       setIsSubmitting(false)
     }
   }
 
   function handleCancelEdit() {
+    setIsFormOpen(false)
     setEditingProductionId(null)
     setFormErrorMessage('')
     setFormInitialValues({ ...emptyProductionForm })
@@ -347,25 +352,28 @@ function ProductionPage() {
     <main className="animals-page">
       <section className="animals-page__header">
         <p className="animals-page__eyebrow">{t('production.eyebrow')}</p>
-        <h1>{t('production.title')}</h1>
+        <div className="animals-page__heading-row">
+          <h1>{t('production.title')}</h1>
+          <button type="button" className="animals-table__action-button animals-page__create-button" onClick={() => {
+            setEditingProductionId(null)
+            setFormInitialValues(emptyProductionForm)
+            setFormErrorMessage('')
+            setIsFormOpen(true)
+          }}>
+            {t('common.createNew')}
+          </button>
+        </div>
         <p className="animals-page__description">
           {t('production.description')}
         </p>
       </section>
 
-      <section className="animals-layout">
-        <article className="animals-panel">
-          <div className="animals-panel__header">
-            <div>
-              <h2>{editingProductionId ? t('production.updateTitle') : t('production.createTitle')}</h2>
-              <p>
-                {editingProductionId
-                  ? t('production.updateDescription')
-                  : t('production.createDescription')}
-              </p>
-            </div>
-          </div>
-
+      {isFormOpen && (
+        <ResourceFormModal
+          title={editingProductionId ? t('production.updateTitle') : t('production.createTitle')}
+          description={editingProductionId ? t('production.updateDescription') : t('production.createDescription')}
+          onClose={() => { if (!isSubmitting) handleCancelEdit() }}
+        >
           {isAnimalsLoading && <p className="animals-page__status">{t('production.loadingAnimals')}</p>}
 
           {!isAnimalsLoading && animals.length === 0 && !formErrorMessage && (
@@ -378,7 +386,7 @@ function ProductionPage() {
               animals={animals}
               batches={batches}
               onSubmit={handleCreateOrUpdateProduction}
-              onCancel={editingProductionId ? handleCancelEdit : undefined}
+              onCancel={handleCancelEdit}
               isSubmitting={isSubmitting}
               submitLabel={editingProductionId ? t('production.submitUpdate') : t('production.submitCreate')}
               errorMessage={formErrorMessage}
@@ -386,8 +394,10 @@ function ProductionPage() {
               allowDateSelection={editingProductionId !== null || canSelectCreateDate}
             />
           )}
-        </article>
+        </ResourceFormModal>
+      )}
 
+      <section className="animals-layout">
         <article className="animals-panel animals-panel--table">
           <div className="animals-panel__header animals-panel__header--actions">
             <div>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import ExportCsvButton from '../../components/common/ExportCsvButton'
+import ResourceFormModal from '../../components/common/ResourceFormModal'
 import ListingFiltersBar from '../../components/common/ListingFiltersBar'
 import { useAutoAppliedFilters } from '../../hooks/useAutoAppliedFilters'
 import PaginationControls from '../../components/common/PaginationControls'
@@ -53,6 +54,7 @@ function MilkPricePage() {
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [formData, setFormData] = useState<CreateMilkPricePayload>(emptyForm)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
@@ -156,6 +158,7 @@ function MilkPricePage() {
     try {
       await createMilkPrice(formData, selectedFarmId)
       setFormData(emptyForm)
+      setIsFormOpen(false)
       await loadMilkPrices()
     } catch (error) {
       setFormErrorMessage(getErrorMessage(error, t('milkPrice.errors.create')))
@@ -190,9 +193,76 @@ function MilkPricePage() {
     <main className="animals-page">
       <section className="animals-page__header">
         <p className="animals-page__eyebrow">{t('milkPrice.eyebrow')}</p>
-        <h1>{t('milkPrice.title')}</h1>
+        <div className="animals-page__heading-row">
+          <h1>{t('milkPrice.title')}</h1>
+          <button type="button" className="animals-table__action-button animals-page__create-button" onClick={() => {
+            setFormData(emptyForm)
+            setFormErrorMessage('')
+            setIsFormOpen(true)
+          }}>
+            {t('common.createNew')}
+          </button>
+        </div>
         <p className="animals-page__description">{t('milkPrice.description')}</p>
       </section>
+
+      {isFormOpen && (
+        <ResourceFormModal
+          title={t('milkPrice.createTitle')}
+          description={t('milkPrice.createDescription')}
+          onClose={() => {
+            if (isSubmitting) return
+            setIsFormOpen(false)
+            setFormData(emptyForm)
+            setFormErrorMessage('')
+          }}
+        >
+          <form className="animal-form" onSubmit={handleSubmit}>
+            <div className="animal-form__grid">
+              <label className="animal-form__field" htmlFor="milk-price-value">
+                <span>{t('milkPrice.form.price')}</span>
+                <input
+                  id="milk-price-value"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={formData.price || ''}
+                  onChange={(event) =>
+                    setFormData((current) => ({ ...current, price: Number(event.target.value) }))
+                  }
+                />
+              </label>
+
+              <label className="animal-form__field" htmlFor="milk-price-effective-date">
+                <span>{t('milkPrice.form.effectiveDate')}</span>
+                <input
+                  id="milk-price-effective-date"
+                  type="date"
+                  value={formData.effectiveDate}
+                  onChange={(event) =>
+                    setFormData((current) => ({ ...current, effectiveDate: event.target.value }))
+                  }
+                />
+              </label>
+            </div>
+
+            {formErrorMessage && (
+              <p className="animal-form__feedback animal-form__feedback--error">{formErrorMessage}</p>
+            )}
+
+            <div className="animal-form__actions">
+              <button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? t('milkPrice.submitting') : t('milkPrice.submit')}
+              </button>
+              <button type="button" className="animal-form__secondary-button" onClick={() => {
+                setIsFormOpen(false)
+                setFormData(emptyForm)
+                setFormErrorMessage('')
+              }} disabled={isSubmitting}>{t('common.cancel')}</button>
+            </div>
+          </form>
+        </ResourceFormModal>
+      )}
 
       <section className="animals-layout">
         <article className="animals-panel">
@@ -250,52 +320,6 @@ function MilkPricePage() {
             </>
           )}
 
-          <div className="animals-panel__header" style={{ marginTop: 24 }}>
-            <div>
-              <h2>{t('milkPrice.createTitle')}</h2>
-              <p>{t('milkPrice.createDescription')}</p>
-            </div>
-          </div>
-
-          <form className="animal-form" onSubmit={handleSubmit}>
-            <div className="animal-form__grid">
-              <label className="animal-form__field" htmlFor="milk-price-value">
-                <span>{t('milkPrice.form.price')}</span>
-                <input
-                  id="milk-price-value"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={formData.price || ''}
-                  onChange={(event) =>
-                    setFormData((current) => ({ ...current, price: Number(event.target.value) }))
-                  }
-                />
-              </label>
-
-              <label className="animal-form__field" htmlFor="milk-price-effective-date">
-                <span>{t('milkPrice.form.effectiveDate')}</span>
-                <input
-                  id="milk-price-effective-date"
-                  type="date"
-                  value={formData.effectiveDate}
-                  onChange={(event) =>
-                    setFormData((current) => ({ ...current, effectiveDate: event.target.value }))
-                  }
-                />
-              </label>
-            </div>
-
-            {formErrorMessage && (
-              <p className="animal-form__feedback animal-form__feedback--error">{formErrorMessage}</p>
-            )}
-
-            <div className="animal-form__actions">
-              <button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? t('milkPrice.submitting') : t('milkPrice.submit')}
-              </button>
-            </div>
-          </form>
         </article>
 
         <article className="animals-panel animals-panel--table">
