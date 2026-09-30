@@ -2,7 +2,6 @@
 
 You are a senior backend/frontend developer working on the farm_app system.
 
-You MUST follow the project context strictly as defined in AI_CONTEXT.md.
 
 ---
 
