@@ -1,5 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import axios from 'axios'
+import { useLanguage } from '../../context/LanguageContext'
+import { useCurrency } from '../../hooks/useCurrency'
+import { useMeasurementUnits } from '../../hooks/useMeasurementUnits'
 import { useTranslation } from '../../hooks/useTranslation'
 import { updateOwnPassword } from '../../services/userService'
 import type { UserApiErrorResponse } from '../../types/user'
@@ -15,6 +18,9 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
 
 function SettingsPage() {
   const { t } = useTranslation()
+  const { language, setLanguage } = useLanguage()
+  const { currency, setCurrency } = useCurrency()
+  const { productionUnit, feedingUnit, setProductionUnit, setFeedingUnit } = useMeasurementUnits()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -70,6 +76,67 @@ function SettingsPage() {
       </section>
 
       <section className="animals-layout">
+        <article className="animals-panel">
+          <div className="animals-panel__header">
+            <h2>{t('settings.preferencesTitle')}</h2>
+            <p>{t('settings.preferencesDescription')}</p>
+          </div>
+
+          <div className="settings-preferences__grid">
+            <div className="animal-form__field" role="group" aria-label={t('layout.languageLabel')}>
+              <span>{t('layout.languageLabel')}</span>
+              <div className="app-layout__language-options">
+                <button
+                  type="button"
+                  className={`app-layout__language-button${language === 'pt-BR' ? ' app-layout__language-button--active' : ''}`}
+                  onClick={() => setLanguage('pt-BR')}
+                  aria-pressed={language === 'pt-BR'}
+                >
+                  {t('layout.languageOptions.pt-BR')}
+                </button>
+                <button
+                  type="button"
+                  className={`app-layout__language-button${language === 'en' ? ' app-layout__language-button--active' : ''}`}
+                  onClick={() => setLanguage('en')}
+                  aria-pressed={language === 'en'}
+                >
+                  {t('layout.languageOptions.en')}
+                </button>
+              </div>
+            </div>
+
+            <label className="animal-form__field">
+              <span>{t('layout.currencyLabel')}</span>
+              <select value={currency} onChange={(event) => setCurrency(event.target.value as 'BRL' | 'USD')}>
+                <option value="BRL">{t('layout.currencyOptions.BRL')}</option>
+                <option value="USD">{t('layout.currencyOptions.USD')}</option>
+              </select>
+            </label>
+
+            <label className="animal-form__field">
+              <span>{t('measurementUnits.productionLabel')}</span>
+              <select
+                value={productionUnit}
+                onChange={(event) => setProductionUnit(event.target.value as typeof productionUnit)}
+              >
+                <option value="LITER">{t('measurementUnits.options.LITER')}</option>
+                <option value="MILLILITER">{t('measurementUnits.options.MILLILITER')}</option>
+              </select>
+            </label>
+
+            <label className="animal-form__field">
+              <span>{t('measurementUnits.feedingLabel')}</span>
+              <select
+                value={feedingUnit}
+                onChange={(event) => setFeedingUnit(event.target.value as typeof feedingUnit)}
+              >
+                <option value="KILOGRAM">{t('measurementUnits.options.KILOGRAM')}</option>
+                <option value="GRAM">{t('measurementUnits.options.GRAM')}</option>
+              </select>
+            </label>
+          </div>
+        </article>
+
         <article className="animals-panel">
           <div className="animals-panel__header">
             <div>
