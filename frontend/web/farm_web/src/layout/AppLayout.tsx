@@ -2,10 +2,7 @@ import { useState } from 'react'
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { usePlanUpgrade } from '../hooks/usePlanUpgrade'
 import { useAuth } from '../hooks/useAuth'
-import { useCurrency } from '../hooks/useCurrency'
 import { useFarm } from '../hooks/useFarm'
-import { useMeasurementUnits } from '../hooks/useMeasurementUnits'
-import { useLanguage, type Language } from '../context/LanguageContext'
 import { useTranslation } from '../hooks/useTranslation'
 import { getCurrentPlanMetadata, getFeatureAccessState, type AppFeature } from '../utils/planAccess'
 import { isManager } from '../utils/authorization'
@@ -45,24 +42,12 @@ function AppLayout() {
     errorMessage: farmsErrorMessage,
     setSelectedFarmId,
   } = useFarm()
-  const { currency, setCurrency } = useCurrency()
-  const {
-    productionUnit,
-    feedingUnit,
-    setProductionUnit,
-    setFeedingUnit,
-  } = useMeasurementUnits()
-  const { language, setLanguage } = useLanguage()
   const { t } = useTranslation()
   const canManageRestrictedFeatures = isManager(user)
   const currentPlanMetadata = getCurrentPlanMetadata(user)
   const activeNavigationItem = navigationItems.find(
     (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
   )
-
-  function handleLanguageChange(nextLanguage: Language) {
-    setLanguage(nextLanguage)
-  }
 
   function handleLogout() {
     setIsMobileNavigationOpen(false)
@@ -177,73 +162,6 @@ function AppLayout() {
             >
               {t('farm.createAction')}
             </button>
-          </div>
-
-          <div className="app-layout__language-switcher" role="group" aria-label={t('layout.languageLabel')}>
-            <span className="app-layout__language-label">{t('layout.languageLabel')}</span>
-            <div className="app-layout__language-options">
-              <button
-                type="button"
-                className={`app-layout__language-button${language === 'pt-BR' ? ' app-layout__language-button--active' : ''}`}
-                onClick={() => handleLanguageChange('pt-BR')}
-                aria-pressed={language === 'pt-BR'}
-              >
-                {t('layout.languageOptions.pt-BR')}
-              </button>
-              <button
-                type="button"
-                className={`app-layout__language-button${language === 'en' ? ' app-layout__language-button--active' : ''}`}
-                onClick={() => handleLanguageChange('en')}
-                aria-pressed={language === 'en'}
-              >
-                {t('layout.languageOptions.en')}
-              </button>
-            </div>
-          </div>
-
-          <div className="app-layout__farm-selector">
-            <label className="app-layout__language-label" htmlFor="currency-selector">
-              {t('layout.currencyLabel')}
-            </label>
-            <select
-              id="currency-selector"
-              className="app-layout__farm-select"
-              value={currency}
-              onChange={(event) => setCurrency(event.target.value as 'BRL' | 'USD')}
-            >
-              <option value="BRL">{t('layout.currencyOptions.BRL')}</option>
-              <option value="USD">{t('layout.currencyOptions.USD')}</option>
-            </select>
-          </div>
-
-          <div className="app-layout__farm-selector">
-            <label className="app-layout__language-label" htmlFor="production-unit-selector">
-              {t('measurementUnits.productionLabel')}
-            </label>
-            <select
-              id="production-unit-selector"
-              className="app-layout__farm-select"
-              value={productionUnit}
-              onChange={(event) => setProductionUnit(event.target.value as typeof productionUnit)}
-            >
-              <option value="LITER">{t('measurementUnits.options.LITER')}</option>
-              <option value="MILLILITER">{t('measurementUnits.options.MILLILITER')}</option>
-            </select>
-          </div>
-
-          <div className="app-layout__farm-selector">
-            <label className="app-layout__language-label" htmlFor="feeding-unit-selector">
-              {t('measurementUnits.feedingLabel')}
-            </label>
-            <select
-              id="feeding-unit-selector"
-              className="app-layout__farm-select"
-              value={feedingUnit}
-              onChange={(event) => setFeedingUnit(event.target.value as typeof feedingUnit)}
-            >
-              <option value="KILOGRAM">{t('measurementUnits.options.KILOGRAM')}</option>
-              <option value="GRAM">{t('measurementUnits.options.GRAM')}</option>
-            </select>
           </div>
 
           <div className="app-layout__session">

@@ -803,7 +803,9 @@ const ptBR = {
   settings: {
     eyebrow: 'Configurações pessoais',
     title: 'Configurações',
-    description: 'Gerencie a segurança da sua própria conta sem alterar os fluxos administrativos.',
+    description: 'Gerencie suas preferências de exibição e a segurança da sua conta.',
+    preferencesTitle: 'Preferências de exibição',
+    preferencesDescription: 'Escolha o idioma, a moeda e as unidades usadas em todo o aplicativo.',
     passwordTitle: 'Atualizar senha',
     passwordDescription: 'Confirme sua senha atual antes de definir uma nova.',
     submitPassword: 'Atualizar senha',

@@ -803,7 +803,9 @@ const en = {
   settings: {
     eyebrow: 'Personal Settings',
     title: 'Settings',
-    description: 'Manage your own account security without changing shared management flows.',
+    description: 'Manage your display preferences and account security.',
+    preferencesTitle: 'Display preferences',
+    preferencesDescription: 'Choose the language, currency, and units used throughout the app.',
     passwordTitle: 'Update Password',
     passwordDescription: 'Confirm your current password before replacing it.',
     submitPassword: 'Update password',
