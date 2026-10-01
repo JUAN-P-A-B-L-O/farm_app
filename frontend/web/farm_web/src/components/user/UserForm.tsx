@@ -185,13 +185,13 @@ function UserForm({
 
         {mode === 'create' && (
           <label className="animal-form__field animal-form__field--checkbox">
-            <span>{t('accessControl.form.active')}</span>
             <input
               name="active"
               type="checkbox"
               checked={formData.active}
               onChange={handleChange}
             />
+            <span>{t('accessControl.form.active')}</span>
           </label>
         )}
 
